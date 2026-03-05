@@ -237,10 +237,11 @@ docker-compose up -d
 
 ### 3. Backend
 
+
 ```bash
 cd be
-pip install -r requirements.txt
-python main.py
+uv pip install --system --no-cache -r requirements.txt
+uv run uvicorn app.main:app --reload
 ```
 
 Estará disponible en: `http://localhost:8000`
