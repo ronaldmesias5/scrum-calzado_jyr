@@ -1,8 +1,25 @@
 /**
- * Archivo: context/AuthContext.tsx
- * Descripción: Contexto de React que gestiona el estado de autenticación global.
- * ¿Para qué? Proveer a toda la aplicación acceso al usuario autenticado, tokens y acciones de auth.
- * ¿Impacto? Sin este contexto, no habría forma de saber si el usuario está logueado.
+ * Archivo: fe/src/context/AuthContext.tsx
+ * Descripción: Provider de React Context para gestionar estado de autenticación global.
+ * 
+ * ¿Qué?
+ *   Provee AuthContext con:
+ *   - Estado: user (UserResponse), accessToken, refreshToken, isLoading
+ *   - Acciones: login(), register(), logout(), changePassword(), forgotPassword(), resetPassword()
+ *   - Persistencia: sessionStorage para tokens, verificación automática al montar
+ * 
+ * ¿Para qué?
+ *   - Centralizar lógica de autenticación (DRY, evitar prop drilling)
+ *   - Proveer acceso global al usuario autenticado (useAuth() hook)
+ *   - Manejar ciclo completo: login → sessionStorage → verificar → logout
+ *   - Auto-redirigir según estado (ProtectedRoute depende de isAuthenticated)
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — Sin este contexto, NO hay autenticación funcional en frontend.
+ *   Modificar métodos rompe: LoginPage, RegisterPage, AdminHeader,
+ *   ProtectedRoute, Dashboard, cualquier componente que use useAuth().
+ *   Dependencias: types/auth.ts (interfaces), modules/auth/services/api.ts,
+ *                App.tsx (wrap con <AuthProvider>), hooks/useAuth.ts
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";

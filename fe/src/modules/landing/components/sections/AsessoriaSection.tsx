@@ -9,7 +9,7 @@ const benefits = [
 
 export default function AsessoriaSection() {
   return (
-    <section id="nosotros" className="py-16 bg-white">
+    <section id="contacto" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
           <div>

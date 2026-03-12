@@ -6,7 +6,7 @@ export default function HeroSection() {
       id="inicio"
       className="relative min-h-[560px] flex items-center justify-center text-white"
       style={{
-        background: 'linear-gradient(135deg, #1e3a5f 0%, #1e40af 50%, #172554 100%)',
+        background: 'linear-gradient(135deg, #1e40af 0%, #1e40af 100%)',
       }}
     >
       {/* Overlay decorativo */}
@@ -22,8 +22,8 @@ export default function HeroSection() {
       {/* Contenido */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-          Fabricación de Calzado<br />
-          <span className="text-blue-300">Tipo Nacional</span>
+          Calzado J&R<br />
+          <span className="text-blue-300">Calidad y Estilo a tu Alcance</span>
         </h1>
         <p className="text-gray-200 text-lg mb-8 max-w-xl mx-auto">
             Somos una fábrica colombiana especializada en la producción de calzado nacional de alta calidad  para su negocio. Con más de 5 años de experiencia, nos dedicamos a ofrecerte los mejores productos.        </p>

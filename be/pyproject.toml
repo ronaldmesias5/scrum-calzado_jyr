@@ -1,3 +1,27 @@
+# ============================================================
+# Archivo: be/pyproject.toml
+# Descripción: Manifiesto del proyecto Python (dependencias, metadata, tooling).
+#
+# ¿Qué?
+#   - [project]: Metadata (name, version, descripción, authors)
+#   - dependencies: 15+ paquetes core (fastapi, sqlalchemy, pydantic, jose, passlib)
+#   - [project.optional-dependencies]dev: Testing (pytest, httpx, pytest-cov)
+#   - [tool.ruff]: Linting config (line-length 100, target py312)
+#   - [tool.pytest.ini_options]: Test discovery (tests/, test_*.py)
+#
+# ¿Para qué?
+#   - Declarar dependencias (pip install equivalente moderno)
+#   - Versionado centralizado (1.0.0 en un solo lugar)
+#   - Tooling config (Ruff, Pytest) sin archivos separados
+#   - PEP 621 standard (pyproject.toml reemplaza setup.py)
+#
+# ¿Impacto?
+#   CRÍTICO — pip install -e . lee este archivo para instalar deps.
+#   Modificar dependencies requiere: rebuild Docker image.
+#   requires-python=">=3.12": Backend NO funciona con Python <3.12 (type syntax).
+#   Dependencias: requirements.txt (generado de aquí en Docker build)
+# ============================================================
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

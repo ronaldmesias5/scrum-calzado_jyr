@@ -1,6 +1,22 @@
 """
-Módulo: modules/users/router.py
-Descripción: Endpoints de usuario — perfil del usuario autenticado.
+Archivo: be/app/modules/users/router.py
+Descripción: Router FastAPI con endpoints para gestión del perfil del usuario autenticado.
+
+¿Qué?
+  Define 1 endpoint protegido:
+  - GET /me: Obtener perfil completo del usuario autenticado (requiere JWT)
+  
+¿Para qué?
+  - Permitir al usuario consultar sus propios datos
+  - Proveer información para header del dashboard (nombre, avatar)
+  - Centralizar lógica de perfil de usuario (separado de admin)
+  
+¿Impacto?
+  MEDIO — Dashboard AdminHeader depende de /me para mostrar nombre/avatar.
+  Modificar UserResponse rompe: frontend context/AuthContext.tsx,
+  AdminHeader.tsx, cualquier componente que use useAuth().
+  Dependencias: dependencies.py (get_current_user),
+               auth/schemas.py (UserResponse), models/user.py
 """
 
 from fastapi import APIRouter, Depends

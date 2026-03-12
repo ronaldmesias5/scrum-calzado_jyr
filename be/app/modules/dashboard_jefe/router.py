@@ -1,7 +1,24 @@
 """
-Módulo: modules/dashboard_jefe/router.py
-Descripción: Endpoints del panel de administración del jefe.
-Nota: Datos mock por ahora — se conectarán a los modelos reales en Sprint 4+.
+Archivo: be/app/modules/dashboard_jefe/router.py
+Descripción: Router FastAPI con endpoints del panel de administración del jefe.
+
+¿Qué?
+  Define 3 endpoints con datos MOCK (Sprint 3):
+  - GET /metrics: Retorna KPIs (pedidos pendientes, producción, stock, alertas)
+  - GET /recent-orders: Lista últimos 5 pedidos
+  - GET /alerts: Lista alertas activas
+  
+¿Para qué?
+  - Proveer datos para dashboard AdminDashboardPage (frontend)
+  - Simular endpoints reales mientras se desarrollan modelos BD (Sprint 4+)
+  - Permitir desarrollo frontend independiente del backend
+  
+¿Impacto?
+  MEDIO — Dashboard AdminDashboardPage depende de estos endpoints.
+  En Sprint 4+: Reemplazar mock data con queries a BD reales (Order, Stock, Alert models).
+  Modificar schemas rompe: frontend dashboard-jefe/services/api.ts
+  Dependencias: dashboard_jefe/schemas.py,
+               frontend modules/dashboard-jefe/services/api.ts
 """
 
 from fastapi import APIRouter
@@ -47,11 +64,11 @@ def get_recent_orders() -> RecentOrdersResponse:
     """Retorna los últimos 5 pedidos registrados."""
     return RecentOrdersResponse(
         orders=[
-            RecentOrderSchema(order_id="#001", client_name="Andrea Plazas", quantity=58, status="pending", date="15/08/2025", total=2340000),
-            RecentOrderSchema(order_id="#002", client_name="Jhon Kennedy", quantity=120, status="in_production", date="14/08/2025", total=4850000),
-            RecentOrderSchema(order_id="#003", client_name="Sofia Valencia", quantity=85, status="ready", date="13/08/2025", total=3120000),
-            RecentOrderSchema(order_id="#004", client_name="Sandra Guevara", quantity=150, status="in_production", date="13/08/2025", total=5780000),
-            RecentOrderSchema(order_id="#005", client_name="Carlos Méndez", quantity=95, status="pending", date="12/08/2025", total=3890000),
+            RecentOrderSchema(order_id="#001", client_name="Andrea Plazas", quantity=58, status="pending", date="15/08/2025"),
+            RecentOrderSchema(order_id="#002", client_name="Jhon Kennedy", quantity=120, status="in_production", date="14/08/2025"),
+            RecentOrderSchema(order_id="#003", client_name="Sofia Valencia", quantity=85, status="ready", date="13/08/2025"),
+            RecentOrderSchema(order_id="#004", client_name="Sandra Guevara", quantity=150, status="in_production", date="13/08/2025"),
+            RecentOrderSchema(order_id="#005", client_name="Carlos Méndez", quantity=95, status="pending", date="12/08/2025"),
         ]
     )
 

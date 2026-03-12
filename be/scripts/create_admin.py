@@ -1,10 +1,33 @@
 """
-Script: create_admin.py
-Descripción: Crea el usuario administrador inicial en la base de datos.
-¿Para qué? El admin no se registra por el frontend, se crea manualmente.
-¿Impacto? Sin un admin, nadie puede validar cuentas de clientes ni crear empleados.
+Archivo: be/scripts/create_admin.py
+Descripción: Script para crear usuario administrador inicial manualmente.
 
-Uso: python scripts/create_admin.py
+¿Qué?
+  Script standalone que:
+  - Verifica que role "admin" existe en BD
+  - Crea usuario admin@calzadojyr.com con password Admin123!
+  - Salta si admin ya existe (evita duplicados)
+  - Marca is_active=True, is_validated=True, validated_at=now()
+  
+¿Para qué?
+  - Inicializar sistema con primer admin (no se registra via frontend)
+  - Permitir bootstrap de producción (ejecutar una vez en deploy)
+  - Debug: Recrear admin si se borró accidentalmente
+  
+¿Impacto?
+  MEDIO — Sin admin, sistema queda sin gestor (nadie valida cuentas).
+  Password hardcoded Admin123! debe cambiarse después de primer login.
+  Modificar email/password requiere: editar script + reejecutar.
+  Dependencias: database.py (SessionLocal), models/user.py, models/role.py,
+               utils/security.py (hash_password)
+
+NOTA: En producción, considerar crear admin desde variables de entorno
+      (no hardcodear password en script versionado).
+      
+Uso: 
+  python scripts/create_admin.py
+  O desde contenedor Docker:
+  docker exec -it scrum-be-1 python scripts/create_admin.py
 """
 
 import sys

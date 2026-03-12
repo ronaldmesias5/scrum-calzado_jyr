@@ -11,7 +11,6 @@ export interface RecentOrder {
   quantity: number;
   status: 'pending' | 'in_production' | 'ready' | 'delivered';
   date: string;
-  total: number;
 }
 
 export type AlertType = 'warning' | 'error' | 'info';

@@ -1,8 +1,24 @@
 """
-Módulo: utils/email.py
-Descripción: Utilidades para envío de emails (recuperación de contraseña).
-¿Para qué? Enviar enlaces de recuperación de contraseña al email del usuario.
-¿Impacto? Sin configuración SMTP válida, se imprime el enlace en la consola (desarrollo).
+Archivo: be/app/utils/email.py
+Descripción: Utilidades para envío de emails de recuperación de contraseña.
+
+¿Qué?
+  Provee función send_password_reset_email() que:
+  - En DESARROLLO: Imprime enlace de reset en consola del servidor
+  - En PRODUCCIÓN (TODO): Enviaría email real con aiosmtplib/SMTP
+  
+¿Para qué?
+  - Permitir flujo "Olvidé mi contraseña"
+  - Enviar enlaces seguros con token de reset temporal
+  - Facilitar desarrollo sin configurar servidor SMTP real
+  
+¿Impacto?
+  MEDIO — Sin esta función, recuperación de contraseña no funciona.
+  En desarrollo: Enlaces visibles en logs del servidor (docker-compose logs)
+  En producción: Requiere configurar SMTP (MAIL_SERVER, MAIL_PORT, etc.)
+  Modificar reset_url rompe: enlaces frontend (ResetPasswordPage).
+  Dependencias: config.py (FRONTEND_URL, MAIL_* settings),
+               auth/service.py (forgot_password), models/password_reset_token.py
 """
 
 from app.config import settings

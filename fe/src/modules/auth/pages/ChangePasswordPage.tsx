@@ -1,6 +1,23 @@
 /**
- * Archivo: pages/ChangePasswordPage.tsx
- * Descripción: Página para que el usuario cambie su contraseña (autenticado).
+ * Archivo: fe/src/modules/auth/pages/ChangePasswordPage.tsx
+ * Descripción: Página para cambiar contraseña (requiere autenticación).
+ * 
+ * ¿Qué?
+ *   Formulario con:
+ *   - Inputs: current_password, new_password, confirmPassword
+ *   - Validación: contraseñas coinciden
+ *   - Success: Muestra mensaje y limpia form
+ *   - Redirección: Si must_change_password=true, redirige después de cambiar
+ * 
+ * ¿Para qué?
+ *   - Permitir usuarios cambien contraseña desde dashboard
+ *   - Flow forzado: Si must_change_password=true (primer login), obligar cambio
+ *   - Validar actual contraseña (seguridad, no cualquiera cambia)
+ * 
+ * ¿Impacto?
+ *   MEDIO — Usuarios con must_change_password=true DEBEN pasar por aquí.
+ *   Modificar flujo rompe: onboarding de empleados creados por admin.
+ *   Dependencias: hooks/useAuth.ts (changePassword), components/ui/*
  */
 
 import { useState } from "react";

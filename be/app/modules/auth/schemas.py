@@ -1,6 +1,26 @@
 """
-Módulo: modules/auth/schemas.py
-Descripción: Schemas Pydantic para autenticación y gestión de usuarios.
+Archivo: be/app/modules/auth/schemas.py
+Descripción: Schemas Pydantic para validación en endpoints de autenticación.
+
+¿Qué?
+  Define 10+ schemas Pydantic:
+  - Enums: OccupationType (jefe, cortador, etc.)
+  - Request: UserCreate (registro cliente), UserLogin, ChangePasswordRequest, etc.
+  - Response: UserResponse (con todos los campos), TokenResponse, MessageResponse
+  Incluye validaciones: password strength, phone format, identity_document, email
+  
+¿Para qué?
+  - Validar datos de entrada en auth/router.py
+  - Garantizar type safety (conversión automática de tipos)
+  - Separar schemas públicos (UserCreate) de schemas admin (AdminCreateEmployeeRequest)
+  - Documentar API con OpenAPI (FastAPI usa estos schemas para docs)
+  
+¿Impacto?
+  CRÍTICO — Auth/router.py, admin/router.py y users/router.py dependen de estos schemas.
+  Modificar UserResponse rompe: frontend types/auth.ts (debe coincidir exacto).
+  Cambiar validaciones rompe: formularios RegisterPage, LoginPage.
+  Dependencias: auth/router.py, admin/schemas.py (reutiliza OccupationType),
+               frontend types/auth.ts (interfaces reflejan estos schemas)
 """
 
 import re

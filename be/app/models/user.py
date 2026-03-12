@@ -1,9 +1,24 @@
 """
-Módulo: models/user.py
-Descripción: Modelo ORM que representa la tabla `users` en PostgreSQL.
-¿Para qué? Definir la estructura de la tabla de usuarios con todos los campos
-           necesarios para el sistema de CALZADO J&R.
-¿Impacto? Cada registro en esta tabla representa un usuario del sistema.
+Archivo: be/app/models/user.py
+Descripción: Modelo ORM SQLAlchemy para la tabla `users` en PostgreSQL.
+
+¿Qué?
+  Define la estructura completa del modelo User con todos los campos
+  (email, password, nombre, apellido, teléfono, documento de identidad),
+  relaciones con Role, TypeDocument y PasswordResetToken, y timestamps automáticos.
+  
+¿Para qué?
+  - Centralizar la estructura de usuarios del sistema CALZADO J&R
+  - Validar tipos de datos y restricciones (unique email, índices)
+  - Establecer relaciones con roles, ocupaciones y documentos
+  - Permitir autenticación, autorización y gestión de perfiles
+  
+¿Impacto?
+  CRÍTICO — Cada registro representa un usuario real (admin, employee, client).
+  Modificar campos rompe: registro, login, dashboard, permisos.
+  Dependencias: Role (many-to-one), TypeDocument (many-to-one),
+               PasswordResetToken (one-to-many), auth/service.py,
+               modules/users/router.py, modules/admin/router.py
 """
 
 import uuid

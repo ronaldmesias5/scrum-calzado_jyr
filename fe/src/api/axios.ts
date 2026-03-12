@@ -1,7 +1,26 @@
 /**
- * Archivo: api/axios.ts
- * Descripción: Instancia de Axios configurada con la URL base de la API e interceptores.
- * ¿Para qué? Centralizar la configuración HTTP para todo el frontend.
+ * Archivo: fe/src/api/axios.ts
+ * Descripción: Instancia configurada de Axios con interceptores para toda la aplicación.
+ * 
+ * ¿Qué?
+ *   Configura cliente HTTP con:
+ *   - baseURL: VITE_API_URL (localhost:8000 por defecto)
+ *   - Interceptor request: Añade Authorization: Bearer <token> automáticamente
+ *   - Interceptor response: Maneja errores 422 (validación), 401, errores de red
+ *   - Timeout: 10 segundos (previene esperas infinitas)
+ * 
+ * ¿Para qué?
+ *   - Centralizar configuración HTTP (DRY, no repetir en cada archivo)
+ *   - Automatizar inyección de JWT token (no pasar manualmente en cada request)
+ *   - Estandarizar manejo de errores (mismo formato en toda la app)
+ *   - Facilitar cambio de API URL (solo cambiar .env)
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — TODA comunicación con backend pasa por aquí.
+ *   Modificar interceptors rompe: manejo de errores en TODOS los módulos.
+ *   Cambiar baseURL sin actualizar VITE_API_URL rompe: conexión con backend.
+ *   Dependencias: modules/auth/services/api.ts (importa esta instancia),
+ *                modules/dashboard-jefe/services/*, sessionStorage (tokens)
  */
 
 import axios from "axios";

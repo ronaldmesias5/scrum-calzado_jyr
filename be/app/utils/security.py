@@ -1,8 +1,27 @@
 """
-Módulo: utils/security.py
-Descripción: Utilidades de seguridad — hashing de contraseñas y manejo de tokens JWT.
-¿Para qué? Proveer funciones reutilizables de seguridad para todo el sistema de auth.
-¿Impacto? Es la base de la seguridad del sistema. Un error aquí compromete toda la autenticación.
+Archivo: be/app/utils/security.py
+Descripción: Utilidades de seguridad para hashing de contraseñas y manejo de tokens JWT.
+
+¿Qué?
+  Provee 5 funciones para seguridad:
+  - hash_password(): Hashea contraseñas con bcrypt
+  - verify_password(): Verifica contraseña vs hash
+  - create_access_token(): Genera JWT access token (corta duración)
+  - create_refresh_token(): Genera JWT refresh token (larga duración)
+  - decode_token(): Decodifica y valida JWT
+  
+¿Para qué?
+  - Proteger contraseñas en BD (nunca almacenar texto plano)
+  - Implementar autenticación JWT stateless (sin sesiones en BD)
+  - Diferenciar tokens de acceso (15 min) de tokens de refresco (7 días)
+  - Centralizar lógica de seguridad (DRY, auditable)
+  
+¿Impacto?
+  CRÍTICO — Base de seguridad del sistema. Error aquí compromete TODA auth.
+  Modificar hash_password() rompe: login de usuarios existentes (hashes incompatibles).
+  Modificar decode_token() rompe: validación de JWT en TODOS los endpoints protegidos.
+  Dependencias: config.py (SECRET_KEY, ALGORITHM), passlib, python-jose,
+               auth/service.py (register, login), dependencies.py (get_current_user)
 """
 
 from datetime import datetime, timedelta, timezone

@@ -37,8 +37,7 @@ export default function RecentOrdersTable({ orders }: Props) {
               <th className="text-left px-3 py-2 font-medium">Cliente</th>
               <th className="text-left px-3 py-2 font-medium">Cantidad</th>
               <th className="text-left px-3 py-2 font-medium">Estado</th>
-              <th className="text-left px-3 py-2 font-medium">Fecha</th>
-              <th className="text-left px-3 py-2 font-medium rounded-r-lg">Total</th>
+              <th className="text-left px-3 py-2 font-medium rounded-r-lg">Fecha</th>
             </tr>
           </thead>
           <tbody>
@@ -53,9 +52,6 @@ export default function RecentOrdersTable({ orders }: Props) {
                   </span>
                 </td>
                 <td className="px-3 py-3 text-gray-500">{order.date}</td>
-                <td className="px-3 py-3 font-semibold text-gray-900">
-                  ${order.total.toLocaleString('es-CO')}
-                </td>
               </tr>
             ))}
           </tbody>

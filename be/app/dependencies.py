@@ -1,9 +1,28 @@
 """
-Módulo: dependencies.py
-Descripción: Dependencias inyectables de FastAPI.
-¿Para qué? Centralizar lógica reutilizable (sesión de BD, usuario autenticado).
-¿Impacto? Sin este módulo, cada endpoint tendría que crear su propia sesión
-          y validar el token JWT manualmente.
+Archivo: be/app/dependencies.py
+Descripción: Dependencias inyectables de FastAPI para gestión de sesiones y autenticación.
+
+¿Qué?
+  Contiene funciones para inyección de dependencias de FastAPI:
+  - get_db(): Provee sesión de BD (SessionLocal) con ciclo de vida seguro
+  - get_current_user(): Extrae usuario autenticado desde JWT token
+  - _require_admin(): Valida que el usuario sea admin
+  - _require_jefe(): Valida que el usuario sea jefe (occupation)
+  - _require_admin_or_jefe(): Valida cualquiera de los dos
+  
+¿Para qué?
+  - Centralizar lógica de autenticación y autorización (DRY)
+  - Evitar duplicar validaciones JWT en cada endpoint
+  - Garantizar cierre correcto de sesiones BD (evitar leaks)
+  - Implementar RBAC (Role-Based Access Control)
+  
+¿Impacto?
+  CRÍTICO — Sin este módulo, todos los endpoints protegidos fallan.
+  Modificar get_current_user() rompe: TODOS los endpoints que requieren auth.
+  Modificar _require_admin() rompe: endpoints de admin/router.py
+  Modificar _require_jefe() rompe: endpoints de dashboard_jefe/router.py
+  Dependencias: database.py (SessionLocal), utils/security.py (decode_token),
+               models/user.py, OAuth2PasswordBearer
 """
 
 from collections.abc import Generator

@@ -5,6 +5,7 @@ import CategoriesSection from '../components/sections/CategoriesSection';
 import AsessoriaSection from '../components/sections/AsessoriaSection';
 import WhyChooseUsSection from '../components/sections/WhyChooseUsSection';
 import CTAFinalSection from '../components/sections/CTAFinalSection';
+import WhatsAppButton from '../components/WhatsAppButton';
 
 export default function LandingPage() {
   return (
@@ -18,6 +19,7 @@ export default function LandingPage() {
         <CTAFinalSection />
       </main>
       <LandingFooter />
+      <WhatsAppButton />
     </div>
   );
 }

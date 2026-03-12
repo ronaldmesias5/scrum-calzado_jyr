@@ -1,6 +1,30 @@
 """
-Módulo: modules/admin/router.py
-Descripción: Endpoints administrativos — validación, gestión y creación de usuarios.
+Archivo: be/app/modules/admin/router.py
+Descripción: Router FastAPI con endpoints administrativos para gestión de usuarios.
+
+¿Qué?
+  Define 8 endpoints protegidos (admin/jefe) para gestión de usuarios:
+  - POST /create-employee: Crear empleado con occupation (admin/jefe)
+  - POST /create-jefe: Crear jefe (admin/jefe)
+  - POST /create-client: Crear cliente (admin/jefe)
+  - GET /users: Listar todos los usuarios con filtros opcionales
+  - GET /users/{user_id}: Obtener detalles de un usuario
+  - PUT /users/{user_id}/validate: Validar cuenta de usuario
+  - PUT /users/{user_id}/deactivate: Desactivar usuario
+  - PUT /users/{user_id}/activate: Reactivar usuario
+  
+¿Para qué?
+  - Permitir a admin/jefe crear y gestionar usuarios del sistema
+  - Centralizar validación de permisos (_require_admin, _require_admin_or_jefe)
+  - Separar endpoints administrativos de endpoints públicos (seguridad)
+  
+¿Impacto?
+  CRÍTICO — Sin este router, admin/jefe no pueden gestionar usuarios.
+  Modificar create-employee rompe: dashboard AdminCreateEmployeeForm.
+  Modificar /users lista rompe: AdminUserListPage en dashboard.
+  Dependencias: admin/schemas.py, auth/schemas.py (UserResponse),
+               dependencies.py, models/user.py, models/role.py,
+               utils/security.py (hash_password)
 """
 
 import uuid
@@ -13,7 +37,7 @@ from app.dependencies import get_current_user, get_db
 from app.models.role import Role
 from app.models.user import User
 from app.modules.auth.schemas import MessageResponse, UserResponse
-from app.modules.admin.schemas import AdminCreateClientRequest, AdminCreateEmployeeRequest
+from app.modules.admin.schemas import AdminCreateClientRequest, AdminCreateEmployeeRequest, AdminCreateJefeRequest
 from app.utils.security import hash_password
 
 router = APIRouter(
@@ -57,6 +81,27 @@ def _require_admin(current_user: User) -> None:
         )
 
 
+def _require_jefe(current_user: User) -> None:
+    """Valida que el usuario sea un jefe (employee + occupation='jefe')."""
+    if current_user.role.name != "employee" or current_user.occupation != "jefe":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo jefes de fábrica pueden acceder a este endpoint",
+        )
+
+
+def _require_admin_or_jefe(current_user: User) -> None:
+    """Valida que sea admin O jefe."""
+    is_admin = current_user.role.name == "admin"
+    is_jefe = current_user.role.name == "employee" and current_user.occupation == "jefe"
+    
+    if not (is_admin or is_jefe):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo administradores o jefes pueden acceder a este endpoint",
+        )
+
+
 # ─────────────────────────────────────────
 # Validación de cuentas
 # ─────────────────────────────────────────
@@ -70,8 +115,8 @@ def get_pending_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
-    """Obtiene usuarios pendientes de validación (solo admin)."""
-    _require_admin(current_user)
+    """Obtiene usuarios pendientes de validación (admin o jefe)."""
+    _require_admin_or_jefe(current_user)
     pending_users = db.query(User).filter(User.is_validated == False).all()  # noqa: E712
     return [_build_user_response(u) for u in pending_users]
 
@@ -86,8 +131,8 @@ def validate_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserResponse:
-    """Aprueba y activa la cuenta de un usuario pendiente (solo admin)."""
-    _require_admin(current_user)
+    """Aprueba y activa la cuenta de un usuario pendiente (admin o jefe)."""
+    _require_admin_or_jefe(current_user)
 
     user_to_validate = db.query(User).filter(User.id == user_id).first()
     if not user_to_validate:
@@ -113,8 +158,8 @@ def force_password_change(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MessageResponse:
-    """Fuerza el cambio de contraseña en el próximo login (solo admin)."""
-    _require_admin(current_user)
+    """Fuerza el cambio de contraseña en el próximo login (admin o jefe)."""
+    _require_admin_or_jefe(current_user)
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -139,8 +184,8 @@ def get_all_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
-    """Lista todos los usuarios. Filtro opcional por rol (client, employee, admin)."""
-    _require_admin(current_user)
+    """Lista todos los usuarios. Filtro opcional por rol (client, employee, admin). Acceso: admin o jefe."""
+    _require_admin_or_jefe(current_user)
 
     query = db.query(User)
     if role:
@@ -165,7 +210,7 @@ def create_employee(
     
     ⚠️ El empleado deberá cambiar su contraseña en el primer login.
     """
-    _require_admin(current_user)
+    _require_admin_or_jefe(current_user)
 
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
@@ -200,7 +245,7 @@ def create_employee(
     "/users/create-client",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Crear cuenta de cliente (por admin)",
+    summary="Crear cuenta de cliente (por admin o jefe)",
 )
 def create_client(
     data: AdminCreateClientRequest,
@@ -208,11 +253,11 @@ def create_client(
     db: Session = Depends(get_db),
 ) -> UserResponse:
     """
-    Crea una cuenta de cliente activa y validada de inmediato (por el admin).
+    Crea una cuenta de cliente activa y validada de inmediato (por el admin o jefe).
     
     ⚠️ El cliente deberá cambiar su contraseña en el primer login.
     """
-    _require_admin(current_user)
+    _require_admin_or_jefe(current_user)
 
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
@@ -231,6 +276,59 @@ def create_client(
         business_name=data.business_name,
         hashed_password=hash_password(data.password),
         role_id=client_role.id,
+        is_active=True,
+        is_validated=True,
+        must_change_password=True,
+        validated_by=current_user.id,
+        validated_at=datetime.now(timezone.utc),
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return _build_user_response(new_user)
+
+
+@router.post(
+    "/users/create-jefe",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear cuenta de jefe de fábrica",
+)
+def create_jefe(
+    data: AdminCreateJefeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """
+    Crea una cuenta de jefe de fábrica (empleado con occupation='jefe') activa y validada.
+    
+    El jefe tendrá acceso al dashboard administrativo para:
+    - Validar cuentas de clientes
+    - Gestionar catálogo de productos
+    - Clasificar categorías, marcas y estilos
+    - Gestionar pedidos y empleados
+    
+    ⚠️ El jefe deberá cambiar su contraseña en el primer login.
+    """
+    _require_admin_or_jefe(current_user)
+
+    if db.query(User).filter(User.email == data.email).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
+
+    employee_role = db.query(Role).filter(Role.name == "employee").first()
+    if not employee_role:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'employee' no encontrado")
+
+    new_user = User(
+        email=data.email,
+        name=data.name,
+        last_name=data.last_name,
+        phone=data.phone,
+        identity_document=data.identity_document,
+        identity_document_type_id=data.identity_document_type_id,
+        occupation="jefe",  # 🔑 Ocupación específica para jefe
+        hashed_password=hash_password(data.password),
+        role_id=employee_role.id,
         is_active=True,
         is_validated=True,
         must_change_password=True,

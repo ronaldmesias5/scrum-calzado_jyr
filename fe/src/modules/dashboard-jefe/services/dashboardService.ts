@@ -13,13 +13,12 @@ export const getMetrics = async (): Promise<Metric[]> => {
 
 export const getRecentOrders = async (): Promise<RecentOrder[]> => {
   const res = await api.get('/api/v1/dashboard/admin/recent-orders');
-  return res.data.orders.map((o: { order_id: string; client_name: string; quantity: number; status: RecentOrder['status']; date: string; total: number }) => ({
+  return res.data.orders.map((o: { order_id: string; client_name: string; quantity: number; status: RecentOrder['status']; date: string }) => ({
     orderId: o.order_id,
     clientName: o.client_name,
     quantity: o.quantity,
     status: o.status,
     date: o.date,
-    total: o.total,
   }));
 };
 

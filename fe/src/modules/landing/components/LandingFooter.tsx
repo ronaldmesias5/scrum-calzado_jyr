@@ -1,13 +1,10 @@
 export default function LandingFooter() {
   return (
     <footer className="bg-gray-900 text-gray-300 pt-12 pb-6">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Logo + Eslogan */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <img src="/logo.jpg" alt="CALZADO J&R" className="h-10 w-10 object-contain rounded" />
-            <span className="font-bold text-white text-lg">CALZADO J&R</span>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Logo */}
+        <div className="flex items-center justify-center mb-3">
+          <img src="/logo.png" alt="CALZADO J&R" className="h-12 w-12 object-contain rounded" />
         </div>
 
         {/* Links rápidos */}

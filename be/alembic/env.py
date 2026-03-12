@@ -1,8 +1,26 @@
 """
-Módulo: alembic/env.py
-Descripción: Configuración del entorno de Alembic para migraciones.
-¿Para qué? Conectar Alembic con la BD usando la misma URL del backend.
-¿Impacto? Sin este archivo, Alembic no puede ejecutar migraciones.
+Archivo: be/alembic/env.py
+Descripción: Entorno de configuración de Alembic para auto-migraciones.
+
+¿Qué?
+  Configura Alembic con:
+  - Importa Base (ORM metadata) y TODOS los modelos (User, Role, etc.)
+  - Sobreescribe sqlalchemy.url con settings.DATABASE_URL (Pydantic)
+  - Define run_migrations_offline() y run_migrations_online()
+  - target_metadata = Base.metadata (detecta tablas automáticamente)
+  
+¿Para qué?
+  - Conectar Alembic con BD usando misma config que backend (config.py)
+  - Detectar cambios en modelos ORM automáticamente
+  - Generar migraciones: alembic revision --autogenerate
+  - Aplicar migraciones: alembic upgrade head (o desde init_db.py)
+  
+¿Impacto?
+  CRÍTICO — Sin env.py, Alembic NO puede generar ni aplicar migraciones.
+  Modificar target_metadata rompe: autogenerate (no detecta tablas).
+  Olvidar importar modelo nuevo: Alembic NO genera migration para esa tabla.
+  Dependencias: config.py (DATABASE_URL), database.py (Base),
+               models/*.py (todos deben importarse aquí)
 """
 
 from logging.config import fileConfig

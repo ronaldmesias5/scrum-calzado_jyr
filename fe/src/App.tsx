@@ -1,12 +1,42 @@
 /**
- * Archivo: App.tsx
- * Descripción: Componente raíz de la aplicación CALZADO J&R — define el enrutamiento principal.
- * ¿Para qué? Centralizar la estructura de rutas y proveer los contexts globales (auth).
+ * Archivo: src/App.tsx
+ * Descripción: Componente raíz de la aplicación CALZADO J&R.
+ * 
+ * ¿Qué?
+ *   Define TODAS las rutas de la aplicación:
+ *   - Rutas públicas (Landing, Login, Register)
+ *   - Rutas protegidas (Dashboards)
+ *   - Rutas por rol (solo admin, solo cliente, etc.)
+ *   
+ *   Proporciona CONTEXTOS GLOBALES:
+ *   - AuthProvider → Estado de autenticación para toda la app
+ *   - BrowserRouter → Sistema de navegación React Router v6
+ * 
+ * ¿Para qué?
+ *   Centralizar la ESTRUCTURA de la aplicación en un único lugar.
+ *   Evitar que las rutas estén esparcidas en múltiples archivos.
+ *   
+ * ¿Impacto?
+ *   Muy crítico. Cambios aquí afectan:
+ *   - La navegación completa de la app
+ *   - Quién puede acceder a dónde
+ *   - Flujos de autenticación
+ *   
+ *   COMPOSICIÓN (orden de capas):
+ *   1. BrowserRouter (permite navegación)
+ *   2. AuthProvider (proporciona usuario/tokens globales)
+ *   3. Routes (define rutas específicas)
+ *   
+ *   DEPENDENCIAS CRÍTICAS:
+ *   - AuthContext.tsx (contexto de autenticación)
+ *   - react-router-dom (librería de enrutamiento)
  */
+
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
@@ -54,9 +84,12 @@ function App() {
           <Route
             path="/dashboard/admin"
             element={
-              <ProtectedRoute>
+              <RoleProtectedRoute
+                allowedRoles={["admin", "employee"]}
+                allowedOccupations={["jefe"]}
+              >
                 <AdminLayout />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             }
           >
             <Route index element={<AdminDashboardPage />} />

@@ -1,6 +1,27 @@
 """
-Módulo: modules/auth/router.py
-Descripción: Endpoints de autenticación — registro, login, refresh, cambio y recuperación de contraseña.
+Archivo: be/app/modules/auth/router.py
+Descripción: Router FastAPI con endpoints de autenticación y gestión de contraseñas.
+
+¿Qué?
+  Define 6 endpoints públicos/protegidos para autenticación:
+  - POST /register: Registro de nuevos clientes (público)
+  - POST /login: Login con email/password → retorna access/refresh tokens
+  - POST /refresh: Renovar access token usando refresh token
+  - POST /change-password: Cambiar contraseña (requiere auth)
+  - POST /forgot-password: Solicitar recuperación de contraseña (público)
+  - POST /reset-password: Restablecer contraseña con token (público)
+  
+¿Para qué?
+  - Permitir registro, login y gestión de sesiones
+  - Implementar flujo completo de recuperación de contraseña
+  - Delegar lógica de negocio a auth/service.py (separación de capas)
+  
+¿Impacto?
+  CRÍTICO — Sin estos endpoints, usuarios no pueden ingresar al sistema.
+  Modificar /login rompe: frontend LoginPage, todos los flujos de auth.
+  Modificar /register rompe: RegisterPage, onboarding de nuevos usuarios.
+  Dependencias: auth/service.py (lógica de negocio), auth/schemas.py,
+               dependencies.py (get_db, get_current_user)
 """
 
 from fastapi import APIRouter, Depends, status

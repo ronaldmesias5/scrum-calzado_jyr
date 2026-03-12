@@ -9,7 +9,7 @@ const reasons = [
 
 export default function WhyChooseUsSection() {
   return (
-    <section className="py-16 bg-gray-50">
+    <section id="nosotros" className="py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-3">¿Por Qué Elegirnos?</h2>

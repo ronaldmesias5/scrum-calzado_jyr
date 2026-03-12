@@ -1,19 +1,30 @@
 -- ============================================================
 -- CALZADO J&R — Triggers, índices adicionales y constraints
 -- ============================================================
--- ¿Qué?    Automatiza el campo updated_at, agrega índices para
---           consultas frecuentes y refuerza integridad de datos.
--- ¿Para?   Sin un trigger, updated_at nunca cambia a menos que
---           el código de aplicación lo actualice manualmente
---           (propenso a errores y omisiones).
--- ¿Impacto? Los índices reducen de O(n) a O(log n) el tiempo de
---           búsqueda; crítico cuando la tabla users crece a miles
---           de registros. Los soft-delete indexes evitan escaneos
---           completos al filtrar registros activos.
+-- Archivo: db/init/02_triggers_and_indexes.sql
+-- Descripción: Automatización y optimización de consultas BD.
 --
--- Este script se ejecuta DESPUÉS de 01_create_tables.sql
--- (los archivos en /docker-entrypoint-initdb.d se procesan
---  en orden alfabético/numérico).
+-- ¿Qué?
+--   - Función set_updated_at(): trigger function para updated_at automático
+--   - Triggers: trg_roles_updated_at, trg_users_updated_at
+--   - Índices parciales: deleted_at IS NULL (optimiza soft-delete queries)
+--   - Índices compuestos: email+deleted_at, role_id+is_active, etc.
+--
+-- ¿Para qué?
+--   - Automatizar updated_at (evita olvidos en código Python)
+--   - Reducir O(n) → O(log n) en búsquedas (email, role_id, etc.)
+--   - Optimizar queries con soft-delete (WHERE deleted_at IS NULL)
+--   - Garantizar auditabilidad (cualquier UPDATE registra timestamp)
+--
+-- ¿Impacto?
+--   CRÍTICO PERFORMANCE — Sin índices, tabla users con 10k+ registros es LENTA.
+--   Sin trigger updated_at: pérdida de auditabilidad (¿cuándo se modificó X?).
+--   Índices parciales reducen tamaño del índice (solo activos, ignora deleted).
+--   Dependencias: 01_create_tables.sql (debe existir tabla roles/users primero)
+--
+-- EJECUCIÓN:
+--   Docker ejecuta en orden: 01_create_tables.sql → 02_triggers_*.sql → 99_seed*.sql
+--   Los archivos en /docker-entrypoint-initdb.d se procesan alfabéticamente.
 -- ============================================================
 
 

@@ -1,7 +1,26 @@
 /**
- * Archivo: pages/LoginPage.tsx
- * Descripción: Página de inicio de sesión de CALZADO J&R.
- * ¿Para qué? Permitir que usuarios registrados se autentiquen en el sistema.
+ * Archivo: fe/src/modules/auth/pages/LoginPage.tsx
+ * Descripción: Página de login para usuarios registrados de CALZADO J&R.
+ * 
+ * ¿Qué?
+ *   Formulario de autenticación con:
+ *   - Inputs: email, password
+ *   - Checkbox "Recordarme" (no implementado, UI only)
+ *   - Manejo de errores (Alert component)
+ *   - Redirección automática a dashboard según rol/ocupación
+ *   - Redirección a /auth/change-password si must_change_password=true
+ * 
+ * ¿Para qué?
+ *   - Permitir login de usuarios existentes (admin, employee, client)
+ *   - Validar credenciales con backend POST /api/v1/auth/login
+ *   - Guardar tokens en sessionStorage (via AuthContext)
+ *   - Redirigir automáticamente al dashboard correcto
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — Sin login funcional, usuarios no pueden acceder al sistema.
+ *   Modificar formData rompe: validación, envío a backend.
+ *   Modificar getDashboardRoute() debe sincronizarse con utils/routing.ts
+ *   Dependencias: hooks/useAuth.ts, components/ui/*, utils/routing.ts
  */
 
 import { useState } from "react";
@@ -12,6 +31,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { getDashboardRoute } from "@/utils/routing";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -41,12 +61,9 @@ export function LoginPage() {
         return;
       }
       
-      const role = userData?.role_name ?? '';
-      if (role === 'admin' || role === 'employee') {
-        navigate("/dashboard/admin", { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
+      // Redirigir al dashboard correspondiente según rol y ocupación
+      const dashboardRoute = getDashboardRoute(userData);
+      navigate(dashboardRoute, { replace: true });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al iniciar sesión";

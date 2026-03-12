@@ -1,8 +1,22 @@
 """
-Módulo: models/type_document.py
-Descripción: Modelo ORM que representa los tipos de documentos de identidad válidos.
-¿Para qué? Categorizar los tipos de documentos que pueden usar los usuarios.
-¿Impacto? Los usuarios deben seleccionar un tipo de documento válido.
+Archivo: be/app/models/type_document.py
+Descripción: Modelo ORM SQLAlchemy para la tabla `type_document` en PostgreSQL.
+
+¿Qué?
+  Define tipos de documentos de identidad válidos en el sistema
+  (DNI, Pasaporte, Carnet de Extranjería, RUC, etc.).
+  Campo principal: name (único, indexado).
+  
+¿Para qué?
+  - Normalizar tipos de documentos en el registro
+  - Evitar datos arbitrarios (solo valores predefinidos)
+  - Permitir validación en frontend con lista SELECT
+  
+¿Impacto?
+  MEDIO — Usuarios necesitan seleccionar tipo de documento al registrarse.
+  Modificar name de tipos existentes rompe: registros de usuarios,
+  validaciones en auth/router.py, seed en db/init/99_seed_type_documents.sql
+  Dependencias: User (one-to-many desde User.identity_document_type_id)
 """
 
 import uuid

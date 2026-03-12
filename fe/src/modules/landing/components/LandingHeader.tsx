@@ -16,12 +16,9 @@ export default function LandingHeader() {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <img src="/logo.jpg" alt="CALZADO J&R" className="h-10 w-10 object-contain" />
-          <span className="font-bold text-black text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            CALZADO J&R
-          </span>
-        </div>
+        <Link to="/" className="flex items-center">
+          <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain" />
+        </Link>
 
         {/* Nav desktop */}
         <nav className="hidden md:flex items-center gap-8">
@@ -29,7 +26,7 @@ export default function LandingHeader() {
             <a
               key={link.label}
               href={link.href}
-              className="text-gray-600 hover:text-blue-800 font-medium transition-colors duration-200"
+              className="text-black-600 hover:text-blue-800 font-medium transition-colors duration-200"
             >
               {link.label}
             </a>

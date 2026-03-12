@@ -1,9 +1,25 @@
 """
-Módulo: app/init_db.py
-Descripción: Inicialización segura de la base de datos con migraciones y seeds.
-¿Para qué? Garantizar que todas las migraciones Alembic se ejecuten automáticamente
-           en el startup del backend sin intervención manual.
-¿Impacto? Automatiza completamente el setup de la BD en desarrollo y producción.
+Archivo: be/app/init_db.py
+Descripción: Inicialización automática de BD con migraciones Alembic.
+
+¿Qué?
+  Función run_migrations():
+  - Busca alembic.ini en 3 ubicaciones posibles (scrum/alembic, /app/alembic, be/alembic)
+  - Configura Alembic con Config(alembic_ini)
+  - Ejecuta alembic_upgrade(config, "head") → migra a última versión
+  - Logs claros: 📍 Ubicación, 🔄 Ejecutando, ✅ OK, ⚠️ No encontrado
+  
+¿Para qué?
+  - Automatizar migraciones en startup (no manual "alembic upgrade head")
+  - Garantizar BD siempre actualizada (dev, staging, prod)
+  - Soporte multi-entorno (local y Docker)
+  - Evitar errores "tabla no existe" (migra automáticamente)
+  
+¿Impacto?
+  CRÍTICO — Sin migraciones, cambios en modelos ORM NO se aplican a BD.
+  Si falla, backend arranca pero queries SQL fallan (tabla/columna no existe).
+  Modificar lógica de búsqueda de alembic.ini rompe: startup en Docker.
+  Dependencias: alembic/env.py, alembic/versions/*.py, config.py (DATABASE_URL)
 """
 
 import logging

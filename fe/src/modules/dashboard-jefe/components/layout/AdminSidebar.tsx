@@ -1,3 +1,28 @@
+/**
+ * Archivo: fe/src/modules/dashboard-jefe/components/layout/AdminSidebar.tsx
+ * Descripción: Sidebar del dashboard administrativo (jefe) con navegación.
+ * 
+ * ¿Qué?
+ *   Sidebar fijo con:
+ *   - Logo: h-16 w-16, clickable (navega a /dashboard/admin)
+ *   - 12 items de menú: Inicio, Pedidos, Catálogo, Inventario, Tareas, etc.
+ *   - NavLink active: bg-blue-50, border-r-4 blue-800
+ *   - Badges: Pedidos (24), Alertas (4), otros (0)
+ *   - Scroll vertical automático (overflow-y-auto)
+ * 
+ * ¿Para qué?
+ *   - Navegación principal del dashboard jefe
+ *   - Indicar sección activa visualmente
+ *   - Mostrar badges de notificaciones (pendientes, alertas)
+ *   - Acceso rápido a todas las funcionalidades
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — Sin sidebar, jefe no puede navegar dashboard.
+ *   Modificar menuItems rompe: navegación completa del dashboard.
+ *   Badges hardcoded (24, 4) deben reemplazarse con datos reales (Sprint 4+).
+ *   Dependencias: react-router-dom (NavLink), lucide-react (icons)
+ */
+
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home, ShoppingCart, Layers, Package, CheckSquare,
@@ -26,11 +51,10 @@ export default function AdminSidebar() {
     <aside className="w-44 min-h-screen bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div
-        className="flex items-center gap-2 px-4 py-4 border-b border-gray-100 cursor-pointer"
+        className="flex items-center justify-center px-4 py-4 border-b border-gray-100 cursor-pointer"
         onClick={() => navigate('/dashboard/admin')}
       >
-        <img src="/logo.jpg" alt="CALZADO J&R" className="h-8 w-8 object-contain" />
-        <span className="font-bold text-gray-900 text-sm">CALZADO J&R</span>
+        <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain" />
       </div>
 
       {/* Menu */}

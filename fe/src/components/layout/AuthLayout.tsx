@@ -1,8 +1,26 @@
 /**
- * Archivo: components/layout/AuthLayout.tsx
+ * Archivo: fe/src/components/layout/AuthLayout.tsx
  * Descripción: Layout para páginas de autenticación (login, register, forgot, reset).
- * ¿Para qué? Proveer el diseño personalizado de CALZADO J&R con header, footer y card centrado.
- * ¿Impacto? Todas las páginas de auth tienen el mismo diseño consistente.
+ * 
+ * ¿Qué?
+ *   Layout con:
+ *   - Header: Logo (h-16 w-16) + botón "Iniciar sesión" (#1e40af, btn-pulse)
+ *   - Main: Card centrado, max-w-md, border #1e40af, sombra suave
+ *   - Props: title (h2), subtitle (opcional), children (form content)
+ *   - Footer: Texto CALZADO J&R, sin navegación
+ * 
+ * ¿Para qué?
+ *   - Consistencia visual en TODAS las páginas auth (mismo header/footer)
+ *   - Centrar formularios (login, register, forgot, reset)
+ *   - Branding claro (logo azul prominente)
+ *   - Separar layout auth de layout dashboard (diferentes estéticas)
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage
+ *   TODAS dependen de este layout.
+ *   Modificar estructura rompe: todas las páginas auth visualmente.
+ *   Dependencias: react-router-dom (Link), usado en:
+ *                modules/auth/pages/*.tsx (todas las páginas auth)
  */
 
 import { Link } from "react-router-dom";
@@ -21,13 +39,12 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       {/* ════════════════════════════════════════ */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center">
             <img
-              src="/logo.jpg"
+              src="/logo.png"
               alt="CALZADO J&R - Águila"
-              className="h-10 w-10 object-contain"
+              className="h-16 w-16 object-contain"
             />
-            <span className="font-bold" style={{ color: '#000', fontFamily: 'Montserrat, sans-serif', letterSpacing: 1, fontSize: '1.1rem' }}>CALZADO J&R</span>
           </Link>
           <Link
             to="/login"

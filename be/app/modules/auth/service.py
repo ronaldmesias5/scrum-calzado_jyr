@@ -1,6 +1,32 @@
 """
-Módulo: modules/auth/service.py
-Descripción: Lógica de negocio para todas las operaciones de autenticación.
+Archivo: app/modules/auth/service.py
+Descripción: Lógica de negocio (business logic) para autenticación.
+
+¿Qué?
+  Centraliza las operaciones de autenticación:
+  - register_user() → Crear nuevo usuario cliente (sin validar)
+  - login_user() → Validar credenciales y generar JWT tokens
+  - change_password() → Cambiar contraseña de usuario autenticado
+  - forgot_password() → Generar token para reset remoto
+  - reset_password() → Resetear contraseña con token
+
+¿Para qué?
+  Separar la LÓGICA DE NEGOCIO (qué hacer) del TRANSPORTE HTTP (cómo exponerlo).
+  Permite reutilizar esta lógica desde diferentes routers o scripts.
+  Facilita testing unitario sin need de HTTP.
+
+¿Impacto?
+  CRÍTICO para seguridad. Cambios aquí afectan:
+  - Cómo se validan contraseñas
+  - Cuándo se crean tokens
+  - Qué datos se guardan en la BD
+  
+  Error aquí = autenticación rota para TODO el sistema.
+  
+  DEPENDENCIAS:
+  - sqlalchemy.orm.Session (conexión a BD)
+  - app.models.user.User (modelo de usuario)
+  - app.utils.security (hashing, JWT)
 """
 
 import uuid

@@ -1,8 +1,25 @@
 """
-Módulo: app/seed_data.py
-Descripción: Script de seed para cargar datos iniciales sin usar Alembic.
-¿Para qué? Insertar datos de configuración (roles, tipos de documentos) automáticamente.
-¿Impacto? Se ejecuta en el startup del backend. Garantiza que los datos iniciales existan.
+Archivo: be/app/seed_data.py
+Descripción: Script de seed para cargar datos iniciales (roles, tipos de documentos).
+
+¿Qué?
+  Exporta 2 funciones:
+  - seed_roles(): Inserta 3 roles (admin, employee, client) con UUIDs fijos
+  - seed_type_documents(): Inserta 6 tipos de documentos (CC, TI, Pasaporte, etc.)
+  Usa db.merge() para evitar duplicados (INSERT ... ON CONFLICT equivalente)
+  Verifica count() antes de insertar (skip si ya existen)
+  
+¿Para qué?
+  - Garantizar datos iniciales desde código Python (no solo SQL)
+  - Facilitar testing (crear BD desde cero con seed_roles())
+  - Alternativa a scripts SQL (seed_data.py puede llamarse desde main.py)
+  - Logs claros: ✅ OK, 🔄 Insertando, ❌ Error
+  
+¿Impacto?
+  MEDIO — Se ejecuta en startup del backend (main.py lifespan).
+  Si falla seed_roles(), usuarios no pueden crearse (FK constraint falla).
+  Modificar UUIDs rompe: scripts que hardcodean UUIDs (crear_usuario_ronald.py).
+  Dependencias: models/role.py, models/type_document.py, database.py (SessionLocal)
 """
 
 import uuid

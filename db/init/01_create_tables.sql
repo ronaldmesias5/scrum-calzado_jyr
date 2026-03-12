@@ -1,12 +1,32 @@
 -- ============================================================
 -- CALZADO J&R — Script de inicialización de la base de datos
 -- ============================================================
--- ¿Qué? Crea la tabla de roles e inserta los 3 roles del sistema.
--- ¿Para qué? Tener los roles disponibles desde el inicio sin migración manual.
--- ¿Impacto? Sin roles, no se pueden crear usuarios con su rol correspondiente.
-
--- Este script se ejecuta automáticamente al crear el contenedor por primera vez
--- gracias al volumen montado en /docker-entrypoint-initdb.d
+-- Archivo: db/init/01_create_tables.sql
+-- Descripción: DDL para crear TODAS las tablas del sistema en PostgreSQL 17.
+--
+-- ¿Qué?
+--   - Crea extensión uuid-ossp
+--   - Define 10 ENUM types (occupation_type, order_status, task_status, etc.)
+--   - Crea tablas: roles, type_document, users, password_reset_tokens
+--   - Tablas futuras: orders, tasks, inventory, supplies, notifications, etc.
+--   - Inserta 3 roles iniciales (admin, employee, client)
+--
+-- ¿Para qué?
+--   - Inicializar BD desde cero en contenedor Docker
+--   - Separar DDL del código Python (ORM refleja, no crea)
+--   - Ejecutar automáticamente con volumen /docker-entrypoint-initdb.d
+--   - Garantizar tipos ENUM existen antes que tablas
+--
+-- ¿Impacto?
+--   CRÍTICO — Sin este script, contenedor Postgres queda completamente vacío.
+--   Modificar nombres de tablas/columnas rompe: TODOS los modelos ORM.
+--   Cambiar ENUM values requiere: migration Alembic + actualización en models.py
+--   Dependencias: docker-compose.yml (volumen db/init), models/*.py (ORM)
+--
+-- EJECUCIÓN:
+--   Docker ejecuta scripts en /docker-entrypoint-initdb.d en orden alfabético.
+--   01_create_tables.sql → 02_triggers_and_indexes.sql → 99_seed_type_documents.sql
+-- ============================================================
 
 -- Habilitar extensión UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
