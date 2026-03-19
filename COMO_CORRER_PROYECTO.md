@@ -1,5 +1,6 @@
 # � Cómo Correr el Proyecto CALZADO J&R
-
+**Estado del Proyecto:** 50% MVP Completado | **Sprints Completados:** 5 de 10 | **Tablas BD:** 19 operacionales  
+**Última Actualización:** 19 de Marzo 2026 | **Status:** ✅ En Desarrollo
 ---
 
 ## ✅ Requisitos Previos
@@ -53,7 +54,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 VITE_API_URL=http://localhost:8000
 
 # CORS
-FRONTEND_URL=http://localhost
+FRONTEND_URL=http://localhost:5173
 
 # EMAIL (dejar como está o configurar con tu servidor SMTP)
 SMTP_SERVER=smtp.gmail.com
@@ -63,9 +64,11 @@ SMTP_PASSWORD=tu_app_password
 SMTP_FROM=noreply@calzadojyr.com
 ```
 
-**Para desarrollo local**: Los valores por defecto funcionan. Solo cambiar si necesitas usar puertos diferentes.
+**ℹ️ Para desarrollo local**: Los valores por defecto funcionan perfectamente. No necesitas cambiar nada.
 
-**Para producción**: Cambiar `SECRET_KEY` a un valor seguro aleatorio.
+**ℹ️ Para otra PC local**: Solo copia `.env.example` → `.env` y listo (Docker se encargará del resto).
+
+**ℹ️ Para producción**: Cambiar `SECRET_KEY` a un valor seguro generado con: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 
 ### PASO 4: Levantar el Proyecto
 
@@ -126,6 +129,10 @@ docker compose up --build
 - Rol: Empleado (con ocupación de Jefe)
 - Estado: Activo y Validado
 
+**Clientes de Prueba Disponibles**
+- Email: `cliente1@gmail.com` | Contraseña: `Test123456!`
+- Email: `cliente2@gmail.com` | Contraseña: `Test123456!`
+
 ---
 
 ## 🌐 Acceso a la Aplicación
@@ -171,58 +178,97 @@ Documentación completa en: http://localhost:8000/docs
 
 ## 🛠️ Stack Tecnológico
 
-| Componente | Tecnología | Versión |
-|-----------|-----------|---------|
-| BD | PostgreSQL | 17 |
-| Backend | FastAPI | 0.115+ |
-| ORM | SQLAlchemy | 2.0+ |
-| Frontend | React | 19 |
-| Bundler | Vite | 7.2 |
-| CSS | TailwindCSS | 4 |
-| TypeScript | TS | 5.9 |
-| Router | React Router | 7.13 |
-| HTTP Client | Axios | 1.13 |
-| Containerización | Docker | Compose 3.0+ |
+
+| Componente | Tecnología | Versión | Estado |
+|-----------|-----------|---------|--------|
+| **BD** | PostgreSQL | 17-alpine | ✅ Operativa (19 tablas) |
+| **Backend** | FastAPI | 0.115+ | ✅ Corriendo |
+| **ORM** | SQLAlchemy | 2.0+ | ✅ Funcional |
+| **Frontend** | React | 19 | ✅ Corriendo |
+| **Bundler** | Vite | 7.2+ | ✅ Compilando |
+| **Estilos** | TailwindCSS | 4 | ✅ Aplicados |
+| **Tipado** | TypeScript | 5.9+ | ✅ Estricto |
+| **Router** | React Router | 7.13 | ✅ Implementado |
+| **HTTP** | Axios | 1.13+ | ✅ Conectado |
+| **Orquestación** | Docker Compose | 3.0+ | ✅ Sincronizado |
 
 ---
 
-## ✅ Resumen
+## 📋 Resumen Rápido (Quick Start)
 
-1. `git clone` + `cd scrum`
-2. `cp .env.example .env`
-3. Editar `.env` (cambiar valores si es necesario)
-4. `docker compose up --build`
-5. Esperar 1-2 minutos
-6. Abrir http://localhost:5173
-7. Login: `ronald.jefe@gmail.com` / `Test123456!`
+```bash
+# 1. Clonar y entrar
+git clone <url-del-repositorio>
+cd scrum
 
-**¡Listo! El proyecto está corriendo.**
+# 2. Crear .env
+cp .env.example .env
 
-Desde el dashboard del Jefe puedes:
-└── Crear empleados
-└── Crear clientes
-└── Gestionar tipos de documento
-└── Ver métricas y pedidos
+# 3. Levantar todo
+docker compose up --build
 
-**Nota**: Cuando se crea un nuevo usuario (empleado o cliente), debe cambiar contraseña en el primer login (campo `must_change_password=true`).
+# 4. Esperar 1-2 minutos y abrir
+# Frontend: http://localhost:5173
+# Backend:  http://localhost:8000
+# Docs:     http://localhost:8000/docs
+
+# 5. Login
+# Email: ronald.jefe@gmail.com
+# Contraseña: Test123456!
+```
+
+**¡Listo! El proyecto está corriendo en 4 pasos.** 🎉
+
+### Funcionalidades Disponibles desde el Dashboard del Jefe:
+- ✅ Crear empleados
+- ✅ Crear clientes
+- ✅ Validar usuarios
+- ✅ Gestionar tipos de documento
+- ✅ Ver catálogo (68 productos)
+- ✅ Crear órdenes de pedidos
+- ✅ Ajustar stock por talla/color
+- ✅ Visualizar métricas y pedidos recientes
+
+**Nota Importante**: Cuando se crea un nuevo usuario (empleado o cliente), ese usuario debe cambiar su contraseña en el primer login (campo `must_change_password=true`).
 
 ---
 
-## 8️⃣ Verificar que Todo Funciona
+## 📊 Funcionalidades Implementadas (Sprints 1-5)
 
-### Checklist
+### Sprint 1-2: Autenticación y Validación ✅
+- [x] Registro de usuarios
+- [x] Login con JWT
+- [x] Validación de usuarios por admin
+- [x] Recuperación de contraseña
+
+### Sprint 3: Catálogo y Dashboard Jefe ✅
+- [x] Listado de productos (68 productos cargados)
+- [x] Categorias, Marcas, Estilos
+- [x] Dashboard del Jefe con métricas
+
+### Sprint 4: Búsqueda y Filtros ✅
+- [x] Búsqueda por nombre
+- [x] Filtros por categoría
+- [x] Filtros por marca
+- [x] Filtros por rango de precios
+
+### Sprint 5: Órdenes de Pedidos ✅
+- [x] Creación de órdenes (8 pedidos cargados)
+- [x] Estado de órdenes
+- [x] Detalles de orden_details (86 líneas)
+
+---
+
+## ✅ Verificar que Todo Funciona
+
+### Checklist Final
 - [ ] `docker compose ps` muestra 3 servicios en estado "Up"
 - [ ] Frontend carga en http://localhost:5173 (logo de "Calzado J&R")
+- [ ] Backend responde en http://localhost:8000
 - [ ] Login con `ronald.jefe@gmail.com` / `Test123456!` funciona correctamente
-
----
-
-## 🛠️S** | TailwindCSS | 4 |
-| **HTTP Client** | Axios | 1.13.4 |
-| **Router** | React Router | 7.13 |
-| **Language** | TypeScript | 5.9 |
-| **Security** | JWT + bcrypt | HS256 |
-| **Containerización** | Docker Compose | 3.0+ |
+- [ ] Swagger API disponible en http://localhost:8000/docs
+- [ ] Base de datos con 19 tablas sincronizadas
+- [ ] Datos de prueba cargados (usuarios, productos, órdenes)
 
 ---
 
@@ -264,6 +310,31 @@ GET    /api/v1/dashboard/admin/metrics  # Métricas
 GET    /api/v1/dashboard/admin/orders   # Pedidos recientes
 ```
 
-**Documentación interactiva**: http://localhost:8000/docs (Swagger)
+### Productos (Catálogo Admin)
+```
+GET    /api/v1/admin/catalog/products          # Listar productos
+POST   /api/v1/admin/catalog/products          # Crear producto
+PUT    /api/v1/admin/catalog/products/{id}     # Actualizar producto
+DELETE /api/v1/admin/catalog/products/{id}     # Eliminar producto
+```
+
+### Órdenes (Pedidos)
+```
+GET    /api/v1/admin/orders                    # Listar órdenes
+POST   /api/v1/admin/orders                    # Crear orden
+GET    /api/v1/admin/orders/{id}               # Obtener detalle
+PATCH  /api/v1/admin/orders/{id}/status        # Cambiar estado
+DELETE /api/v1/admin/orders/{id}               # Eliminar orden
+```
+
+### Inventario (Ajuste de Stock)
+```
+GET    /api/v1/admin/catalog/inventory         # Listar inventario
+POST   /api/v1/admin/catalog/inventory         # Crear/actualizar por talla
+POST   /api/v1/admin/catalog/inventory/bulk    # Actualizar múltiples tallas
+DELETE /api/v1/admin/catalog/inventory/{id}    # Eliminar inventario
+```
+
+**Documentación interactiva completa**: http://localhost:8000/docs (Swagger)
 
 ---

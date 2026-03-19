@@ -1,43 +1,82 @@
 # Arquitectura del Proyecto - Sistema de Gestión y Producción de Calzado - CALZADO J&R
 
-**Arquitecto:** Ronald Guerrero
+**Arquitecto:** Ronald Guerrero  
+**Última Actualización:** 19 de Marzo de 2026  
+**Estado:** ✅ MVP Phase 1 Completado (Sprints 1-5)
 
 ---
 
-## Stack Tecnológico General
+## 🎯 Resumen Arquitectónico
 
-### Backend
+El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos)** con separación clara de responsabilidades y patrones modernos de desarrollo web. El diseño prioriza **escalabilidad, seguridad y mantenibilidad** usando container-based deployment.
 
-| Tecnología | Descripción |
-|-----------|-----------|
-| **Python 3.12+** | Lenguaje de programación principal |
-| **FastAPI** | Framework web API REST asincrónica |
-| **SQLAlchemy 2.0** | ORM (Object-Relational Mapping) |
-| **Alembic** | Migraciones de base de datos |
-| **JWT** | Manejo de tokens para autenticación |
+```
+                    ┌─────────────────────────────────┐
+                    │    Frontend (React + TS)        │
+                    │  - SPA con routing dinámico     │
+                    │  - Context API + Hooks          │
+                    └────────────┬────────────────────┘
+                                 │ HTTP/HTTPS (JWT)
+                    ┌────────────▼────────────────────┐
+                    │  Backend (FastAPI + Python)     │
+                    │  - REST API asincrónica         │
+                    │  - 23+ routers/endpoints        │
+                    │  - Middleware (auth, CORS)      │
+                    └────────────┬────────────────────┘
+                                 │ SQL/TCP
+                    ┌────────────▼────────────────────┐
+                    │  PostgreSQL 17 + Docker         │
+                    │  - 10 tablas + audit columns    │
+                    │  - Triggers y constraints       │
+                    └─────────────────────────────────┘
+```
 
-### Frontend
+---
 
-| Tecnología | Descripción |
-|-----------|-----------|
-| **React 18+** | Librería de interfaz de usuario |
-| **Vite** | Herramienta de build moderna |
-| **TypeScript** | Superset de JavaScript con tipado estático |
-| **TailwindCSS 4+** | Framework CSS utilitario |
+## Stack Tecnológico - Verificado ✅
+
+### Backend (BE)
+
+| Componente | Versión | Propósito |
+|-----------|---------|----------|
+| **Python** | 3.12-slim | Runtime principal del servidor |
+| **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
+| **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
+| **Alembic** | 3.0+ | Sistema de migraciones de BD |
+| **Pydantic** | 2.0+ | Validación y serialización de datos |
+| **PyJWT** | 2.8+ | Creación y validación de JWT tokens |
+| **bcrypt** | 4.2+ | Hash criptográfico de contraseñas |
+| **python-dotenv** | 1.0+ | Variables de entorno desde .env |
+| **psycopg2** | 2.9+ | Driver PostgreSQL para Python |
+
+### Frontend (FE)
+
+| Componente | Versión | Propósito |
+|-----------|---------|----------|
+| **Node.js** | 20+ LTS | Runtime de JavaScript |
+| **pnpm** | 8+ | Gestor de dependencias rápido |
+| **React** | 19 | Librería de UI declarativa |
+| **React Router** | 6+ | Enrutamiento de páginas (SPA) |
+| **TypeScript** | 5+ | Lenguaje tipado que compila a JS |
+| **Vite** | 7.3.1+ | Build tool y dev server ultra rápido |
+| **Tailwind CSS** | 4+ | Utilidad CSS responsive |
+| **Axios** | 1.7+ | Cliente HTTP para API calls |
+| **React Context** | Nativa | State management sin Redux |
 
 ### Base de Datos
 
-| Tecnología | Descripción |
-|-----------|-----------|
-| **PostgreSQL 17+** | Sistema de gestión de base de datos relacional |
-| **Docker Compose** | Orquestación de contenedores |
+| Componente | Versión | Propósito |
+|-----------|---------|----------|
+| **PostgreSQL** | 17-alpine | SGBD relacional open-source |
+| **Docker** | 27+ | Containerización de servicios |
+| **Docker Compose** | 2.27+ | Orquestación local 3 contenedores |
 
-### Testing
+### Testing (Planeado Sprint 7+)
 
 | Capa | Herramientas | Descripción |
 |-----|-------------|-----------|
-| **Backend** | pytest + httpx | Testing unitario e integración en Python |
-| **Frontend** | Vitest + Testing Library | Testing unitario y de componentes en React |
+| **Backend** | pytest + httpx | Tests unitarios e integración |
+| **Frontend** | Vitest + React Testing Library | Tests componentes y utilidades |
 
 ---
 
@@ -305,64 +344,3 @@ fe/src/modules/{nombre}/
 ├── services/      # Llamadas a API del módulo
 └── hooks/         # Hooks personalizados del módulo
 ```
-
-**Módulos principales:**
-
-#### 🔐 Module Auth (Sprints 1-2)
-- **LoginPage** - Página de inicio de sesión
-- **RegisterPage** - Página de registro
-- **ForgotPasswordPage** - Solicitar recuperación
-- **ResetPasswordPage** - Resetear contraseña
-- **ChangePasswordPage** - Cambiar contraseña
-- Componentes: LoginForm, RegisterForm, PasswordForm
-- Servicios: authService.ts
-- Hooks: useAuth.ts
-
-#### 🏠 Module Landing (Sprint 3)
-- **LandingPage** - Página principal pública
-- Componentes: Hero, Features, CatalogPreview
-
-#### 👨‍💼 Module Dashboard Jefe (Sprints 3, 6, 10)
-- **DashboardPage** - Vista principal
-- **ClientsPage** - Gestión de clientes
-- **ProductsPage** - Catálogo de productos
-- **OrdersPage** - Gestión de pedidos
-- Componentes: ClientValidation, ProductCatalog, OrderManagement, Stats
-
-#### 👷 Module Dashboard Empleados (Sprints 7, 9)
-- **DashboardPage** - Vista principal
-- **TasksPage** - Mis tareas
-- **ProductionPage** - Reporte de producción
-- Componentes: TaskList, TaskDetail, ProgressTracker
-
-#### 🛒 Module Dashboard Clientes (Sprints 4, 5)
-- **DashboardPage** - Vista principal
-- **CatalogPage** - Catálogo de productos
-- **OrdersPage** - Mis pedidos
-- **OrderDetailPage** - Detalle de pedido
-- Componentes:
-  - Catalog: ProductCard, SearchFilter, ProductGrid
-  - Orders: OrderForm, OrderList, OrderStatus
-  - Favorites: FavoritesList
-
-**Shared (recursos comunes):**
-```
-fe/src/shared/
-├── components/    # Componentes reutilizables (UI, Layout)
-├── services/      # Servicios globales (API client, storage)
-├── hooks/         # Hooks reutilizables (useAuth, useApi)
-├── context/       # Contextos globales (AuthContext)
-├── types/         # Tipos TypeScript compartidos
-└── styles/        # Estilos globales CSS
-```
-
----
-
-## Ventajas de la Arquitectura Modular
-
-✅ **Escalabilidad** - Agregar nuevos módulos es simple
-✅ **Mantenibilidad** - Código organizado y fácil de encontrar
-✅ **Reutilización** - Compartir código mediante `shared/`
-✅ **Independencia** - Módulos independientes sin acoplamiento
-✅ **Sincronización** - Backend y Frontend con misma estructura
-✅ **Claridad por Sprint** - Cada sprint tiene un módulo claro
