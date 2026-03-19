@@ -3,9 +3,7 @@ export default function LandingFooter() {
     <footer className="bg-gray-900 text-gray-300 pt-12 pb-6">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Logo */}
-        <div className="flex items-center justify-center mb-3">
-          <img src="/logo.png" alt="CALZADO J&R" className="h-12 w-12 object-contain rounded" />
-        </div>
+        <img src="/logo.png" alt="CALZADO J&R" className="h-12 w-12 object-contain rounded mx-auto mb-3" />
 
         {/* Links rápidos */}
         <div>

@@ -1,15 +1,17 @@
 export interface Metric {
   label: string;
-  value: number;
-  change: string;
-  changePositive: boolean;
+  value: number | string;
+  change?: string;
+  changePositive?: boolean;
 }
+
+export type OrderStatusKey = 'pendiente' | 'en_progreso' | 'completado' | 'cancelado';
 
 export interface RecentOrder {
   orderId: string;
   clientName: string;
   quantity: number;
-  status: 'pending' | 'in_production' | 'ready' | 'delivered';
+  status: OrderStatusKey;
   date: string;
 }
 

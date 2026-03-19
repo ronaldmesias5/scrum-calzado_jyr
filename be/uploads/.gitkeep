@@ -1,0 +1,2 @@
+# Este directorio almacena las imágenes subidas para los productos.
+# Las imágenes son servidas via FastAPI StaticFiles en /uploads/

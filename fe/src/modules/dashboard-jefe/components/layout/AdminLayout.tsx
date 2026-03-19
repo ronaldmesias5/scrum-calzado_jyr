@@ -1,23 +1,23 @@
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
+import { BadgeCountsProvider } from '../../context/BadgeCountsContext';
 
 export default function AdminLayout() {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar sticky */}
-      <AdminSidebar />
-      
-      {/* Contenido principal */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Header sticky */}
+    <BadgeCountsProvider>
+      <div className="flex flex-col min-h-screen bg-gray-50">
+        {/* Header full-width sticky */}
         <AdminHeader />
-        
-        {/* Contenido con scroll */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <Outlet />
-        </main>
+
+        {/* Sidebar + contenido debajo del header */}
+        <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+          <AdminSidebar />
+          <main className="flex-1 px-4 pt-3 pb-4 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </BadgeCountsProvider>
   );
 }

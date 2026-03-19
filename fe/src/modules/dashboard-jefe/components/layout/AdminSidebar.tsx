@@ -23,40 +23,38 @@
  *   Dependencias: react-router-dom (NavLink), lucide-react (icons)
  */
 
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   Home, ShoppingCart, Layers, Package, CheckSquare,
   Users, UserCheck, RotateCcw, Bell, BarChart, Settings, UserCog
 } from 'lucide-react';
+import { useBadgeCounts } from '../../context/BadgeCountsContext';
 
-const menuItems = [
-  { label: 'Inicio', icon: Home, path: '/dashboard/admin', badge: 0 },
-  { label: 'Pedidos', icon: ShoppingCart, path: '/dashboard/admin/orders', badge: 24 },
-  { label: 'Catálogo', icon: Layers, path: '/dashboard/admin/catalog', badge: 0 },
-  { label: 'Inventario', icon: Package, path: '/dashboard/admin/inventory', badge: 0 },
-  { label: 'Tareas', icon: CheckSquare, path: '/dashboard/admin/tasks', badge: 0 },
-  { label: 'Empleados', icon: Users, path: '/dashboard/admin/employees', badge: 0 },
-  { label: 'Clientes', icon: UserCheck, path: '/dashboard/admin/clients', badge: 0 },
-  { label: 'Usuarios', icon: UserCog, path: '/dashboard/admin/usuarios', badge: 0 },
-  { label: 'Reactivación', icon: RotateCcw, path: '/dashboard/admin/reactivation', badge: 0 },
-  { label: 'Alertas', icon: Bell, path: '/dashboard/admin/alerts', badge: 4 },
-  { label: 'Reportes', icon: BarChart, path: '/dashboard/admin/reports', badge: 0 },
-  { label: 'Configuración', icon: Settings, path: '/dashboard/admin/settings', badge: 0 },
-];
+const BASE_ITEMS = [
+  { label: 'Inicio',        icon: Home,        path: '/dashboard/admin',              badgeKey: null },
+  { label: 'Pedidos',       icon: ShoppingCart, path: '/dashboard/admin/orders',       badgeKey: 'pedidos' },
+  { label: 'Catálogo',      icon: Layers,       path: '/dashboard/admin/catalog',      badgeKey: null },
+  { label: 'Inventario',    icon: Package,      path: '/dashboard/admin/inventory',    badgeKey: null },
+  { label: 'Tareas',        icon: CheckSquare,  path: '/dashboard/admin/tasks',        badgeKey: null },
+  { label: 'Empleados',     icon: Users,        path: '/dashboard/admin/employees',    badgeKey: null },
+  { label: 'Clientes',      icon: UserCheck,    path: '/dashboard/admin/clients',      badgeKey: null },
+  { label: 'Usuarios',      icon: UserCog,      path: '/dashboard/admin/usuarios',     badgeKey: 'usuarios' },
+  { label: 'Reactivación',  icon: RotateCcw,    path: '/dashboard/admin/reactivation', badgeKey: null },
+  { label: 'Alertas',       icon: Bell,         path: '/dashboard/admin/alerts',       badgeKey: null },
+  { label: 'Reportes',      icon: BarChart,     path: '/dashboard/admin/reports',      badgeKey: null },
+  { label: 'Configuración', icon: Settings,     path: '/dashboard/admin/settings',     badgeKey: null },
+] as const;
 
 export default function AdminSidebar() {
-  const navigate = useNavigate();
+  const { counts } = useBadgeCounts();
+
+  const menuItems = BASE_ITEMS.map((item) => ({
+    ...item,
+    badge: item.badgeKey ? (counts[item.badgeKey as keyof typeof counts] ?? 0) : 0,
+  }));
 
   return (
-    <aside className="w-44 min-h-screen bg-white border-r border-gray-200 flex flex-col sticky top-0 max-h-screen overflow-y-auto">
-      {/* Logo */}
-      <div
-        className="flex items-center justify-center px-4 py-4 border-b border-gray-100 cursor-pointer"
-        onClick={() => navigate('/dashboard/admin')}
-      >
-        <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain" />
-      </div>
-
+    <aside className="w-44 h-full bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
       {/* Menu */}
       <nav className="flex-1 py-3 overflow-y-auto">
         {menuItems.map(({ label, icon: Icon, path, badge }) => (

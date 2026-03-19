@@ -21,7 +21,7 @@ Descripción: Utilidades para envío de emails de recuperación de contraseña.
                auth/service.py (forgot_password), models/password_reset_token.py
 """
 
-from app.config import settings
+from app.core.config import settings
 
 
 async def send_password_reset_email(email: str, token: str) -> None:

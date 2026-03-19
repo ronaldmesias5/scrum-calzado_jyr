@@ -108,7 +108,395 @@ Tipo de notificación del sistema.
 
 ## 📑 Tablas
 
-**Total: 19 tablas** (incluyendo tablas de auditoría y movimientos)
+**Total: 19 tablas (según script SQL y modelos ORM)**
+
+### ENUMS
+Ver sección inicial para los tipos enumerados: occupation_type, supplies_movement_type, inventory_movement_type, order_status, task_status, task_priority, task_type, incidence_status, notification_type.
+
+### roles
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(50) | UNIQUE, NOT NULL | Nombre del rol |
+| description | VARCHAR(255) | | Descripción del rol |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### type_document
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(100) | UNIQUE, NOT NULL | Tipo de documento |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### users
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único del usuario |
+| email | VARCHAR(255) | UNIQUE, NOT NULL | Correo electrónico único |
+| hashed_password | VARCHAR(255) | NOT NULL | Contraseña cifrada |
+| name | VARCHAR(255) | NOT NULL | Nombres del usuario |
+| last_name | VARCHAR(255) | NOT NULL | Apellidos del usuario |
+| phone | VARCHAR(20) | | Teléfono de contacto |
+| identity_document | VARCHAR(20) | | Número de documento de identidad |
+| identity_document_type_id | UUID | FK → type_document(id) | Tipo de documento |
+| role_id | UUID | FK → roles(id), NOT NULL | Rol del usuario |
+| is_active | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si la cuenta está activa |
+| is_validated | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si fue validada por admin |
+| must_change_password | BOOLEAN | DEFAULT FALSE, NOT NULL | Fuerza cambio en próximo login |
+| business_name | VARCHAR(255) | | Nombre comercial (solo clientes) |
+| occupation | occupation_type | | Ocupación laboral (solo empleados) |
+| validated_by | UUID | FK → users(id) | Admin que validó la cuenta |
+| validated_at | TIMESTAMP+TZ | | Fecha de validación |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### password_reset_tokens
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| user_id | UUID | FK → users(id), NOT NULL | Usuario propietario del token |
+| token | VARCHAR(255) | UNIQUE, NOT NULL | Token único generado |
+| expires_at | TIMESTAMP+TZ | NOT NULL | Fecha de expiración |
+| used | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si el token fue utilizado |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+
+### supplies
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(255) | NOT NULL | Nombre del insumo |
+| description | TEXT | | Descripción y especificaciones |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### supplies_movement
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| supplies_id | UUID | FK → supplies(id), NOT NULL | Insumo movido |
+| user_id | UUID | FK → users(id), NOT NULL | Usuario que realizó movimiento |
+| type_of_movement | supplies_movement_type | NOT NULL | Tipo de movimiento |
+| amount | NUMERIC(10,2) | NOT NULL | Cantidad movida |
+| colour | VARCHAR(100) | | Color del insumo |
+| size | VARCHAR(50) | | Talla/tamaño del insumo |
+| movement_date | TIMESTAMP+TZ | NOT NULL | Fecha y hora del movimiento |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de registro |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### categories
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(255) | NOT NULL | Nombre de la categoría |
+| description | TEXT | | Descripción de la categoría |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### brands
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(255) | NOT NULL | Nombre de la marca |
+| description | TEXT | | Descripción de la marca |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### styles
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| brand_id | UUID | FK → brands(id), NOT NULL | Marca del producto |
+| name | VARCHAR(255) | NOT NULL | Nombre del estilo |
+| description | TEXT | | Descripción del estilo |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### products
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| category_id | UUID | FK → categories(id), NOT NULL | Categoría del producto |
+| brand_id | UUID | FK → brands(id), NOT NULL | Marca del producto |
+| style_id | UUID | FK → styles(id), NOT NULL | Estilo/modelo |
+| name | VARCHAR(255) | NOT NULL | Nombre del producto |
+| description | TEXT | | Descripción del producto |
+| state | BOOLEAN | DEFAULT TRUE, NOT NULL | true=activo, false=inactivo |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### inventory_movement
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| product_id | UUID | FK → products(id), NOT NULL | Producto movido |
+| user_id | UUID | FK → users(id), NOT NULL | Usuario que realizó movimiento |
+| type_of_movement | inventory_movement_type | NOT NULL | Tipo de movimiento |
+| size | VARCHAR(50) | | Talla del producto |
+| colour | VARCHAR(100) | | Color del producto |
+| amount | NUMERIC(10,2) | NOT NULL | Cantidad |
+| reason | VARCHAR(255) | | Motivo del movimiento |
+| movement_date | TIMESTAMP+TZ | NOT NULL | Fecha y hora del movimiento |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de registro |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### inventory
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| product_id | UUID | FK → products(id), NOT NULL | Producto en inventario |
+| size | VARCHAR(50) | NOT NULL | Talla del producto |
+| colour | VARCHAR(100) | | Color de la combinación |
+| amount | NUMERIC(10,2) | NOT NULL | Cantidad disponible |
+| minimum_stock | INTEGER | DEFAULT 0, NOT NULL | Stock mínimo permitido |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### tasks
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| description | TEXT | NOT NULL | Descripción de la tarea |
+| priority | task_priority | NOT NULL | Prioridad |
+| type | task_type | NOT NULL | Tipo de tarea |
+| status | task_status | DEFAULT 'pendiente', NOT NULL | Estado de la tarea |
+| deadline | TIMESTAMP+TZ | | Fecha límite de entrega |
+| assignment_date | TIMESTAMP+TZ | NOT NULL | Fecha de asignación |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### orders
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| customer_id | UUID | FK → users(id), NOT NULL | Cliente que realizó pedido |
+| total_pairs | INTEGER | NOT NULL | Cantidad total de pares en el pedido |
+| state | order_status | DEFAULT 'pendiente', NOT NULL | Estado del pedido |
+| delivery_date | TIMESTAMP+TZ | | Fecha de entrega programada |
+| creation_date | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación del pedido |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### order_details
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| order_id | UUID | FK → orders(id), NOT NULL | Pedido al que pertenece |
+| product_id | UUID | FK → products(id), NOT NULL | Producto ordenado |
+| size | VARCHAR(50) | NOT NULL | Talla del producto |
+| colour | VARCHAR(100) | | Color del producto |
+| amount | INTEGER | NOT NULL | Cantidad de pares |
+| state | order_status | DEFAULT 'pendiente', NOT NULL | Estado de la línea |
+| order_date | TIMESTAMP+TZ | NOT NULL | Fecha del pedido |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### vale
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| size | VARCHAR(50) | | Talla entregada |
+| colour | VARCHAR(100) | | Color entregado |
+| amount | NUMERIC(10,2) | | Cantidad entregada |
+| creation_date | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### detail_vale
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| task_id | UUID | FK → tasks(id), NOT NULL | Tarea asociada |
+| product_id | UUID | FK → products(id), NOT NULL | Producto entregado |
+| user_id | UUID | FK → users(id), NOT NULL | Usuario que recibió/entregó |
+| vale_id | UUID | FK → vale(id), NOT NULL | Vale base |
+| size | VARCHAR(50) | | Talla entregada |
+| colour | VARCHAR(100) | | Color entregado |
+| amount | NUMERIC(10,2) | | Cantidad entregada |
+| creation_date | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### incidence
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| task_id | UUID | FK → tasks(id), NOT NULL | Tarea con problema |
+| type | VARCHAR(100) | NOT NULL | Tipo de incidencia |
+| description | TEXT | | Descripción del problema |
+| state | incidence_status | DEFAULT 'abierta', NOT NULL | Estado de la incidencia |
+| report_date | TIMESTAMP+TZ | NOT NULL | Fecha de reporte |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### notifications
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| user_id | UUID | FK → users(id), NOT NULL | Usuario destinatario |
+| title | VARCHAR(255) | NOT NULL | Título breve de la notificación |
+| message | TEXT | NOT NULL | Contenido detallado del mensaje |
+| type | notification_type | NOT NULL | Tipo de notificación |
+| is_read | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si ha sido leída |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### brands
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(255) | NOT NULL | Nombre de la marca |
+| description | TEXT | | Descripción de la marca |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### categories
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(255) | NOT NULL | Nombre de la categoría |
+| description | TEXT | | Descripción de la categoría |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### inventory
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| product_id | UUID | FK → products(id), NOT NULL | Producto en inventario |
+| size | VARCHAR(50) | NOT NULL | Talla del producto |
+| colour | VARCHAR(100) | | Color de la combinación |
+| amount | NUMERIC(10,2) | NOT NULL | Cantidad disponible |
+| minimum_stock | INTEGER | DEFAULT 0, NOT NULL | Stock mínimo permitido |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### products
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| style_id | UUID | FK → styles(id), NOT NULL | Estilo/modelo |
+| brand_id | UUID | FK → brands(id), NOT NULL | Marca del producto |
+| category_id | UUID | FK → categories(id), NOT NULL | Categoría del producto |
+| name | VARCHAR(255) | NOT NULL | Nombre del producto |
+| description | TEXT | | Descripción del producto |
+| state | BOOLEAN | DEFAULT TRUE, NOT NULL | true=activo, false=inactivo |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### styles
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| brand_id | UUID | FK → brands(id), NOT NULL | Marca del producto |
+| name | VARCHAR(255) | NOT NULL | Nombre del estilo |
+| description | TEXT | | Descripción del estilo |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### roles
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(50) | UNIQUE, NOT NULL | Nombre del rol |
+| description | VARCHAR(255) | | Descripción del rol |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### type_document
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| name | VARCHAR(100) | UNIQUE, NOT NULL | Tipo de documento |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### users
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único del usuario |
+| email | VARCHAR(255) | UNIQUE, NOT NULL | Correo electrónico único |
+| hashed_password | VARCHAR(255) | NOT NULL | Contraseña cifrada |
+| name | VARCHAR(255) | NOT NULL | Nombres del usuario |
+| last_name | VARCHAR(255) | NOT NULL | Apellidos del usuario |
+| phone | VARCHAR(20) | | Teléfono de contacto |
+| identity_document | VARCHAR(20) | | Número de documento de identidad |
+| identity_document_type_id | UUID | FK → type_document(id) | Tipo de documento |
+| role_id | UUID | FK → roles(id), NOT NULL | Rol del usuario |
+| is_active | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si la cuenta está activa |
+| is_validated | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si fue validada por admin |
+| must_change_password | BOOLEAN | DEFAULT FALSE, NOT NULL | Fuerza cambio en próximo login |
+| business_name | VARCHAR(255) | | Nombre comercial (solo clientes) |
+| occupation | VARCHAR(50) | | Ocupación laboral (solo empleados) |
+| validated_by | UUID | FK → users(id) | Admin que validó la cuenta |
+| validated_at | TIMESTAMP+TZ | | Fecha de validación |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### password_reset_tokens
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| user_id | UUID | FK → users(id), NOT NULL | Usuario propietario del token |
+| token | VARCHAR(255) | UNIQUE, NOT NULL | Token único generado |
+| expires_at | TIMESTAMP+TZ | NOT NULL | Fecha de expiración |
+| used | BOOLEAN | DEFAULT FALSE, NOT NULL | Indica si el token fue utilizado |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+
+### orders
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| customer_id | UUID | FK → users(id), NOT NULL | Cliente que realizó pedido |
+| total_pairs | INTEGER | NOT NULL | Cantidad total de pares en el pedido |
+| state | VARCHAR(20) | DEFAULT 'pendiente', NOT NULL | Estado del pedido |
+| delivery_date | TIMESTAMP+TZ | | Fecha de entrega programada |
+| creation_date | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación del pedido |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
+
+### order_details
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|--------------|-----------|
+| id | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
+| order_id | UUID | FK → orders(id), NOT NULL | Pedido al que pertenece |
+| product_id | UUID | FK → products(id), NOT NULL | Producto ordenado |
+| size | VARCHAR(50) | NOT NULL | Talla del producto |
+| colour | VARCHAR(100) | | Color del producto |
+| amount | INTEGER | NOT NULL | Cantidad de pares |
+| state | VARCHAR(20) | DEFAULT 'pendiente', NOT NULL | Estado de la línea |
+| order_date | TIMESTAMP+TZ | NOT NULL | Fecha del pedido |
+| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
+| deleted_at | TIMESTAMP+TZ | | Soft delete |
 
 ### 1️⃣ roles
 **Descripción:** Tabla principal de roles del sistema.
@@ -289,16 +677,16 @@ Nike, Adidas, Puma, marcas propias, etc.
 | `deleted_at` | TIMESTAMP+TZ | | Soft delete |
 
 ---
-### 🔟 references
-**Descripción:** Referencias o estilos específicos de producto.
+### 🔟 styles
+**Descripción:** Estilos/modelos específicos de producto.
 
 Modelos o diseños particulares dentro de una marca.
 
 | Campo | Tipo | Restricciones | Descripción |
-|-------|------|--------------|-----------|
+|-------|------|--------------|----------|
 | `id` | UUID | PK | Identificador único |
 | `brand_id` | UUID | FK → brands(id), NOT NULL | Marca del producto |
-| `name` | VARCHAR(255) | NOT NULL | Nombre de la referencia/estilo |
+| `name` | VARCHAR(255) | NOT NULL | Nombre del estilo |
 | `description` | TEXT | | Descripción del estilo |
 | `created_at` | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha de creación |
 | `updated_at` | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
@@ -325,14 +713,14 @@ Modelos o diseños particulares dentro de una marca.
 ### 1️⃣1️⃣ products
 **Descripción:** Catálogo de productos finales.
 
-Combinación de categoría, marca y referencia.
+Combinación de categoría, marca y estilo.
 
 | Campo | Tipo | Restricciones | Descripción |
-|-------|------|--------------|-----------|
+|-------|------|--------------|----------|
 | `id` | UUID | PK | Identificador único |
 | `category_id` | UUID | FK → categories(id), NOT NULL | Categoría del producto |
 | `brand_id` | UUID | FK → brands(id), NOT NULL | Marca del producto |
-| `reference_id` | UUID | FK → references(id), NOT NULL | Referencia/estilo |
+| `style_id` | UUID | FK → styles(id), NOT NULL | Estilo/modelo |
 | `name` | VARCHAR(255) | NOT NULL | Nombre del producto |
 | `description` | TEXT | | Descripción del producto |
 | `state` | BOOLEAN | DEFAULT TRUE, NOT NULL | true=activo, false=inactivo |
@@ -522,7 +910,7 @@ roles
                      ├─ products (N:1)
                      │   ├─ categories (N:1)
                      │   ├─ brands (N:1)
-                     │   └─ references (N:1 → brands)
+                     │   └─ styles (N:1 → brands)
                      │
                      └── inventory (N:1 product_id)
 
@@ -546,10 +934,10 @@ tasks (1:N) → detail_vale
 | notifications | user_id | users(id) | ON DELETE CASCADE |
 | supplies_movement | supplies_id | supplies(id) | — |
 | supplies_movement | user_id | users(id) | — |
-| references | brand_id | brands(id) | — |
+| styles | brand_id | brands(id) | — |
 | products | category_id | categories(id) | — |
 | products | brand_id | brands(id) | — |
-| products | reference_id | references(id) | — |
+| products | style_id | styles(id) | — |
 | inventory | product_id | products(id) | — |
 | inventory_movement | product_id | products(id) | — |
 | inventory_movement | user_id | users(id) | — |
@@ -590,7 +978,7 @@ tasks (1:N) → detail_vale
 | [orders](#️⃣1️⃣5️⃣-orders) | Pedidos de clientes |
 | [password_reset_tokens](#️⃣4️⃣-password_reset_tokens) | Tokens de recuperación |
 | [products](#️⃣1️⃣1️⃣-products) | Catálogo de productos |
-| [references](#️⃣🔟-references) | Referencias/estilos de marca |
+| [styles](#️⃣🔟-styles) | Estilos/modelos de marca |
 | [roles](#️⃣1️⃣-roles) | Roles del sistema |
 | [supplies](#️⃣6️⃣-supplies) | Insumos/materiales |
 | [supplies_movement](#️⃣7️⃣-supplies_movement) | Movimientos de insumos |

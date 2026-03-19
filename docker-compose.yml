@@ -144,8 +144,8 @@ services:
 
     environment:
       # Vite expone variables VITE_* al código del navegador (public).
-      # Apunta al backend: el navegador llama a localhost porque el
-      # puerto del host está mapeado al contenedor be.
+      # El navegador (host) necesita localhost para conectarse al backend.
+      # IMPORTANTE: Vite en dev server reemplaza estas variables al compilar.
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
 
     ports:

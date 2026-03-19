@@ -27,7 +27,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db
+from app.core.dependencies import get_db
 from app.models.type_document import TypeDocument
 from app.modules.type_document.schemas import TypeDocumentCreate, TypeDocumentResponse
 
@@ -102,3 +102,4 @@ def create_type_document(
     db.refresh(new_type_document)
 
     return TypeDocumentResponse(id=new_type_document.id, name=new_type_document.name)
+

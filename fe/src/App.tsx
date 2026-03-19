@@ -34,10 +34,13 @@
 
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { CookieBanner } from "@/components/ui/CookieBanner";
+import { CookiePolicyModal } from "@/components/ui/CookiePolicyModal";
 
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
 import { RegisterPage } from "@/modules/auth/pages/RegisterPage";
@@ -57,10 +60,28 @@ import UsersManagementPage from "@/modules/dashboard-jefe/pages/UsersManagementP
 // Sprint 4 - Orders Management
 import OrdersPage from "@/modules/dashboard-jefe/pages/OrdersPage";
 
+// Sprint 5 - Catalog Management
+import CatalogPage from "@/modules/dashboard-jefe/pages/CatalogPage";
+import InventoryPage from "@/modules/dashboard-jefe/pages/InventoryPage";
+
 function App() {
+  const [showCookiePolicy, setShowCookiePolicy] = useState(false);
+
   return (
     <BrowserRouter>
       <AuthProvider>
+        {showCookiePolicy && (
+          <CookiePolicyModal onClose={() => setShowCookiePolicy(false)} />
+        )}
+        <CookieBanner
+          onAcceptAll={() => {
+            console.log("Cookies accepted: all");
+          }}
+          onAcceptNecessary={() => {
+            console.log("Cookies accepted: necessary only");
+          }}
+          onShowPolicy={() => setShowCookiePolicy(true)}
+        />
         <Routes>
           {/* ════════════════════════════════════════ */}
           {/* 🌐 Landing Page pública */}
@@ -97,8 +118,8 @@ function App() {
           >
             <Route index element={<AdminDashboardPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="catalog" element={<div className="p-4 text-gray-500">Catálogo - Próximamente</div>} />
-            <Route path="inventory" element={<div className="p-4 text-gray-500">Inventario - Próximamente</div>} />
+            <Route path="catalog" element={<CatalogPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
             <Route path="tasks" element={<div className="p-4 text-gray-500">Tareas - Próximamente</div>} />
             <Route path="employees" element={<div className="p-4 text-gray-500">Empleados - Próximamente</div>} />
             <Route path="clients" element={<div className="p-4 text-gray-500">Clientes - Próximamente</div>} />

@@ -10,14 +10,16 @@ export default function HeroSection() {
       }}
     >
       {/* Overlay decorativo */}
-      <div className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: 'url("/factory.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      <div className="absolute inset-0 bg-blue-900/50" />
+      <>
+        <div className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: 'url("/factory.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="absolute inset-0 bg-blue-900/50" />
+      </>
 
       {/* Contenido */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
@@ -43,15 +45,13 @@ export default function HeroSection() {
         </div>
 
         {/* Indicador de scroll */}
-        <div className="flex justify-center mt-10">
-          <a href="#categorias" aria-label="Desplazar hacia abajo" className="scroll-mouse">
-            <svg width="28" height="44" viewBox="0 0 28 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1.5" y="1.5" width="25" height="41" rx="12.5" stroke="white" strokeOpacity="0.7" strokeWidth="2"/>
-              <circle className="scroll-wheel" cx="14" cy="12" r="3" fill="white" fillOpacity="0.8"/>
-              <polyline points="9,32 14,38 19,32" stroke="white" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </a>
-        </div>
+        <a href="#categorias" aria-label="Desplazar hacia abajo" className="scroll-mouse mt-10 flex justify-center block">
+          <svg width="28" height="44" viewBox="0 0 28 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1.5" y="1.5" width="25" height="41" rx="12.5" stroke="white" strokeOpacity="0.7" strokeWidth="2"/>
+            <circle className="scroll-wheel" cx="14" cy="12" r="3" fill="white" fillOpacity="0.8"/>
+            <polyline points="9,32 14,38 19,32" stroke="white" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </a>
       </div>
     </section>
   );

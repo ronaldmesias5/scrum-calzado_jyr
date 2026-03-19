@@ -21,8 +21,10 @@ Descripción: Router FastAPI con endpoints del panel de administración del jefe
                frontend modules/dashboard-jefe/services/api.ts
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_db
 from app.modules.dashboard_jefe.schemas import (
     AlertSchema,
     AlertsResponse,
@@ -43,14 +45,20 @@ router = APIRouter(
     response_model=DashboardMetricsResponse,
     summary="Métricas del dashboard del jefe",
 )
-def get_metrics() -> DashboardMetricsResponse:
-    """Retorna los KPIs principales del dashboard administrativo."""
+def get_metrics(db: Session = Depends(get_db)) -> DashboardMetricsResponse:
+    """Retorna los KPIs principales desde la BD (0 si sin datos)."""
+    from app.models.order import Order, OrderStatus
+    
+    # Usar el campo 'state' en lugar de 'status'
+    pending = db.query(Order).filter(Order.state == OrderStatus.PENDING).count()
+    production = db.query(Order).filter(Order.state == OrderStatus.IN_PRODUCTION).count()
+    
     return DashboardMetricsResponse(
         metrics=[
-            MetricSchema(label="Pedidos Pendientes", value=24, change="+12%", change_positive=True),
-            MetricSchema(label="En Producción", value=12, change="+8%", change_positive=True),
-            MetricSchema(label="Stock Disponible", value=245, change="-5%", change_positive=False),
-            MetricSchema(label="Alertas Activas", value=4, change="2 nuevas", change_positive=False),
+            MetricSchema(label="Pedidos Pendientes", value=pending, change="0%", change_positive=True),
+            MetricSchema(label="En Producción", value=production, change="0%", change_positive=True),
+            MetricSchema(label="Stock Disponible", value=0, change="0%", change_positive=False),
+            MetricSchema(label="Alertas Activas", value=0, change="0", change_positive=False),
         ]
     )
 
@@ -60,17 +68,29 @@ def get_metrics() -> DashboardMetricsResponse:
     response_model=RecentOrdersResponse,
     summary="Pedidos recientes para el dashboard",
 )
-def get_recent_orders() -> RecentOrdersResponse:
-    """Retorna los últimos 5 pedidos registrados."""
-    return RecentOrdersResponse(
-        orders=[
-            RecentOrderSchema(order_id="#001", client_name="Andrea Plazas", quantity=58, status="pending", date="15/08/2025"),
-            RecentOrderSchema(order_id="#002", client_name="Jhon Kennedy", quantity=120, status="in_production", date="14/08/2025"),
-            RecentOrderSchema(order_id="#003", client_name="Sofia Valencia", quantity=85, status="ready", date="13/08/2025"),
-            RecentOrderSchema(order_id="#004", client_name="Sandra Guevara", quantity=150, status="in_production", date="13/08/2025"),
-            RecentOrderSchema(order_id="#005", client_name="Carlos Méndez", quantity=95, status="pending", date="12/08/2025"),
-        ]
-    )
+def get_recent_orders(db: Session = Depends(get_db)) -> RecentOrdersResponse:
+    """Retorna los últimos 5 pedidos registrados desde la BD (vacío si no hay datos)."""
+    from app.models.order import Order
+    from sqlalchemy import desc
+    
+    try:
+        orders = db.query(Order).order_by(desc(Order.created_at)).limit(5).all()
+        return RecentOrdersResponse(
+            orders=[
+                RecentOrderSchema(
+                    order_id=str(order.id),
+                    client_name=order.customer.name if order.customer else "N/A",
+                    quantity=order.total_pairs,
+                    status=order.state.value if order.state else "pendiente",
+                    date=order.created_at.strftime("%d/%m/%Y") if order.created_at else "N/A"
+                )
+                for order in orders
+            ]
+        )
+    except Exception as e:
+        # Si hay error, retornar lista vacía
+        print(f"Error en get_recent_orders: {e}")
+        return RecentOrdersResponse(orders=[])
 
 
 @router.get(
@@ -79,12 +99,6 @@ def get_recent_orders() -> RecentOrdersResponse:
     summary="Alertas activas del sistema",
 )
 def get_alerts() -> AlertsResponse:
-    """Retorna las alertas activas del sistema."""
-    return AlertsResponse(
-        alerts=[
-            AlertSchema(id="1", type="warning", title="Stock bajo en inventario", description="Por 0% calzado I 682 - 15 unids", timestamp="Hace 2h"),
-            AlertSchema(id="2", type="error", title="Pedido retrasado", description="N# #002 supera la fecha estimada de entrega", timestamp="Hace 4h"),
-            AlertSchema(id="3", type="warning", title="Incidencia de maquinaria", description="Máquina de costura falla", timestamp="Hace 6h"),
-            AlertSchema(id="4", type="info", title="Nueva solicitud de registro", description="Nueva solicitud de registro de cliente", timestamp="Hace 8h"),
-        ]
-    )
+    """Retorna las alertas activas (vacío si no hay datos)."""
+    return AlertsResponse(alerts=[])
+

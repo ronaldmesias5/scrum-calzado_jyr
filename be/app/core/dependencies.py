@@ -32,7 +32,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.core.database import SessionLocal
 from app.models.user import User
 from app.utils.security import decode_token
 
@@ -83,3 +83,31 @@ def get_current_user(
         )
 
     return user
+
+
+def _require_admin(user: User) -> None:
+    """Valida que el usuario sea administrador."""
+    if user.role.name != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de administrador",
+        )
+
+
+def _require_jefe(user: User) -> None:
+    """Valida que el usuario sea jefe (occupation)."""
+    if user.occupation != "jefe":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de jefe",
+        )
+
+
+def _require_admin_or_jefe(user: User) -> None:
+    """Valida que el usuario sea admin O jefe."""
+    if user.role.name != "admin" and user.occupation != "jefe":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de administrador o jefe",
+        )
+

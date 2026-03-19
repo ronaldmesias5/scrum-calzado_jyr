@@ -10,20 +10,20 @@ export default function CTAFinalSection() {
         <p className="text-blue-200 text-lg mb-8">
           Descubre nuestra colección completa y encuentra el calzado perfecto para tu negocio. Calidad, estilo y confort garantizados.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <>
           <a
             href="#categorias"
-            className="px-8 py-3 border-2 border-white text-white font-semibold rounded-lg btn-glow transition-colors duration-200"
+            className="inline-block px-8 py-3 border-2 border-white text-white font-semibold rounded-lg btn-glow transition-colors duration-200 mr-4"
           >
             Ver Catálogo Completo
           </a>
           <Link
             to="/auth/register"
-            className="px-8 py-3 bg-white text-blue-900 font-semibold rounded-lg btn-glow-white transition-colors duration-200"
+            className="inline-block px-8 py-3 bg-white text-blue-900 font-semibold rounded-lg btn-glow-white transition-colors duration-200"
           >
             Regístrate Ahora
           </Link>
-        </div>
+        </>
       </div>
     </section>
   );

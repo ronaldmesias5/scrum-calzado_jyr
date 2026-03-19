@@ -27,7 +27,7 @@ Descripción: Router FastAPI con endpoints de autenticación y gestión de contr
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.modules.auth.schemas import (
     ChangePasswordRequest,
@@ -152,3 +152,4 @@ def reset_password(
     """Restablece la contraseña usando un token de recuperación."""
     auth_service.reset_password(db=db, reset_data=reset_data)
     return MessageResponse(message="Contraseña restablecida exitosamente")
+

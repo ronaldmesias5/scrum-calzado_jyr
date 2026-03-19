@@ -21,7 +21,7 @@ Descripción: Router FastAPI con endpoints para gestión del perfil del usuario 
 
 from fastapi import APIRouter, Depends
 
-from app.dependencies import get_current_user
+from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.modules.auth.schemas import UserResponse
 
@@ -56,3 +56,4 @@ def get_me(
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,
     )
+

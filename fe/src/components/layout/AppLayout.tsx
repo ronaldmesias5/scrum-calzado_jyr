@@ -23,6 +23,7 @@
 import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
+import { Footer } from "@/components/ui/Footer";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -61,14 +62,7 @@ export function AppLayout() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white py-4 text-center">
-        <p className="text-sm text-gray-500">
-          CALZADO J&R - Calidad y Estilo a tu Alcance
-        </p>
-        <p className="text-xs text-gray-400">
-          Bogotá, Colombia | Tel: +57 601 234 5678
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

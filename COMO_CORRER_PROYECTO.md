@@ -78,7 +78,7 @@ docker compose up --build
 **Esperar 1-2 minutos** hasta ver este mensaje en los logs:
 ```
 be_1  | ✅ Datos iniciales cargados exitosamente
-frontend_1  | ✨ Servidor iniciado en http://localhost:80
+frontend_1  | ✨ Servidor iniciado en http://localhost:5173
 ```
 
 ### PASO 5: Verificar que Todo Funciona
@@ -87,7 +87,7 @@ Abrir navegador:
 
 | URL | Usuario | Contraseña |
 |-----|---------|-----------|
-| http://localhost | admin@example.com | password |
+| http://localhost:5173 | ronald.jefe@gmail.com | Test123456! |
 
 Deberías ver la pantalla de login con el logo de "Calzado J&R".
 
@@ -118,25 +118,19 @@ docker compose up --build
 
 ---
 
-## 👤 Usuarios de Prueba
+## 👤 Usuario Existente
 
-**Admin (Jefe)**
-- Email: `admin@example.com`
-- Contraseña: `password`
-
-**Empleado**
-- Email: `employee@example.com`
-- Contraseña: `password`
-
-**Cliente**
-- Email: `client@example.com`
-- Contraseña: `password`
+**Jefe (Administrador)**
+- Email: `ronald.jefe@gmail.com`
+- Contraseña: `Test123456!`
+- Rol: Empleado (con ocupación de Jefe)
+- Estado: Activo y Validado
 
 ---
 
 ## 🌐 Acceso a la Aplicación
 
-- **Frontend**: http://localhost
+- **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000
 - **Swagger Docs**: http://localhost:8000/docs
 - **Base de Datos**: localhost:5432 (ver credenciales en `.env`)
@@ -199,37 +193,18 @@ Documentación completa en: http://localhost:8000/docs
 3. Editar `.env` (cambiar valores si es necesario)
 4. `docker compose up --build`
 5. Esperar 1-2 minutos
-6. Abrir http://localhost
-7. Login: `admin@example.com` / `password`
+6. Abrir http://localhost:5173
+7. Login: `ronald.jefe@gmail.com` / `Test123456!`
 
 **¡Listo! El proyecto está corriendo.**
-└── Crear empleados y clientes
+
+Desde el dashboard del Jefe puedes:
+└── Crear empleados
+└── Crear clientes
 └── Gestionar tipos de documento
 └── Ver métricas y pedidos
-```
 
-### 2. Employee (Empleado)
-```
-Email: employee@example.com
-Password: password
-↓
-Acceso: Panel Empleado
-└── Ver tareas asignadas
-└── Confirmar finalización de tareas
-```
-
-### 3. Client (Cliente)
-```
-Email: client@example.com
-Password: password
-↓
-Acceso: Panel Cliente
-└── Ver catálogo
-└── Hacer pedidos
-└── Seguimiento de pedidos
-```
-
-**Nota**: Cuando Admin crea un cliente, debe cambiar contraseña en primer login (campo `must_change_password=true`).
+**Nota**: Cuando se crea un nuevo usuario (empleado o cliente), debe cambiar contraseña en el primer login (campo `must_change_password=true`).
 
 ---
 
@@ -237,8 +212,8 @@ Acceso: Panel Cliente
 
 ### Checklist
 - [ ] `docker compose ps` muestra 3 servicios en estado "Up"
-- [ ] Frontend carga en http://localhost (logo de "Calzado J&R")
-- [ ] Login con `admin crea un cliente, debe cambiar contraseña en primer login.
+- [ ] Frontend carga en http://localhost:5173 (logo de "Calzado J&R")
+- [ ] Login con `ronald.jefe@gmail.com` / `Test123456!` funciona correctamente
 
 ---
 

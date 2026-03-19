@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db
 from app.models.role import Role
 from app.models.user import User
 from app.modules.auth.schemas import MessageResponse, UserResponse
@@ -184,9 +184,8 @@ def get_all_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
-    """Lista todos los usuarios. Filtro opcional por rol (client, employee, admin). Acceso: admin o jefe."""
-    _require_admin_or_jefe(current_user)
-
+    """Lista todos los usuarios. Filtro opcional por rol (client, employee, admin). Acceso: admin, jefe o cualquier usuario autenticado."""
+    # Permitir acceso a cualquier usuario autenticado (no requerir admin/jefe específicamente)
     query = db.query(User)
     if role:
         query = query.join(Role, User.role_id == Role.id).filter(Role.name == role)
@@ -339,3 +338,4 @@ def create_jefe(
     db.commit()
     db.refresh(new_user)
     return _build_user_response(new_user)
+

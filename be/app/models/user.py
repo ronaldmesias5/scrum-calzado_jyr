@@ -28,7 +28,7 @@ from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.core.database import Base
 
 
 class User(Base):
@@ -90,6 +90,13 @@ class User(Base):
 
     identity_document_type = relationship("TypeDocument", back_populates="users", lazy="selectin")
 
+    password_reset_tokens = relationship(
+        "PasswordResetToken",
+        back_populates="user",
+        foreign_keys="PasswordResetToken.user_id",
+        lazy="selectin",
+    )
+
     # ────────────────────────────
     # 🔗 Relación con roles
     # ────────────────────────────
@@ -146,7 +153,7 @@ class User(Base):
 
     validated_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
         nullable=True,
     )
 
@@ -156,7 +163,29 @@ class User(Base):
     )
 
     # ────────────────────────────
-    # 🕐 Timestamps
+    # 🕐 Auditoría - Quién creó/actualizó/borró
+    # ────────────────────────────
+
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    deleted_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    # ────────────────────────────
+    # 📅 Timestamps
     # ────────────────────────────
 
     created_at: Mapped[datetime] = mapped_column(
@@ -177,5 +206,35 @@ class User(Base):
         nullable=True,
     )
 
+    # ────────────────────────────
+    # 🔗 Relaciones de auditoría (auto-referencias)
+    # ────────────────────────────
+
+    validated_by_user = relationship(
+        "User",
+        foreign_keys=[validated_by],
+        remote_side=id,
+        primaryjoin="User.validated_by == User.id",
+    )
+    created_by_user = relationship(
+        "User",
+        foreign_keys=[created_by],
+        remote_side=id,
+        primaryjoin="User.created_by == User.id",
+    )
+    updated_by_user = relationship(
+        "User",
+        foreign_keys=[updated_by],
+        remote_side=id,
+        primaryjoin="User.updated_by == User.id",
+    )
+    deleted_by_user = relationship(
+        "User",
+        foreign_keys=[deleted_by],
+        remote_side=id,
+        primaryjoin="User.deleted_by == User.id",
+    )
+
     def __repr__(self) -> str:
         return f"User(id={self.id}, email={self.email}, is_active={self.is_active})"
+

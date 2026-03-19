@@ -33,13 +33,11 @@ export default function CategoriesSection() {
               key={cat.name}
               className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300 group"
             >
-              <div className="overflow-hidden h-52">
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
+              <img
+                src={cat.image}
+                alt={cat.name}
+                className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
+              />
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{cat.name}</h3>
                 <p className="text-gray-500 text-sm mb-4">{cat.description}</p>

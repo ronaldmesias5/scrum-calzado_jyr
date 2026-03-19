@@ -23,13 +23,20 @@
  *   Dependencias: hooks/useAuth.ts, lucide-react, react-router-dom
  */
 
+import { useState } from 'react';
 import { Search, Bell, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import NotificationsPanel from './NotificationsPanel';
+import { useBadgeCounts } from '../../context/BadgeCountsContext';
 
 export default function AdminHeader() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const { counts } = useBadgeCounts();
+  // Total de avisos = pedidos pendientes + usuarios sin validar
+  const totalBadge = counts.pedidos + counts.usuarios;
 
   const handleLogout = () => {
     logout();
@@ -48,12 +55,16 @@ export default function AdminHeader() {
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10">
-      {/* Título + bienvenida */}
-      <div>
-        <h1 className="text-sm font-bold text-gray-900">Panel de Administración</h1>
-        <p className="text-xs text-gray-500">
-          Bienvenido, {fullName}
-        </p>
+      {/* Logo */}
+      <div
+        className="flex items-center gap-3 cursor-pointer flex-shrink-0"
+        onClick={() => navigate('/dashboard/admin')}
+      >
+        <img src="/logo.png" alt="CALZADO J&R" className="h-10 w-10 object-contain" />
+        <div className="hidden lg:block">
+          <p className="text-sm font-bold text-gray-900 leading-tight">Panel de Administración</p>
+          <p className="text-xs text-gray-500">Bienvenido, {fullName}</p>
+        </div>
       </div>
 
       {/* Búsqueda */}
@@ -68,11 +79,17 @@ export default function AdminHeader() {
 
       {/* Notificaciones + usuario */}
       <div className="flex items-center gap-4">
-        <button className="relative text-gray-500 hover:text-gray-800">
+        <button
+          onClick={() => setIsPanelOpen(true)}
+          className="relative text-gray-500 hover:text-gray-800 transition-colors"
+          title="Notificaciones"
+        >
           <Bell size={20} />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            4
-          </span>
+          {totalBadge > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 px-0.5 flex items-center justify-center font-bold leading-none">
+              {totalBadge > 99 ? '99+' : totalBadge}
+            </span>
+          )}
         </button>
 
         {/* Avatar */}
@@ -96,6 +113,8 @@ export default function AdminHeader() {
           <LogOut size={18} />
         </button>
       </div>
+
+      <NotificationsPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} />
     </header>
   );
 }

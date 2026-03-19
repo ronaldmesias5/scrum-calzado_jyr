@@ -26,8 +26,8 @@ export default function AsessoriaSection() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {benefits.map(({ icon: Icon, title, desc }) => (
             <div key={title} className="bg-gray-50 rounded-xl p-6 text-center border border-gray-100">
-              <div className="flex justify-center mb-4">
-                <div className="bg-blue-100 p-3 rounded-full">
+              <div className="mb-4">
+                <div className="bg-blue-100 p-3 rounded-full inline-block">
                   <Icon size={24} className="text-blue-800" />
                 </div>
               </div>

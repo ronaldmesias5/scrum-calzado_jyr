@@ -25,7 +25,7 @@ Descripción: Configuración centralizada de la conexión a PostgreSQL con SQLAl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from app.config import settings
+from app.core.config import settings
 
 engine = create_engine(
     settings.DATABASE_URL,

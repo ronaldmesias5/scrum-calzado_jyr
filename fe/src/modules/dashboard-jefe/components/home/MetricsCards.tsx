@@ -1,34 +1,48 @@
-import { ShoppingBag, Cog, Package, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Zap, CheckCircle, UserCheck } from 'lucide-react';
 import type { Metric } from '../../types/dashboard';
 
-const icons = [ShoppingBag, Cog, Package, AlertTriangle];
-const iconColors = ['text-orange-500', 'text-green-500', 'text-blue-500', 'text-red-500'];
-const bgColors = ['bg-orange-50', 'bg-green-50', 'bg-blue-50', 'bg-red-50'];
+const CARD_CONFIG = [
+  { icon: ShoppingBag, iconColor: 'text-orange-500', bgColor: 'bg-orange-50'  },
+  { icon: Zap,         iconColor: 'text-blue-500',   bgColor: 'bg-blue-50'    },
+  { icon: CheckCircle, iconColor: 'text-green-600',  bgColor: 'bg-green-50'   },
+  { icon: UserCheck,   iconColor: 'text-purple-600', bgColor: 'bg-purple-50'  },
+];
 
 interface Props {
   metrics: Metric[];
 }
 
 export default function MetricsCards({ metrics }: Props) {
+  const cards = metrics.length > 0 ? metrics : CARD_CONFIG.map((_, i) => ({
+    label: ['Pedidos Pendientes', 'En Producción', 'Pedidos Completados', 'Usuarios por Validar'][i],
+    value: '—',
+  } as Metric));
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-      {metrics.map((m, i) => {
-        const Icon = icons[i] ?? Package;
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {cards.map((m, i) => {
+        const { icon: Icon, iconColor, bgColor } = CARD_CONFIG[i] ?? CARD_CONFIG[0];
         return (
           <div
             key={m.label}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2 hover:shadow-md transition-shadow duration-200"
+            className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200"
           >
             <div className="flex items-center justify-between">
-              <div className={`p-2 rounded-lg ${bgColors[i]}`}>
-                <Icon size={20} className={iconColors[i]} />
+              <div className={`p-2.5 rounded-xl ${bgColor}`}>
+                <Icon size={20} className={iconColor} />
               </div>
-              <span className={`text-xs font-semibold ${m.changePositive ? 'text-green-600' : 'text-red-500'}`}>
-                {m.change}
-              </span>
+              {m.change && (
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  m.changePositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+                }`}>
+                  {m.change}
+                </span>
+              )}
             </div>
-            <span className="text-3xl font-bold text-gray-900">{m.value}</span>
-            <span className="text-sm text-gray-500">{m.label}</span>
+            <div>
+              <p className="text-3xl font-bold text-gray-900 leading-tight">{m.value}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{m.label}</p>
+            </div>
           </div>
         );
       })}

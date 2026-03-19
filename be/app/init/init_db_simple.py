@@ -7,7 +7,7 @@ Descripción: Inicialización automática de datos iniciales en el startup.
 
 import logging
 from sqlalchemy.orm import Session
-from app.seed_data import seed_all
+from app.init.seed_data import seed_all
 
 logger = logging.getLogger(__name__)
 
@@ -20,3 +20,4 @@ def initialize_database(db: Session) -> None:
         logger.info("✨ Datos iniciales listos")
     except Exception as e:
         logger.error(f"Error: {str(e)}")
+

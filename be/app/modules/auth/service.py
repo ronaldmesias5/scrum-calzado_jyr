@@ -105,7 +105,7 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas",
+            detail="Correo o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -131,7 +131,7 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token inválido o expirado",
+            detail="El token de renovación es incorrecto o ha expirado",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -201,7 +201,7 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
     if not token_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token de recuperación inválido",
+            detail="El token de recuperación es incorrecto o no existe",
         )
 
     if token_record.used:

@@ -71,7 +71,8 @@ export default function LandingHeader() {
               {link.label}
             </a>
           ))}
-          <div className="flex flex-col gap-3 mt-2 pt-2 border-t border-gray-100">
+          <>
+            <div className="mt-2 pt-2 border-t border-gray-100" />
             <Link
               to="/auth/register"
               className="flex items-center justify-center px-4 py-2 border border-blue-800 text-blue-800 rounded-lg font-medium btn-pulse transition-colors duration-200"
@@ -86,7 +87,7 @@ export default function LandingHeader() {
             >
               Ingresar
             </Link>
-          </div>
+          </>
         </div>
       )}
     </header>

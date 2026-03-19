@@ -27,6 +27,7 @@ import os
 from alembic.config import Config
 from alembic.command import upgrade as alembic_upgrade
 from sqlalchemy.orm import Session
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

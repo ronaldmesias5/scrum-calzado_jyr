@@ -28,13 +28,44 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.config import settings
-from app.database import Base
+from app.core.config import settings
+from app.core.database import Base
 
-# Importar todos los modelos para que Alembic los detecte
+# ────────────────────────────────────────────────────────────────────────────────
+# 📦 Importar TODOS los modelos para que Alembic los detecte automáticamente
+# ────────────────────────────────────────────────────────────────────────────────
+
+# Core
 from app.models.role import Role  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
+from app.models.type_document import TypeDocument  # noqa: F401
+
+# Catálogo
+from app.models.category import Category  # noqa: F401
+from app.models.brand import Brand  # noqa: F401
+from app.models.style import Style  # noqa: F401
+from app.models.product import Product  # noqa: F401
+
+# Órdenes
+from app.models.order import Order, OrderDetail  # noqa: F401
+
+# Inventario
+from app.models.inventory import Inventory  # noqa: F401
+from app.models.inventory_movement import InventoryMovement  # noqa: F401
+
+# Suministros
+from app.models.supplies import Supplies  # noqa: F401
+from app.models.supplies_movement import SuppliesMovement  # noqa: F401
+
+# Vales
+from app.models.vale import Vale, DetailVale  # noqa: F401
+
+# Tareas e Incidencias
+from app.models.incidence import Incidence  # noqa: F401
+
+# Notificaciones
+from app.models.notifications import Notification  # noqa: F401
 
 config = context.config
 
