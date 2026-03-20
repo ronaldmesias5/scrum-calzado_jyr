@@ -19,6 +19,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, Plus, RefreshCw, Maximize2, Download } from 'lucide-react';
 import { Product, listProducts, resolveImageUrl } from '../services/catalogService';
 import AdjustInventoryModal from '../components/AdjustInventoryModal';
@@ -118,38 +119,28 @@ export default function InventoryPage() {
       return;
     }
 
-    // Preparar datos para el CSV
-    const headers = ['Nombre Producto', 'Marca', 'Estilo', 'Categoría', 'Color', 'Stock Total', 'Mínimo Requerido', 'Estado'];
-    const rows = productsWithStock.map(p => [
-      p.name,
-      p.brand_name,
-      p.style_name,
-      p.category_name,
-      p.color || 'N/A',
-      (p.stock_total || 0).toString(),
-      (p.insufficient_threshold || 12).toString(),
-      (p.stock_total || 0) >= (p.insufficient_threshold || 12) ? 'Suficiente' : 'Insuficiente',
-    ]);
+    // Preparar datos para el Excel
+    const data = productsWithStock.map(p => ({
+      'Nombre Producto': p.name,
+      'Marca': p.brand_name,
+      'Estilo': p.style_name,
+      'Categoría': p.category_name,
+      'Color': p.color || 'N/A',
+      'Stock Total': p.stock_total || 0,
+      'Mínimo Requerido': p.insufficient_threshold || 12,
+      'Estado': (p.stock_total || 0) >= (p.insufficient_threshold || 12) ? 'Suficiente' : 'Insuficiente',
+    }));
 
-    // Crear CSV
-    const csvContent = [
-      headers.map(h => `"${h}"`).join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
-    ].join('\n');
+    // Crear libro y hoja
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
 
-    // Crear blob y descargar
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    const filename = `inventario_stock_${new Date().toLocaleDateString('es-CO').replace(/\//g, '-')}.csv`;
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Generar nombre de archivo
+    const filename = `inventario_stock_${new Date().toLocaleDateString('es-CO').replace(/\//g, '-')}.xlsx`;
+
+    // Descargar
+    XLSX.writeFile(wb, filename);
   };
 
   return (

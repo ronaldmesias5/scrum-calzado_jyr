@@ -5,13 +5,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  Users, Search, Filter, Edit2, Shield, ShieldOff, 
-  Mail, Phone, CreditCard, Briefcase, Loader2, AlertCircle,
-  MoreVertical, CheckCircle2, XCircle
+  Users, Search, Edit2, Shield, ShieldOff, 
+  Mail, Phone, CreditCard, Loader2, AlertCircle,
+  CheckCircle2, XCircle, UserPlus, Scissors,
+  Hammer, Layers, Footprints, ShieldCheck
 } from 'lucide-react';
 import { getAllUsers, updateUser, type UpdateUserRequest } from '../services/adminApi';
 import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
+import CreateUserForm from '../components/CreateUserForm';
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<UserResponse[]>([]);
@@ -24,6 +26,7 @@ export default function EmployeesPage() {
   // Estado para el modal de edición
   const [selectedEmployee, setSelectedEmployee] = useState<UserResponse | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [typeDocuments, setTypeDocuments] = useState<TypeDocument[]>([]);
   const [editForm, setEditForm] = useState<UpdateUserRequest>({});
@@ -95,11 +98,11 @@ export default function EmployeesPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Users className="w-8 h-8 text-blue-600" />
             Gestión de Empleados
           </h1>
@@ -107,6 +110,14 @@ export default function EmployeesPage() {
             Administra el personal de la fábrica, asigna cargos y controla el acceso.
           </p>
         </div>
+
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl shadow-sm transition-all active:scale-95"
+        >
+          <UserPlus size={18} />
+          Nuevo Empleado
+        </button>
       </div>
 
       {/* Filtros */}
@@ -205,10 +216,25 @@ export default function EmployeesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
-                        <Briefcase className="w-3 h-3" />
-                        {emp.occupation ? emp.occupation.charAt(0).toUpperCase() + emp.occupation.slice(1) : 'Sin cargo'}
-                      </span>
+                      {(() => {
+                        let Icon = Shield;
+                        let colorClass = 'bg-gray-50 text-gray-600 border-gray-100';
+                        
+                        switch (emp.occupation) {
+                          case 'cortador': Icon = Scissors; colorClass = 'bg-orange-50 text-orange-700 border-orange-100'; break;
+                          case 'guarnecedor': Icon = Layers; colorClass = 'bg-blue-50 text-blue-700 border-blue-100'; break;
+                          case 'solador': Icon = Hammer; colorClass = 'bg-amber-50 text-amber-700 border-amber-100'; break;
+                          case 'emplantillador': Icon = Footprints; colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-100'; break;
+                          case 'jefe': Icon = ShieldCheck; colorClass = 'bg-indigo-50 text-indigo-700 border-indigo-100'; break;
+                        }
+
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${colorClass}`}>
+                            <Icon className="w-3 h-3" />
+                            {emp.occupation ? emp.occupation.charAt(0).toUpperCase() + emp.occupation.slice(1) : 'Sin cargo'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4">
                       {emp.is_active ? (
@@ -349,6 +375,33 @@ export default function EmployeesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de Creación */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Registrar Nuevo Empleado</h3>
+              <button 
+                onClick={() => setIsCreateModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
+              <CreateUserForm 
+                userType="employee" 
+                typeDocuments={typeDocuments} 
+                onSuccess={() => {
+                  fetchEmployees();
+                  // No cerramos el modal automáticamente por si quiere ver el mensaje de éxito
+                  // Opcional: setTimeout(() => setIsCreateModalOpen(false), 2000);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

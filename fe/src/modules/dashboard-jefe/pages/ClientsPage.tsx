@@ -5,13 +5,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  UserPlus, Search, Filter, Edit2, Shield, ShieldOff, 
-  Mail, Phone, CreditCard, Building2, Loader2, AlertCircle,
+  UserPlus, Search, Edit2, Shield, ShieldOff, 
+  Mail, Phone, Building2, Loader2, AlertCircle,
   CheckCircle2, XCircle
 } from 'lucide-react';
 import { getAllUsers, updateUser, type UpdateUserRequest } from '../services/adminApi';
 import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
+import CreateUserForm from '../components/CreateUserForm';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<UserResponse[]>([]);
@@ -23,6 +24,7 @@ export default function ClientsPage() {
   // Estado para el modal de edición
   const [selectedClient, setSelectedClient] = useState<UserResponse | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [typeDocuments, setTypeDocuments] = useState<TypeDocument[]>([]);
   const [editForm, setEditForm] = useState<UpdateUserRequest>({});
@@ -93,11 +95,11 @@ export default function ClientsPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <UserPlus className="w-8 h-8 text-indigo-600" />
             Gestión de Clientes
           </h1>
@@ -105,6 +107,14 @@ export default function ClientsPage() {
             Administra la cartera de clientes, visualiza sus datos comerciales y controla su acceso.
           </p>
         </div>
+
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-semibold rounded-xl shadow-sm transition-all active:scale-95"
+        >
+          <UserPlus size={18} />
+          Nuevo Cliente
+        </button>
       </div>
 
       {/* Filtros */}
@@ -328,6 +338,32 @@ export default function ClientsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de Creación */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Registrar Nuevo Cliente</h3>
+              <button 
+                onClick={() => setIsCreateModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
+              <CreateUserForm 
+                userType="client" 
+                typeDocuments={typeDocuments} 
+                onSuccess={() => {
+                  fetchClients();
+                  // No cerramos el modal automáticamente por si quiere ver el mensaje de éxito
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

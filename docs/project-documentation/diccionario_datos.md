@@ -1,395 +1,347 @@
 # 📊 Diccionario de Datos - CALZADO J&R
-## Sistema de Gestión y Producción de Calzado
 
-**Base de Datos:** PostgreSQL 17-alpine  
-**Estado:** ✅ 100% Sincronizada y Funcional  
-**Total Tablas:** 19 Operacionales  
+Este documento proporciona una descripción detallada de la estructura de la base de datos de **CALZADO J&R**. El sistema utiliza PostgreSQL 17-alpine y gestiona la producción, inventario, ventas y personal.
 
 ---
 
+## 🏗️ Resumen General
+- **Motor:** PostgreSQL 17
+- **Total de Tablas:** 19
+- **Extensiones:** `uuid-ossp` para generación de IDs únicos.
+- **Estrategia de Borrado:** Soft Delete (`deleted_at`) en tablas críticas.
+- **Auditoría:** La mayoría de las tablas incluyen `created_by`, `updated_by` y `deleted_by` vinculados a la tabla `users`.
 
-## 📑 19 Tablas Operacionales
+---
 
-### Tabla 1️⃣: ROLES
-**Propósito:** Roles del sistema (admin, jefe, operario, cliente)  
-**Registros:** 3 | **Relaciones:** 1:N a users
+## ♾️ Tipos Enumerados (ENUMS)
+
+| Nombre | Valores | Descripción |
+| :--- | :--- | :--- |
+| **occupation_type** | jefe, cortador, guarnecedor, solador, emplantillador | Cargos operativos en la fábrica. |
+| **supplies_movement_type** | entrada, salida | Tipo de flujo de materia prima. |
+| **inventory_movement_type** | entrada, salida, ajuste | Tipo de flujo de producto terminado. |
+| **order_status** | pendiente, en_progreso, completado, cancelado | Estado de un pedido mayorista. |
+| **task_status** | pendiente, en_progreso, completado, cancelado | Estado de una tarea de producción. |
+| **task_priority** | baja, media, alta | Prioridad de las tareas asignadas. |
+| **task_type** | corte, guarnicion, soladura, emplantillado | Etapa de producción de calzado. |
+| **incidence_status** | abierta, en_progreso, resuelta, cerrrada | Estado de un reporte de problema. |
+| **notification_type** | info, advertencia, error, exito | Nivel visual de la notificación. |
+
+---
+
+## 📑 Tablas Operacionales
+
+### 1. ROLES
+**Propósito:** Define los niveles de acceso al sistema.
 
 | Campo | Tipo | Restricciones | Descripción |
-|-------|------|--------------|-----------|
-| **id** | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
-| name | VARCHAR(50) | UNIQUE, NOT NULL | Nombre del rol |
-| description | VARCHAR(255) | | Descripción |
-| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha creación |
-| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
-| deleted_at | TIMESTAMP+TZ | | Soft delete |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK, DEFAULT uuid_generate_v4() | ID único del rol. |
+| **name_role** | VARCHAR(50) | UNIQUE, NOT NULL | Nombre (admin, employee, client). |
+| **description_role** | VARCHAR(255) | | Explicación del alcance del rol. |
+| **created_at** | TIMESTAMP+TZ | DEFAULT NOW() | Fecha de creación. |
+| **updated_at** | TIMESTAMP+TZ | DEFAULT NOW() | Última actualización. |
+| **deleted_at** | TIMESTAMP+TZ | | Fecha de eliminación lógica. |
 
 ---
 
-### Tabla 2️⃣: TYPE_DOCUMENT  
-**Propósito:** Tipos de documento de identidad  
-**Registros:** 8 | **Relaciones:** 1:N a users
+### 2. TYPE_DOCUMENT
+**Propósito:** Clasificación de documentos de identidad (C.C., NIT, etc.).
 
 | Campo | Tipo | Restricciones | Descripción |
-|-------|------|--------------|-----------|
-| **id** | UUID | PK, DEFAULT uuid_generate_v4() | Identificador único |
-| name | VARCHAR(100) | UNIQUE, NOT NULL | Tipo de documento |
-| created_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Fecha creación |
-| updated_at | TIMESTAMP+TZ | DEFAULT NOW(), NOT NULL | Última actualización |
-| deleted_at | TIMESTAMP+TZ | | Soft delete |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK, DEFAULT uuid_generate_v4() | ID único. |
+| **name_type_document** | VARCHAR(100) | UNIQUE, NOT NULL | Nombre del tipo de documento. |
+| **created_at** | TIMESTAMP+TZ | DEFAULT NOW() | Fecha de creación. |
+| **updated_at** | TIMESTAMP+TZ | DEFAULT NOW() | Última actualización. |
+| **deleted_at** | TIMESTAMP+TZ | | Fecha de eliminación lógica. |
 
 ---
 
-### Tabla 3️⃣: USERS (Core)
-**Propósito:** Usuarios del sistema  
-**Registros:** 13 | **Relaciones:** 7 FKs (4 auditoría + 3 datos)
+### 3. USERS
+**Propósito:** Entidad central que gestiona credenciales de acceso, perfiles de empleados y clientes.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| email | VARCHAR(255) | - | UNIQUE, email único |
-| hashed_password | VARCHAR(255) | - | Contraseña bcrypt |
-| name, last_name | VARCHAR(255) | - | Nombre completo |
-| phone | VARCHAR(20) | - | Teléfono contacto |
-| identity_document | VARCHAR(20) | - | Número documento |
-| **identity_document_type_id** | UUID | → type_document(id) | FK: Tipo documento |
-| **role_id** | UUID | → roles(id) | FK: Rol usuario |
-| is_active | BOOLEAN | - | Cuenta activa/inactiva |
-| is_validated | BOOLEAN | - | Aprobada por admin |
-| must_change_password | BOOLEAN | - | Fuerza cambio |
-| business_name | VARCHAR(255) | - | Razón social (clientes) |
-| occupation | occupation_type | - | Ocupación (empleados) |
-| **validated_by** | UUID | → users(id) | FK: Admin validador |
-| validated_at | TIMESTAMP+TZ | - | Fecha validación |
-| **created_by** | UUID | → users(id) | FK: Auditoría creador |
-| **updated_by** | UUID | → users(id) | FK: Auditoría actualizador |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría eliminador |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps auditoría |
-
----
-
-### Tabla 4️⃣: PASSWORD_RESET_TOKENS
-**Propósito:** Tokens de recuperación de contraseña  
-**Registros:** 5-10 | **Relaciones:** N:1 a users
-
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **user_id** | UUID | → users(id) | FK: Usuario propietario |
-| token | VARCHAR(255) | - | UNIQUE, token único |
-| expires_at | TIMESTAMP+TZ | - | Expiración (60min) |
-| used | BOOLEAN | - | Si fue utilizado |
-| created_at | TIMESTAMP+TZ | - | Fecha creación |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único de usuario. |
+| **email** | VARCHAR(255) | UNIQUE, NOT NULL | Correo electrónico (login). |
+| **hashed_password** | VARCHAR(255) | NOT NULL | Contraseña cifrada. |
+| **name_user** | VARCHAR(255) | NOT NULL | Nombres. |
+| **last_name** | VARCHAR(255) | NOT NULL | Apellidos. |
+| **phone** | VARCHAR(20) | | Teléfono de contacto. |
+| **identity_document** | VARCHAR(20) | | Número de documento físico. |
+| **identity_document_type_id** | UUID | FK → `type_document(id)` | Tipo de documento. |
+| **role_id** | UUID | FK → `roles(id)`, NOT NULL | Rol asignado. |
+| **is_active** | BOOLEAN | DEFAULT FALSE | Si la cuenta puede loguearse. |
+| **is_validated** | BOOLEAN | DEFAULT FALSE | Aprobación por parte de un Jefe. |
+| **must_change_password** | BOOLEAN | DEFAULT FALSE | Forzar cambio en próximo inicio. |
+| **business_name** | VARCHAR(255) | | Razón social (solo para Clientes). |
+| **occupation** | ENUM | occupation_type | Cargo (solo para Empleados). |
+| **validated_by** | UUID | FK → `users(id)` | Jefe que validó al usuario. |
+| **validated_at** | TIMESTAMP+TZ | | Fecha de validación. |
+| **created_by** | UUID | FK → `users(id)` | Usuario que creó el registro. |
+| **updated_by** | UUID | FK → `users(id)` | Usuario que editó el registro. |
+| **deleted_by** | UUID | FK → `users(id)` | Usuario que eliminó el registro. |
+| **created_at** | TIMESTAMP+TZ | DEFAULT NOW() | Auditoría temporal. |
 
 ---
 
-### Tabla 5️⃣: CATEGORIES
-**Propósito:** Categorías de productos  
-**Registros:** 3 | **Relaciones:** 1:N a products, Auditoría
+### 4. PASSWORD_RESET_TOKENS
+**Propósito:** Almacena tokens temporales para recuperación de contraseñas.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| name | VARCHAR(255) | - | Nombre (Deportivo, Casual, Formal) |
-| description | TEXT | - | Descripción |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
-
----
-
-### Tabla 6️⃣: BRANDS
-**Propósito:** Marcas de calzado  
-**Registros:** 5 | **Relaciones:** 1:N a products, styles, Auditoría
-
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| name | VARCHAR(255) | - | Nombre (Nike, Adidas, etc) |
-| description | TEXT | - | Descripción |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **user_id** | UUID | FK → `users(id)`, NOT NULL | Propietario del token. |
+| **token** | VARCHAR(255) | UNIQUE, NOT NULL | Hash del token de seguridad. |
+| **expires_at** | TIMESTAMP+TZ | NOT NULL | Fecha de expiración. |
+| **used** | BOOLEAN | DEFAULT FALSE | Indica si ya fue canjeado. |
+| **created_by** | UUID | FK → `users(id)` | Usuario creador. |
+| **created_at** | TIMESTAMP+TZ | DEFAULT NOW() | Fecha emisión. |
 
 ---
 
-### Tabla 7️⃣: STYLES
-**Propósito:** Estilos/modelos dentro de marcas  
-**Registros:** 23 | **Relaciones:** N:1 brands, 1:N products, Auditoría
+### 5. SUPPLIES
+**Propósito:** Listado Maestro de Insumos (Ceros, hilos, suelas, etc.).
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **brand_id** | UUID | → brands(id) | FK: Marca |
-| name | VARCHAR(255) | - | Nombre estilo |
-| description | TEXT | - | Descripción |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **name_supplies** | VARCHAR(255) | NOT NULL | Nombre del insumo. |
+| **description_supplies** | TEXT | | Detalles técnicos. |
+| **created_by** | UUID | FK → `users(id)` | Auditoría. |
+| **updated_by** | UUID | FK → `users(id)` | Auditoría. |
+| **deleted_by** | UUID | FK → `users(id)` | Auditoría. |
+| **created_at / updated_at** | TIMESTAMP+TZ | DEFAULT NOW() | Timestamps. |
 
 ---
 
-### Tabla 8️⃣: PRODUCTS
-**Propósito:** Catálogo de productos  
-**Registros:** 68 | **Relaciones:** N:1 categories, brands, styles; 1:N inventory, order_details, Auditoría
+### 6. SUPPLIES_MOVEMENT
+**Propósito:** Registro histórico de entradas y salidas de materia prima de bodega.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **category_id** | UUID | → categories(id) | FK: Categoría |
-| **brand_id** | UUID | → brands(id) | FK: Marca |
-| **style_id** | UUID | → styles(id) | FK: Estilo |
-| name | VARCHAR(255) | - | Nombre producto |
-| description | TEXT | - | Descripción |
-| state | BOOLEAN | - | Activo/Inactivo |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **supplies_id** | UUID | FK → `supplies(id)`, NOT NULL | El insumo movido. |
+| **user_id** | UUID | FK → `users(id)`, NOT NULL | Usuario que opera el movimiento. |
+| **type_of_movement** | ENUM | supplies_movement_type | Entrada o Salida. |
+| **amount** | NUMERIC(10,2) | NOT NULL | Cantidad movida. |
+| **colour** | VARCHAR(100) | | Color del insumo si aplica. |
+| **size** | VARCHAR(50) | | Talla del insumo si aplica. |
+| **movement_date** | TIMESTAMP+TZ | NOT NULL | Fecha efectiva. |
 
 ---
 
-### Tabla 9️⃣: INVENTORY
-**Propósito:** Stock de productos por talla/color  
-**Registros:** Variable | **Relaciones:** N:1 products, Auditoría
+### 7. CATEGORIES
+**Propósito:** Categorización del calzado (Deportivo, Casual, Botas, etc.).
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **product_id** | UUID | → products(id) | FK: Producto |
-| size | VARCHAR(50) | - | Talla (30-47) |
-| colour | VARCHAR(100) | - | Color |
-| amount | NUMERIC(10,2) | - | Cantidad disponible |
-| minimum_stock | INTEGER | - | Stock mínimo |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **name_category** | VARCHAR(255) | UNIQUE, NOT NULL | Nombre único. |
+| **description_category** | TEXT | | Descripción. |
+| **created_by / updated_at** | Mixed | FK / TIMESTAMP | Auditoría estándar. |
 
 ---
 
-### Tabla 🔟: ORDERS
-**Propósito:** Órdenes/pedidos mayoristas  
-**Registros:** 8 | **Relaciones:** N:1 users (customer), 1:N order_details, Auditoría
+### 8. BRANDS
+**Propósito:** Marcas comerciales de calzado manejadas.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **customer_id** | UUID | → users(id) | FK: Cliente que ordenó |
-| total_pairs | INTEGER | - | Total pares |
-| state | order_status | - | Enum: pendiente/progreso/completado |
-| delivery_date | TIMESTAMP+TZ | - | Fecha entrega |
-| creation_date | TIMESTAMP+TZ | - | Fecha orden |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **name_brand** | VARCHAR(255) | UNIQUE, NOT NULL | Ej. "Nike", "Adidas", "Propios". |
+| **description_brand** | TEXT | | Detalles de la marca. |
 
 ---
 
-### Tabla 1️⃣1️⃣: ORDER_DETAILS
-**Propósito:** Líneas de detalle de órdenes  
-**Registros:** 86 | **Relaciones:** N:1 orders, products, Auditoría
+### 9. STYLES
+**Propósito:** Estilos o modelos específicos dentro de una marca.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **order_id** | UUID | → orders(id) | FK: Orden |
-| **product_id** | UUID | → products(id) | FK: Producto |
-| size | VARCHAR(50) | - | Talla |
-| colour | VARCHAR(100) | - | Color |
-| amount | INTEGER | - | Cantidad pares |
-| state | order_status | - | Estado línea |
-| order_date | TIMESTAMP+TZ | - | Fecha orden |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **brand_id** | UUID | FK → `brands(id)`, NOT NULL | Marca a la que pertenece. |
+| **name_style** | VARCHAR(255) | NOT NULL | Nombre del modelo (ej. "Air Max"). |
+| **description_style** | TEXT | | Descripción del estilo. |
 
 ---
 
-### Tabla 1️⃣2️⃣: NOTIFICATIONS
-**Propósito:** Sistema de notificaciones  
-**Registros:** Variable | **Relaciones:** N:1 users, Auditoría
+### 10. PRODUCTS (Catálogo)
+**Propósito:** Definición de producto final (combinación de categoría, marca y estilo).
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **user_id** | UUID | → users(id) | FK: Usuario destinatario |
-| title | VARCHAR(255) | - | Título |
-| message | TEXT | - | Contenido |
-| type | notification_type | - | Enum: info/advertencia/error/éxito |
-| is_read | BOOLEAN | - | Leída/No leída |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **category_id** | UUID | FK → `categories(id)` | Categoría vinculada. |
+| **brand_id** | UUID | FK → `brands(id)` | Marca vinculada. |
+| **style_id** | UUID | FK → `styles(id)` | Estilo vinculado. |
+| **name_product** | VARCHAR(255) | NOT NULL | Nombre descriptivo. |
+| **color** | VARCHAR(100) | | Color principal. |
+| **image_url** | VARCHAR(500) | | Ruta a la imagen del catálogo. |
+| **insufficient_threshold** | INTEGER | DEFAULT 10 | Cantidad para alerta de bajo stock. |
+| **state** | BOOLEAN | DEFAULT TRUE | Habilitado/Deshabilitado. |
 
 ---
 
-### Tabla 1️⃣3️⃣: SUPPLIES
-**Propósito:** Insumos/materias primas  
-**Registros:** Variable | **Relaciones:** 1:N supplies_movement, Auditoría
+### 11. INVENTORY (Bodega Central)
+**Propósito:** Stock consolidado y disponible de productos terminados.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| name | VARCHAR(255) | - | Nombre (cuero, hilo, suela, cierre) |
-| description | TEXT | - | Especificaciones |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **product_id** | UUID | FK → `products(id)` | Producto referenciado. |
+| **size** | VARCHAR(50) | NOT NULL | Talla específica. |
+| **colour** | VARCHAR(100) | | Color específico. |
+| **amount** | NUMERIC(10,2) | NOT NULL | Parejas actuales en bodega. |
+| **minimum_stock** | INTEGER | DEFAULT 0 | Nivel de reorden por variante. |
 
 ---
 
-### Tabla 1️⃣4️⃣: SUPPLIES_MOVEMENT
-**Propósito:** Histórico de movimientos de insumos  
-**Registros:** Variable | **Relaciones:** N:1 supplies, users, Auditoría
+### 12. INVENTORY_MOVEMENT
+**Propósito:** Auditoría y trazabilidad de cada cambio en el inventario.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **supplies_id** | UUID | → supplies(id) | FK: Insumo |
-| **user_id** | UUID | → users(id) | FK: Usuario operador |
-| type_of_movement | supplies_movement_type | - | Enum: entrada/salida |
-| amount | NUMERIC(10,2) | - | Cantidad |
-| colour | VARCHAR(100) | - | Color |
-| size | VARCHAR(50) | - | Talla |
-| movement_date | TIMESTAMP+TZ | - | Fecha/hora |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **product_id** | UUID | FK → `products(id)` | Producto afectado. |
+| **user_id** | UUID | FK → `users(id)` | Responsable del cambio. |
+| **type_of_movement** | ENUM | inventory_movement_type | Entrada, Salida, Ajuste. |
+| **amount** | NUMERIC(10,2) | NOT NULL | Diferencia aplicada. |
+| **reason** | VARCHAR(255) | | Por qué se hizo el ajuste. |
 
 ---
 
-### Tabla 1️⃣5️⃣: INVENTORY_MOVEMENT
-**Propósito:** Histórico de movimientos de productos  
-**Registros:** Variable | **Relaciones:** N:1 products, users, Auditoría
+### 13. TASKS
+**Propósito:** Definición de tareas de producción para operarios.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **product_id** | UUID | → products(id) | FK: Producto |
-| **user_id** | UUID | → users(id) | FK: Usuario |
-| type_of_movement | inventory_movement_type | - | Enum: entrada/salida/ajuste |
-| size | VARCHAR(50) | - | Talla |
-| colour | VARCHAR(100) | - | Color |
-| amount | NUMERIC(10,2) | - | Cantidad |
-| reason | VARCHAR(255) | - | Motivo |
-| movement_date | TIMESTAMP+TZ | - | Fecha/hora |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **assigned_to** | UUID | FK → `users(id)`, NOT NULL | Operario responsable. |
+| **description_task** | TEXT | NOT NULL | Instrucciones detalladas. |
+| **priority** | ENUM | task_priority | Nivel de urgencia. |
+| **type** | ENUM | task_type | Etapa (Corte, Solado, etc.). |
+| **status** | ENUM | task_status, DEFAULT 'pendiente' | Estado actual. |
+| **deadline** | TIMESTAMP+TZ | | Fecha límite pactada. |
+| **assignment_date** | TIMESTAMP+TZ | NOT NULL | Fecha en que se asignó. |
 
 ---
 
-### Tabla 1️⃣6️⃣: TASKS
-**Propósito:** Tareas de producción  
-**Registros:** Variable | **Relaciones:** 1:N incidence, detail_vale, Auditoría
+### 14. ORDERS
+**Propósito:** Encabezado de pedidos realizados por Clientes.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| description | TEXT | - | Descripción tarea |
-| priority | task_priority | - | Enum: baja/media/alta |
-| type | task_type | - | Enum: corte/guarnicion/soladura/emplantillado |
-| status | task_status | - | Enum: pendiente/progreso/completado/cancelado |
-| deadline | TIMESTAMP+TZ | - | Fecha límite |
-| assignment_date | TIMESTAMP+TZ | - | Fecha asignación |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID pedido. |
+| **customer_id** | UUID | FK → `users(id)`, NOT NULL | Cliente propietario. |
+| **total_pairs** | INTEGER | NOT NULL | Suma total de pares del pedido. |
+| **state** | ENUM | order_status, DEFAULT 'pendiente' | Estado del pedido. |
+| **delivery_date** | TIMESTAMP+TZ | | Fecha compromiso de entrega. |
+| **creation_date** | TIMESTAMP+TZ | DEFAULT NOW() | Fecha de recepción. |
 
 ---
 
-### Tabla 1️⃣7️⃣: INCIDENCE
-**Propósito:** Reportes de incidencias en producción  
-**Registros:** Variable | **Relaciones:** N:1 tasks, Auditoría
+### 15. ORDER_DETAILS
+**Propósito:** Desglose del pedido por producto, talla y color.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **task_id** | UUID | → tasks(id) | FK: Tarea |
-| type | VARCHAR(100) | - | Tipo incidencia |
-| description | TEXT | - | Descripción |
-| state | incidence_status | - | Enum: abierta/progreso/resuelta/cerrada |
-| report_date | TIMESTAMP+TZ | - | Fecha reporte |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID detalle. |
+| **order_id** | UUID | FK → `orders(id)`, ON DELETE CASCADE | Pedido padre. |
+| **product_id** | UUID | FK → `products(id)` | Calzado solicitado. |
+| **size / colour / amount** | Text / Text / Int | NOT NULL | Especificaciones del lote solicitado. |
+| **state** | ENUM | order_status | Estado de la línea (puede diferir del pedido). |
 
 ---
 
-### Tabla 1️⃣8️⃣: VALE
-**Propósito:** Vale de entrega de producción  
-**Registros:** Variable | **Relaciones:** 1:N detail_vale, Auditoría
+### 16. VALE
+**Propósito:** Documento de liquidación para la entrega de trabajo terminado.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| size | VARCHAR(50) | - | Talla entregada |
-| colour | VARCHAR(100) | - | Color entregado |
-| amount | NUMERIC(10,2) | - | Cantidad |
-| creation_date | TIMESTAMP+TZ | - | Fecha emisión |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID vale. |
+| **order_id** | UUID | FK → `orders(id)`, ON DELETE CASCADE | Pedido al que liquida. |
+| **amount** | NUMERIC(10,2) | | Valor o cantidad total liquidada. |
+| **creation_date** | TIMESTAMP+TZ | DEFAULT NOW() | Fecha emisión. |
 
 ---
 
-### Tabla 1️⃣9️⃣: DETAIL_VALE
-**Propósito:** Detalles del vale  
-**Registros:** Variable | **Relaciones:** N:1 tasks, products, users, vale, Auditoría
+### 17. DETAIL_VALE
+**Propósito:** Vínculo granular entre una tarea específica, el operario y el vale de liquidación.
 
-| Campo | Tipo | FK Destino | Descripción |
-|-------|------|-----------|-----------|
-| **id** | UUID | - | PK |
-| **task_id** | UUID | → tasks(id) | FK: Tarea |
-| **product_id** | UUID | → products(id) | FK: Producto |
-| **user_id** | UUID | → users(id) | FK: Usuario |
-| **vale_id** | UUID | → vale(id) | FK: Vale padre |
-| size | VARCHAR(50) | - | Talla |
-| colour | VARCHAR(100) | - | Color |
-| amount | NUMERIC(10,2) | - | Cantidad |
-| creation_date | TIMESTAMP+TZ | - | Fecha |
-| **created_by** | UUID | → users(id) | FK: Auditoría |
-| **updated_by** | UUID | → users(id) | FK: Auditoría |
-| **deleted_by** | UUID | → users(id) | FK: Auditoría |
-| created_at, updated_at, deleted_at | TIMESTAMP+TZ | - | Timestamps |
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID detalle vale. |
+| **vale_id** | UUID | FK → `vale(id)`, ON DELETE CASCADE | Vale padre. |
+| **task_id** | UUID | FK → `tasks(id)` | Tarea origen. |
+| **product_id** | UUID | FK → `products(id)` | Producto entregado. |
+| **user_id** | UUID | FK → `users(id)` | Operario que entrega. |
+| **amount / size / colour** | Mixed | | Datos físicos de la entrega. |
 
 ---
 
-```
-USERS (7 FKs):
-├── role_id → roles
-├── identity_document_type_id → type_document
-├── validated_by → users (self-reference)
-├── created_by → users (audit)
-├── updated_by → users (audit)
-└── deleted_by → users (audit)
+### 18. INCIDENCE
+**Propósito:** Registro de problemas durante la producción (fallas de máquina, falta de material, etc.).
 
-PRODUCTS (6 FKs): category_id, brand_id, style_id, created_by, updated_by, deleted_by
-STYLES (4 FKs): brand_id, created_by, updated_by, deleted_by
-INVENTORY (4 FKs): product_id, created_by, updated_by, deleted_by
-ORDERS (4 FKs): customer_id, created_by, updated_by, deleted_by
-ORDER_DETAILS (5 FKs): order_id, product_id, created_by, updated_by, deleted_by
-NOTIFICATIONS (4 FKs): user_id, created_by, updated_by, deleted_by
-SUPPLIES_MOVEMENT (5 FKs): supplies_id, user_id, created_by, updated_by, deleted_by
-INVENTORY_MOVEMENT (5 FKs): product_id, user_id, created_by, updated_by, deleted_by
-TASKS (3 FKs): created_by, updated_by, deleted_by
-INCIDENCE (4 FKs): task_id, created_by, updated_by, deleted_by
-DETAIL_VALE (8 FKs): task_id, product_id, user_id, vale_id, created_by, updated_by, deleted_by (+1 más)
-... (resto de tablas con audit)
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID incidencia. |
+| **task_id** | UUID | FK → `tasks(id)`, NOT NULL | Tarea donde ocurrió. |
+| **type_incidence** | VARCHAR(100) | NOT NULL | Categoría del problema. |
+| **description_incidence** | TEXT | | Comentario del operario. |
+| **state** | ENUM | incidence_status | Estado de resolución. |
+| **report_date** | TIMESTAMP+TZ | NOT NULL | Fecha del reporte. |
 
-TOTAL: 52 FKs
+---
+
+### 19. NOTIFICATIONS
+**Propósito:** Centro de alertas para usuarios según eventos del sistema.
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID notificación. |
+| **user_id** | UUID | FK → `users(id)`, NOT NULL | Destinatario. |
+| **title_notification** | VARCHAR(255) | NOT NULL | Asunto. |
+| **message_notification** | TEXT | NOT NULL | Contenido. |
+| **type_notification** | ENUM | notification_type | Nivel de importancia. |
+| **is_read** | BOOLEAN | DEFAULT FALSE | Estado de lectura. |
+
+---
+
+## 🗺️ Mapa de Relaciones (ERD)
+
+```mermaid
+erDiagram
+    ROLES ||--o{ USERS : "tiene"
+    TYPE_DOCUMENT ||--o{ USERS : "identifica"
+    USERS ||--o{ USERS : "crea/valida"
+    USERS ||--o{ PASSWORD_RESET_TOKENS : "solicita"
+    
+    CATEGORIES ||--o{ PRODUCTS : "clasifica"
+    BRANDS ||--o{ PRODUCTS : "fabrica"
+    BRANDS ||--o{ STYLES : "define"
+    STYLES ||--o{ PRODUCTS : "modela"
+    
+    PRODUCTS ||--o{ INVENTORY : "almacena"
+    PRODUCTS ||--o{ ORDER_DETAILS : "se incluye en"
+    PRODUCTS ||--o{ INVENTORY_MOVEMENT : "registra"
+    PRODUCTS ||--o{ DETAIL_VALE : "se liquida"
+    
+    USERS ||--o{ ORDERS : "compra (cliente)"
+    ORDERS ||--o{ ORDER_DETAILS : "contiene"
+    ORDERS ||--o{ VALE : "liquida en"
+    
+    USERS ||--o{ TASKS : "ejecuta (operario)"
+    TASKS ||--o{ INCIDENCE : "tiene"
+    TASKS ||--o{ DETAIL_VALE : "genera producto"
+    VALE ||--o{ DETAIL_VALE : "desglosa"
+    
+    SUPPLIES ||--o{ SUPPLIES_MOVEMENT : "se mueve"
+    USERS ||--o{ SUPPLIES_MOVEMENT : "opera"
+    
+    USERS ||--o{ NOTIFICATIONS : "recibe"
 ```
 
 ---
+*Ultima Sincronización: 2026-03-20*
