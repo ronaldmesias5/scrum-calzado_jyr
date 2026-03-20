@@ -182,21 +182,8 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
 
         {/* Body */}
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
-          {/* Nombre y Categoría en fila */}
+          {/* Categoría y Marca en fila */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre del Producto <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50"
-                placeholder="Ej: Zapato Caballero Formal"
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Categoría <span className="text-red-600">*</span>
@@ -213,9 +200,25 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Marca <span className="text-red-600">*</span>
+              </label>
+              <select
+                name="brand_name"
+                value={formData.brand_name}
+                onChange={(e) => handleBrandChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50"
+              >
+                <option value="">Seleccionar marca</option>
+                {brands.map(brand => (
+                  <option key={brand.id} value={brand.name}>{brand.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Estilo y Marca en fila */}
+          {/* Estilo y Nombre en fila */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -281,19 +284,16 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Marca <span className="text-red-600">*</span>
+                Nombre del Producto <span className="text-red-600">*</span>
               </label>
-              <select
-                name="brand_name"
-                value={formData.brand_name}
-                onChange={(e) => handleBrandChange(e.target.value)}
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50"
-              >
-                <option value="">Seleccionar marca</option>
-                {brands.map(brand => (
-                  <option key={brand.id} value={brand.name}>{brand.name}</option>
-                ))}
-              </select>
+                placeholder="Ej: Zapato Caballero Formal"
+              />
             </div>
           </div>
 
