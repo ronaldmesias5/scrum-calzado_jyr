@@ -180,6 +180,7 @@ function OrderDetailView({
   const canCancel          = order.state !== 'cancelado' && order.state !== 'completado';
   const canDelete          = order.state === 'cancelado';
   const canEdit            = order.state === 'pendiente' || order.state === 'en_progreso';
+  const isEverythingInStock = order.details.length > 0 && order.details.every(d => (d.stock_available ?? 0) >= d.amount);
 
   return (
     <div className="space-y-6">
@@ -439,6 +440,17 @@ function OrderDetailView({
             </div>
 
             <div className="space-y-2.5">
+              {/* Despachar directamente si hay stock total */}
+              {canStartProduction && isEverythingInStock && (
+                <button
+                  onClick={() => onStatusChange(order.id, 'completado')}
+                  disabled={isUpdating}
+                  className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 text-sm shadow-md border border-green-500"
+                >
+                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  Completar desde Inventario
+                </button>
+              )}
 
               {/* Iniciar Producción */}
               {canStartProduction && (
