@@ -24,28 +24,18 @@
  */
 
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+import { API_CONFIG } from "../config/api";
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_CONFIG.baseURL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000,
+  timeout: API_CONFIG.timeout,
+  withCredentials: true,
 });
 
-// Interceptor de request — agrega el token JWT automáticamente
-api.interceptors.request.use(
-  (config) => {
-    const token = sessionStorage.getItem("access_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Interceptor de request eliminado porque usamos HttpOnly cookies
 
 // Interceptor de response — maneja errores HTTP de forma centralizada
 api.interceptors.response.use(

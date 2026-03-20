@@ -51,15 +51,15 @@ def list_brands(
     _require_admin_or_jefe(current_user)
     
     brands = db.execute(
-        select(Brand).where(Brand.deleted_at == None).order_by(Brand.name)
+        select(Brand).where(Brand.deleted_at == None).order_by(Brand.name_brand)
     ).scalars().all()
     
     return {
         "brands": [
             {
                 "id": str(brand.id),
-                "name": brand.name,
-                "description": brand.description,
+                "name": brand.name_brand,
+                "description": brand.description_brand,
                 "created_at": brand.created_at.isoformat() if brand.created_at else None,
             }
             for brand in brands
@@ -79,7 +79,7 @@ def create_brand(
     # Verificar que no exista una marca con el mismo nombre
     existing = db.execute(
         select(Brand).where(
-            (Brand.name.ilike(req.name)) &
+            (Brand.name_brand.ilike(req.name)) &
             (Brand.deleted_at == None)
         )
     ).scalar()
@@ -92,8 +92,8 @@ def create_brand(
     
     brand = Brand(
         id=uuid.uuid4(),
-        name=req.name,
-        description=req.description,
+        name_brand=req.name,
+        description_brand=req.description,
     )
     db.add(brand)
     db.commit()
@@ -101,8 +101,8 @@ def create_brand(
     
     return {
         "id": str(brand.id),
-        "name": brand.name,
-        "description": brand.description,
+        "name": brand.name_brand,
+        "description": brand.description_brand,
         "message": "Marca creada exitosamente"
     }
 
@@ -141,7 +141,7 @@ def update_brand(
     # Verificar que no exista otra marca con el mismo nombre
     existing = db.execute(
         select(Brand).where(
-            (Brand.name.ilike(req.name)) &
+            (Brand.name_brand.ilike(req.name)) &
             (Brand.id != brand_uuid) &
             (Brand.deleted_at == None)
         )
@@ -153,16 +153,16 @@ def update_brand(
             detail=f"Ya existe otra marca con el nombre '{req.name}'"
         )
     
-    brand.name = req.name
-    brand.description = req.description
+    brand.name_brand = req.name
+    brand.description_brand = req.description
     brand.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(brand)
     
     return {
         "id": str(brand.id),
-        "name": brand.name,
-        "description": brand.description,
+        "name": brand.name_brand,
+        "description": brand.description_brand,
         "message": "Marca actualizada exitosamente"
     }
 
@@ -242,16 +242,16 @@ def list_styles(
                 detail="El formato del ID de marca es incorrecto"
             )
     
-    styles = db.execute(query.order_by(Style.name)).scalars().all()
+    styles = db.execute(query.order_by(Style.name_style)).scalars().all()
     
     return {
         "styles": [
             {
                 "id": str(style.id),
-                "name": style.name,
-                "description": style.description,
+                "name": style.name_style,
+                "description": style.description_style,
                 "brand_id": str(style.brand_id),
-                "brand_name": style.brand.name if style.brand else "Unknown",
+                "brand_name": style.brand.name_brand if style.brand else "Unknown",
                 "created_at": style.created_at.isoformat() if style.created_at else None,
             }
             for style in styles
@@ -293,7 +293,7 @@ def create_style(
     # Verificar que no exista un estilo con el mismo nombre en la misma marca
     existing = db.execute(
         select(Style).where(
-            (Style.name.ilike(req.name)) &
+            (Style.name_style.ilike(req.name)) &
             (Style.brand_id == brand_uuid) &
             (Style.deleted_at == None)
         )
@@ -302,13 +302,13 @@ def create_style(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Ya existe un estilo '{req.name}' en la marca {brand.name}"
+            detail=f"Ya existe un estilo '{req.name}' en la marca {brand.name_brand}"
         )
     
     style = Style(
         id=uuid.uuid4(),
-        name=req.name,
-        description=req.description,
+        name_style=req.name,
+        description_style=req.description,
         brand_id=brand_uuid,
     )
     db.add(style)
@@ -317,10 +317,10 @@ def create_style(
     
     return {
         "id": str(style.id),
-        "name": style.name,
-        "description": style.description,
+        "name": style.name_style,
+        "description": style.description_style,
         "brand_id": str(style.brand_id),
-        "brand_name": brand.name,
+        "brand_name": brand.name_brand,
         "message": "Estilo creado exitosamente"
     }
 
@@ -374,7 +374,7 @@ def update_style(
     # Si cambió la marca o el nombre, verificar duplicados
     existing = db.execute(
         select(Style).where(
-            (Style.name.ilike(req.name)) &
+            (Style.name_style.ilike(req.name)) &
             (Style.brand_id == brand_uuid) &
             (Style.id != style_uuid) &
             (Style.deleted_at == None)
@@ -384,11 +384,11 @@ def update_style(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Ya existe un estilo '{req.name}' en la marca {brand.name}"
+            detail=f"Ya existe un estilo '{req.name}' en la marca {brand.name_brand}"
         )
     
-    style.name = req.name
-    style.description = req.description
+    style.name_style = req.name
+    style.description_style = req.description
     style.brand_id = brand_uuid
     style.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -396,10 +396,10 @@ def update_style(
     
     return {
         "id": str(style.id),
-        "name": style.name,
-        "description": style.description,
+        "name": style.name_style,
+        "description": style.description_style,
         "brand_id": str(style.brand_id),
-        "brand_name": brand.name,
+        "brand_name": brand.name_brand,
         "message": "Estilo actualizado exitosamente"
     }
 
@@ -493,7 +493,7 @@ def list_products(
     if state is not None:
         query = query.where(Product.state == state)
     
-    products = db.execute(query.order_by(Product.name)).scalars().all()
+    products = db.execute(query.order_by(Product.name_product)).scalars().all()
     
     # Calcular stock total para cada producto
     products_response = []
@@ -505,19 +505,19 @@ def list_products(
         
         products_response.append({
             "id": str(prod.id),
-            "name": prod.name,
-            "description": prod.description,
+            "name": prod.name_product,
+            "description": prod.description_product,
             "color": prod.color,
             "image_url": prod.image_url,
             "insufficient_threshold": prod.insufficient_threshold,
             "state": prod.state,
             "is_active": prod.state,
             "brand_id": str(prod.brand_id),
-            "brand_name": prod.brand.name if prod.brand else "Unknown",
+            "brand_name": prod.brand.name_brand if prod.brand else "Unknown",
             "style_id": str(prod.style_id),
-            "style_name": prod.style.name if prod.style else "Unknown",
+            "style_name": prod.style.name_style if prod.style else "Unknown",
             "category_id": str(prod.category_id),
-            "category_name": prod.category.name if prod.category else "Unknown",
+            "category_name": prod.category.name_category if prod.category else "Unknown",
             "stock_total": int(stock_total),
             "created_at": prod.created_at.isoformat() if prod.created_at else None,
         })
@@ -628,7 +628,7 @@ def create_product(
             select(Product).where(
                 (Product.style_id == style_uuid) &
                 (Product.brand_id == brand_uuid) &
-                (Product.name == req.name) &
+                (Product.name_product == req.name) &
                 (Product.deleted_at == None)
             )
         ).scalar()
@@ -640,8 +640,8 @@ def create_product(
     
     product = Product(
         id=uuid.uuid4(),
-        name=req.name if req.name else style.name,
-        description=req.description,
+        name_product=req.name if req.name else style.name_style,
+        description_product=req.description,
         color=req.color,
         insufficient_threshold=req.insufficient_threshold or 12,
         brand_id=brand_uuid,
@@ -655,19 +655,19 @@ def create_product(
     
     return {
         "id": str(product.id),
-        "name": product.name,
-        "description": product.description,
+        "name": product.name_product,
+        "description": product.description_product,
         "color": product.color,
         "image_url": product.image_url,
         "insufficient_threshold": product.insufficient_threshold,
         "state": product.state,
         "is_active": product.state,
         "brand_id": str(product.brand_id),
-        "brand_name": brand.name,
+        "brand_name": brand.name_brand,
         "style_id": str(product.style_id),
-        "style_name": style.name,
+        "style_name": style.name_style,
         "category_id": str(product.category_id),
-        "category_name": category.name,
+        "category_name": category.name_category,
         "message": "Producto creado exitosamente"
     }
 
@@ -721,8 +721,8 @@ def update_product(
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    product.name = req.name if req.name else style.name
-    product.description = req.description
+    product.name_product = req.name if req.name else style.name_style
+    product.description_product = req.description
     product.color = req.color
     product.insufficient_threshold = req.insufficient_threshold or 12
     product.brand_id = brand_uuid
@@ -734,19 +734,19 @@ def update_product(
     
     return {
         "id": str(product.id),
-        "name": product.name,
-        "description": product.description,
+        "name": product.name_product,
+        "description": product.description_product,
         "color": product.color,
         "image_url": product.image_url,
         "insufficient_threshold": product.insufficient_threshold,
         "state": product.state,
         "is_active": product.state,
         "brand_id": str(product.brand_id),
-        "brand_name": brand.name,
+        "brand_name": brand.name_brand,
         "style_id": str(product.style_id),
-        "style_name": style.name,
+        "style_name": style.name_style,
         "category_id": str(product.category_id),
-        "category_name": category.name,
+        "category_name": category.name_category,
         "message": "Producto actualizado exitosamente"
     }
 
@@ -837,7 +837,7 @@ def list_inventory(
             {
                 "id": str(inv.id),
                 "product_id": str(inv.product_id),
-                "product_name": inv.product.name if inv.product else "Unknown",
+                "product_name": inv.product.name_product if inv.product else "Unknown",
                 "size": inv.size,
                 "quantity": inv.amount,
                 "created_at": inv.created_at.isoformat() if inv.created_at else None,
@@ -886,7 +886,7 @@ def create_or_update_inventory(
         return {
             "id": str(existing_inv.id),
             "product_id": str(existing_inv.product_id),
-            "product_name": product.name,
+            "product_name": product.name_product,
             "size": existing_inv.size,
             "quantity": existing_inv.amount,
             "message": "Inventario actualizado exitosamente"
@@ -905,7 +905,7 @@ def create_or_update_inventory(
         return {
             "id": str(inventory.id),
             "product_id": str(inventory.product_id),
-            "product_name": product.name,
+            "product_name": product.name_product,
             "size": inventory.size,
             "quantity": inventory.amount,
             "message": "Inventario creado exitosamente"
@@ -1011,7 +1011,7 @@ def bulk_update_inventory(
     
     return {
         "product_id": str(product_uuid),
-        "product_name": product.name,
+        "product_name": product.name_product,
         "updated_count": updated_count,
         "created_count": created_count,
         "results": results,

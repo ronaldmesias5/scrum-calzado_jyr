@@ -1,3 +1,28 @@
+"""
+Archivo: be/app/models/style.py
+Descripción: Modelo ORM SQLAlchemy para la tabla `styles` (modelos/estilos de calzado).
+
+¿Qué?
+  Define estilos/modelos específicos de calzado dentro de una marca.
+  Campos: name_style (ej: "Air Max 90", "Superstar"), description_style.
+  FK: brand_id (vincula a marca madre, RESTRICT integridad).
+  Relaciones: many-to-one con Brand, one-to-many con Product.
+
+¿Para qué?
+  - Organizar productos por estilo dentro de marca
+  - Permitir búsqueda/filtrado por estilo específico
+  - Mejorar experiencia de catálogo (Nike > Air Max > colores/tallas)
+  - Rastrear característica/modelo específico de producto
+
+¿Impacto?
+  CRÍTICO — Sin estilos, no hay estructura en catálogo.
+  Si falla: productos no están organizados, búsqueda no funciona.
+  Modificar FK RESTRICT rompe: no se pueden eliminar marcas sin eliminar estilos.
+  Modificar name_style rompe: queries en admin/catalog que filtran por estilo.
+  Dependencias: models/brand.py (many-to-one), models/product.py (one-to-many),
+               admin/catalog_router.py, landing pages
+"""
+
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -29,12 +54,12 @@ class Style(Base):
         nullable=False,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_style: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
 
-    description: Mapped[str | None] = mapped_column(
+    description_style: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -69,5 +94,5 @@ class Style(Base):
     products = relationship("Product", back_populates="style", lazy="selectin")
 
     def __repr__(self) -> str:
-        return f"Style(id={self.id}, name={self.name})"
+        return f"Style(id={self.id}, name_style={self.name_style})"
 

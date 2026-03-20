@@ -40,13 +40,13 @@ class Role(Base):
         default=uuid.uuid4,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_role: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         nullable=False,
     )
 
-    description: Mapped[str | None] = mapped_column(
+    description_role: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
@@ -70,5 +70,5 @@ class Role(Base):
     )
 
     def __repr__(self) -> str:
-        return f"Role(id={self.id}, name={self.name})"
+        return f"Role(id={self.id}, name_role={self.name_role})"
 

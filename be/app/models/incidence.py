@@ -44,12 +44,12 @@ class Incidence(Base):
         nullable=False,
     )
 
-    type: Mapped[str] = mapped_column(
+    type_incidence: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
     )
 
-    description: Mapped[str | None] = mapped_column(
+    description_incidence: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )

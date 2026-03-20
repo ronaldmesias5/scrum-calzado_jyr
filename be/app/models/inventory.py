@@ -1,3 +1,29 @@
+"""
+Archivo: be/app/models/inventory.py
+Descripción: Modelo ORM SQLAlchemy para la tabla `inventory` (stock por talla/color).
+
+¿Qué?
+  Define inventario desglosado por talla y color para cada producto.
+  Campos: product_id (FK), size, colour, amount (Decimal), minimum_stock.
+  Relaciones: many-to-one con Product, one-to-many con InventoryMovement.
+  Un solo registro por (product_id, size, colour) - único a nivel lógica.
+
+¿Para qué?
+  - Gestionar stock granular (talla 35 roja, talla 36 azul, etc.)
+  - Alertas de bajo stock (minimum_stock)
+  - Calcular stock disponible antes de crear orden
+  - Rastrear movimientos (entrada/salida) con InventoryMovement
+  - Permitir reportes de inventario por talla/color
+
+¿Impacto?
+  CRÍTICO — Sin inventario preciso, se sobrevenden productos.
+  Si falla: órdenes sin validación de stock → producción imposible.
+  Modificar amount lógica rompe: cálculos de disponibilidad en dashboard.
+  Modificar minimum_stock rompe: alertas de bajo stock en admin.
+  Dependencias: models/product.py, models/inventory_movement.py,
+               dashboard_jefe/router.py (alertas), orders/service.py (validación)
+"""
+
 import uuid
 from datetime import datetime
 from decimal import Decimal

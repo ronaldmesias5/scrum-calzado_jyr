@@ -1,3 +1,26 @@
+"""
+Archivo: be/app/models/category.py
+Descripción: Modelo ORM SQLAlchemy para la tabla `categories` (categorías de productos).
+
+¿Qué?
+  Define categorías de calzado (Hombre, Mujer, Niño, Especializado, etc.).
+  Campos: name_category (único), description_category, timestamps, soft delete.
+  Relaciones: one-to-many con Product.
+
+¿Para qué?
+  - Organizar catálogo en categorías
+  - Permitir filtrado y búsqueda por categoría
+  - Mejorar experiencia de usuario (navegación por categorías)
+  - Validación de datos (solo categorías existentes)
+
+¿Impacto?
+  CRÍTICO — Sin categorías, el catálogo está desorganizado.
+  Si falla: landing page no muestra categorías, queries de búsqueda rompen.
+  Modificar name_category rompe: frontend landing/catalog, admin/catalog_router.py,
+  schemas que validan categorías existentes.
+  Dependencias: models/product.py, database.py
+"""
+
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -22,13 +45,13 @@ class Category(Base):
         default=uuid.uuid4,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_category: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         nullable=False,
     )
 
-    description: Mapped[str | None] = mapped_column(
+    description_category: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -62,5 +85,5 @@ class Category(Base):
     products = relationship("Product", back_populates="category", lazy="selectin")
 
     def __repr__(self) -> str:
-        return f"Category(id={self.id}, name={self.name})"
+        return f"Category(id={self.id}, name_category={self.name_category})"
 

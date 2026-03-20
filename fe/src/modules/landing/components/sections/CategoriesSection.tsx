@@ -1,3 +1,21 @@
+/**
+ * Componente: CategoriesSection.tsx
+ * Descripción: Sección que muestra categorías de productos con cards clickeables.
+ * 
+ * ¿Qué?
+ *   Grilla de categorías (Hombre, Mujer, Niño, etc.) con:
+ *   - Icono/imagen representativa
+ *   - Nombre categoría
+ *   - Link a catálogo filtrado por categoría
+ * 
+ * ¿Para qué?
+ *   - Navegación por categoría (UX de shopping)
+ *   - Facilitar descubrimiento de productos
+ * 
+ * ¿Impacto?
+ *   BAJO — Navegación, sin lógica crítica.
+ */
+
 const categories = [
   {
     name: 'Caballero',

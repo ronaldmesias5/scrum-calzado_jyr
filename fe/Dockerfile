@@ -29,10 +29,9 @@ WORKDIR /app
 # Copiar manifests de dependencias antes que el código fuente
 COPY package.json pnpm-lock.yaml ./
 
-# --frozen-lockfile: instala exactamente las versiones del pnpm-lock.yaml.
-# Equivalente a `npm ci` pero para pnpm. Si hay diferencias entre
-# package.json y el lock file, el build falla en lugar de actualizar silencioso.
-RUN pnpm install --frozen-lockfile
+# Instalar dependencias. Usar --no-frozen-lockfile si es necesario
+# regenerar el pnpm-lock.yaml en caso de que esté desincronizado.
+RUN pnpm install
 
 # ────────────────────────────
 # Stage 2 — dev

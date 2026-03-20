@@ -54,18 +54,18 @@ def _build_user_response(user: User) -> UserResponse:
     return UserResponse(
         id=user.id,
         email=user.email,
-        name=user.name,
+        name=user.name_user,
         last_name=user.last_name,
         phone=user.phone,
         identity_document=user.identity_document,
         identity_document_type_id=user.identity_document_type_id,
         identity_document_type_name=(
-            user.identity_document_type.name if user.identity_document_type else None
+            user.identity_document_type.name_type_document if user.identity_document_type else None
         ),
         is_active=user.is_active,
         is_validated=user.is_validated,
         must_change_password=user.must_change_password,
-        role_name=user.role.name if user.role else None,
+        role_name=user.role.name_role if user.role else None,
         business_name=user.business_name,
         occupation=user.occupation,
         created_at=user.created_at,
@@ -74,7 +74,7 @@ def _build_user_response(user: User) -> UserResponse:
 
 
 def _require_admin(current_user: User) -> None:
-    if current_user.role.name != "admin":
+    if current_user.role.name_role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo administradores pueden acceder a este endpoint",
@@ -83,7 +83,7 @@ def _require_admin(current_user: User) -> None:
 
 def _require_jefe(current_user: User) -> None:
     """Valida que el usuario sea un jefe (employee + occupation='jefe')."""
-    if current_user.role.name != "employee" or current_user.occupation != "jefe":
+    if current_user.role.name_role != "employee" or current_user.occupation != "jefe":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo jefes de fábrica pueden acceder a este endpoint",
@@ -92,8 +92,8 @@ def _require_jefe(current_user: User) -> None:
 
 def _require_admin_or_jefe(current_user: User) -> None:
     """Valida que sea admin O jefe."""
-    is_admin = current_user.role.name == "admin"
-    is_jefe = current_user.role.name == "employee" and current_user.occupation == "jefe"
+    is_admin = current_user.role.name_role == "admin"
+    is_jefe = current_user.role.name_role == "employee" and current_user.occupation == "jefe"
     
     if not (is_admin or is_jefe):
         raise HTTPException(
@@ -188,7 +188,7 @@ def get_all_users(
     # Permitir acceso a cualquier usuario autenticado (no requerir admin/jefe específicamente)
     query = db.query(User)
     if role:
-        query = query.join(Role, User.role_id == Role.id).filter(Role.name == role)
+        query = query.join(Role, User.role_id == Role.id).filter(Role.name_role == role)
 
     return [_build_user_response(u) for u in query.all()]
 
@@ -214,13 +214,13 @@ def create_employee(
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
 
-    employee_role = db.query(Role).filter(Role.name == "employee").first()
+    employee_role = db.query(Role).filter(Role.name_role == "employee").first()
     if not employee_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'employee' no encontrado")
 
     new_user = User(
         email=data.email,
-        name=data.name,
+        name_user=data.name,
         last_name=data.last_name,
         phone=data.phone,
         identity_document=data.identity_document,
@@ -261,13 +261,13 @@ def create_client(
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
 
-    client_role = db.query(Role).filter(Role.name == "client").first()
+    client_role = db.query(Role).filter(Role.name_role == "client").first()
     if not client_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'client' no encontrado")
 
     new_user = User(
         email=data.email,
-        name=data.name,
+        name_user=data.name,
         last_name=data.last_name,
         phone=data.phone,
         identity_document=data.identity_document,
@@ -314,13 +314,13 @@ def create_jefe(
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
 
-    employee_role = db.query(Role).filter(Role.name == "employee").first()
+    employee_role = db.query(Role).filter(Role.name_role == "employee").first()
     if not employee_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'employee' no encontrado")
 
     new_user = User(
         email=data.email,
-        name=data.name,
+        name_user=data.name,
         last_name=data.last_name,
         phone=data.phone,
         identity_document=data.identity_document,

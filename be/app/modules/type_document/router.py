@@ -47,7 +47,7 @@ def get_all_type_documents(
 ) -> list[TypeDocumentResponse]:
     """Obtiene la lista de todos los tipos de documentos disponibles."""
     type_documents = db.query(TypeDocument).all()
-    return [TypeDocumentResponse(id=td.id, name=td.name) for td in type_documents]
+    return [TypeDocumentResponse(id=td.id, name=td.name_type_document) for td in type_documents]
 
 
 @router.get(
@@ -70,7 +70,7 @@ def get_type_document(
             detail="Tipo de documento no encontrado",
         )
 
-    return TypeDocumentResponse(id=type_document.id, name=type_document.name)
+    return TypeDocumentResponse(id=type_document.id, name=type_document.name_type_document)
 
 
 @router.post(
@@ -86,7 +86,7 @@ def create_type_document(
     """Crea un nuevo tipo de documento."""
     existing = (
         db.query(TypeDocument)
-        .filter(TypeDocument.name == type_document_data.name)
+        .filter(TypeDocument.name_type_document == type_document_data.name)
         .first()
     )
 
@@ -96,10 +96,10 @@ def create_type_document(
             detail=f"El tipo de documento '{type_document_data.name}' ya existe",
         )
 
-    new_type_document = TypeDocument(name=type_document_data.name)
+    new_type_document = TypeDocument(name_type_document=type_document_data.name)
     db.add(new_type_document)
     db.commit()
     db.refresh(new_type_document)
 
-    return TypeDocumentResponse(id=new_type_document.id, name=new_type_document.name)
+    return TypeDocumentResponse(id=new_type_document.id, name=new_type_document.name_type_document)
 

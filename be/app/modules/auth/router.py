@@ -24,7 +24,7 @@ Descripción: Router FastAPI con endpoints de autenticación y gestión de contr
                dependencies.py (get_db, get_current_user)
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Response
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_db
@@ -63,16 +63,16 @@ def register(
     return UserResponse(
         id=user.id,
         email=user.email,
-        name=user.name,
+        name=user.name_user,
         last_name=user.last_name,
         phone=user.phone,
         identity_document=user.identity_document,
         identity_document_type_id=user.identity_document_type_id,
-        identity_document_type_name=user.identity_document_type.name if user.identity_document_type else None,
+        identity_document_type_name=user.identity_document_type.name_type_document if user.identity_document_type else None,
         is_active=user.is_active,
         is_validated=user.is_validated,
         must_change_password=user.must_change_password,
-        role_name=user.role.name if user.role else None,
+        role_name=user.role.name_role if user.role else None,
         business_name=user.business_name,
         occupation=user.occupation,
         created_at=user.created_at,
@@ -87,10 +87,19 @@ def register(
 )
 def login(
     login_data: UserLogin,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    """Autentica un usuario y retorna tokens JWT."""
-    return auth_service.login_user(db=db, login_data=login_data)
+    """Autentica un usuario y retorna tokens JWT y los establece en HttpOnly cookies."""
+    token_response = auth_service.login_user(db=db, login_data=login_data)
+    response.set_cookie(
+        key="access_token",
+        value=token_response.access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+    return token_response
 
 
 @router.post(
@@ -100,13 +109,31 @@ def login(
 )
 def refresh_token(
     token_data: RefreshTokenRequest,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    """Genera nuevos tokens usando un refresh token válido."""
-    return auth_service.refresh_access_token(
+    """Genera nuevos tokens usando un refresh token válido y establece la cookie."""
+    token_response = auth_service.refresh_access_token(
         db=db,
         refresh_token=token_data.refresh_token,
     )
+    response.set_cookie(
+        key="access_token",
+        value=token_response.access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+    return token_response
+
+@router.post(
+    "/logout",
+    summary="Cerrar sesión",
+)
+def logout(response: Response):
+    """Cierra la sesión eliminando la cookie HttpOnly."""
+    response.delete_cookie(key="access_token", samesite="lax", httponly=True)
+    return {"message": "Sesión cerrada exitosamente"}
 
 
 @router.post(

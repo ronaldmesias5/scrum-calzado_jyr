@@ -1,3 +1,9 @@
+/**
+ * Página: UsersManagementPage.tsx
+ * Descripción: Página de gestión de usuarios (validación, creación, roles).
+ * ¿Para qué? Validar clientes, crear empleados/admin.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import {
   UserCheck, UserPlus, Clock, CheckCircle, XCircle,

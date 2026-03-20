@@ -7,30 +7,46 @@
 -- ─────────────────────────────────────────────────────────────────
 -- MARCAS (5)
 -- ─────────────────────────────────────────────────────────────────
-INSERT INTO brand (name, description, created_at, updated_at)
-VALUES
-  ('Nike', 'Marca estadounidense de calzado y ropa deportiva', NOW(), NOW()),
-  ('Adidas', 'Líder global en ropa y calzado deportivo', NOW(), NOW()),
-  ('Puma', 'Marca internacional de calzado deportivo y casual', NOW(), NOW()),
-  ('New Balance', 'Fabricante de calzado deportivo y casual', NOW(), NOW()),
-  ('Reebok', 'Marca de calzado deportivo y fitness', NOW(), NOW())
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO brands (name_brand, description_brand, created_at, updated_at)
+SELECT 'Nike', 'Marca estadounidense de calzado y ropa deportiva', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE name_brand = 'Nike');
+
+INSERT INTO brands (name_brand, description_brand, created_at, updated_at)
+SELECT 'Adidas', 'Líder global en ropa y calzado deportivo', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE name_brand = 'Adidas');
+
+INSERT INTO brands (name_brand, description_brand, created_at, updated_at)
+SELECT 'Puma', 'Marca internacional de calzado deportivo y casual', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE name_brand = 'Puma');
+
+INSERT INTO brands (name_brand, description_brand, created_at, updated_at)
+SELECT 'New Balance', 'Fabricante de calzado deportivo y casual', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE name_brand = 'New Balance');
+
+INSERT INTO brands (name_brand, description_brand, created_at, updated_at)
+SELECT 'Reebok', 'Marca de calzado deportivo y fitness', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE name_brand = 'Reebok');
 
 -- ─────────────────────────────────────────────────────────────────
 -- CATEGORÍAS (3)
 -- ─────────────────────────────────────────────────────────────────
-INSERT INTO category (name, description, created_at, updated_at)
-VALUES
-  ('Dama', 'Zapatos para mujeres', NOW(), NOW()),
-  ('Caballero', 'Zapatos para hombres', NOW(), NOW()),
-  ('Infantil', 'Zapatos para niños', NOW(), NOW())
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO categories (name_category, description_category, created_at, updated_at)
+SELECT 'Dama', 'Zapatos para mujeres', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name_category = 'Dama');
+
+INSERT INTO categories (name_category, description_category, created_at, updated_at)
+SELECT 'Caballero', 'Zapatos para hombres', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name_category = 'Caballero');
+
+INSERT INTO categories (name_category, description_category, created_at, updated_at)
+SELECT 'Infantil', 'Zapatos para niños', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name_category = 'Infantil');
 
 -- ─────────────────────────────────────────────────────────────────
 -- ESTILOS (22) - Referencias a marcas por nombre
 -- ─────────────────────────────────────────────────────────────────
-INSERT INTO style (name, description, brand_id, created_at, updated_at)
-SELECT name, description, (SELECT id FROM brand WHERE brand.name = temp.brand_name LIMIT 1), NOW(), NOW()
+INSERT INTO styles (name_style, description_style, brand_id, created_at, updated_at)
+SELECT name, description, (SELECT id FROM brands WHERE brands.name_brand = temp.brand_name LIMIT 1), NOW(), NOW()
 FROM (VALUES
   ('Air Force One', 'Icónico zapato de Nike', 'Nike'),
   ('SB', 'Línea de skate de Nike', 'Nike'),
@@ -55,23 +71,27 @@ FROM (VALUES
   ('Bota Clásica', 'Bota Clásica Reebok', 'Reebok'),
   ('Running', 'Línea Running de Reebok', 'Reebok')
 ) AS temp(name, description, brand_name)
-WHERE NOT EXISTS (SELECT 1 FROM style WHERE style.name = temp.name)
-ON CONFLICT (name, brand_id) DO NOTHING;
+WHERE NOT EXISTS (SELECT 1 FROM styles WHERE styles.name_style = temp.name);
 
 -- ─────────────────────────────────────────────────────────────────
 -- PRODUCTOS (65)
 -- Regla especial: Reebok Princesa solo en Dama e Infantil
 -- ─────────────────────────────────────────────────────────────────
-INSERT INTO product (style_id, category_id, created_at, updated_at)
-SELECT s.id, c.id, NOW(), NOW()
-FROM style s
-CROSS JOIN category c
+INSERT INTO products (style_id, category_id, brand_id, name_product, created_at, updated_at)
+SELECT 
+  s.id,
+  c.id,
+  s.brand_id,
+  s.name_style || ' - ' || c.name_category,
+  NOW(),
+  NOW()
+FROM styles s
+CROSS JOIN categories c
 WHERE 
   -- Reebok Princesa: solo Dama + Infantil (excluir Caballero)
-  NOT (s.name = 'Princesa' AND c.name = 'Caballero')
+  NOT (s.name_style = 'Princesa' AND c.name_category = 'Caballero')
 AND NOT EXISTS (
-  SELECT 1 FROM product 
-  WHERE product.style_id = s.id 
-  AND product.category_id = c.id
-)
-ON CONFLICT (style_id, category_id) DO NOTHING;
+  SELECT 1 FROM products
+  WHERE products.style_id = s.id 
+  AND products.category_id = c.id
+);

@@ -1,3 +1,8 @@
+/**
+ * Página: CatalogPage.tsx (landing - catálogo público)
+ * Descripción: Página de catálogo público con productos disponibles para venta.
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, ArrowLeft, Loader2 } from 'lucide-react';

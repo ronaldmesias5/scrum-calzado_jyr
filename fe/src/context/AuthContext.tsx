@@ -43,27 +43,23 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<UserResponse | null>(null);
 
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => sessionStorage.getItem("access_token")
-  );
-  const [refreshToken, setRefreshToken] = useState<string | null>(
-    () => sessionStorage.getItem("refresh_token")
-  );
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Consideramos al usuario autenticado verdaderamente si el API nos valida quien es
   const isAuthenticated = !!user && !!accessToken;
 
   const saveTokens = useCallback((access: string, refresh: string) => {
-    sessionStorage.setItem("access_token", access);
-    sessionStorage.setItem("refresh_token", refresh);
-    setAccessToken(access);
-    setRefreshToken(refresh);
+    setAccessToken("cookie_token");
+    setRefreshToken("cookie_token");
   }, []);
 
-  const clearAuth = useCallback(() => {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
+  const clearAuth = useCallback(async () => {
+    try {
+      await authApi.logoutUser();
+    } catch (e) {}
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
@@ -71,24 +67,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const verifySession = async () => {
-      const storedToken = sessionStorage.getItem("access_token");
-      if (!storedToken) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const userData = await authApi.getMe();
         setUser(userData);
+        setAccessToken("cookie_token");
       } catch {
-        clearAuth();
+        setAccessToken(null);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     verifySession();
-  }, [clearAuth]);
+  }, []);
 
   const login = useCallback(
     async (data: LoginRequest) => {
@@ -108,8 +100,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     []
   );
 
-  const logout = useCallback(() => {
-    clearAuth();
+  const logout = useCallback(async () => {
+    await clearAuth();
   }, [clearAuth]);
 
   const changePassword = useCallback(async (data: ChangePasswordRequest) => {

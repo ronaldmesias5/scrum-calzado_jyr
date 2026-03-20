@@ -58,7 +58,7 @@ class User(Base):
         nullable=False,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_user: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )

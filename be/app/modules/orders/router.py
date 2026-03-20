@@ -33,7 +33,7 @@ def _order_to_response(order: Order) -> OrderResponse:
     return OrderResponse(
         id=order.id,
         customer_id=order.customer_id,
-        customer_name=customer.name if customer else None,
+        customer_name=customer.name_user if customer else None,
         customer_last_name=customer.last_name if customer else None,
         customer_email=customer.email if customer else None,
         customer_phone=customer.phone if customer else None,
@@ -50,7 +50,7 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
     return OrderDetailResponse(
         id=order.id,
         customer_id=order.customer_id,
-        customer_name=customer.name if customer else None,
+        customer_name=customer.name_user if customer else None,
         customer_last_name=customer.last_name if customer else None,
         customer_email=customer.email if customer else None,
         customer_phone=customer.phone if customer else None,
@@ -65,10 +65,10 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
             OrderDetailItemResponse(
                 id=d.id,
                 product_id=d.product_id,
-                product_name=d.product.name if d.product else None,
-                style_name=d.product.style.name if (d.product and d.product.style) else None,
-                category_name=d.product.category.name if (d.product and d.product.category) else None,
-                brand_name=d.product.brand.name if (d.product and d.product.brand) else None,
+                product_name=d.product.name_product if d.product else None,
+                style_name=d.product.style.name_style if (d.product and d.product.style) else None,
+                category_name=d.product.category.name_category if (d.product and d.product.category) else None,
+                brand_name=d.product.brand.name_brand if (d.product and d.product.brand) else None,
                 image_url=d.product.image_url if d.product else None,
                 size=d.size,
                 colour=d.colour,
@@ -107,7 +107,7 @@ def list_orders(
         if customer_name:
             name_filter = f"%{customer_name.strip()}%"
             query = query.join(User, Order.customer_id == User.id).where(
-                (User.name.ilike(name_filter)) | (User.last_name.ilike(name_filter))
+                (User.name_user.ilike(name_filter)) | (User.last_name.ilike(name_filter))
             )
 
         # Contar total
@@ -117,7 +117,7 @@ def list_orders(
         if customer_name:
             name_filter = f"%{customer_name.strip()}%"
             count_query = count_query.join(User, Order.customer_id == User.id).where(
-                (User.name.ilike(name_filter)) | (User.last_name.ilike(name_filter))
+                (User.name_user.ilike(name_filter)) | (User.last_name.ilike(name_filter))
             )
 
         total = db.execute(count_query).scalar() or 0

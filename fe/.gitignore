@@ -1,18 +1,46 @@
-# Dependencias
+# ¿QUE? Archivo de ignorados de git para el frontend
+# ¿PARA? Evitar que archivos generados o temporales se versionem
+# ¿IMPACTO? Mantiene el repositorio limpio y reproducible
+
+# ============= DEPENDENCIAS =============
+# pnpm
 node_modules/
+# pnpm-lock.yaml DEBE estar versionado (no ignorarlo)
 
-# Build output
+# ============= ARCHIVOS NPM (NO PERMITIDO) =============
+# npm es prohibido en este proyecto, solo pnpm
+package-lock.json
+npm-debug.log
+npm-debug.log.*
+.npmrc
+.npm
+
+# ============= BUILD OUTPUT =============
 dist/
+build/
 
-# Variables de entorno
+# ============= VARIABLES DE ENTORNO =============
 .env
 .env.local
+.env.*.local
 .env.production
+.env.development
 
-# IDE
+# ============= IDE / EDITOR =============
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
-# OS
+# ============= OS =============
 .DS_Store
 Thumbs.db
+.windows-build-tools
+
+# ============= CACHE =============
+.cache/
+.parcel-cache/
+.eslintcache
+

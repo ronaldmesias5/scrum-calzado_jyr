@@ -1,3 +1,22 @@
+/**
+ * Componente: HeroSection.tsx
+ * Descripción: Sección heroica de landing (imagen grande + CTA).
+ * 
+ * ¿Qué?
+ *   Hero con:
+ *   - Imagen de fondo (background gradient + overlay)
+ *   - Título "CALZADO J&R"
+ *   - Subtítulo "Calidad y Estilo a tu Alcance"
+ *   - CTA buttons: "Explorar Catálogo", "Contactar"
+ * 
+ * ¿Para qué?
+ *   - Primera impresión visual en landing
+ *   - Conversión: guiar a usuarios a catálogo o contacto
+ * 
+ * ¿Impacto?
+ *   MEDIO — Visual, importante para conversión pero no crítico.
+ */
+
 import { Link } from 'react-router-dom';
 
 export default function HeroSection() {

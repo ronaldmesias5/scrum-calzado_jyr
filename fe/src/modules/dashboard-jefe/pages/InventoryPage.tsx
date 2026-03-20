@@ -1,3 +1,23 @@
+/**
+ * Página: InventoryPage.tsx
+ * Descripción: Página de gestión de inventario con alertas de bajo stock.
+ * 
+ * ¿Qué?
+ *   Muestra:
+ *   - Grid de productos con stock actual, mínimo, estado
+ *   - Alertas visuales (rojo si stock ≤ minimum)
+ *   - Modal para ajustar stock manualmente
+ *   - Búsqueda y filtrado por producto
+ * 
+ * ¿Para qué?
+ *   - Monitoreo en tiempo real de inventario
+ *   - Alertar sobre bajo stock antes que se agote
+ *   - Ajustes rápidos sin ir a catálogo
+ * 
+ * ¿Impacto?
+ *   ALTO — Crítico para operaciones (evita overselling).
+ */
+
 import { useState, useEffect } from 'react';
 import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, Plus, RefreshCw, Maximize2, Download } from 'lucide-react';
 import { Product, listProducts, resolveImageUrl } from '../services/catalogService';

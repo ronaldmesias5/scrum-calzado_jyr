@@ -79,7 +79,7 @@ def get_recent_orders(db: Session = Depends(get_db)) -> RecentOrdersResponse:
             orders=[
                 RecentOrderSchema(
                     order_id=str(order.id),
-                    client_name=order.customer.name if order.customer else "N/A",
+                    client_name=order.customer.name_user if order.customer else "N/A",
                     quantity=order.total_pairs,
                     status=order.state.value if order.state else "pendiente",
                     date=order.created_at.strftime("%d/%m/%Y") if order.created_at else "N/A"

@@ -45,12 +45,12 @@ class Supplies(Base):
         default=uuid.uuid4,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_supplies: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
 
-    description: Mapped[str | None] = mapped_column(
+    description_supplies: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -84,5 +84,5 @@ class Supplies(Base):
     movements = relationship("SuppliesMovement", back_populates="supply", lazy="selectin")
 
     def __repr__(self) -> str:
-        return f"Supplies(id={self.id}, name={self.name})"
+        return f"Supplies(id={self.id}, name_supplies={self.name_supplies})"
 

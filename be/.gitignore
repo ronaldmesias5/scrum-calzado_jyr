@@ -1,19 +1,70 @@
-# Entorno virtual
+# ¿QUE? Archivo de ignorados para el backend Python
+# ¿PARA? Evitar versionear archivos generados o temporales
+# ¿IMPACTO? Mantiene el repositorio limpio; solo pyproject.toml se versionea
+
+# ============= ENTORNO VIRTUAL Y CACHE =============
 venv/
+env/
+.venv/
+ENV/
+# UV cache (si existe)
+.uv/
+
+# ============= BYTECODE Y CACHE PYTHON =============
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
 
-# Variables de entorno
+# ============= PIP (PROHIBIDO - SOLO UV) =============
+# IMPORTANTE: Este proyecto usa SOLO UV como gestor de dependencias
+# pip NO está permitido. Solo UV se usa para reproducibilidad.
+requirements.txt               # pip requirements (NC - usar pyproject.toml)
+requirements-dev.txt           # pip dev requirements (NC - usar pyproject.toml[dev])
+pip-log.txt
+pip-delete-this-directory.txt
+.pip/
+
+# ============= POETRY / PIPENV (NO USADO) =============
+Pipfile.lock
+poetry.lock
+
+# ============= VARIABLES DE ENTORNO =============
 .env
+.env.local
+.env.*.local
 
-# Alembic
+# ============= DATABASE / LOGS =============
+# Runtime files (generados en ejecución)
+app.log
+audit.log
+error.log
+logs/
+uploads/
+
+# ============= ALEMBIC MIGRATIONS =============
+# Script files en versions son generados, no se versionan
 alembic/versions/*.py
 !alembic/versions/.gitkeep
 
-# IDE
+# ============= IDE / EDITOR =============
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
-# OS
+# ============= OS =============
 .DS_Store
 Thumbs.db
+.windows-build-tools
+
+# ============= BUILDER / WHEEL =============
+build/
+dist/
+*.egg-info/
+*.egg
+

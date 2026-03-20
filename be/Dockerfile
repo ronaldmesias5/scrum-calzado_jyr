@@ -31,13 +31,19 @@ WORKDIR /app
 # Instalar uv (gestor de dependencias ultra-rápido para Python)
 RUN pip install --no-cache-dir uv
 
-# Copiar SOLO requirements.txt primero para aprovechar la caché de capas de Docker.
-# ¿Por qué? Si el código cambia pero requirements.txt no, Docker reutiliza
-#           la capa de uv pip install → builds mucho más rápidos.
-COPY requirements.txt .
+# ¿QUE? Copiar pyproject.toml para instalar dependencias
+# ¿PARA? Aprovechar caché de Docker: si código cambia pero pyproject.toml no,
+#        Docker reutiliza la capa de instalación → builds más rápidos.
+# ¿IMPACTO? Declarativo: todas las dependencias están en un solo lugar (pyproject.toml),
+#           no en archivos duplicados.
+COPY pyproject.toml .
+RUN mkdir app && touch app/__init__.py
 
-# Instalar dependencias con uv (10-100x más rápido que pip)
-RUN uv pip install --system --no-cache -r requirements.txt
+# ¿QUE? Instalar dependencias con UV (10-100x más rápido que pip)
+# ¿PARA? UV es el gestor moderno de Python (como pnpm para Node).
+#        Solo UV se usa en este proyecto (no pip, no requirements.txt, no poetry).
+# ¿IMPACTO? ÚNICO gestor centralizado = reproducibilidad garantizada
+RUN uv pip install --system --no-cache -e .
 
 # ────────────────────────────
 # Stage 2 — dev

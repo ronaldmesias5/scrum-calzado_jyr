@@ -1,3 +1,18 @@
+/**
+ * Archivo: tsconfig.json  
+ * Descripción: Configuración del compilador TypeScript para el frontend.
+ * 
+ * ¿Para qué?
+ *   - Define cómo TypeScript compila .ts/.tsx a JavaScript
+ *   - Configura strict mode (null checks, implicit any, etc.)
+ *   - Define target (ES2020), module resolution (bundler), strict mode
+ *   - Path aliases: @ = ./src (para imports limpios)
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — Sin tsconfig, TypeScript no sabe cómo compilar el código.
+ *   Modificar compilerOptions rompe: build, type checking, IDE support.
+ */
+
 {
   "compilerOptions": {
     "target": "ES2020",

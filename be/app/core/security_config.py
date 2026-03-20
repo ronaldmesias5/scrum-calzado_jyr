@@ -40,18 +40,30 @@ class SecurityHeadersConfig:
     """Configuración de headers de seguridad (OWASP #1-8)."""
     
     # CSP (Content Security Policy): Previene XSS, clickjacking, etc.
-    CSP_POLICY = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "  # unsafe-inline solo en desarrollo
-        "style-src 'self' 'unsafe-inline'; "   # Para Tailwind CSS
+    # DESARROLLO: Permisivo para permitir Swagger UI y desarrollo
+    CSP_POLICY_DEV = (
+        "default-src 'self' https:; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; "
+        "style-src 'self' 'unsafe-inline' https:; "
         "img-src 'self' data: https:; "
+        "font-src 'self' https:; "
+        "connect-src 'self' https:; "
+        "frame-ancestors 'none'; "
+    )
+    
+    # PRODUCCIÓN: Estricto (comentado, habilitar según sea necesario)
+    CSP_POLICY_PROD = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self'; "
+        "img-src 'self' data:; "
         "font-src 'self'; "
         "connect-src 'self'; "
         "frame-ancestors 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self'; "
-        "upgrade-insecure-requests; "
     )
+    
+    # Por defecto usamos desarrollo
+    CSP_POLICY = CSP_POLICY_DEV
     
     # Permiso de características del navegador
     PERMISSIONS_POLICY = (

@@ -52,18 +52,18 @@ def seed_roles(db: Session) -> bool:
         roles = [
             Role(
                 id=uuid.UUID("10000000-0000-0000-0000-000000000001"),
-                name="admin",
-                description="Administrador del sistema"
+                name_role="admin",
+                description_role="Administrador del sistema"
             ),
             Role(
                 id=uuid.UUID("20000000-0000-0000-0000-000000000001"),
-                name="employee",
-                description="Empleado de la fábrica"
+                name_role="employee",
+                description_role="Empleado de la fábrica"
             ),
             Role(
                 id=uuid.UUID("30000000-0000-0000-0000-000000000001"),
-                name="client",
-                description="Cliente — gestión de pedidos"
+                name_role="client",
+                description_role="Cliente — gestión de pedidos"
             ),
         ]
         
@@ -98,27 +98,27 @@ def seed_type_documents(db: Session) -> bool:
         type_docs = [
             TypeDocument(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
-                name="Cédula de Ciudadanía (CC)"
+                name_type_document="Cédula de Ciudadanía (CC)"
             ),
             TypeDocument(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
-                name="Tarjeta de Identidad (TI)"
+                name_type_document="Tarjeta de Identidad (TI)"
             ),
             TypeDocument(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000003"),
-                name="Pasaporte"
+                name_type_document="Pasaporte"
             ),
             TypeDocument(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000004"),
-                name="Cédula de Extranjería (CE)"
+                name_type_document="Cédula de Extranjería (CE)"
             ),
             TypeDocument(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000005"),
-                name="Permiso por Protección Temporal (PPT)"
+                name_type_document="Permiso por Protección Temporal (PPT)"
             ),
             TypeDocument(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000006"),
-                name="Documento de Identificación Personal (DIPS)"
+                name_type_document="Documento de Identificación Personal (DIPS)"
             ),
         ]
         
@@ -289,7 +289,7 @@ def seed_admin(db: Session) -> bool:
             return True
         
         # Obtener rol employee
-        employee_role = db.query(Role).filter(Role.name == "employee").first()
+        employee_role = db.query(Role).filter(Role.name_role == "employee").first()
         if not employee_role:
             print("❌ Rol employee no existe")
             return False
@@ -299,7 +299,7 @@ def seed_admin(db: Session) -> bool:
         jefe_user = User(
             id=uuid.uuid4(),
             email="ronald.jefe@gmail.com",
-            name="Ronald",
+            name_user="Ronald",
             last_name="Jefe",
             phone="+57 312 345 6789",
             hashed_password=hash_password("Test123456!"),
@@ -335,7 +335,7 @@ def seed_users(db: Session) -> bool:
     """
     try:
         # ── 1. Eliminar TODOS los clientes ────────────────────────────────
-        client_role = db.query(Role).filter(Role.name == "client").first()
+        client_role = db.query(Role).filter(Role.name_role == "client").first()
         if client_role:
             deleted = (
                 db.query(User)
@@ -347,7 +347,7 @@ def seed_users(db: Session) -> bool:
                 print(f"🗑️  {deleted} cliente(s) eliminado(s) — sin clientes registrados")
 
         # ── 2. Obtener role de empleado ──────────────────────────────────
-        employee_role = db.query(Role).filter(Role.name == "employee").first()
+        employee_role = db.query(Role).filter(Role.name_role == "employee").first()
         if not employee_role:
             print("❌ Rol employee no encontrado — ejecuta seed_roles() primero")
             return False
@@ -358,7 +358,7 @@ def seed_users(db: Session) -> bool:
             dict(
                 id=uuid.UUID("a1000000-0000-0000-0000-000000000001"),
                 email="marina.emplantilladora@gmail.com",
-                name="Marina",
+                name_user="Marina",
                 last_name="Leyton",
                 phone="+57 311 111 0001",
                 role_id=employee_role.id,
@@ -367,7 +367,7 @@ def seed_users(db: Session) -> bool:
             dict(
                 id=uuid.UUID("a1000000-0000-0000-0000-000000000002"),
                 email="juan.cortador@gmail.com",
-                name="Juan",
+                name_user="Juan",
                 last_name="Cortez",
                 phone="+57 311 111 0002",
                 role_id=employee_role.id,
@@ -376,7 +376,7 @@ def seed_users(db: Session) -> bool:
             dict(
                 id=uuid.UUID("a1000000-0000-0000-0000-000000000003"),
                 email="pedro.solador@gmail.com",
-                name="Pedro",
+                name_user="Pedro",
                 last_name="Solis",
                 phone="+57 311 111 0003",
                 role_id=employee_role.id,
@@ -385,7 +385,7 @@ def seed_users(db: Session) -> bool:
             dict(
                 id=uuid.UUID("a1000000-0000-0000-0000-000000000004"),
                 email="laura.guarnecedor@gmail.com",
-                name="Laura",
+                name_user="Laura",
                 last_name="Garcia",
                 phone="+57 311 111 0004",
                 role_id=employee_role.id,
@@ -403,7 +403,7 @@ def seed_users(db: Session) -> bool:
             user = User(
                 id=data["id"],
                 email=data["email"],
-                name=data["name"],
+                name_user=data["name_user"],
                 last_name=data["last_name"],
                 phone=data["phone"],
                 hashed_password=hash_password("Test123456!"),
@@ -472,8 +472,8 @@ def seed_catalog(db: Session) -> bool:
         for brand_data in brands_data:
             brand = Brand(
                 id=uuid.uuid4(),
-                name=brand_data["name"],
-                description=brand_data["description"]
+                name_brand=brand_data["name"],
+                description_brand=brand_data["description"]
             )
             db.add(brand)
             brands[brand_data["name"]] = brand
@@ -491,8 +491,8 @@ def seed_catalog(db: Session) -> bool:
         for cat_data in categories_data:
             category = Category(
                 id=uuid.uuid4(),
-                name=cat_data["name"],
-                description=cat_data["description"]
+                name_category=cat_data["name"],
+                description_category=cat_data["description"]
             )
             db.add(category)
             categories[cat_data["name"]] = category
@@ -534,8 +534,8 @@ def seed_catalog(db: Session) -> bool:
         for style_data in styles_data:
             style = Style(
                 id=uuid.uuid4(),
-                name=style_data["name"],
-                description=style_data["description"],
+                name_style=style_data["name"],
+                description_style=style_data["description"],
                 brand_id=brands[style_data["brand"]].id,
             )
             db.add(style)
@@ -583,7 +583,7 @@ def seed_catalog(db: Session) -> bool:
                 category_obj = categories[cat_name]
                 product = Product(
                     id=uuid.uuid4(),
-                    name=f"{product_mapping['style']} - {cat_name}",
+                    name_product=f"{product_mapping['style']} - {cat_name}",
                     style_id=style_obj.id,
                     category_id=category_obj.id,
                     brand_id=style_obj.brand_id,

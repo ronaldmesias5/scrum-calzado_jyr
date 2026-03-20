@@ -67,7 +67,7 @@ def register_user(db: Session, user_data: UserCreate) -> User:
             detail="El email ya está registrado",
         )
 
-    stmt = select(Role).where(Role.name == "client")
+    stmt = select(Role).where(Role.name_role == "client")
     client_role = db.execute(stmt).scalar_one_or_none()
 
     if not client_role:
@@ -78,7 +78,7 @@ def register_user(db: Session, user_data: UserCreate) -> User:
 
     new_user = User(
         email=user_data.email,
-        name=user_data.name,
+        name_user=user_data.name,
         last_name=user_data.last_name,
         phone=user_data.phone,
         identity_document=user_data.identity_document,

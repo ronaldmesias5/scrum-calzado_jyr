@@ -1,3 +1,26 @@
+"""
+Archivo: be/app/models/brand.py
+Descripción: Modelo ORM SQLAlchemy para la tabla `brands` (marcas de calzado).
+
+¿Qué?
+  Define la estructura de marcas de calzado (Nike, Adidas, Puma, etc.).
+  Campos: name_brand (único), description_brand, timestamps, soft delete.
+  Relaciones: one-to-many con Style y Product.
+
+¿Para qué?
+  - Centralizar información de marcas
+  - Permitir filtrado de productos por marca
+  - Optimizar queries con índice UNIQUE en name_brand
+  - Rastrear creación/actualización de marcas
+
+¿Impacto?
+  CRÍTICO — Sin marcas, no hay catálogo de productos.
+  Si falla: no se pueden crear productos, queries de catálogo rompen.
+  Modificar campos rompe: admin/catalog_router.py, catálogo público,
+  queries en dashboard_jefe/router.py que filtran por brand.
+  Dependencias: models/style.py, models/product.py, database.py
+"""
+
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -22,13 +45,13 @@ class Brand(Base):
         default=uuid.uuid4,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_brand: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         nullable=False,
     )
 
-    description: Mapped[str | None] = mapped_column(
+    description_brand: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -63,5 +86,5 @@ class Brand(Base):
     products = relationship("Product", back_populates="brand", lazy="selectin")
 
     def __repr__(self) -> str:
-        return f"Brand(id={self.id}, name={self.name})"
+        return f"Brand(id={self.id}, name_brand={self.name_brand})"
 

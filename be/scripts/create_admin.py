@@ -51,7 +51,7 @@ def create_admin() -> None:
 
     try:
         # Verificar que el rol admin existe
-        stmt = select(Role).where(Role.name == "admin")
+        stmt = select(Role).where(Role.name_role == "admin")
         admin_role = db.execute(stmt).scalar_one_or_none()
 
         if not admin_role:

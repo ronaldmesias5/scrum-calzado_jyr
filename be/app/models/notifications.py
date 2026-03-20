@@ -43,17 +43,17 @@ class Notification(Base):
         nullable=False,
     )
 
-    title: Mapped[str] = mapped_column(
+    title_notification: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
 
-    message: Mapped[str] = mapped_column(
+    message_notification: Mapped[str] = mapped_column(
         Text,
         nullable=False,
     )
 
-    type: Mapped[str] = mapped_column(
+    type_notification: Mapped[str] = mapped_column(
         SQLEnum(NotificationType, name="notification_type", create_type=False),
         nullable=False,
         default=NotificationType.info,

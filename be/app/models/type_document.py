@@ -40,7 +40,7 @@ class TypeDocument(Base):
         default=uuid.uuid4,
     )
 
-    name: Mapped[str] = mapped_column(
+    name_type_document: Mapped[str] = mapped_column(
         String(100),
         unique=True,
         nullable=False,

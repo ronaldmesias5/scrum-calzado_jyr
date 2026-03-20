@@ -1,3 +1,23 @@
+/**
+ * Componente: LandingFooter.tsx
+ * Descripción: Footer de página de landing con links a políticas y términos.
+ * 
+ * ¿Qué?
+ *   Footer simple con:
+ *   - Links a Términos, Privacidad, Cookie Policy
+ *   - Rastreo de consentimiento (localStorage)
+ *   - Copyright CALZADO J&R
+ * 
+ * ¿Para qué?
+ *   - Cumplimiento legal (GDPR, cookies, privacidad)
+ *   - Consistencia visual en toda la web
+ *   - Acceso fácil a policies desde cualquier página
+ * 
+ * ¿Impacto?
+ *   BAJO — Componente frontend, sin lógica crítica.
+ *   No implementar afecta: cumplimiento legal, UX consistente.
+ */
+
 export default function LandingFooter() {
   return (
     <footer className="bg-gray-900 text-gray-300 pt-12 pb-6">

@@ -101,8 +101,36 @@ CREATE INDEX IF NOT EXISTS idx_users_role_validated
 
 -- Roles activos por nombre (búsqueda de rol por nombre en login)
 CREATE INDEX IF NOT EXISTS idx_roles_name_active
-    ON roles (name)
+    ON roles (name_role)
     WHERE deleted_at IS NULL;
+
+-- ────────────────────────────
+-- Índices para Catálogo y Productos
+-- ────────────────────────────
+
+-- Productos activos (por nombre y estado)
+CREATE INDEX IF NOT EXISTS idx_products_name_active
+    ON products (name_product)
+    WHERE deleted_at IS NULL;
+
+-- Productos activos por estilo (muy usado en filtrado)
+CREATE INDEX IF NOT EXISTS idx_products_style_active
+    ON products (style_id)
+    WHERE deleted_at IS NULL;
+
+-- Inventario activo con stock disponible
+CREATE INDEX IF NOT EXISTS idx_inventory_stock_active
+    ON inventory (product_id, amount)
+    WHERE deleted_at IS NULL AND amount > 0;
+
+-- Estilos activos por marca
+CREATE INDEX IF NOT EXISTS idx_styles_brand_active
+    ON styles (brand_id)
+    WHERE deleted_at IS NULL;
+
+-- Categorías y Marcas activas
+CREATE INDEX IF NOT EXISTS idx_categories_name_active ON categories (name_category) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_brands_name_active ON brands (name_brand) WHERE deleted_at IS NULL;
 
 
 -- ══════════════════════════════════════════════════════════

@@ -41,6 +41,11 @@ import type {
 const AUTH_PREFIX = "/api/v1/auth";
 const USERS_PREFIX = "/api/v1/users";
 
+export async function logoutUser(): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout`);
+  return response.data;
+}
+
 export async function registerUser(data: RegisterRequest): Promise<UserResponse> {
   const response = await api.post<UserResponse>(`${AUTH_PREFIX}/register`, data);
   return response.data;
