@@ -34,6 +34,7 @@ export default function InventoryPage() {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('');
   const [selectedState, setSelectedState] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export default function InventoryPage() {
     const matchesCategory = !selectedCategory || product.category_name === selectedCategory;
     const matchesBrand = !selectedBrand || product.brand_name === selectedBrand;
     const matchesStyle = !selectedStyle || product.style_name === selectedStyle;
+    const matchesColor = !selectedColor || product.color === selectedColor;
     
     const stock = product.stock_total || 0;
     const threshold = product.insufficient_threshold || 12;
@@ -80,13 +82,14 @@ export default function InventoryPage() {
       (selectedState === 'sin-stock' && stock === 0)
     );
 
-    return matchesSearch && matchesCategory && matchesBrand && matchesStyle && matchesState;
+    return matchesSearch && matchesCategory && matchesBrand && matchesStyle && matchesColor && matchesState;
   });
 
-  // Obtener categorías, marcas y estilos únicos
-  const categories = Array.from(new Set(products.map(p => p.category_name)));
-  const brands = Array.from(new Set(products.map(p => p.brand_name))).sort();
-  const styles = Array.from(new Set(products.map(p => p.style_name))).sort();
+  // Obtener categorías, marcas, estilos y colores únicos
+  const categories = Array.from(new Set(products.map(p => p.category_name).filter(Boolean)));
+  const brands = Array.from(new Set(products.map(p => p.brand_name).filter(Boolean))).sort();
+  const styles = Array.from(new Set(products.map(p => p.style_name).filter(Boolean))).sort();
+  const colors = Array.from(new Set(products.map(p => p.color).filter(Boolean))).sort();
 
   // Calcular métricas
   const totalStock = products.reduce((sum, p) => sum + (p.stock_total || 0), 0);
@@ -95,7 +98,8 @@ export default function InventoryPage() {
   const outOfStockProducts = products.filter(p => (p.stock_total || 0) === 0).length;
 
   // Manejar guardar inventario
-  const handleSaveInventory = async (quantities: Record<number, number>) => {
+  const handleSaveInventory = async (_quantities: Record<number, number>) => {
+    void _quantities;
     try {
       // El guardado ya se hizo en AdjustInventoryModal via bulkUpdateInventory
       // Solo recargar productos para actualizar el stock
@@ -202,22 +206,10 @@ export default function InventoryPage() {
 
       {/* Búsqueda y Filtros */}
       <div className="bg-white rounded-2xl p-6 border border-gray-200">
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, estilo, marca o color..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 items-end">
+          {/* Categoría */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -230,22 +222,9 @@ export default function InventoryPage() {
             </select>
           </div>
 
+          {/* Marca */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Estilo</label>
-            <select
-              value={selectedStyle}
-              onChange={(e) => setSelectedStyle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-            >
-              <option value="">Todos</option>
-              {styles.map(style => (
-                <option key={style} value={style}>{style}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Marca</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
@@ -258,28 +237,76 @@ export default function InventoryPage() {
             </select>
           </div>
 
+          {/* Estilo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Nivel de Stock</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estilo</label>
+            <select
+              value={selectedStyle}
+              onChange={(e) => setSelectedStyle(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            >
+              <option value="">Todos</option>
+              {styles.map(style => (
+                <option key={style} value={style}>{style}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Producto (Búsqueda) */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Nombre, ID, ref..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Color */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <select
+              value={selectedColor}
+              onChange={(e) => setSelectedColor(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            >
+              <option value="">Todos</option>
+              {colors.map(color => (
+                <option key={color} value={color}>{color}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Nivel de Stock */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
             >
               <option value="">Todos</option>
-              <option value="en-stock">En Stock (cualquier cantidad)</option>
+              <option value="en-stock">En Stock</option>
               <option value="suficiente">Suficiente</option>
               <option value="insuficiente">Insuficiente</option>
               <option value="sin-stock">Sin Stock</option>
             </select>
           </div>
 
+          {/* Limpiar */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
             <button
               onClick={() => {
                 setSelectedCategory('');
                 setSelectedBrand('');
                 setSelectedStyle('');
+                setSelectedColor('');
                 setSelectedState('');
                 setSearchTerm('');
               }}
@@ -290,6 +317,7 @@ export default function InventoryPage() {
           </div>
         </div>
       </div>
+
 
       {/* Tabla de Productos */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -342,7 +370,7 @@ export default function InventoryPage() {
                             <button
                               onClick={() => {
                                 const imgUrl = resolveImageUrl(product.image_url);
-                                setViewingImage(imgUrl);
+                                setViewingImage(imgUrl || null);
                                 setViewingProductName(product.name);
                               }}
                               className="relative w-16 h-16 rounded-lg flex-shrink-0 overflow-hidden group cursor-pointer border border-gray-300"

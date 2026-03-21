@@ -264,6 +264,35 @@ def update_user(
     return _build_user_response(user)
 
 
+@router.delete(
+    "/users/{user_id}",
+    response_model=MessageResponse,
+    summary="Eliminar usuario (Rechazar)",
+)
+def delete_user(
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """Elimina permanentemente un usuario de la base de datos (admin o jefe)."""
+    _require_admin_or_jefe(current_user)
+
+    user_to_delete = db.query(User).filter(User.id == user_id).first()
+    if not user_to_delete:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    # No permitir que un usuario se elimine a sí mismo (medida de seguridad adicional)
+    if user_to_delete.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="No puedes eliminar tu propia cuenta"
+        )
+
+    db.delete(user_to_delete)
+    db.commit()
+    return MessageResponse(message=f"Usuario {user_to_delete.email} eliminado exitosamente")
+
+
 @router.post(
     "/users/create-employee",
     response_model=UserResponse,

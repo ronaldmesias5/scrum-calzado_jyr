@@ -2,6 +2,8 @@ import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { BadgeCountsProvider } from '../../context/BadgeCountsContext';
+import { DashboardFooter } from '@/components/layout/DashboardFooter';
+
 
 export default function AdminLayout() {
   return (
@@ -13,8 +15,11 @@ export default function AdminLayout() {
         {/* Sidebar + contenido debajo del header */}
         <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
           <AdminSidebar />
-          <main className="flex-1 px-4 pt-3 pb-4 overflow-y-auto">
-            <Outlet />
+          <main className="flex-1 px-4 pt-3 pb-4 overflow-y-auto flex flex-col">
+            <div className="flex-1">
+              <Outlet />
+            </div>
+            <DashboardFooter />
           </main>
         </div>
       </div>

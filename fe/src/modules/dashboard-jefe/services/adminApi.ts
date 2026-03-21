@@ -81,6 +81,12 @@ export async function validateUser(userId: string): Promise<UserResponse> {
   return response.data;
 }
 
+/** Elimina un usuario (Rechaza la solicitud de registro) */
+export async function deleteUser(userId: string): Promise<{ message: string }> {
+  const response = await api.delete<{ message: string }>(`${ADMIN_PREFIX}/users/${userId}`);
+  return response.data;
+}
+
 /** Crea una cuenta de empleado (activa de inmediato, must_change_password=true) */
 export async function createEmployee(data: CreateEmployeeRequest): Promise<UserResponse> {
   const response = await api.post<UserResponse>(`${ADMIN_PREFIX}/users/create-employee`, data);

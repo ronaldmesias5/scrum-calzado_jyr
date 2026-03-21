@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
-import { Product, listBrands, listCategories, Brand, Category } from '../services/catalogService';
+import { Product, listBrands, listCategories, listStyles, Brand, Category, Style } from '../services/catalogService';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const resolveImg = (url?: string | null) => {
@@ -24,6 +24,7 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [styles, setStyles] = useState<Style[]>([]);
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -76,6 +77,32 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
       setUseImageUrl(false);
     }
   }, [isOpen, product]);
+
+  // Cargar estilos cuando cambia la marca
+  useEffect(() => {
+    const fetchStyles = async () => {
+      if (formData.brand_name && brands.length > 0) {
+        const brand = brands.find(b => b.name === formData.brand_name);
+        if (brand) {
+          try {
+            const stylesData = await listStyles(brand.id);
+            setStyles(stylesData);
+            // Si el estilo actual no pertenece a esta marca, reiniciarlo
+            if (isOpen && !stylesData.find(s => s.name === formData.style_name)) {
+              if (formData.brand_name !== product?.brand_name) {
+                 setFormData(prev => ({ ...prev, style_name: '' }));
+              }
+            }
+          } catch {
+            setStyles([]);
+          }
+        }
+      } else {
+        setStyles([]);
+      }
+    };
+    fetchStyles();
+  }, [formData.brand_name, brands, isOpen, product]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -185,14 +212,18 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Estilo <span className="text-red-600">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 name="style_name"
                 value={formData.style_name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50"
-                placeholder="Ej: 1300, 9060, Air Max"
-              />
+                disabled={!formData.brand_name}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50 disabled:opacity-50"
+              >
+                <option value="">{formData.brand_name ? 'Seleccionar estilo' : 'Elige marca'}</option>
+                {styles.map(s => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

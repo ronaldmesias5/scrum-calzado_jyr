@@ -49,12 +49,12 @@ export default function HeroSection() {
         <p className="text-gray-200 text-lg mb-8 max-w-xl mx-auto">
             Somos una fábrica colombiana especializada en la producción de calzado nacional de alta calidad  para su negocio. Con más de 5 años de experiencia, nos dedicamos a ofrecerte los mejores productos.        </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="#categorias"
+          <Link
+            to="/catalog"
             className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg btn-glow transition-colors duration-200"
           >
             Ver Catálogo
-          </a>
+          </Link>
           <Link
             to="/auth/login"
             className="px-8 py-3 border-2 border-white text-white font-semibold rounded-lg btn-glow transition-colors duration-200"

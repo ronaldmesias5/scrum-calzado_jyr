@@ -21,9 +21,14 @@
 export default function LandingFooter() {
   return (
     <footer className="bg-gray-900 text-gray-300 pt-12 pb-6">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Logo */}
-        <img src="/logo.png" alt="CALZADO J&R" className="h-12 w-12 object-contain rounded mx-auto mb-3" />
+        <div className="flex flex-col items-start">
+          <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain rounded" />
+          <p className="mt-4 text-xs text-gray-400">
+            Calidad y Estilo a tu Alcance
+          </p>
+        </div>
 
         {/* Links rápidos */}
         <div>

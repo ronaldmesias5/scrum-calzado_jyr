@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 /**
  * Componente: CategoriesSection.tsx
  * Descripción: Sección que muestra categorías de productos con cards clickeables.
@@ -59,9 +61,12 @@ export default function CategoriesSection() {
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{cat.name}</h3>
                 <p className="text-gray-500 text-sm mb-4">{cat.description}</p>
-                <button className="px-5 py-2 bg-blue-800 text-white text-sm font-semibold rounded-lg btn-glow hover:bg-blue-700 transition-colors duration-200">
+                <Link 
+                  to={`/catalog?search=${cat.name}`}
+                  className="inline-block px-5 py-2 bg-blue-800 text-white text-sm font-semibold rounded-lg btn-glow hover:bg-blue-700 transition-colors duration-200 text-center"
+                >
                   Ver Colección
-                </button>
+                </Link>
               </div>
             </div>
           ))}

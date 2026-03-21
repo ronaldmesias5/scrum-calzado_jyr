@@ -3,10 +3,10 @@ import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
 const navLinks = [
-  { label: 'Inicio', href: '#inicio' },
-  { label: 'Catálogo', href: '#categorias' },
-  { label: 'Nosotros', href: '#nosotros' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: 'Inicio', href: '/' },
+  { label: 'Catálogo', href: '/catalog' },
+  { label: 'Nosotros', href: '/#nosotros' },
+  { label: 'Contacto', href: '/#contacto' },
 ];
 
 export default function LandingHeader() {

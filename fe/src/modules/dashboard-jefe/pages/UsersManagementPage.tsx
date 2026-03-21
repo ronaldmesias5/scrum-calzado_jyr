@@ -12,6 +12,7 @@ import {
 import {
   getPendingUsers,
   validateUser,
+  deleteUser,
   createEmployee,
   createClient,
   type CreateEmployeeRequest,
@@ -35,6 +36,9 @@ function PendingUsersTab() {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserResponse | null>(null);
   const [successIds, setSuccessIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +68,25 @@ function PendingUsersTab() {
     } finally {
       setApprovingId(null);
     }
+  };
+
+  const handleReject = async (userId: string) => {
+    setDeletingId(userId);
+    try {
+      await deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id.toString() !== userId));
+      setShowConfirmDelete(false);
+      setUserToDelete(null);
+    } catch {
+      setError('Error al rechazar la cuenta. Inténtalo de nuevo.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const openDeleteConfirm = (user: UserResponse) => {
+    setUserToDelete(user);
+    setShowConfirmDelete(true);
   };
 
   if (loading) {
@@ -130,30 +153,81 @@ function PendingUsersTab() {
                       {new Date(user.created_at).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {approved ? (
-                        <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                          <CheckCircle size={14} /> Aprobado
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleApprove(id)}
-                          disabled={approvingId === id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
-                        >
-                          {approvingId === id ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
-                            <CheckCircle size={12} />
-                          )}
-                          Aprobar
-                        </button>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        {approved ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                            <CheckCircle size={14} /> Aprobado
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleApprove(user.id.toString())}
+                              disabled={approvingId === id || deletingId === id}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                            >
+                              {approvingId === id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <CheckCircle size={14} />
+                              )}
+                              Aprobar
+                            </button>
+                            <button
+                              onClick={() => openDeleteConfirm(user)}
+                              disabled={approvingId === id || deletingId === id}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                            >
+                              <XCircle size={14} />
+                              Rechazar
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Rechazo */}
+      {showConfirmDelete && userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
+                <XCircle size={28} />
+              </div>
+              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+                ¿Rechazar solicitud?
+              </h3>
+              <p className="text-center text-gray-500 text-sm mb-6">
+                Estás a punto de rechazar y eliminar la cuenta de <strong>{userToDelete.email}</strong>. Esta acción no se puede deshacer.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmDelete(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                >
+                  No, mantener
+                </button>
+                <button
+                  onClick={() => handleReject(userToDelete.id.toString())}
+                  disabled={deletingId !== null}
+                  className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {deletingId ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    'Sí, Rechazar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -29,7 +29,14 @@ from sqlalchemy.orm import Session
 from app.models.role import Role
 from app.models.type_document import TypeDocument
 from app.models.user import User
+from app.models.product import Product
+from app.models.brand import Brand
+from app.models.style import Style
+from app.models.category import Category
+from app.models.inventory import Inventory
+from app.models.order import Order, OrderItem, OrderStatus
 from app.utils.security import hash_password
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -577,6 +584,8 @@ def seed_catalog(db: Session) -> bool:
         ]
         
         inserted_products = 0
+        available_colors = ["Negro", "Blanco", "Azul", "Rojo", "Marrón", "Gris"]
+        
         for product_mapping in products_data:
             style_obj = styles[product_mapping["style"]]
             for cat_name in product_mapping["categories"]:
@@ -587,6 +596,10 @@ def seed_catalog(db: Session) -> bool:
                     style_id=style_obj.id,
                     category_id=category_obj.id,
                     brand_id=style_obj.brand_id,
+                    color=random.choice(available_colors),
+                    image_url=None, # Se pueden subir luego
+                    insufficient_threshold=12,
+                    state=True
                 )
                 db.add(product)
                 inserted_products += 1
@@ -598,6 +611,28 @@ def seed_catalog(db: Session) -> bool:
         print(f"   • {len(styles_data)} estilos")
         print(f"   • {inserted_products} productos")
         print("   ⚠️  Nota: Reebok Princesa solo en Dama + Infantil (sin Caballero)")
+        
+        # Generar inventario inicial aleatorio para que no todo esté en 0
+        print("🔄 Generando inventario inicial aleatorio...")
+        all_products = db.query(Product).all()
+        for p in all_products:
+            # Seleccionar algunas tallas aleatorias según categoría
+            if p.category.name_category == "Infantil":
+                sizes = ["21", "22", "23", "24", "25", "26"]
+            else:
+                sizes = ["36", "37", "38", "39", "40", "41", "42"]
+                
+            for size in random.sample(sizes, k=random.randint(2, len(sizes))):
+                inv = Inventory(
+                    id=uuid.uuid4(),
+                    product_id=p.id,
+                    size=size,
+                    amount=random.randint(0, 50) # Algunos con stock, otros bajo
+                )
+                db.add(inv)
+        
+        db.commit()
+        print("✅ Inventario inicial generado")
         return True
         
     except Exception as e:

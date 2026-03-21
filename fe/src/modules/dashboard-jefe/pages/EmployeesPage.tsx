@@ -14,6 +14,8 @@ import { getAllUsers, updateUser, type UpdateUserRequest } from '../services/adm
 import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
 import CreateUserForm from '../components/CreateUserForm';
+import StatusConfirmModal from '../components/StatusConfirmModal';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<UserResponse[]>([]);
@@ -30,6 +32,13 @@ export default function EmployeesPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [typeDocuments, setTypeDocuments] = useState<TypeDocument[]>([]);
   const [editForm, setEditForm] = useState<UpdateUserRequest>({});
+
+  // Estado para el modal de estado (activar/desactivar)
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [employeeToToggle, setEmployeeToToggle] = useState<UserResponse | null>(null);
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
+
+  const { user: currentUser } = useAuth();
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -85,15 +94,31 @@ export default function EmployeesPage() {
     }
   };
 
-  const toggleStatus = async (emp: UserResponse) => {
-    const newStatus = !emp.is_active;
-    if (!confirm(`¿Estás seguro de que deseas ${newStatus ? 'activar' : 'desactivar'} a este empleado?`)) return;
+  const toggleStatus = (emp: UserResponse) => {
+    // Prevenir auto-desactivación
+    if (currentUser && emp.id === currentUser.id) {
+      alert('Por seguridad, no puedes desactivar tu propia cuenta de administrador.');
+      return;
+    }
+    setEmployeeToToggle(emp);
+    setIsStatusModalOpen(true);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!employeeToToggle) return;
+    
+    setIsStatusLoading(true);
+    const newStatus = !employeeToToggle.is_active;
     
     try {
-      const updated = await updateUser(emp.id.toString(), { is_active: newStatus });
+      const updated = await updateUser(employeeToToggle.id.toString(), { is_active: newStatus });
       setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+      setIsStatusModalOpen(false);
     } catch {
-      alert('Error al cambiar el estado.');
+      alert('Error al cambiar el estado del empleado.');
+    } finally {
+      setIsStatusLoading(false);
+      setEmployeeToToggle(null);
     }
   };
 
@@ -113,7 +138,7 @@ export default function EmployeesPage() {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl shadow-sm transition-all active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 shadow-sm active:scale-95"
         >
           <UserPlus size={18} />
           Nuevo Empleado
@@ -258,8 +283,15 @@ export default function EmployeesPage() {
                         </button>
                         <button
                           onClick={() => toggleStatus(emp)}
-                          className={`p-2 rounded-lg transition-colors ${emp.is_active ? 'text-gray-400 hover:text-red-500 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
-                          title={emp.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}
+                          disabled={currentUser?.id === emp.id}
+                          className={`p-2 rounded-lg transition-colors ${
+                            currentUser?.id === emp.id 
+                              ? 'opacity-20 cursor-not-allowed' 
+                              : emp.is_active 
+                                ? 'text-gray-400 hover:text-red-500 hover:bg-red-50' 
+                                : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
+                          }`}
+                          title={currentUser?.id === emp.id ? 'No puedes desactivar tu propia cuenta' : (emp.is_active ? 'Desactivar cuenta' : 'Activar cuenta')}
                         >
                           {emp.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                         </button>
@@ -368,7 +400,7 @@ export default function EmployeesPage() {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-2 bg-blue-800 text-white rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Guardar Cambios
@@ -405,6 +437,18 @@ export default function EmployeesPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmación de Estado */}
+      <StatusConfirmModal
+        isOpen={isStatusModalOpen}
+        employee={employeeToToggle}
+        loading={isStatusLoading}
+        onConfirm={handleConfirmToggleStatus}
+        onCancel={() => {
+          setIsStatusModalOpen(false);
+          setEmployeeToToggle(null);
+        }}
+      />
     </div>
   );
 }

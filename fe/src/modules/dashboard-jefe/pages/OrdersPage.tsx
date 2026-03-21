@@ -3,13 +3,12 @@
  * Descripción: Página de gestión de pedidos mayoristas del dashboard.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShoppingCart, Package, Filter, Search, Loader2, AlertCircle, Clock,
   Zap, CheckCircle, XCircle, ChevronLeft, ChevronRight,
   ArrowRight, Mail, Phone, User, Plus, ArrowLeft,
-  PlayCircle, Pencil, Ban, RefreshCw, Trash2, Maximize2,
-  Check, X, ChevronDown, Download, Eye, MoreVertical, Calendar
+  PlayCircle, Pencil, Ban, RefreshCw, Trash2
 } from 'lucide-react';
 import {
   getOrders,
@@ -61,7 +60,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 // ─────────────────────────────────────────
 
 function SummaryCards({ totals }: { totals: Record<OrderStatus, number> }) {
-  const items: Array<{ status: OrderStatus; color: 'yellow' | 'blue' | 'green' | 'red'; label: string; icon: JSX.Element }> = [
+  const items: Array<{ status: OrderStatus; color: 'yellow' | 'blue' | 'green' | 'red'; label: string; icon: React.ReactNode }> = [
     { status: 'pendiente',   color: 'yellow', label: 'Pendiente', icon: <Clock size={24} /> },
     { status: 'en_progreso', color: 'blue',   label: 'En Producción', icon: <Zap size={24} /> },
     { status: 'completado',  color: 'green',  label: 'Completado', icon: <CheckCircle size={24} /> },
@@ -256,7 +255,10 @@ function OrderDetailView({
                   </span>
                 </h2>
                 {Object.entries(groups).map(([productId, lines]) => {
-                  const first = lines[0];
+                  const first = lines && lines.length > 0 ? lines[0] : null;
+                  
+                  if (!first) return null;
+
                   const productName = first.product_name ?? `Producto #${productId.substring(0, 8)}`;
                   const styleName = first.style_name;
                   const categoryName = first.category_name;
@@ -264,15 +266,6 @@ function OrderDetailView({
                   
                   // Usar directamente el image_url del backend (que ya viene con el detalle del pedido)
                   const productImageUrl = first.image_url ? resolveImageUrl(first.image_url) : null;
-                  
-                  // DEBUG
-                  if (productName.includes('Superstar')) {
-                    console.log('DEBUG Superstar - SIMPLIFIED:', {
-                      productId,
-                      firstImageUrl: first.image_url,
-                      productImageUrl,
-                    });
-                  }
                   
                     const totalProductPairs = lines.reduce((s, l) => s + l.amount, 0);
                     const allAvailable = lines.every(l => (l.stock_available ?? 0) >= l.amount);
@@ -309,7 +302,7 @@ function OrderDetailView({
                                     handleImageError(productImageUrl);
                                   }}
                                   onLoad={() => {
-                                    console.log('✅ Imagen cargada:', productImageUrl);
+
                                   }}
                                   style={{
                                     width: '100%',

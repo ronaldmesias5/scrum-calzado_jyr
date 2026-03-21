@@ -17,7 +17,8 @@ from app.modules.catalog.schemas import (
     StylesListResponse, StyleResponse,
     StyleInventoryResponse, SizeInventoryResponse,
     BrandsListResponse, BrandResponse,
-    ProductsListResponse, ProductResponse
+    ProductsListResponse, ProductResponse,
+    ProductDetailResponse
 )
 
 router = APIRouter(
@@ -156,19 +157,122 @@ def get_brands(db: Session = Depends(get_db)) -> BrandsListResponse:
 
 
 @router.get(
+    "/colors",
+    response_model=dict,
+    summary="Obtener todos los colores disponibles",
+)
+def get_colors(db: Session = Depends(get_db)) -> dict:
+    """
+    Retorna todos los colores distintos disponibles en productos activos en el catálogo.
+    """
+    stmt = select(Product.color).where(
+        (Product.deleted_at == None) &
+        (Product.state == True) &
+        (Product.color != None) &
+        (Product.color != "")
+    ).distinct()
+    
+    colors = db.execute(stmt).scalars().all()
+    # Limpiar y ordenar colores
+    clean_colors = sorted(list(set(c.strip() for c in colors if c and c.strip())))
+    return {"colors": clean_colors}
+
+
+@router.get(
+    "/products/{product_id}",
+    response_model=ProductDetailResponse,
+    summary="Obtener detalles de un producto por ID",
+)
+def get_product_detail(product_id: str, db: Session = Depends(get_db)) -> ProductDetailResponse:
+    """
+    Retorna los detalles de un producto específico por su ID.
+    """
+    import uuid
+    try:
+        product_uuid = uuid.UUID(product_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de producto inválido")
+
+    product = db.execute(
+        select(Product).where(
+            (Product.id == product_uuid) &
+            (Product.deleted_at == None) &
+            (Product.state == True)
+        )
+    ).scalars().first()
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # Obtener inventario para el producto
+    inventory_items = db.execute(
+        select(Inventory).where(
+            (Inventory.product_id == product.id) &
+            (Inventory.deleted_at == None)
+        )
+    ).scalars().all()
+
+    sizes_inventory = [
+        SizeInventoryResponse(size=item.size, available=item.amount)
+        for item in inventory_items
+    ]
+
+    return ProductDetailResponse(
+        id=str(product.id),
+        name=product.name_product,
+        description=product.description_product,
+        price=product.price,
+        style_id=str(product.style_id),
+        style_name=product.style.name_style if product.style else "Unknown",
+        category_id=str(product.category_id),
+        category_name=product.category.name_category if product.category else "Unknown",
+        brand_id=str(product.brand_id),
+        brand_name=product.brand.name_brand if product.brand else "Unknown",
+        image_url=product.image_url,
+        color=product.color,
+        sizes_inventory=sizes_inventory,
+    )
+
+
+@router.get(
     "/products",
     response_model=ProductsListResponse,
     summary="Obtener todos los productos",
 )
-def get_products(db: Session = Depends(get_db)) -> ProductsListResponse:
+def get_products(
+    category_id: str | None = None,
+    brand_id: str | None = None,
+    style_id: str | None = None,
+    color: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db)
+) -> ProductsListResponse:
     """
     Retorna todos los productos disponibles en el catálogo.
     Incluye información de estilo, categoría y marca.
     Endpoint público sin autenticación requerida.
     """
-    products = db.execute(
-        select(Product).where(Product.deleted_at == None)
-    ).scalars().all()
+    stmt = select(Product).where(Product.deleted_at == None).where(Product.state == True)
+    
+    if category_id:
+        stmt = stmt.where(Product.category_id == category_id)
+    if brand_id:
+        stmt = stmt.where(Product.brand_id == brand_id)
+    if style_id:
+        stmt = stmt.where(Product.style_id == style_id)
+    if color:
+        stmt = stmt.where(Product.color == color)
+        
+    if search:
+        # Búsqueda por nombre de producto, marca o estilo
+        stmt = stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
+        stmt = stmt.where(
+            Product.name_product.ilike(f"%{search}%") |
+            Brand.name_brand.ilike(f"%{search}%") |
+            Style.name_style.ilike(f"%{search}%")
+        )
+
+    products = db.execute(stmt).scalars().all()
     
     return ProductsListResponse(
         products=[
@@ -181,6 +285,8 @@ def get_products(db: Session = Depends(get_db)) -> ProductsListResponse:
                 "category_name": product.category.name_category if product.category else "Unknown",
                 "brand_id": str(product.brand_id),
                 "brand_name": product.brand.name_brand if product.brand else "Unknown",
+                "image_url": product.image_url,
+                "color": product.color,
             }
             for product in products
         ]

@@ -67,6 +67,7 @@ import InventoryPage from "@/modules/dashboard-jefe/pages/InventoryPage";
 // Sprint 6 - Employees and Clients Management
 import EmployeesPage from "@/modules/dashboard-jefe/pages/EmployeesPage";
 import ClientsPage from "@/modules/dashboard-jefe/pages/ClientsPage";
+import PublicCatalogPage from "@/modules/landing/pages/PublicCatalogPage";
 
 function App() {
   const [showCookiePolicy, setShowCookiePolicy] = useState(false);
@@ -91,6 +92,7 @@ function App() {
           {/* 🌐 Landing Page pública */}
           {/* ════════════════════════════════════════ */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/catalog" element={<PublicCatalogPage />} />
 
           {/* ════════════════════════════════════════ */}
           {/* 🔓 Rutas públicas de autenticación */}

@@ -23,7 +23,8 @@
 import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
-import { Footer } from "@/components/ui/Footer";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
+
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -62,7 +63,8 @@ export function AppLayout() {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <DashboardFooter />
+
     </div>
   );
 }

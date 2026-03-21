@@ -296,14 +296,10 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-blue-800 hover:bg-blue-900 text-white font-semibold text-sm rounded-lg transition-colors disabled:opacity-60"
+        className="mt-6 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-60 shadow-sm grow-0 w-fit"
       >
-        {loading ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <UserPlus size={16} />
-        )}
-        {loading ? 'Creando cuenta...' : `Crear ${isEmployee ? 'empleado' : 'cliente'}`}
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+        {isEmployee ? 'Crear empleado' : 'Crear cliente'}
       </button>
     </form>
   );

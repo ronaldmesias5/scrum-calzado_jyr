@@ -100,7 +100,7 @@ export default function ClientsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <UserPlus className="w-8 h-8 text-indigo-600" />
+            <UserPlus className="w-8 h-8 text-blue-600" />
             Gestión de Clientes
           </h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -110,7 +110,7 @@ export default function ClientsPage() {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-semibold rounded-xl shadow-sm transition-all active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 shadow-sm active:scale-95"
         >
           <UserPlus size={18} />
           Nuevo Cliente
@@ -126,7 +126,7 @@ export default function ClientsPage() {
             placeholder="Buscar por nombre, empresa o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -134,7 +134,7 @@ export default function ClientsPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Todos los estados</option>
             <option value="active">Activos</option>
@@ -331,7 +331,7 @@ export default function ClientsPage() {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-2 bg-indigo-700 text-white rounded-lg text-sm font-semibold hover:bg-indigo-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Guardar Cambios

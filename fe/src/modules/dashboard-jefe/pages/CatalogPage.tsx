@@ -226,8 +226,25 @@ export default function CatalogPage() {
   // Extraer valores únicos para los filtros
   const categories = Array.from(new Set(products.map(p => p.category_name).filter(Boolean))) as string[];
   const brands = Array.from(new Set(products.map(p => p.brand_name).filter(Boolean))) as string[];
-  const styles = Array.from(new Set(products.map(p => p.style_name).filter(Boolean))) as string[];
   const colors = Array.from(new Set(products.map(p => p.color).filter(Boolean))) as string[];
+
+  // Obtener estilos filtrando por marca (si hay una seleccionada)
+  const styles = Array.from(new Set(
+    products
+      .filter(p => !selectedBrand || p.brand_name === selectedBrand)
+      .map(p => p.style_name)
+      .filter(Boolean)
+  )) as string[];
+
+  // Si se selecciona una marca y el estilo actual no pertenece a esa marca, limpiar el estilo
+  useEffect(() => {
+    if (selectedBrand && selectedStyle) {
+      const styleBelongsToBrand = products.some(p => p.brand_name === selectedBrand && p.style_name === selectedStyle);
+      if (!styleBelongsToBrand) {
+        setSelectedStyle('');
+      }
+    }
+  }, [selectedBrand, selectedStyle, products]);
 
   // Filtrar productos
   const filteredProducts = products.filter(p => {
@@ -301,24 +318,8 @@ export default function CatalogPage() {
       </div>
 
       {/* Búsqueda y Filtros */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-        {/* Búsqueda */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            <Search className="w-4 h-4 inline mr-1" />
-            Buscar producto
-          </label>
-          <input
-            type="text"
-            placeholder="Nombre, ID o descripción..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-          />
-        </div>
-
-        {/* Filtros */}
-        <div className="grid grid-cols-6 gap-3">
+      <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 items-end">
           {/* Categoría */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -333,6 +334,21 @@ export default function CatalogPage() {
               <option value="">Todas</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Marca */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            >
+              <option value="">Todas</option>
+              {brands.map(brand => (
+                <option key={brand} value={brand}>{brand}</option>
               ))}
             </select>
           </div>
@@ -352,19 +368,19 @@ export default function CatalogPage() {
             </select>
           </div>
 
-          {/* Marca */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-            >
-              <option value="">Todas</option>
-              {brands.map(brand => (
-                <option key={brand} value={brand}>{brand}</option>
-              ))}
-            </select>
+          {/* Producto (Búsqueda) */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Nombre, ID, ref..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+            </div>
           </div>
 
           {/* Color */}
@@ -402,8 +418,8 @@ export default function CatalogPage() {
             <button
               onClick={() => {
                 setSelectedCategory('');
-                setSelectedStyle('');
                 setSelectedBrand('');
+                setSelectedStyle('');
                 setSelectedColor('');
                 setSelectedState('');
                 setSearchTerm('');

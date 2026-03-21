@@ -232,3 +232,35 @@ export const listCategories = async (): Promise<Category[]> => {
   const res = await axios.get('/api/v1/catalog/categories');
   return res.data.categories;
 };
+
+// ─────────────────────────────────────────
+// CATÁLOGO PÚBLICO
+// ─────────────────────────────────────────
+
+export interface ListPublicProductsParams {
+  category_id?: string;
+  brand_id?: string;
+  style_id?: string;
+  color?: string;
+  search?: string;
+}
+
+export const listPublicProducts = async (params?: ListPublicProductsParams): Promise<Product[]> => {
+  const res = await axios.get('/api/v1/catalog/products', { params });
+  return res.data.products;
+};
+
+export const listColors = async (): Promise<string[]> => {
+  const res = await axios.get('/api/v1/catalog/colors');
+  return res.data.colors;
+};
+
+export const listPublicBrands = async (): Promise<Brand[]> => {
+  const res = await axios.get('/api/v1/catalog/brands');
+  return res.data.brands;
+};
+
+export const listPublicStyles = async (): Promise<Style[]> => {
+  const res = await axios.get('/api/v1/catalog/styles');
+  return res.data.styles;
+};
