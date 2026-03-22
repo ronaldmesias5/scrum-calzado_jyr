@@ -55,12 +55,10 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedCookies, setAcceptedCookies] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(true);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showCookies, setShowCookies] = useState(false);
 
   // Cargar tipos de documentos al montar
   useEffect(() => {
@@ -91,23 +89,7 @@ export function RegisterPage() {
       return;
     }
 
-    // Validar aceptación de términos
-    if (!acceptedTerms) {
-      setError("Debes aceptar los términos y condiciones para continuar");
-      return;
-    }
-
-    // Validar aceptación de política de privacidad
-    if (!acceptedPrivacy) {
-      setError("Debes aceptar la política de privacidad para continuar");
-      return;
-    }
-
-    // Validar aceptación de política de cookies
-    if (!acceptedCookies) {
-      setError("Debes aceptar el manejo de cookies para continuar");
-      return;
-    }
+    // El consentimiento se da al hacer clic en el botón, según el nuevo diseño UX.
 
     setIsLoading(true);
 
@@ -136,9 +118,7 @@ export function RegisterPage() {
         password: "", 
         confirmPassword: "" 
       });
-      setAcceptedTerms(false);
-      setAcceptedPrivacy(false);
-      setAcceptedCookies(false);
+      // Estados de aceptación ya no se resetean manualmente ya que son implícitos
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al crear la cuenta";
@@ -152,7 +132,6 @@ export function RegisterPage() {
     <>
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyPolicyModal onClose={() => setShowPrivacy(false)} />}
-      {showCookies && <CookiePolicyModal onClose={() => setShowCookies(false)} />}
     <AuthLayout
       title="Crear cuenta"
       subtitle="Completa tus datos para registrarte"
@@ -289,85 +268,27 @@ export function RegisterPage() {
           onCopy={(e) => e.preventDefault()}
         />
 
-        {/* Checkbox de términos y condiciones */}
-        <div className="mb-5">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => {
-                setAcceptedTerms(e.target.checked);
-                setError(null);
-              }}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">
-              He leído y acepto los{" "}
-              <button
-                type="button"
-                onClick={() => setShowTerms(true)}
-                className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
-              >
-                Términos y Condiciones
-              </button>{" "}
-              de CALZADO J&R
-            </span>
-          </label>
+        {/* Texto de aceptación consolidado */}
+        <div className="mb-6 text-[13px] text-gray-500 leading-relaxed text-center sm:text-left">
+          Al hacer clic en "Crear cuenta", acepto los{" "}
+          <button
+            type="button"
+            onClick={() => setShowTerms(true)}
+            className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
+          >
+            Términos y Condiciones
+          </button>{" "}
+          de CALZADO J&R, y autorizo el tratamiento de mis datos personales de acuerdo con la{" "}
+          <button
+            type="button"
+            onClick={() => setShowPrivacy(true)}
+            className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
+          >
+            Política de Privacidad
+          </button>.
         </div>
 
-        {/* Checkbox de política de privacidad */}
-        <div className="mb-5">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={acceptedPrivacy}
-              onChange={(e) => {
-                setAcceptedPrivacy(e.target.checked);
-                setError(null);
-              }}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">
-              He leído y acepto la{" "}
-              <button
-                type="button"
-                onClick={() => setShowPrivacy(true)}
-                className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
-              >
-                Política de Privacidad
-              </button>{" "}
-              de CALZADO J&R
-            </span>
-          </label>
-        </div>
-
-        {/* Checkbox de política de cookies */}
-        <div className="mb-5">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={acceptedCookies}
-              onChange={(e) => {
-                setAcceptedCookies(e.target.checked);
-                setError(null);
-              }}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">
-              He leído y acepto la{" "}
-              <button
-                type="button"
-                onClick={() => setShowCookies(true)}
-                className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
-              >
-                Política de Cookies
-              </button>{" "}
-              de CALZADO J&R
-            </span>
-          </label>
-        </div>
-
-        <Button type="submit" fullWidth isLoading={isLoading} disabled={!acceptedTerms || !acceptedPrivacy || !acceptedCookies}>
+        <Button type="submit" fullWidth isLoading={isLoading}>
           Crear cuenta
         </Button>
       </form>
