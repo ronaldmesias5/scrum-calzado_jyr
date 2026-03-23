@@ -100,6 +100,8 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         role_id=client_role.id,
         is_active=False,
         is_validated=False,
+        accepted_terms=user_data.accepted_terms,
+        terms_accepted_at=datetime.now(timezone.utc) if user_data.accepted_terms else None,
     )
 
     db.add(new_user)
@@ -130,13 +132,20 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
 
     audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
 
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
+    refresh_token = create_refresh_token(data={"sub": user.email, "version": user.session_version})
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
     )
+
+
+def logout_from_all_devices(db: Session, user: User) -> None:
+    """Invalida todas las sesiones activas incrementando la versión de sesión."""
+    user.session_version += 1
+    db.commit()
+    audit_logger.info(f"Cierre de sesión global: {_redact_email(user.email)}")
 
 
 def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
@@ -166,8 +175,8 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             detail="Usuario no encontrado o cuenta desactivada",
         )
 
-    new_access = create_access_token(data={"sub": user.email})
-    new_refresh = create_refresh_token(data={"sub": user.email})
+    new_access = create_access_token(data={"sub": user.email, "version": user.session_version})
+    new_refresh = create_refresh_token(data={"sub": user.email, "version": user.session_version})
 
     return TokenResponse(access_token=new_access, refresh_token=new_refresh)
 

@@ -40,3 +40,9 @@ htmlcov/
 
 # Docker
 docker-compose.override.yml
+
+# Project specific
+be/logs/
+be/tmp_*.py
+be/sql_check.py
+*.log

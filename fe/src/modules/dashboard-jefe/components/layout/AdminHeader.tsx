@@ -24,23 +24,39 @@
  */
 
 import { useState } from 'react';
-import { Search, Bell, LogOut } from 'lucide-react';
+import { Search, Bell, LogOut, ShieldAlert, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import NotificationsPanel from './NotificationsPanel';
 import { useBadgeCounts } from '../../context/BadgeCountsContext';
 
 export default function AdminHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, logoutAllDevices } = useAuth();
   const navigate = useNavigate();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { counts } = useBadgeCounts();
   // Total de avisos = pedidos pendientes + usuarios sin validar
   const totalBadge = counts.pedidos + counts.usuarios;
 
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
+
   const handleLogout = () => {
     logout();
     navigate('/auth/login');
+  };
+
+  const handleLogoutAll = async () => {
+    if (!window.confirm('¿Estás seguro de cerrar sesión en TODOS tus dispositivos? Deberás volver a ingresar en este también.')) return;
+    
+    setIsLoggingOutAll(true);
+    try {
+      await logoutAllDevices();
+      navigate('/auth/login');
+    } catch {
+      alert('Error al cerrar sesiones globales.');
+    } finally {
+      setIsLoggingOutAll(false);
+    }
   };
 
   const initials = user?.name && user?.last_name
@@ -104,6 +120,19 @@ export default function AdminHeader() {
             <p className="text-xs text-gray-500">Administrador</p>
           </div>
         </div>
+
+        <button
+          onClick={handleLogoutAll}
+          disabled={isLoggingOutAll}
+          className="text-gray-400 hover:text-orange-500 transition-colors disabled:opacity-50"
+          title="Cerrar sesión en todos los dispositivos"
+        >
+          {isLoggingOutAll ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <ShieldAlert size={18} />
+          )}
+        </button>
 
         <button
           onClick={handleLogout}

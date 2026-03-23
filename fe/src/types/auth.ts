@@ -45,6 +45,7 @@ export interface RegisterRequest {
   identity_document_type_id?: string;
   business_name?: string;
   password: string;
+  accepted_terms: boolean;
 }
 
 export interface LoginRequest {
@@ -89,6 +90,8 @@ export interface UserResponse {
   role_name: string | null;
   business_name: string | null;
   occupation: string | null;
+  accepted_terms: boolean;
+  terms_accepted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +122,7 @@ export interface AuthContextType extends AuthState {
   login: (data: LoginRequest) => Promise<UserResponse>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
+  logoutAllDevices: () => Promise<void>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;

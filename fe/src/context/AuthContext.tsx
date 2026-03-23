@@ -61,7 +61,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const clearAuth = useCallback(async () => {
     try {
       await authApi.logoutUser();
-    } catch (e) {}
+    } catch (error) {
+      console.error("Logout error", error);
+    }
     sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("refresh_token");
     setAccessToken(null);
@@ -113,6 +115,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await clearAuth();
   }, [clearAuth]);
 
+  const logoutAllDevices = useCallback(async () => {
+    try {
+      await authApi.logoutAllDevices();
+    } catch (error) {
+      console.error("Logout all error", error);
+    }
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
+    setAccessToken(null);
+    setRefreshToken(null);
+    setUser(null);
+  }, []);
+
   const changePassword = useCallback(async (data: ChangePasswordRequest) => {
     await authApi.changePassword(data);
   }, []);
@@ -135,6 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       login,
       register,
       logout,
+      logoutAllDevices,
       changePassword,
       forgotPassword,
       resetPassword: resetPasswordAction,
@@ -148,6 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       login,
       register,
       logout,
+      logoutAllDevices,
       changePassword,
       forgotPassword,
       resetPasswordAction,

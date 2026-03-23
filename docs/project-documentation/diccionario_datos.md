@@ -1,15 +1,12 @@
 # 📊 Diccionario de Datos - CALZADO J&R
 
-Este documento proporciona una descripción detallada de la estructura de la base de datos de **CALZADO J&R**. El sistema utiliza PostgreSQL 17-alpine y gestiona la producción, inventario, ventas y personal.
-
 ---
 
 ## 🏗️ Resumen General
+
 - **Motor:** PostgreSQL 17
 - **Total de Tablas:** 19
-- **Extensiones:** `uuid-ossp` para generación de IDs únicos.
-- **Estrategia de Borrado:** Soft Delete (`deleted_at`) en tablas críticas.
-- **Auditoría:** La mayoría de las tablas incluyen `created_by`, `updated_by` y `deleted_by` vinculados a la tabla `users`.
+- **MER:** <https://drive.google.com/file/d/1fWGxdwjIHfuCTPplSWGAwSNAE5vKLGD4/view?usp=sharing>
 
 ---
 
@@ -32,6 +29,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ## 📑 Tablas Operacionales
 
 ### 1. ROLES
+
 **Propósito:** Define los niveles de acceso al sistema.
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -46,6 +44,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 2. TYPE_DOCUMENT
+
 **Propósito:** Clasificación de documentos de identidad (C.C., NIT, etc.).
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -59,6 +58,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 3. USERS
+
 **Propósito:** Entidad central que gestiona credenciales de acceso, perfiles de empleados y clientes.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -87,6 +87,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 4. PASSWORD_RESET_TOKENS
+
 **Propósito:** Almacena tokens temporales para recuperación de contraseñas.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -102,6 +103,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 5. SUPPLIES
+
 **Propósito:** Listado Maestro de Insumos (Ceros, hilos, suelas, etc.).
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -117,6 +119,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 6. SUPPLIES_MOVEMENT
+
 **Propósito:** Registro histórico de entradas y salidas de materia prima de bodega.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -133,6 +136,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 7. CATEGORIES
+
 **Propósito:** Categorización del calzado (Deportivo, Casual, Botas, etc.).
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -145,6 +149,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 8. BRANDS
+
 **Propósito:** Marcas comerciales de calzado manejadas.
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -156,6 +161,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 9. STYLES
+
 **Propósito:** Estilos o modelos específicos dentro de una marca.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -168,6 +174,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 10. PRODUCTS (Catálogo)
+
 **Propósito:** Definición de producto final (combinación de categoría, marca y estilo).
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -185,6 +192,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 11. INVENTORY (Bodega Central)
+
 **Propósito:** Stock consolidado y disponible de productos terminados.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -199,6 +207,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 12. INVENTORY_MOVEMENT
+
 **Propósito:** Auditoría y trazabilidad de cada cambio en el inventario.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -213,6 +222,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 13. TASKS
+
 **Propósito:** Definición de tareas de producción para operarios.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -229,6 +239,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 14. ORDERS
+
 **Propósito:** Encabezado de pedidos realizados por Clientes.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -243,6 +254,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 15. ORDER_DETAILS
+
 **Propósito:** Desglose del pedido por producto, talla y color.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -256,6 +268,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 16. VALE
+
 **Propósito:** Documento de liquidación para la entrega de trabajo terminado.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -268,6 +281,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 17. DETAIL_VALE
+
 **Propósito:** Vínculo granular entre una tarea específica, el operario y el vale de liquidación.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -282,6 +296,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 18. INCIDENCE
+
 **Propósito:** Registro de problemas durante la producción (fallas de máquina, falta de material, etc.).
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -296,6 +311,7 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 ---
 
 ### 19. NOTIFICATIONS
+
 **Propósito:** Centro de alertas para usuarios según eventos del sistema.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
@@ -309,39 +325,4 @@ Este documento proporciona una descripción detallada de la estructura de la bas
 
 ---
 
-## 🗺️ Mapa de Relaciones (ERD)
-
-```mermaid
-erDiagram
-    ROLES ||--o{ USERS : "tiene"
-    TYPE_DOCUMENT ||--o{ USERS : "identifica"
-    USERS ||--o{ USERS : "crea/valida"
-    USERS ||--o{ PASSWORD_RESET_TOKENS : "solicita"
-    
-    CATEGORIES ||--o{ PRODUCTS : "clasifica"
-    BRANDS ||--o{ PRODUCTS : "fabrica"
-    BRANDS ||--o{ STYLES : "define"
-    STYLES ||--o{ PRODUCTS : "modela"
-    
-    PRODUCTS ||--o{ INVENTORY : "almacena"
-    PRODUCTS ||--o{ ORDER_DETAILS : "se incluye en"
-    PRODUCTS ||--o{ INVENTORY_MOVEMENT : "registra"
-    PRODUCTS ||--o{ DETAIL_VALE : "se liquida"
-    
-    USERS ||--o{ ORDERS : "compra (cliente)"
-    ORDERS ||--o{ ORDER_DETAILS : "contiene"
-    ORDERS ||--o{ VALE : "liquida en"
-    
-    USERS ||--o{ TASKS : "ejecuta (operario)"
-    TASKS ||--o{ INCIDENCE : "tiene"
-    TASKS ||--o{ DETAIL_VALE : "genera producto"
-    VALE ||--o{ DETAIL_VALE : "desglosa"
-    
-    SUPPLIES ||--o{ SUPPLIES_MOVEMENT : "se mueve"
-    USERS ||--o{ SUPPLIES_MOVEMENT : "opera"
-    
-    USERS ||--o{ NOTIFICATIONS : "recibe"
-```
-
----
-*Ultima Sincronización: 2026-03-20*
+## 🗺️ Mapa de Relaciones (MER)

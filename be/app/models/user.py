@@ -24,7 +24,7 @@ Descripción: Modelo ORM SQLAlchemy para la tabla `users` en PostgreSQL.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -202,6 +202,23 @@ class User(Base):
     )
 
     deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    session_version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
+
+    accepted_terms: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

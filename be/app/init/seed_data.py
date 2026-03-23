@@ -289,7 +289,7 @@ def seed_admin(db: Session) -> bool:
     """
     try:
         # Verificar si ya existe el usuario jefe
-        existing_jefe = db.query(User).filter(User.email == "ronald.jefe@gmail.com").first()
+        existing_jefe = db.query(User).filter(User.email == "admin@calzadojyr.com").first()
         if existing_jefe:
             print(f"✅ Jefe ya existe ({existing_jefe.email})")
             return True
@@ -304,23 +304,25 @@ def seed_admin(db: Session) -> bool:
         
         jefe_user = User(
             id=uuid.uuid4(),
-            email="ronald.jefe@gmail.com",
-            name_user="Ronald",
-            last_name="Jefe",
-            phone="+57 312 345 6789",
-            hashed_password=hash_password("Test123456!"),
+            email="admin@calzadojyr.com",
+            name_user="Administrador",
+            last_name="Calzado J&R",
+            phone="+57 322 000 0000",
+            hashed_password=hash_password("AdminSegura123!"),
             role_id=employee_role.id,
             occupation="jefe",
             is_active=True,
             is_validated=True,
             validated_at=datetime.now(timezone.utc),
+            accepted_terms=True,
+            terms_accepted_at=datetime.now(timezone.utc)
         )
         
         db.add(jefe_user)
         db.commit()
         print("✅ Usuario jefe insertado exitosamente")
-        print("   Email: ronald.jefe@gmail.com")
-        print("   Contraseña: Test123456!")
+        print("   Email: admin@calzadojyr.com")
+        print("   Contraseña: AdminSegura123!")
         return True
         
     except Exception as e:

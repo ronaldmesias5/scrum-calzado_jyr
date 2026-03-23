@@ -3,6 +3,7 @@ import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { BadgeCountsProvider } from '../../context/BadgeCountsContext';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 
 export default function AdminLayout() {
@@ -17,6 +18,7 @@ export default function AdminLayout() {
           <AdminSidebar />
           <main className="flex-1 px-4 pt-3 pb-4 overflow-y-auto flex flex-col">
             <div className="flex-1">
+              <Breadcrumbs />
               <Outlet />
             </div>
             <DashboardFooter />

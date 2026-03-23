@@ -46,6 +46,11 @@ export async function logoutUser(): Promise<MessageResponse> {
   return response.data;
 }
 
+export async function logoutAllDevices(): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout-all`);
+  return response.data;
+}
+
 export async function registerUser(data: RegisterRequest): Promise<UserResponse> {
   const response = await api.post<UserResponse>(`${AUTH_PREFIX}/register`, data);
   return response.data;

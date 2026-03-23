@@ -100,6 +100,7 @@ export function RegisterPage() {
         identity_document: formData.identity_document || undefined,
         business_name: formData.business_name || undefined,
         password: formData.password,
+        accepted_terms: true,
       });
       setSuccess(
         "Cuenta creada exitosamente. Pendiente de validación por el administrador. Revisa tu correo para la confirmación de tu cuenta."

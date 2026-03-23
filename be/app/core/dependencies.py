@@ -82,6 +82,11 @@ def get_current_user(
             detail="Cuenta desactivada",
         )
 
+    # Validar versión de sesión (Logout global)
+    token_version = payload.get("version")
+    if token_version is not None and token_version != user.session_version:
+        raise credentials_exception
+
     return user
 
 

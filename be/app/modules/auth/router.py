@@ -137,6 +137,21 @@ def logout(response: Response):
 
 
 @router.post(
+    "/logout-all",
+    summary="Cerrar sesión en todos los dispositivos",
+)
+def logout_all(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Invalida todas las sesiones activas y elimina la cookie local."""
+    auth_service.logout_from_all_devices(db=db, user=current_user)
+    response.delete_cookie(key="access_token", samesite="lax", httponly=True)
+    return {"message": "Has cerrado sesión en todos tus dispositivos"}
+
+
+@router.post(
     "/change-password",
     response_model=MessageResponse,
     summary="Cambiar contraseña (usuario autenticado)",

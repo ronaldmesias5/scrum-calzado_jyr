@@ -58,7 +58,15 @@ class UserCreate(BaseModel):
     identity_document_type_id: uuid.UUID | None = None
     business_name: str | None = None
     occupation: OccupationType | None = None
+    accepted_terms: bool = False
     password: str
+
+    @field_validator("accepted_terms")
+    @classmethod
+    def validate_terms(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("Debes aceptar los términos y condiciones")
+        return v
 
     @field_validator("phone")
     @classmethod
@@ -199,6 +207,8 @@ class UserResponse(BaseModel):
     role_name: str | None = None
     business_name: str | None = None
     occupation: str | None = None
+    accepted_terms: bool
+    terms_accepted_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
