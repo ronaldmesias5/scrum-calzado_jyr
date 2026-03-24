@@ -2,41 +2,6 @@
 
 **Estado:** ✅ Funcional | **Ambiente:** Docker Compose | **Versión:** v0.4
 
-> 📖 **Documentación Completa:** Ver [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) para guía exhaustiva con solución de problemas.
-
----
-
-## 🎯 IMPORTANTE: Gestores de Dependencias
-
-### Frontend: EXCLUSIVAMENTE `pnpm`
-
-⚠️ **SOLO pnpm para el frontend**
-
-- ✅ **pnpm** - ✓ ÚSALO PARA TODO
-- ❌ **npm** - No está permitido
-- ❌ **yarn** - No está permitido
-
-Si ya ejecutaste `npm`, elimina el directorio `fe/node_modules` y corre:
-```bash
-cd fe && pnpm install
-```
-
-### Backend: EXCLUSIVAMENTE `UV`
-
-⚠️ **SOLO UV para el backend Python**
-
-- ✅ **UV** - ✓ ÚSALO PARA TODO  
-- ❌ **pip** - No está permitido
-- ❌ **poetry** - No está permitido
-- ❌ **pipenv** - No está permitido
-
-Si ya ejecutaste `pip install`, configura UV:
-```bash
-cd be && uv pip install -e .
-```
-
-**Recuerda:** be/requirements.txt fue **ELIMINADO**. Todas las dependencias están en **be/pyproject.toml**.
-
 ---
 
 ## ⚡ Quick Start (3 pasos)
@@ -83,7 +48,6 @@ Email:     admin@calzadojyr.com
 Contraseña: AdminSegura123!
 ```
 
-Otros usuarios disponibles en `.env.example` con sufijo `Segura123!`
 
 ---
 
@@ -109,27 +73,6 @@ docker compose exec db psql -U jyr_user -d calzado_jyr_db
 - ✅ Frontend carga sin errores
 - ✅ Login funciona
 
----
-
-## 🛑 Problemas Comunes
-
-| Problema | Solución |
-|----------|----------|
-| "Connection refused" | `docker compose restart backend` |
-| "Port already in use" | Cambiar `BE_PORT` o `FE_PORT` en `.env` y actualizar URLs |
-| "No products found" | `docker compose down --volumes && docker compose up -d --build` |
-| "Invalid SECRET_KEY" | Ver sección Configuración arriba para generar valor válido |
-
-→ **Más soluciones en** [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md#-solución-de-problemas)
-
----
-
-## 📚 Documentación Completa
-
-- **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** ← Guía exhaustiva con todos los detalles
-- **[README.md](README.md)** ← Descripción del proyecto
-- **[RESUMEN_EJECUTIVO.md](RESUMEN_EJECUTIVO.md)** ← Visión general
-- **[docs/](docs/)** ← Especificaciones técnicas y sprints
 
 ---
 
@@ -154,16 +97,4 @@ docker compose exec db psql -U jyr_user -d calzado_jyr_db
 
 ---
 
-## 🎯 Próximos Pasos
-
-1. ✅ Clonar repo
-2. ✅ Copiar `.env.example` → `.env`
-3. ✅ `docker compose up -d --build`
-4. ✅ Abrir http://localhost:5173
-5. ✅ Login con credenciales de prueba
-
-Si encuentras problemas, consulta [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
-
----
-
-**¡Listo para correr! 🎉**
+**¡Listo para correr! **

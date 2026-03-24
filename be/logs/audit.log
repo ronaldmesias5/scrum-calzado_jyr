@@ -1,4 +1,9 @@
-2026-03-22 03:30:41 | INFO | Login exitoso: ro***@gmail.com
-2026-03-22 21:22:15 | INFO | Login exitoso: ro***@gmail.com
-2026-03-23 01:59:49 | INFO | Login exitoso: ro***@gmail.com
-2026-03-23 02:15:09 | INFO | Login exitoso: ro***@gmail.com
+2026-03-24 03:19:36 | WARNING | Intento de login fallido: ro***@gmail.com (credenciales incorrectas)
+2026-03-24 03:20:10 | WARNING | Intento de login fallido: ro***@gmail.com (credenciales incorrectas)
+2026-03-24 03:21:48 | INFO | Login exitoso: ad***@calzadojyr.com
+2026-03-24 03:24:09 | INFO | Login exitoso: ad***@calzadojyr.com
+2026-03-24 17:13:39 | INFO | Login exitoso: ad***@calzadojyr.com
+2026-03-24 18:01:31 | INFO | Login exitoso: ad***@calzadojyr.com
+2026-03-24 20:26:31 | INFO | Login exitoso: ro***@gmail.com
+2026-03-24 20:27:12 | WARNING | Intento de login fallido: ad***@calzadojyr.com (credenciales incorrectas)
+2026-03-24 20:27:23 | INFO | Login exitoso: ad***@calzadojyr.com
