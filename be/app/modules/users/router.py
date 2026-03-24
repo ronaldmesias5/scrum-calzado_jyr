@@ -53,6 +53,7 @@ def get_me(
         role_name=current_user.role.name_role if current_user.role else None,
         business_name=current_user.business_name,
         occupation=current_user.occupation,
+        accepted_terms=current_user.accepted_terms,
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,
     )

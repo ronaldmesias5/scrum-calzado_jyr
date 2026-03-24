@@ -207,7 +207,7 @@ class UserResponse(BaseModel):
     role_name: str | None = None
     business_name: str | None = None
     occupation: str | None = None
-    accepted_terms: bool
+    accepted_terms: bool = False
     terms_accepted_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
