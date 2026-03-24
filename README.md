@@ -118,16 +118,6 @@ Al iniciar por primera vez, el sistema autosemilla un usuario administrador:
 
 ---
 
-## ✨ Características Destacadas (Resumen Final)
-
-- **Cierre de Sesión Global**: Permite al usuario invalidar todos sus tokens activos desde cualquier dispositivo (seguridad RT-004).
-- **Cumplimiento Ético y Legal**: Seguimiento estricto del consentimiento de términos y condiciones durante el registro.
-- **Gestión Rigurosa de Usuarios**: El "Jefe" puede borrar permanentemente cuentas de empleados o clientes, con protección contra auto-eliminación.
-- **Validación de Cuentas**: Los nuevos clientes son bloqueados hasta que el Jefe valida manualmente su identidad y datos comerciales.
-- **Diseño Premium**: Interfaz moderna con breadcrumbs dinámicas, modales de confirmación y micro-animaciones.
-
----
-
 ## 👥 Equipo y Autores
 - **Ronald Mesias** - Líder de Proyecto / Arquitecto FullStack
 - **Andrés** - Scrum Master
