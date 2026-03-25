@@ -34,9 +34,9 @@ export default function LandingFooter() {
         <div>
           <h4 className="text-white font-semibold mb-3">Enlaces Rápidos</h4>
           <ul className="space-y-2 text-sm">
-            {['Inicio', 'Nosotros', 'Contacto'].map((item) => (
+            {['Inicio', 'Catálogo', 'Nosotros', 'Contacto'].map((item) => (
               <li key={item}>
-                <a href={`#${item.toLowerCase()}`} className="hover:text-white transition-colors">
+                <a href={item === 'Catálogo' ? '#' : `#${item.toLowerCase()}`} className="hover:text-white transition-colors">
                   {item}
                 </a>
               </li>

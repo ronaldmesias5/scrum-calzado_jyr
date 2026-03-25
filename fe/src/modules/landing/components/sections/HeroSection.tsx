@@ -50,10 +50,11 @@ export default function HeroSection() {
             Somos una fábrica colombiana especializada en la producción de calzado nacional de alta calidad  para su negocio. Con más de 5 años de experiencia, nos dedicamos a ofrecerte los mejores productos.        </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/auth/register"
+            to="#"
+            onClick={(e) => { e.preventDefault(); /* Próximamente */ }}
             className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg btn-glow transition-colors duration-200"
           >
-            Regístrate
+            Ver Catálogo
           </Link>
           <Link
             to="/auth/login"
