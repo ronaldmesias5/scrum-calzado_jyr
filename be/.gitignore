@@ -45,9 +45,12 @@ logs/
 uploads/
 
 # ============= ALEMBIC MIGRATIONS =============
-# Script files en versions son generados, no se versionan
-alembic/versions/*.py
-!alembic/versions/.gitkeep
+# ¿QUE? Migraciones de BD versionadas (IMPORTANTE: SÍ se versionan)
+# ¿PARA? Control de versiones de esquema, historial de cambios, reproducibilidad
+# ¿IMPACTO? Las migraciones son código + datos, DEBEN versionarse en git
+# Nota: Antes estaban excluidas por error — se corrigió para permitir
+# que alembic/versions/*.py se versionee como parte del código
+.gitkeep
 
 # ============= IDE / EDITOR =============
 .vscode/
