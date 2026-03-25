@@ -32,6 +32,8 @@ docker compose up -d --build
 
 Esperar 30-60 segundos a que todo inicie.
 
+**Nota:** Las migraciones de Alembic se ejecutan automáticamente al iniciar el backend. La BD se crea completa con tablas, índices, triggers y datos de prueba.
+
 ### 3️⃣ Acceder a la Aplicación
 ```
 Frontend:  http://localhost:5173
@@ -41,13 +43,27 @@ Swagger:   http://localhost:8000/docs
 
 ---
 
-## 👤 Usuario de Prueba
+## 👤 Usuarios de Prueba
 
+**Admin (Jefe - Acceso al Dashboard):**
 ```
 Email:     admin@calzadojyr.com
-Contraseña: AdminSegura123!
+Contraseña: admin123
 ```
 
+**Empleado (Cortador):**
+```
+Email:     cortador@calzadojyr.com
+Contraseña: cortador123
+```
+
+**Cliente:**
+```
+Email:     cliente@calzadojyr.com
+Contraseña: cliente123
+```
+
+Ver [USUARIOS_PRUEBA.md](USUARIOS_PRUEBA.md) para más detalles.
 
 ---
 
@@ -90,7 +106,7 @@ docker compose exec db psql -U jyr_user -d calzado_jyr_db
 
 ## 🛠️ Stack Tecnológico
 
-- **Backend:** FastAPI + SQLAlchemy + PostgreSQL
+- **Backend:** FastAPI + SQLAlchemy + PostgreSQL + Alembic (Migrations)
 - **Frontend:** React + TypeScript + Vite + TailwindCSS
 - **Orquestación:** Docker Compose
 - **Auth:** JWT + Bcrypt
