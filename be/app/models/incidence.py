@@ -16,6 +16,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.tasks import Task
 
 
 class IncidenceStatus(str, Enum):
