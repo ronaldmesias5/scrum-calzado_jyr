@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Componente: CategoriesSection.tsx
@@ -18,54 +19,65 @@ import { Link } from 'react-router-dom';
  *   BAJO — Navegación, sin lógica crítica.
  */
 
-const categories = [
-  {
-    name: 'Caballero',
-    description: 'Calzado elegante y cómodo para hombre. Desde zapatos deportivos hasta casuales..',
-    image: '/caballero.png',
-  },
-  {
-    name: 'Dama',
-    description: 'Diseños modernos y sofisticados para mujer. Estilo y comodidad en cada modelo.',
-    image: '/dama.png',
-  },
-  {
-    name: 'Infantil',
-    description: 'Calzado resistente y cómodo para niños. Diversión y calidad en cada paso.',
-    image: '/infantil.png',
-  },
-];
-
 export default function CategoriesSection() {
+  const { t } = useTranslation();
+
+  const categories = [
+    {
+      name: t('landing.categories.caballero'),
+      description: t('landing.categories.caballeroDesc'),
+      image: '/caballero.png',
+    },
+    {
+      name: t('landing.categories.dama'),
+      description: t('landing.categories.damaDesc'),
+      image: '/dama.png',
+    },
+    {
+      name: t('landing.categories.infantil'),
+      description: t('landing.categories.infantilDesc'),
+      image: '/infantil.png',
+    },
+  ];
+
   return (
-    <section id="categorias" className="py-16 bg-gray-50">
+    <section id="categorias" className="py-16 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Categorías</h2>
-          <p className="text-gray-500 max-w-xl mx-auto">
-            Encuentra el calzado perfecto para cada estilo y ocasión.
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
+            {t('landing.categories.title')}
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+            {t('landing.categories.subtitle')}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {categories.map((cat) => (
             <div
               key={cat.name}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300 group"
+              className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
             >
-              <img
-                src={cat.image}
-                alt={cat.name}
-                className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{cat.name}</h3>
-                <p className="text-gray-500 text-sm mb-4">{cat.description}</p>
+              <div className="relative overflow-hidden h-64">
+                <img
+                  src={cat.image}
+                  alt={cat.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
+              <div className="p-8">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+                  {cat.name}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-base mb-6 leading-relaxed">
+                  {cat.description}
+                </p>
                 <Link 
                   to="#"
-                  className="inline-block px-5 py-2 bg-blue-800 text-white text-sm font-semibold rounded-lg btn-glow hover:bg-blue-700 transition-colors duration-200 text-center"
+                  className="inline-flex items-center justify-center w-full px-6 py-3 bg-blue-800 dark:bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-all duration-200 btn-pulse"
                 >
-                  Ver Colección
+                  {t('landing.categories.viewCollection')}
                 </Link>
               </div>
             </div>

@@ -24,6 +24,8 @@ import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 
 
 export function AppLayout() {
@@ -39,6 +41,8 @@ export function AppLayout() {
             <span className="font-bold" style={{ color: '#000', fontFamily: 'Montserrat, sans-serif', letterSpacing: 1, fontSize: '1.1rem' }}>CALZADO J&R</span>
           </Link>
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <ThemeToggle />
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <User className="h-4 w-4" />
               <span>{user ? `${user.name} ${user.last_name}` : ''}</span>

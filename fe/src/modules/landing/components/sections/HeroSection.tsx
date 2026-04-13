@@ -18,48 +18,50 @@
  */
 
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function HeroSection() {
+  const { t } = useTranslation();
+
   return (
     <section
       id="inicio"
-      className="relative min-h-[560px] flex items-center justify-center text-white"
-      style={{
-        background: 'linear-gradient(135deg, #1e40af 0%, #1e40af 100%)',
-      }}
+      className="relative min-h-[560px] flex items-center justify-center text-white overflow-hidden"
     >
+      {/* Background with darker shade in dark mode */}
+      <div className="absolute inset-0 bg-blue-900 dark:bg-slate-950 transition-colors duration-500" />
+      
       {/* Overlay decorativo */}
-      <>
-        <div className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: 'url("/factory.png")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div className="absolute inset-0 bg-blue-900/50" />
-      </>
+      <div className="absolute inset-0 opacity-20 dark:opacity-10 pointer-events-none"
+        style={{
+          backgroundImage: 'url("/factory.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-transparent dark:from-slate-950/60" />
 
       {/* Contenido */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-          Calzado J&R<br />
-          <span className="text-blue-300">Calidad y Estilo a tu Alcance</span>
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
+          {t('landing.hero.title')}<br />
+          <span className="text-blue-300 dark:text-blue-400">{t('landing.hero.subtitle')}</span>
         </h1>
-        <p className="text-gray-200 text-lg mb-8 max-w-xl mx-auto">
-            Somos una fábrica colombiana especializada en la producción de calzado nacional de alta calidad  para su negocio. Con más de 5 años de experiencia, nos dedicamos a ofrecerte los mejores productos.        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <p className="text-gray-200 dark:text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+           {t('landing.hero.description')}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-5 justify-center">
           <Link
             to="#"
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg btn-glow transition-colors duration-200"
+            className="px-8 py-4 bg-white text-blue-900 dark:bg-blue-600 dark:text-white font-bold rounded-xl shadow-lg hover:scale-105 transform transition duration-200 btn-pulse"
           >
-            Ver Catálogo
+            {t('landing.hero.ctaCatalog')}
           </Link>
           <Link
             to="/auth/login"
-            className="px-8 py-3 border-2 border-white text-white font-semibold rounded-lg btn-glow transition-colors duration-200"
+            className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl backdrop-blur-sm transition duration-200 btn-pulse"
           >
-            Ingresar
+            {t('landing.hero.ctaLogin')}
           </Link>
         </div>
 

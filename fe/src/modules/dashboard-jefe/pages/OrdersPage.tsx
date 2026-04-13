@@ -8,7 +8,7 @@ import {
   ShoppingCart, Package, Filter, Search, Loader2, AlertCircle, Clock,
   Zap, CheckCircle, XCircle, ChevronLeft, ChevronRight,
   ArrowRight, Mail, Phone, User, Plus, ArrowLeft,
-  PlayCircle, Pencil, Ban, RefreshCw, Trash2
+  PlayCircle, Edit2, Ban, RefreshCw, Trash2
 } from 'lucide-react';
 import {
   getOrders,
@@ -40,15 +40,15 @@ function StatusIcon({ status }: { status: OrderStatus }) {
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
-  const styles: Record<OrderStatus, { bg: string; text: string; label: string }> = {
-    pendiente:   { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pendiente' },
-    en_progreso: { bg: 'bg-blue-100',   text: 'text-blue-800',   label: 'En Producción' },
-    completado:  { bg: 'bg-green-100',  text: 'text-green-800',  label: 'Completado' },
-    cancelado:   { bg: 'bg-red-100',    text: 'text-red-800',    label: 'Cancelado' },
+  const styles: Record<OrderStatus, { bg: string; text: string; border: string; label: string }> = {
+    pendiente:   { bg: 'bg-yellow-50 dark:bg-yellow-950/30', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-900/50', label: 'Pendiente' },
+    en_progreso: { bg: 'bg-blue-50 dark:bg-blue-950/30',   text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-900/50',   label: 'En Producción' },
+    completado:  { bg: 'bg-green-50 dark:bg-green-950/30',  text: 'text-green-700 dark:text-green-400', border: 'border-green-200 dark:border-green-900/50',  label: 'Completado' },
+    cancelado:   { bg: 'bg-red-50 dark:bg-red-950/30',    text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-900/50',    label: 'Cancelado' },
   };
   const s = styles[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${s.bg} ${s.text}`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${s.bg} ${s.text} ${s.border}`}>
       <StatusIcon status={status} />
       {s.label}
     </span>
@@ -88,57 +88,60 @@ function SummaryCards({ totals }: { totals: Record<OrderStatus, number> }) {
 function OrdersTable({ orders, onSelect }: { orders: Order[]; onSelect: (o: Order) => void }) {
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-        <p className="text-gray-500 font-medium">No hay pedidos que mostrar</p>
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 p-12 text-center transition-all">
+        <Package className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4 opacity-50" />
+        <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">No hay pedidos que mostrar</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm">Prueba ajustando los filtros de búsqueda</p>
       </div>
     );
   }
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="border-b border-gray-200 bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left font-semibold text-gray-700">ID Pedido</th>
-            <th className="px-6 py-3 text-left font-semibold text-gray-700">Cliente</th>
-            <th className="px-6 py-3 text-center font-semibold text-gray-700">Pares</th>
-            <th className="px-6 py-3 text-left font-semibold text-gray-700">Estado</th>
-            <th className="px-6 py-3 text-left font-semibold text-gray-700">Fecha</th>
-            <th className="px-6 py-3 text-center font-semibold text-gray-700">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 font-mono font-semibold text-gray-900">
-                #{order.id.substring(0, 8)}
-              </td>
-              <td className="px-6 py-4 text-gray-900">
-                {order.customer_name && order.customer_last_name
-                  ? `${order.customer_name} ${order.customer_last_name}`
-                  : <span className="text-gray-400 font-mono text-xs">{order.customer_id.substring(0, 12)}...</span>}
-              </td>
-              <td className="px-6 py-4 text-center">
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
-                  {order.total_pairs} pares
-                </span>
-              </td>
-              <td className="px-6 py-4"><StatusBadge status={order.state} /></td>
-              <td className="px-6 py-4 text-gray-600 text-xs">
-                {new Date(order.created_at).toLocaleDateString('es-CO')}
-              </td>
-              <td className="px-6 py-4 text-center">
-                <button
-                  onClick={() => onSelect(order)}
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </td>
+    <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/80">
+            <tr>
+              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">ID Pedido</th>
+              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Cliente</th>
+              <th className="px-6 py-4 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Pares</th>
+              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Estado</th>
+              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Fecha</th>
+              <th className="px-6 py-4 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+            {orders.map((order) => (
+              <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                <td className="px-6 py-4 font-mono font-bold text-blue-600 dark:text-blue-400">
+                  #{order.id.substring(0, 8)}
+                </td>
+                <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-bold transition-colors">
+                  {order.customer_name && order.customer_last_name
+                    ? `${order.customer_name} ${order.customer_last_name}`
+                    : <span className="text-gray-400 font-mono text-xs">{order.customer_id.substring(0, 12)}...</span>}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold border border-blue-100 dark:border-blue-900/50">
+                    {order.total_pairs} pares
+                  </span>
+                </td>
+                <td className="px-6 py-4"><StatusBadge status={order.state} /></td>
+                <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs font-medium">
+                  {new Date(order.created_at).toLocaleDateString('es-CO')}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <button
+                    onClick={() => onSelect(order)}
+                    className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all active:scale-95"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -195,14 +198,14 @@ function OrderDetailView({
       )}
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Pedido <span className="font-mono text-blue-600">#{order.id.substring(0, 8)}</span>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
+            Pedido <span className="font-mono text-blue-600 dark:text-blue-400">#{order.id.substring(0, 8)}</span>
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 transition-colors">
             Creado el {new Date(order.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
           </p>
         </div>
@@ -215,27 +218,27 @@ function OrderDetailView({
         <div className="lg:col-span-2 space-y-6">
 
           {/* Resumen */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-4">Información del Pedido</h2>
+          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 transition-all duration-300">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">Información del Pedido</h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500 text-xs uppercase font-semibold mb-1">ID Pedido</p>
-                <p className="font-mono font-bold text-gray-900">#{order.id.substring(0, 8)}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">ID Pedido</p>
+                <p className="font-mono font-bold text-gray-900 dark:text-gray-100">#{order.id.substring(0, 8)}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs uppercase font-semibold mb-1">Total de Pares</p>
-                <p className="font-bold text-gray-900 text-lg">{order.total_pairs}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">Total de Pares</p>
+                <p className="font-bold text-gray-900 dark:text-white text-lg">{order.total_pairs}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs uppercase font-semibold mb-1">Estado</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">Estado</p>
                 <StatusBadge status={order.state} />
               </div>
               <div>
-                <p className="text-gray-500 text-xs uppercase font-semibold mb-1">Entrega Estimada</p>
-                <p className="font-medium text-gray-900">
+                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">Entrega Estimada</p>
+                <p className="font-bold text-gray-900 dark:text-gray-100">
                   {order.delivery_date
                     ? new Date(order.delivery_date).toLocaleDateString('es-CO')
-                    : <span className="text-gray-400">No definida</span>}
+                    : <span className="text-gray-400 dark:text-gray-500">No definida</span>}
                 </p>
               </div>
             </div>
@@ -258,9 +261,9 @@ function OrderDetailView({
 
             return (
               <div className="space-y-4">
-                <h2 className="text-base font-bold text-gray-900">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">
                   Productos del Pedido
-                  <span className="ml-2 text-sm font-normal text-gray-500">
+                  <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                     ({Object.keys(groups).length} {Object.keys(groups).length === 1 ? 'producto' : 'productos'})
                   </span>
                 </h2>
@@ -281,8 +284,8 @@ function OrderDetailView({
                     const allAvailable = lines.every(l => (l.stock_available ?? 0) >= l.amount);
 
                     return (
-                      <div key={productId} className={`bg-white border rounded-xl overflow-hidden ${allAvailable ? 'border-green-200' : 'border-gray-200'}`}>
-                        <div className={`${allAvailable ? 'bg-green-50/50 border-green-100' : 'bg-gray-50 border-gray-200'} border-b px-5 py-4 flex items-center justify-between`}>
+                      <div key={productId} className={`bg-white dark:bg-slate-900/50 border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${allAvailable ? 'border-green-200 dark:border-green-900/50' : 'border-gray-200 dark:border-slate-800'}`}>
+                        <div className={`${allAvailable ? 'bg-green-50/50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-800'} border-b px-5 py-4 flex items-center justify-between`}>
                           <div className="flex items-center gap-4 min-w-0">
                             {productImageUrl && !failedImages.has(productImageUrl) ? (
                               <button
@@ -290,11 +293,11 @@ function OrderDetailView({
                                 style={{
                                   width: '140px',
                                   height: '140px',
-                                  border: `1px solid ${allAvailable ? '#bbf7d0' : '#d1d5db'}`,
-                                  borderRadius: '8px',
+                                  border: `1px solid ${allAvailable ? '#22c55e40' : '#33415540'}`,
+                                  borderRadius: '12px',
                                   padding: '0',
                                   overflow: 'hidden',
-                                  backgroundColor: '#ffffff',
+                                  backgroundColor: 'transparent',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -326,34 +329,34 @@ function OrderDetailView({
                               <div style={{
                                 width: '140px',
                                 height: '140px',
-                                border: `1px solid ${allAvailable ? '#bbf7d0' : '#d1d5db'}`,
-                                borderRadius: '8px',
+                                border: `1px solid ${allAvailable ? '#22c55e40' : '#33415540'}`,
+                                borderRadius: '12px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: '#ffffff',
+                                backgroundColor: 'transparent',
                                 flexShrink: 0,
                               }}>
-                                <Package className={`w-10 h-10 ${allAvailable ? 'text-green-300' : 'text-gray-300'}`} />
+                                <Package className={`w-10 h-10 ${allAvailable ? 'text-green-300 dark:text-green-700' : 'text-gray-300 dark:text-gray-700'}`} />
                               </div>
                             )}
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-bold text-gray-900 text-lg">{productName}</p>
+                                <p className="font-bold text-gray-900 dark:text-white text-lg transition-colors">{productName}</p>
                                 {allAvailable && (
-                                  <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-green-200">
+                                  <span className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-green-200 dark:border-green-900/50">
                                     <CheckCircle size={10} />
                                     Todo en Bodega
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
                                 {[brandName, styleName, categoryName].filter(Boolean).join(' · ')}
                               </p>
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap">
+                            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-blue-200 dark:border-blue-900/50">
                               {totalProductPairs} pares pedidos
                             </span>
                           </div>
@@ -363,18 +366,18 @@ function OrderDetailView({
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             {lines.map((line) => {
                               const hasStock = (line.stock_available ?? 0) >= line.amount;
-                              const stockColor = hasStock ? 'text-green-600' : (line.stock_available ?? 0) > 0 ? 'text-orange-500' : 'text-red-500';
-                              const bgColor = hasStock ? 'bg-green-50/30' : 'bg-gray-50';
-                              const borderColor = hasStock ? 'border-green-100' : 'border-gray-200';
+                              const stockColor = hasStock ? 'text-green-600 dark:text-green-400' : (line.stock_available ?? 0) > 0 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400';
+                              const bgColor = hasStock ? 'bg-green-50/30 dark:bg-green-950/10' : 'bg-gray-50 dark:bg-slate-800/30';
+                              const borderColor = hasStock ? 'border-green-100 dark:border-green-900/30' : 'border-gray-200 dark:border-slate-800';
 
                               return (
                                 <div key={line.id} className={`flex flex-col gap-1 border rounded-lg px-3 py-2 ${bgColor} ${borderColor}`}>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-gray-500">Talla {line.size}</span>
-                                    <span className="text-sm font-bold text-gray-900">{line.amount} pares</span>
+                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Talla {line.size}</span>
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white transition-colors">{line.amount} pares</span>
                                   </div>
-                                  <div className="flex items-center justify-between border-t border-gray-100 mt-1 pt-1">
-                                    <span className="text-[10px] text-gray-400 uppercase font-medium">En Bodega:</span>
+                                  <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 mt-1 pt-1 font-bold">
+                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">En Bodega:</span>
                                     <span className={`text-xs font-bold ${stockColor}`}>
                                       {Math.floor(line.stock_available ?? 0)}
                                     </span>
@@ -396,35 +399,35 @@ function OrderDetailView({
         <div className="space-y-4">
 
           {/* Card del cliente */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-600" />
+          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Información del Cliente
             </h2>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-blue-600 font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 border border-blue-200 dark:border-blue-800">
+                  <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">
                     {order.customer_name ? order.customer_name.charAt(0).toUpperCase() : '?'}
                   </span>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">
                     {order.customer_name && order.customer_last_name
                       ? `${order.customer_name} ${order.customer_last_name}`
                       : 'Sin nombre'}
                   </p>
-                  <p className="text-xs text-gray-500 font-mono">{order.customer_id.substring(0, 16)}...</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{order.customer_id.substring(0, 16)}...</p>
                 </div>
               </div>
               {order.customer_email && (
-                <a href={`mailto:${order.customer_email}`} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
+                <a href={`mailto:${order.customer_email}`} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
                   <Mail className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{order.customer_email}</span>
                 </a>
               )}
               {order.customer_phone && (
-                <a href={`tel:${order.customer_phone}`} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
+                <a href={`tel:${order.customer_phone}`} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
                   <Phone className="w-4 h-4 flex-shrink-0" />
                   {order.customer_phone}
                 </a>
@@ -433,12 +436,12 @@ function OrderDetailView({
           </div>
 
           {/* Acciones */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Acciones</h2>
+          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Acciones</h2>
 
             {/* Estado actual visible dentro del card */}
-            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-              <span className="text-xs font-medium text-gray-500">Estado actual:</span>
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-800">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Estado actual:</span>
               <StatusBadge status={order.state} />
             </div>
 
@@ -472,7 +475,7 @@ function OrderDetailView({
                 <button
                   onClick={() => onStatusChange(order.id, 'completado')}
                   disabled={isUpdating}
-                  className="w-full py-2.5 border-2 border-green-500 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-50 transition-colors font-medium flex items-center justify-center gap-2 text-sm"
+                  className="w-full py-2.5 border-2 border-green-500 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950/20 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 text-sm shadow-md shadow-green-500/10"
                 >
                   {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   Marcar como Entregado
@@ -483,9 +486,9 @@ function OrderDetailView({
               {canEdit && (
                 <button
                   onClick={onEdit}
-                  className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2 text-sm"
+                  className="w-full py-2.5 border border-blue-300 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors font-bold flex items-center justify-center gap-2 text-sm"
                 >
-                  <Pencil className="w-4 h-4" />
+                  <Edit2 className="w-4 h-4" />
                   Editar Pedido
                 </button>
               )}
@@ -494,7 +497,7 @@ function OrderDetailView({
               {canCancel && !confirmCancel && (
                 <button
                   onClick={() => setConfirmCancel(true)}
-                  className="w-full py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium flex items-center justify-center gap-2 text-sm"
+                  className="w-full py-2.5 border border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors font-bold flex items-center justify-center gap-2 text-sm"
                 >
                   <Ban className="w-4 h-4" />
                   Cancelar Pedido
@@ -580,7 +583,7 @@ function OrderDetailView({
               {/* Contactar Cliente */}
               <button
                 onClick={onContactClient}
-                className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors font-bold flex items-center justify-center gap-2 text-sm transition-all"
               >
                 <Mail className="w-4 h-4" />
                 Contactar Cliente
@@ -754,17 +757,17 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <ShoppingCart className="w-8 h-8 text-red-600" />
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+            <ShoppingCart className="w-8 h-8 text-red-600 dark:text-red-500" />
             Gestión de Pedidos
           </h1>
-          <p className="text-gray-600 text-sm mt-1">
+          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">
             Administra todos los pedidos mayoristas • {total} en total
           </p>
         </div>
         <button
           onClick={() => setIsFormOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+          className="px-6 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
         >
           <Plus className="w-4 h-4" />
           Nuevo Pedido
@@ -781,10 +784,10 @@ export default function OrdersPage() {
       <SummaryCards totals={totalByStatus} />
 
       {/* Filtros */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex gap-4 flex-wrap items-end">
+      <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 flex gap-4 flex-wrap items-end shadow-sm transition-all duration-300">
         <div className="flex-1 min-w-48">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            <Search className="w-4 h-4 inline mr-1" />
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            <Search className="w-4 h-4 inline mr-1 text-blue-500" />
             Buscar cliente
           </label>
           <input
@@ -792,12 +795,12 @@ export default function OrdersPage() {
             placeholder="Nombre del cliente..."
             value={clientFilter}
             onChange={(e) => { setClientFilter(e.target.value); setPage(1); }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            <Filter className="w-4 h-4 inline mr-1" />
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            <Filter className="w-4 h-4 inline mr-1 text-blue-500" />
             Estado
           </label>
           <select

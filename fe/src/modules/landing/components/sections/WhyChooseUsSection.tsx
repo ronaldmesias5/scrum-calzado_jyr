@@ -1,37 +1,42 @@
 import { Factory, Award, Palette, Heart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-const reasons = [
-  { icon: Factory, title: 'Fabricación Nacional', desc: 'Producción 100% colombiana con los más altos estándares de calidad.' },
-  { icon: Award, title: 'Experiencia Probada', desc: 'Más de 5 años fabricando calzado de excelente calidad.' },
-  { icon: Palette, title: 'Diseños Únicos', desc: 'Cada colección es diseñada exclusivamente con tendencias actuales y clásicos atemporales.' },
-  { icon: Heart, title: 'Pasión por el Detalle', desc: 'Cada par de zapatos es elaborado con dedicación y control de calidad en cada etapa.' },
-];
+
 
 export default function WhyChooseUsSection() {
+  const { t } = useTranslation();
+
+  const reasons = [
+    { icon: Factory, title: t('landing.whyUs.reasons.national'), desc: t('landing.whyUs.reasons.nationalDesc') },
+    { icon: Award, title: t('landing.whyUs.reasons.exp'), desc: t('landing.whyUs.reasons.expDesc') },
+    { icon: Palette, title: t('landing.whyUs.reasons.design'), desc: t('landing.whyUs.reasons.designDesc') },
+    { icon: Heart, title: t('landing.whyUs.reasons.passion'), desc: t('landing.whyUs.reasons.passionDesc') },
+  ];
+
   return (
-    <section id="nosotros" className="py-16 bg-gray-50">
+    <section id="nosotros" className="py-20 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">¿Por Qué Elegirnos?</h2>
-          <p className="text-gray-500 max-w-xl mx-auto">
-            En Calzado J&R nos enorgullece ofrecer productos de excelente alta calidad, respaldados por más de 5 años de experiencia en la industria del calzado.
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">{t('landing.whyUs.title')}</h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
+            {t('landing.whyUs.subtitle')}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {reasons.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="bg-white rounded-xl p-6 flex gap-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="bg-white dark:bg-slate-800 rounded-3xl p-8 flex flex-col sm:flex-row gap-6 border border-gray-100 dark:border-slate-700 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className="flex-shrink-0">
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <Icon size={24} className="text-blue-800" />
+                <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-2xl">
+                  <Icon size={32} className="text-blue-800 dark:text-blue-400" />
                 </div>
               </div>
               <div>
-                <h4 className="font-bold text-gray-900 mb-1">{title}</h4>
-                <p className="text-gray-500 text-sm">{desc}</p>
+                <h4 className="font-bold text-2xl text-gray-900 dark:text-white mb-3 tracking-tight">{title}</h4>
+                <p className="text-gray-500 dark:text-gray-400 text-base leading-relaxed">{desc}</p>
               </div>
             </div>
           ))}

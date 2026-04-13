@@ -18,26 +18,43 @@
  *   No implementar afecta: cumplimiento legal, UX consistente.
  */
 
+import { useTranslation } from 'react-i18next';
+
 export default function LandingFooter() {
+  const { t } = useTranslation();
+
+  const links = [
+    { label: t('landing.nav.home'), href: '#inicio' },
+    { label: t('landing.nav.catalog'), href: '#' },
+    { label: t('landing.nav.about'), href: '#nosotros' },
+    { label: t('landing.nav.contact'), href: '#contacto' },
+  ];
+
+  const categoriesList = [
+    { label: t('landing.categories.caballero'), href: '#categorias' },
+    { label: t('landing.categories.dama'), href: '#categorias' },
+    { label: t('landing.categories.infantil'), href: '#categorias' },
+  ];
+
   return (
-    <footer className="bg-gray-900 text-gray-300 pt-12 pb-6">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-gray-900 dark:bg-slate-950 text-gray-300 dark:text-gray-400 pt-16 pb-8 transition-colors duration-500">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Logo */}
-        <div className="flex flex-col items-start">
-          <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain rounded" />
-          <p className="mt-4 text-xs text-gray-400">
-            Calidad y Estilo a tu Alcance
+        <div className="flex flex-col items-start gap-4">
+          <img src="/logo.png" alt="CALZADO J&R" className="h-20 w-20 object-contain rounded-2xl bg-white p-2" />
+          <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
+            {t('landing.hero.subtitle')}
           </p>
         </div>
 
         {/* Links rápidos */}
         <div>
-          <h4 className="text-white font-semibold mb-3">Enlaces Rápidos</h4>
-          <ul className="space-y-2 text-sm">
-            {['Inicio', 'Catálogo', 'Nosotros', 'Contacto'].map((item) => (
-              <li key={item}>
-                <a href={item === 'Catálogo' ? '#' : `#${item.toLowerCase()}`} className="hover:text-white transition-colors">
-                  {item}
+          <h4 className="text-white dark:text-gray-200 font-bold text-lg mb-6">{t('landing.footer.quickLinks')}</h4>
+          <ul className="space-y-3 text-base font-medium">
+            {links.map((item) => (
+              <li key={item.label}>
+                <a href={item.href} className="hover:text-white transition-colors">
+                  {item.label}
                 </a>
               </li>
             ))}
@@ -46,12 +63,12 @@ export default function LandingFooter() {
 
         {/* Categorías */}
         <div>
-          <h4 className="text-white font-semibold mb-3">Categorías</h4>
-          <ul className="space-y-2 text-sm">
-            {['Caballero', 'Dama', 'Infantil'].map((item) => (
-              <li key={item}>
-                <a href="#categorias" className="hover:text-white transition-colors">
-                  {item}
+          <h4 className="text-white dark:text-gray-200 font-bold text-lg mb-6">{t('landing.categories.title')}</h4>
+          <ul className="space-y-3 text-base font-medium">
+            {categoriesList.map((item) => (
+              <li key={item.label}>
+                <a href={item.href} className="hover:text-white transition-colors">
+                  {item.label}
                 </a>
               </li>
             ))}
@@ -60,16 +77,16 @@ export default function LandingFooter() {
 
         {/* Contacto */}
         <div>
-          <h4 className="text-white font-semibold mb-3">Contacto</h4>
-          <ul className="space-y-2 text-sm">
-            <li>📍 Bogotá, Colombia</li>
-            <li>📞 +57 601 234 5678</li>
+          <h4 className="text-white dark:text-gray-200 font-bold text-lg mb-6">{t('landing.footer.contact')}</h4>
+          <ul className="space-y-3 text-base font-medium">
+            <li className="flex items-center gap-2">{t('landing.footer.location')}</li>
+            <li className="flex items-center gap-2">{t('landing.footer.phone')}</li>
           </ul>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-8 pt-6 border-t border-gray-700 text-center text-sm text-gray-500">
-        © 2026 CALZADO J&R. Todos los derechos reservados.
+      <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-gray-800 dark:border-slate-800 text-center text-sm font-medium text-gray-500">
+        {t('landing.footer.copyright')}
       </div>
     </footer>
   );

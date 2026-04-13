@@ -21,27 +21,28 @@ export default function MetricsCards({ metrics }: Props) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {cards.map((m, i) => {
-        const { icon: Icon, iconColor, bgColor } = CARD_CONFIG[i] ?? CARD_CONFIG[0];
+        const config = CARD_CONFIG[i % CARD_CONFIG.length]!;
+        const { icon: Icon, iconColor, bgColor } = config;
         return (
           <div
             key={m.label}
-            className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200"
+            className="bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-all duration-300"
           >
             <div className="flex items-center justify-between">
-              <div className={`p-2.5 rounded-xl ${bgColor}`}>
+              <div className={`p-2.5 rounded-xl ${bgColor} dark:bg-slate-800/80`}>
                 <Icon size={20} className={iconColor} />
               </div>
               {m.change && (
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  m.changePositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+                  m.changePositive ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400'
                 }`}>
                   {m.change}
                 </span>
               )}
             </div>
             <div>
-              <p className="text-3xl font-bold text-gray-900 leading-tight">{m.value}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{m.label}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white leading-tight transition-colors duration-500">{m.value}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 font-medium">{m.label}</p>
             </div>
           </div>
         );

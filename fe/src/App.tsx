@@ -36,6 +36,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import "@/i18n"; // i18n initialization
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -68,12 +70,16 @@ import InventoryPage from "@/modules/dashboard-jefe/pages/InventoryPage";
 import EmployeesPage from "@/modules/dashboard-jefe/pages/EmployeesPage";
 import ClientsPage from "@/modules/dashboard-jefe/pages/ClientsPage";
 
+// Sprint 7 - Supplies module
+import InsumosPage from "@/modules/dashboard-jefe/pages/InsumosPage";
+
 function App() {
   const [showCookiePolicy, setShowCookiePolicy] = useState(false);
 
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
         {showCookiePolicy && (
           <CookiePolicyModal onClose={() => setShowCookiePolicy(false)} />
         )}
@@ -128,6 +134,7 @@ function App() {
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="usuarios" element={<UsersManagementPage />} />
+            <Route path="insumos" element={<InsumosPage />} />
             <Route path="reactivation" element={<div className="p-4 text-gray-500">Reactivación - Próximamente</div>} />
             <Route path="alerts" element={<div className="p-4 text-gray-500">Alertas - Próximamente</div>} />
             <Route path="reports" element={<div className="p-4 text-gray-500">Reportes - Próximamente</div>} />
@@ -151,7 +158,8 @@ function App() {
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

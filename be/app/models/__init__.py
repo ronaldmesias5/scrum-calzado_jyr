@@ -23,6 +23,7 @@ from app.models.notifications import Notification
 # Modelos de inventario y movimientos
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement
+from app.models.supply_categories import SupplyCategory
 from app.models.supplies import Supplies
 from app.models.supplies_movement import SuppliesMovement
 
@@ -51,6 +52,7 @@ __all__ = [
     "Notification",
     "Inventory",
     "InventoryMovement",
+    "SupplyCategory",
     "Supplies",
     "SuppliesMovement",
     "Order",

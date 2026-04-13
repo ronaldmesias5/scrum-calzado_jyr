@@ -1,43 +1,27 @@
 """
 Archivo: be/app/models/supplies.py
 Descripción: Modelo ORM SQLAlchemy para la tabla `supplies` (insumos de fabricación).
-
-¿Qué?
-  Define el registro centralizado de insumos (materiales) utilizados en
-  la fabricación de calzado: cueros, telas, pegamentos, herrajes, plantillas.
-  
-¿Para qué?
-  - Gestión de inventario de materiales
-  - Controlar entrada y salida de insumos
-  - Rastrear costos de producción
-  
-¿Impacto?
-  CRÍTICO - Sin esta tabla, no se puede producir calzado.
 """
 
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, DateTime, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import String, Text, DateTime, Integer, Numeric, Column, func
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
     from app.models.supplies_movement import SuppliesMovement
+    from app.models.product_supplies import ProductSupply
 
 
 class Supplies(Base):
     """Modelo ORM para la tabla `supplies` de insumos."""
 
     __tablename__ = "supplies"
-
-    # ────────────────────────────
-    # 📌 Columnas principales
-    # ────────────────────────────
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -55,9 +39,33 @@ class Supplies(Base):
         nullable=True,
     )
 
-    # ────────────────────────────
-    #  Timestamps
-    # ────────────────────────────
+    category: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="otros",
+    )
+
+    color: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    stock_quantity: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        nullable=False,
+        default=0,
+    )
+
+    sizes: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+
+    unit: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        default="unidades",
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -77,12 +85,14 @@ class Supplies(Base):
         nullable=True,
     )
 
-    # ────────────────────────────
-    # 🔗 Relaciones
-    # ────────────────────────────
-
+    # Relaciones
     movements = relationship("SuppliesMovement", back_populates="supply", lazy="selectin")
+    product_links: Mapped[list["ProductSupply"]] = relationship(
+        "ProductSupply",
+        back_populates="supply",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
-        return f"Supplies(id={self.id}, name_supplies={self.name_supplies})"
-
+        return f"Supplies(id={self.id}, name={self.name_supplies}, category={self.category})"

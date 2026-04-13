@@ -9,7 +9,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Numeric, DateTime, ForeignKey, Enum as SQLEnum, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -65,6 +65,11 @@ class SuppliesMovement(Base):
 
     size: Mapped[str | None] = mapped_column(
         String(50),
+        nullable=True,
+    )
+
+    sizes: Mapped[dict | None] = mapped_column(
+        JSONB,
         nullable=True,
     )
 

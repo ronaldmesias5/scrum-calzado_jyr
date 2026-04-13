@@ -113,8 +113,8 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <h3 className="text-lg font-semibold text-gray-800 mb-6">
+    <form onSubmit={handleSubmit} className="w-full bg-white dark:bg-slate-900 transition-colors">
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
         {isEmployee ? 'Datos del nuevo empleado' : 'Datos del nuevo cliente'}
       </h3>
 
@@ -134,7 +134,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Nombre */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Nombre *</label>
           <input
             type="text"
             name="name"
@@ -142,13 +142,13 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
             onChange={handleChange}
             required
             placeholder="Ej: Carlos"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           />
         </div>
 
         {/* Apellido */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Apellido *</label>
           <input
             type="text"
             name="last_name"
@@ -156,13 +156,13 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
             onChange={handleChange}
             required
             placeholder="Ej: Gómez"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           />
         </div>
 
         {/* Email */}
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Correo electrónico *</label>
           <input
             type="email"
             name="email"
@@ -170,33 +170,33 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
             onChange={handleChange}
             required
             placeholder="correo@ejemplo.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           />
         </div>
 
         {/* Teléfono */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Teléfono</label>
           <input
             type="tel"
             name="phone"
             value={form.phone}
             onChange={handleChange}
             placeholder="+57 300 000 0000"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           />
         </div>
 
         {/* Tipo documento */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Tipo de documento</label>
           <select
             name="identity_document_type_id"
             value={form.identity_document_type_id}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           >
-            <option value="">Seleccionar...</option>
+            <option value="" className="dark:bg-slate-900">Seleccionar...</option>
             {typeDocuments.map((td) => (
               <option key={td.id.toString()} value={td.id.toString()}>
                 {td.name}
@@ -207,29 +207,29 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Número documento */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Número de documento</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Número de documento</label>
           <input
             type="text"
             name="identity_document"
             value={form.identity_document}
             onChange={handleChange}
             placeholder="1234567890"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           />
         </div>
 
         {/* Campo específico por tipo */}
         {isEmployee ? (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ocupación *</label>
+            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Ocupación *</label>
             <select
               name="occupation"
               value={form.occupation}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
             >
-              <option value="">Seleccionar...</option>
+              <option value="" className="dark:bg-slate-900">Seleccionar...</option>
               <option value="cortador">Cortador</option>
               <option value="guarnecedor">Guarnecedor</option>
               <option value="solador">Solador</option>
@@ -239,21 +239,21 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
           </div>
         ) : (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre comercial</label>
+            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Nombre comercial</label>
             <input
               type="text"
               name="business_name"
               value={form.business_name}
               onChange={handleChange}
               placeholder="Ej: Calzados López"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
             />
           </div>
         )}
 
         {/* Contraseña */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Contraseña *</label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -262,7 +262,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
               onChange={handleChange}
               required
               placeholder="Mín. 8 caracteres"
-              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
             />
             <button
               type="button"
@@ -276,7 +276,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Confirmar contraseña */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Confirmar contraseña *</label>
           <input
             type={showPassword ? 'text' : 'password'}
             name="confirm_password"
@@ -284,22 +284,22 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
             onChange={handleChange}
             required
             placeholder="Repite la contraseña"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           />
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+      <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 px-4 py-3 rounded-xl transition-all">
         ⚠️ El {isEmployee ? 'empleado' : 'cliente'} deberá cambiar su contraseña al iniciar sesión por primera vez.
       </p>
 
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-60 shadow-sm grow-0 w-fit"
+        className="mt-8 flex items-center justify-center gap-3 px-8 py-3.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-black text-sm rounded-2xl transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-[0.98] disabled:opacity-60 grow-0 w-full sm:w-auto btn-pulse"
       >
-        {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
-        {isEmployee ? 'Crear empleado' : 'Crear cliente'}
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={20} />}
+        {isEmployee ? 'CREAR EMPLEADO' : 'CREAR CLIENTE'}
       </button>
     </form>
   );

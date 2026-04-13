@@ -97,25 +97,25 @@ function buildUserNotification(user: PendingUser): Notification {
 
 function NotifIcon({ notif }: { notif: Notification }) {
   if (notif.type === 'usuario') {
-    return <UserCheck className="w-5 h-5 text-purple-600" />;
+    return <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
   }
   switch (notif.state) {
-    case 'pendiente':   return <ShoppingBag className="w-5 h-5 text-blue-600" />;
-    case 'en_progreso': return <Zap className="w-5 h-5 text-blue-500" />;
-    case 'completado':  return <CheckCircle className="w-5 h-5 text-green-600" />;
-    case 'cancelado':   return <XCircle className="w-5 h-5 text-red-500" />;
-    default:            return <ShoppingBag className="w-5 h-5 text-blue-600" />;
+    case 'pendiente':   return <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
+    case 'en_progreso': return <Zap className="w-5 h-5 text-blue-500 dark:text-blue-400" />;
+    case 'completado':  return <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />;
+    case 'cancelado':   return <XCircle className="w-5 h-5 text-red-500 dark:text-red-400" />;
+    default:            return <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
   }
 }
 
 function iconBg(notif: Notification): string {
-  if (notif.type === 'usuario') return 'bg-purple-100';
+  if (notif.type === 'usuario') return 'bg-purple-100 dark:bg-purple-900/30';
   switch (notif.state) {
-    case 'pendiente':   return 'bg-blue-100';
-    case 'en_progreso': return 'bg-blue-50';
-    case 'completado':  return 'bg-green-100';
-    case 'cancelado':   return 'bg-red-100';
-    default:            return 'bg-gray-100';
+    case 'pendiente':   return 'bg-blue-100 dark:bg-blue-900/30';
+    case 'en_progreso': return 'bg-blue-50 dark:bg-blue-900/20';
+    case 'completado':  return 'bg-green-100 dark:bg-green-900/30';
+    case 'cancelado':   return 'bg-red-100 dark:bg-red-900/30';
+    default:            return 'bg-gray-100 dark:bg-slate-800';
   }
 }
 
@@ -226,41 +226,40 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
 
   return (
     <>
-      {/* Backdrop opaco sin blur */}
       <div
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md transition-all duration-300"
         onClick={onClose}
       />
 
       {/* Panel derecho */}
-      <div className="fixed top-0 right-0 z-50 h-full w-96 bg-white shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 z-50 h-full w-96 bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-gray-100 dark:border-slate-800 transition-all duration-300">
 
         {/* Header del panel */}
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+        <div className="px-5 pt-6 pb-5 border-b border-gray-100 dark:border-slate-800 transition-colors">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Notificaciones</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Notificaciones</h2>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
                 {unreadCount > 0
-                  ? `Tienes ${unreadCount} notificación${unreadCount > 1 ? 'es' : ''} sin leer`
-                  : 'Todas las notificaciones leídas'}
+                    ? `Tienes ${unreadCount} notificación${unreadCount > 1 ? 'es' : ''} sin leer`
+                    : 'Todas las notificaciones leídas'}
               </p>
             </div>
             <div className="flex items-center gap-3">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-[10px] text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 font-black uppercase tracking-widest transition-all"
                 >
-                  <Check className="w-3.5 h-3.5" />
-                  Marcar todas
+                  <Check className="w-3 h-3" />
+                  Leídas
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -273,16 +272,16 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                     tab === key
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-500 hover:bg-gray-100'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {label}
                   {badge > 0 && (
-                    <span className={`text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none
-                      ${tab === key ? 'bg-white text-gray-900' : 'bg-red-500 text-white'}`}>
+                    <span className={`text-[10px] font-black rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center leading-none
+                      ${tab === key ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}`}>
                       {badge > 9 ? '9+' : badge}
                     </span>
                   )}
@@ -293,7 +292,7 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
         </div>
 
         {/* Lista */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 transition-colors">
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -308,10 +307,14 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
               <div
                 key={notif.id}
                 onClick={() => markRead(notif.id)}
-                className={`flex items-start gap-3 px-4 py-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-default group ${
-                  notif.read ? '' : 'border-l-4 border-l-blue-500'
+                className={`flex items-start gap-4 px-5 py-5 border-b border-gray-50 dark:border-slate-800/40 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-all cursor-default group ${
+                  notif.read ? 'opacity-60 grayscale-[0.3]' : 'bg-blue-50/20 dark:bg-blue-900/5'
                 }`}
               >
+                {/* Indicador de no leído */}
+                {!notif.read && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-blue-600 rounded-r-full group-hover:h-16 transition-all" />
+                )}
                 {/* Icono */}
                 <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconBg(notif)}`}>
                   <NotifIcon notif={notif} />
@@ -319,12 +322,12 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
 
                 {/* Contenido */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 leading-tight">{notif.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.description}</p>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-xs text-gray-400">{notif.time}</span>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{notif.title}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">{notif.description}</p>
+                  <div className="flex items-center gap-3 mt-2.5">
+                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{notif.time}</span>
                     {notif.urgent && (
-                      <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded">
+                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[9px] font-black rounded uppercase tracking-tighter">
                         Urgente
                       </span>
                     )}
@@ -332,15 +335,13 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
                 </div>
 
                 {/* Acciones */}
-                <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                  {!notif.read && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full" />
-                  )}
+                <div className="flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => { e.stopPropagation(); dismiss(notif.id); }}
-                    className="p-1 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
+                    title="Descartar"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -350,9 +351,9 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
 
         {/* Footer */}
         {visible.length > 0 && (
-          <div className="px-5 py-3 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400">
-              {visible.length} notificación{visible.length !== 1 ? 'es' : ''} — {unreadCount} sin leer
+          <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800 text-center bg-gray-50/30 dark:bg-slate-900/50 transition-colors">
+            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
+              {visible.length} notificación{visible.length !== 1 ? 'es' : ''} • {unreadCount} sin leer
             </p>
           </div>
         )}

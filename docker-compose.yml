@@ -99,12 +99,12 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
 
-      MAIL_SERVER: ${MAIL_SERVER}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      MAIL_FROM: ${MAIL_FROM}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      MAIL_SERVER: ${MAIL_SERVER:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-notificaciones@calzadojyr.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Calzado J&R}
 
       # El frontend necesita coincidir: CORS solo permitirá esta URL.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -117,6 +117,22 @@ services:
       # En producción el código se copia dentro de la imagen (stage prod).
       - ./be:/app
 
+    networks:
+      - calzado_jyr_net
+
+  # ──────────────────────────────────────────────────────────
+  # 📧 mailpit — Servidor de correo de prueba
+  # ¿Qué?    Intercepa todos los correos enviados por el BE.
+  # ¿Para?   Ver y depurar correos en desarrollo sin enviar reales.
+  # ¿Impacto? Interfaz web en http://localhost:8025
+  # ──────────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: calzado_jyr_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # Interfaz Web
+      - "1025:1025" # SMTP
     networks:
       - calzado_jyr_net
 

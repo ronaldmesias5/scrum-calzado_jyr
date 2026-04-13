@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Package, Filter, Search, Layers, Maximize2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, Package, Filter, Search, Layers, Maximize2 } from 'lucide-react';
 import { Product, listProducts, updateProduct, deleteProduct, createProduct, listBrands, listStyles, listCategories, createStyle, uploadProductImage, resolveImageUrl, toggleProductState } from '../services/catalogService';
 import ProductEditModal from '../components/ProductEditModal';
 import ProductCreateModal from '../components/ProductCreateModal';
@@ -134,9 +134,9 @@ export default function CatalogPage() {
   };
 
   // Crear nuevo producto
-  const handleCreateProduct = async (productData: any, imageFile?: File) => {
+  const handleCreateProduct = async (productData: any, imageFile?: File, supplyLinks?: Record<string, number>) => {
     try {
-      // Obtener listas de referencias
+      // 1. Obtener la marca primeroencias
       const brands = await listBrands();
       let styles = await listStyles();
       const categories = await listCategories();
@@ -184,6 +184,18 @@ export default function CatalogPage() {
         } catch (imgError) {
           console.error('Error uploading image:', imgError);
           // No bloqueamos — el producto fue creado, solo falla la imagen
+        }
+      }
+      
+      // 3) Vincular insumos
+      if (supplyLinks && Object.keys(supplyLinks).length > 0 && newProduct.id) {
+        try {
+          const { linkSupplyToProduct } = await import('../services/suppliesService');
+          for (const [supplyId, qty] of Object.entries(supplyLinks)) {
+            await linkSupplyToProduct(newProduct.id, supplyId, qty);
+          }
+        } catch (err) {
+          console.error('Error al vincular insumos:', err);
         }
       }
 
@@ -275,15 +287,15 @@ export default function CatalogPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Layers className="w-8 h-8 text-orange-600" />
             Gestión de Catálogo
           </h1>
-          <p className="text-gray-600 mt-1">Administra todos los productos del catálogo • {totalProducts} en total</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Administra todos los productos del catálogo • {totalProducts} en total</p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center gap-2 btn-pulse shadow-lg hover:shadow-blue-500/20 active:scale-95"
         >
           <Plus size={18} /> Agregar Producto
         </button>
@@ -318,18 +330,18 @@ export default function CatalogPage() {
       </div>
 
       {/* Búsqueda y Filtros */}
-      <div className="bg-white rounded-lg p-4 border border-gray-200">
+      <div className="bg-white dark:bg-slate-900/50 rounded-xl p-6 border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 items-end">
           {/* Categoría */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
               <Filter className="w-4 h-4 inline mr-1" />
               Categoría
             </label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas</option>
               {categories.map(cat => (
@@ -340,11 +352,11 @@ export default function CatalogPage() {
 
           {/* Marca */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Marca</label>
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas</option>
               {brands.map(brand => (
@@ -355,11 +367,11 @@ export default function CatalogPage() {
 
           {/* Estilo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estilo</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Estilo</label>
             <select
               value={selectedStyle}
               onChange={(e) => setSelectedStyle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
               {styles.map(style => (
@@ -370,7 +382,7 @@ export default function CatalogPage() {
 
           {/* Producto (Búsqueda) */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Producto</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -378,18 +390,18 @@ export default function CatalogPage() {
                 placeholder="Nombre, ID, ref..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
               />
             </div>
           </div>
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Color</label>
             <select
               value={selectedColor}
               onChange={(e) => setSelectedColor(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
               {colors.map(color => (
@@ -400,11 +412,11 @@ export default function CatalogPage() {
 
           {/* Estado */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Estado</label>
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
               <option value="active">Habilitado</option>
@@ -424,7 +436,7 @@ export default function CatalogPage() {
                 setSelectedState('');
                 setSearchTerm('');
               }}
-              className="w-full px-2 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700"
+              className="w-full px-2 py-2 text-xs border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-bold text-gray-700 dark:text-gray-300 active:scale-95 shadow-sm"
             >
               Limpiar
             </button>
@@ -438,21 +450,21 @@ export default function CatalogPage() {
           <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
-          <Package className="mx-auto mb-2 text-gray-400" size={24} />
-          <p className="text-gray-500 text-sm">No se encontraron productos</p>
+        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-8 text-center shadow-sm">
+          <Package className="mx-auto mb-2 text-gray-400" size={32} />
+          <p className="text-gray-500 dark:text-gray-400 font-medium">No se encontraron productos</p>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-all duration-300">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
               <tr>
-                <th className="px-4 py-2 text-left font-semibold text-gray-700">Producto</th>
-                <th className="px-4 py-2 text-left font-semibold text-gray-700">Categoría</th>
-                <th className="px-4 py-2 text-left font-semibold text-gray-700">Color</th>
-                <th className="px-4 py-2 text-left font-semibold text-gray-700">Stock</th>
-                <th className="px-4 py-2 text-left font-semibold text-gray-700">Estado</th>
-                <th className="px-4 py-2 text-right font-semibold text-gray-700">Acciones</th>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300">Producto</th>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300">Categoría</th>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300">Color</th>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300">Stock</th>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300">Estado</th>
+                <th className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-300">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -465,67 +477,42 @@ export default function CatalogPage() {
                           resolveImageUrl(product.image_url) || '/placeholder-product.png',
                           product.name
                         )}
-                        className="relative w-8 h-8 bg-gray-200 rounded flex-shrink-0 overflow-hidden group cursor-pointer hover:bg-gray-300 transition-all"
+                        className="relative w-10 h-10 bg-gray-200 dark:bg-slate-700 rounded flex-shrink-0 overflow-hidden group cursor-pointer hover:shadow-lg transition-all"
                         title="Haz click para ver la imagen"
                       >
                         {product.image_url ? (
                           <img
                             src={resolveImageUrl(product.image_url)}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                            <Package size={16} className="text-gray-400" />
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-800">
+                            <Package size={20} className="text-gray-400" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
-                          <Maximize2 size={12} className="text-white" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
+                          <Maximize2 size={16} className="text-white" />
                         </div>
                       </button>
                       <div>
-                        <p className="font-medium text-gray-900">{product.name}</p>
-                        <p className="text-xs text-gray-500">{product.style_name} · ID: {product.id.substring(0, 8)}</p>
+                        <p className="font-bold text-gray-900 dark:text-white transition-colors">{product.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{product.style_name} · ID: {product.id.substring(0, 8)}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-2">
-                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                    <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-bold rounded transition-colors">
                       {product.category_name || '-'}
                     </span>
                   </td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      {product.color && (
-                        <>
-                          <div
-                            className="w-4 h-4 rounded-full border border-gray-300"
-                            style={{
-                              backgroundColor: product.color.toLowerCase() === 'blanco' ? '#FFFFFF' :
-                                product.color.toLowerCase() === 'negro' ? '#000000' :
-                                product.color.toLowerCase() === 'gris' ? '#808080' :
-                                product.color.toLowerCase() === 'rojo' ? '#FF0000' :
-                                product.color.toLowerCase() === 'azul' ? '#0000FF' :
-                                product.color.toLowerCase() === 'verde' ? '#00A000' :
-                                product.color.toLowerCase() === 'amarillo' ? '#FFFF00' :
-                                product.color.toLowerCase() === 'naranja' ? '#FFA500' :
-                                product.color.toLowerCase() === 'marrón' ? '#A52A2A' :
-                                product.color.toLowerCase() === 'rosa' ? '#FFC0CB' :
-                                product.color.toLowerCase() === 'púrpura' ? '#800080' :
-                                '#E5E7EB'
-                            }}
-                            title={product.color}
-                          />
-                          <span className="text-xs font-medium text-gray-700">{product.color}</span>
-                        </>
-                      )}
-                      {!product.color && (
-                        <span className="text-xs text-gray-400">Sin color</span>
-                      )}
-                    </div>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      {product.color || <span className="text-gray-400 dark:text-gray-500">Sin color</span>}
+                    </span>
                   </td>
                   <td className="px-4 py-2">
-                    <span className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                    <span className="inline-block px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-bold rounded transition-colors">
                       {product.stock_total || 0} unidades
                     </span>
                   </td>
@@ -553,7 +540,7 @@ export default function CatalogPage() {
                         className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
                         title="Editar producto"
                       >
-                        <Edit size={16} />
+                        <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(product)}

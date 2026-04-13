@@ -24,29 +24,34 @@
  */
 
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Home, ShoppingCart, Layers, Package, CheckSquare,
-  Users, UserCheck, RotateCcw, Bell, BarChart, Settings, UserCog
+  Users, UserCheck, RotateCcw, Bell, BarChart, Settings, UserCog, Package2
 } from 'lucide-react';
 import { useBadgeCounts } from '../../context/BadgeCountsContext';
 
-const BASE_ITEMS = [
-  { label: 'Inicio',        icon: Home,        path: '/dashboard/admin',              badgeKey: null },
-  { label: 'Pedidos',       icon: ShoppingCart, path: '/dashboard/admin/orders',       badgeKey: 'pedidos' },
-  { label: 'Catálogo',      icon: Layers,       path: '/dashboard/admin/catalog',      badgeKey: null },
-  { label: 'Inventario',    icon: Package,      path: '/dashboard/admin/inventory',    badgeKey: null },
-  { label: 'Tareas',        icon: CheckSquare,  path: '/dashboard/admin/tasks',        badgeKey: null },
-  { label: 'Empleados',     icon: Users,        path: '/dashboard/admin/employees',    badgeKey: null },
-  { label: 'Clientes',      icon: UserCheck,    path: '/dashboard/admin/clients',      badgeKey: null },
-  { label: 'Usuarios',      icon: UserCog,      path: '/dashboard/admin/usuarios',     badgeKey: 'usuarios' },
-  { label: 'Reactivación',  icon: RotateCcw,    path: '/dashboard/admin/reactivation', badgeKey: null },
-  { label: 'Alertas',       icon: Bell,         path: '/dashboard/admin/alerts',       badgeKey: null },
-  { label: 'Reportes',      icon: BarChart,     path: '/dashboard/admin/reports',      badgeKey: null },
-  { label: 'Configuración', icon: Settings,     path: '/dashboard/admin/settings',     badgeKey: null },
-] as const;
+
 
 export default function AdminSidebar() {
   const { counts } = useBadgeCounts();
+  const { t } = useTranslation();
+
+  const BASE_ITEMS = [
+    { label: t('dashboard.sidebar.home'),         icon: Home,        path: '/dashboard/admin',              badgeKey: null },
+    { label: t('dashboard.sidebar.orders'),       icon: ShoppingCart, path: '/dashboard/admin/orders',       badgeKey: 'pedidos' },
+    { label: t('dashboard.sidebar.catalog'),      icon: Layers,       path: '/dashboard/admin/catalog',      badgeKey: null },
+    { label: t('dashboard.sidebar.inventory'),    icon: Package,      path: '/dashboard/admin/inventory',    badgeKey: null },
+    { label: 'Insumos',                           icon: Package2,     path: '/dashboard/admin/insumos',      badgeKey: null },
+    { label: t('dashboard.sidebar.tasks'),        icon: CheckSquare,  path: '/dashboard/admin/tasks',        badgeKey: null },
+    { label: t('dashboard.sidebar.employees'),     icon: Users,        path: '/dashboard/admin/employees',    badgeKey: null },
+    { label: t('dashboard.sidebar.clients'),      icon: UserCheck,    path: '/dashboard/admin/clients',      badgeKey: null },
+    { label: t('dashboard.sidebar.users'),        icon: UserCog,      path: '/dashboard/admin/usuarios',     badgeKey: 'usuarios' },
+    { label: t('dashboard.sidebar.reactivation'), icon: RotateCcw,    path: '/dashboard/admin/reactivation', badgeKey: null },
+    { label: t('dashboard.sidebar.alerts'),       icon: Bell,         path: '/dashboard/admin/alerts',       badgeKey: null },
+    { label: t('dashboard.sidebar.reports'),      icon: BarChart,     path: '/dashboard/admin/reports',      badgeKey: null },
+    { label: t('dashboard.sidebar.settings'),     icon: Settings,     path: '/dashboard/admin/settings',     badgeKey: null },
+  ] as const;
 
   const menuItems = BASE_ITEMS.map((item) => ({
     ...item,
@@ -54,28 +59,28 @@ export default function AdminSidebar() {
   }));
 
   return (
-    <aside className="w-44 h-full bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+    <aside className="w-52 h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col overflow-y-auto transition-colors duration-500">
       {/* Menu */}
-      <nav className="flex-1 py-3 overflow-y-auto">
+      <nav className="flex-1 py-4 overflow-y-auto">
         {menuItems.map(({ label, icon: Icon, path, badge }) => (
           <NavLink
             key={label}
             to={path}
             end={path === '/dashboard/admin'}
             className={({ isActive }) =>
-              `flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors duration-150 rounded-none
+              `flex items-center justify-between px-5 py-3 text-sm font-semibold transition-all duration-200 rounded-none
               ${isActive
-                ? 'bg-blue-50 text-blue-800 border-r-4 border-blue-800'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
               }`
             }
           >
             <div className="flex items-center gap-3">
-              <Icon size={16} />
+              <Icon size={18} />
               <span>{label}</span>
             </div>
             {badge > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-red-500 text-white text-[10px] font-extrabold rounded-full px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center shadow-sm shadow-red-500/50">
                 {badge}
               </span>
             )}

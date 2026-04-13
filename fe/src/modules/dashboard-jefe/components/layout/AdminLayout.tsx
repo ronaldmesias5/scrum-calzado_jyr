@@ -9,7 +9,7 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 export default function AdminLayout() {
   return (
     <BadgeCountsProvider>
-      <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
         {/* Header full-width sticky */}
         <AdminHeader />
 

@@ -79,8 +79,9 @@ export default function InventoryFormModal({
       );
       onSave();
       onClose();
-    } catch (err: any) {
-      setError(err.message || err.response?.data?.detail || 'Error al guardar inventario');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al guardar inventario';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -90,34 +91,34 @@ export default function InventoryFormModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-all duration-300" onClick={onClose} />
       
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 dark:border-slate-800 overflow-hidden transition-all duration-300">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <h2 className="text-lg font-bold text-gray-900">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-slate-800 transition-colors">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               {inventory ? 'Editar Inventario' : 'Agregar Inventario'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Contenido */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white dark:bg-slate-900">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-800 dark:text-red-200 font-medium">{error}</p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Producto *
               </label>
               <select
@@ -125,35 +126,35 @@ export default function InventoryFormModal({
                 disabled={inventory ? true : false}
                 value={formData.product_id}
                 onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-slate-900"
               >
-                <option value="">Selecciona un producto</option>
+                <option value="" className="dark:bg-slate-800">Selecciona un producto</option>
                 {products.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} className="dark:bg-slate-800">
                     {p.name}
                   </option>
                 ))}
               </select>
               {inventory && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
                   No puedes cambiar el producto en un registro existente
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Talla *
               </label>
               <div className="space-y-2">
                 <select
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
                 >
-                  <option value="">Selecciona o ingresa una talla</option>
+                  <option value="" className="dark:bg-slate-800">Selecciona o ingresa una talla</option>
                   {commonSizes.map((size) => (
-                    <option key={size} value={size}>
+                    <option key={size} value={size} className="dark:bg-slate-800">
                       {size}
                     </option>
                   ))}
@@ -163,13 +164,13 @@ export default function InventoryFormModal({
                   placeholder="O ingresa una talla personalizada"
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Cantidad *
               </label>
               <input
@@ -178,26 +179,26 @@ export default function InventoryFormModal({
                 min="0"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
                 placeholder="Ej: 50"
               />
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 btn-pulse"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {inventory ? 'Actualizar' : 'Agregar'}
+                {inventory ? 'Actualizar' : 'Agregar Stock'}
               </button>
             </div>
           </form>

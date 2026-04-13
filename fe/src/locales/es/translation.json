@@ -1,0 +1,154 @@
+{
+  "common": {
+    "welcome": "Bienvenido a Calzado J&R",
+    "login": "Iniciar Sesión",
+    "register": "Crear Cuenta",
+    "logout": "Cerrar Sesión",
+    "theme": "Tema",
+    "language": "Idioma",
+    "loading": "Cargando..."
+  },
+  "auth": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "rememberMe": "Recuérdame",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta? Crear cuenta",
+    "haveAccount": "¿Ya tienes cuenta? Iniciar sesión",
+    "loggingIn": "Iniciando sesión...",
+    "subtitleLogin": "Ingresa tus credenciales para acceder a tu panel",
+    "subtitleRegister": "Completa tus datos para registrarte",
+    "names": "Nombres",
+    "lastNames": "Apellidos",
+    "docType": "Tipo de documento",
+    "docTypeSelect": "Selecciona tu tipo de documento",
+    "idDoc": "Documento de identidad",
+    "phone": "Teléfono",
+    "businessName": "Nombre del comercio (opcional)",
+    "confirmPassword": "Confirmar contraseña",
+    "noAccountPhrase": "¿No tienes cuenta?",
+    "haveAccountPhrase": "¿Ya tienes cuenta?",
+    "acceptTermsPart1": "He leído y acepto los",
+    "termsAndConditions": "Términos y Condiciones",
+    "acceptTermsPart2": "y la",
+    "privacyPolicy": "Política de Privacidad",
+    "acceptTermsPart3": "de CALZADO J&R.",
+    "passwordStrength": {
+      "weak": "Débil",
+      "medium": "Media",
+      "strong": "Fuerte"
+    },
+    "passwordReq": {
+      "length": "Mínimo 8 caracteres",
+      "upper": "Una mayúscula",
+      "lower": "Una minúscula",
+      "number": "Un número",
+      "special": "Carácter especial"
+    }
+  },
+  "landing": {
+    "hero": {
+      "title": "Calzado J&R",
+      "subtitle": "Calidad y Estilo a tu Alcance",
+      "description": "Somos una fábrica colombiana especializada en la producción de calzado nacional de alta calidad para su negocio. Con más de 5 años de experiencia, nos dedicamos a ofrecerte los mejores productos.",
+      "ctaCatalog": "Ver Catálogo",
+      "ctaLogin": "Ingresar"
+    },
+    "categories": {
+      "title": "Categorías",
+      "subtitle": "Encuentra el calzado perfecto para cada estilo y ocasión.",
+      "caballero": "Caballero",
+      "caballeroDesc": "Calzado elegante y cómodo para hombre. Desde zapatos deportivos hasta casuales.",
+      "dama": "Dama",
+      "damaDesc": "Diseños modernos y sofisticados para mujer. Estilo y comodidad en cada modelo.",
+      "infantil": "Infantil",
+      "infantilDesc": "Calzado resistente y cómodo para niños. Diversión y calidad en cada paso.",
+      "viewCollection": "Ver Colección"
+    },
+    "metrics": {
+      "experience": "Años de experiencia",
+      "models": "Modelos diseñados",
+      "quality": "Garantía de calidad",
+      "clients": "Clientes satisfechos"
+    },
+    "nav": {
+      "home": "Inicio",
+      "catalog": "Catálogo",
+      "about": "Nosotros",
+      "contact": "Contacto",
+      "register": "Regístrate"
+    },
+    "asesoria": {
+      "title": "¿Necesitas asesoría personalizada?",
+      "subtitle": "Nuestro equipo está disponible para ayudarte a encontrar el calzado ideal para tu negocio.",
+      "cta": "Contactar Fabricante",
+      "benefits": {
+        "variety": "Variedad",
+        "varietyDesc": "Amplio catálogo de modelos para todos los gustos y ocasiones.",
+        "sizes": "Tallas",
+        "sizesDesc": "Disponibilidad en todas las tallas, desde la 21 hasta la 43.",
+        "quality": "Calidad",
+        "qualityDesc": "Materiales de primera selección con estándares de calidad.",
+        "warranty": "Garantía",
+        "warrantyDesc": "Todos nuestros productos cuentan con garantía."
+      }
+    },
+    "whyUs": {
+      "title": "¿Por Qué Elegirnos?",
+      "subtitle": "En Calzado J&R nos enorgullece ofrecer productos de excelente alta calidad, respaldados por más de 5 años de experiencia en la industria del calzado.",
+      "reasons": {
+        "national": "Fabricación Nacional",
+        "nationalDesc": "Producción 100% colombiana con los más altos estándares de calidad.",
+        "exp": "Experiencia Probada",
+        "expDesc": "Más de 5 años fabricando calzado de excelente calidad.",
+        "design": "Diseños Únicos",
+        "designDesc": "Cada colección es diseñada exclusivamente con tendencias actuales y clásicos atemporales.",
+        "passion": "Pasión por el Detalle",
+        "passionDesc": "Cada par de zapatos es elaborado con dedicación y control de calidad en cada etapa."
+      }
+    },
+    "ctaFinal": {
+      "title": "¡Descubre Nuestro Catálogo Completo!",
+      "subtitle": "Descubre nuestra colección completa y encuentra el calzado perfecto para tu negocio. Calidad, estilo y confort garantizados.",
+      "viewAll": "Ver Catálogo Completo",
+      "registerNow": "Regístrate Ahora"
+    },
+    "footer": {
+      "quickLinks": "Enlaces Rápidos",
+      "contact": "Contacto",
+      "copyright": "© 2026 CALZADO J&R. Todos los derechos reservados.",
+      "location": "📍 Bogotá, Colombia",
+      "phone": "📞 +57 601 234 5678"
+    }
+  },
+  "dashboard": {
+    "sidebar": {
+      "home": "Inicio",
+      "orders": "Pedidos",
+      "catalog": "Catálogo",
+      "inventory": "Inventario",
+      "tasks": "Tareas",
+      "employees": "Empleados",
+      "clients": "Clientes",
+      "users": "Usuarios",
+      "reactivation": "Reactivación",
+      "alerts": "Alertas",
+      "reports": "Reportes",
+      "settings": "Configuración"
+    },
+    "header": {
+      "searchPlaceholder": "Buscar pedidos, clientes, productos...",
+      "welcome": "Bienvenido",
+      "adminRole": "Administrador",
+      "logoutTooltip": "Cerrar sesión",
+      "logoutAllTooltip": "Cerrar sesión en todos los dispositivos",
+      "notifications": "Notificaciones"
+    }
+  },
+  "roles": {
+    "admin": "Administrador",
+    "employee": "Empleado",
+    "client": "Cliente",
+    "jefe": "Jefe"
+  }
+}

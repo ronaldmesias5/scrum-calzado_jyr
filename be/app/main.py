@@ -23,6 +23,7 @@ from app.modules.type_document.router import router as type_document_router
 from app.modules.dashboard_jefe.router import router as dashboard_jefe_router
 from app.modules.orders.router import router as orders_router
 from app.modules.catalog.router import router as catalog_router
+from app.modules.supplies.router import router as supplies_router
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -30,7 +31,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
 # Importar modelos para que SQLAlchemy los registre en Base.metadata
-from app.models import role, user, password_reset_token, type_document, order, category, brand, style, product  # noqa: F401
+from app.models import role, user, password_reset_token, type_document, order, category, brand, style, product, supplies, product_supplies  # noqa: F401
 
 
 @asynccontextmanager
@@ -130,6 +131,7 @@ app.include_router(type_document_router)
 app.include_router(dashboard_jefe_router)
 app.include_router(orders_router)
 app.include_router(catalog_router)
+app.include_router(supplies_router)
 
 # ────────────────────────────
 # 📍 Endpoint raíz de bienvenida

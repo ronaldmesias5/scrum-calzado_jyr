@@ -20,14 +20,14 @@ export default function StatCard({ label, value, icon, color }: StatCardProps) {
   const c = colorClasses[color];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{label}</p>
-          <p className={`text-4xl font-bold ${c.number}`}>{value}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</p>
+          <p className={`text-4xl font-bold ${c.number} dark:text-inherit transition-colors duration-500`}>{value}</p>
         </div>
-        <div className={`${c.bg} p-3 rounded-lg`}>
-          <div className={`${c.text}`}>{icon}</div>
+        <div className={`${c.bg} dark:bg-slate-800/80 p-3 rounded-xl border border-transparent dark:border-white/5 transition-all shadow-sm`}>
+          <div className={`${c.text} dark:text-white`}>{icon}</div>
         </div>
       </div>
     </div>

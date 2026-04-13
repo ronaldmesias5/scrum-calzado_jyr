@@ -131,6 +131,7 @@ class Product(Base):
     brand = relationship("Brand", back_populates="products", lazy="selectin")
     category = relationship("Category", back_populates="products", lazy="selectin")
     inventory = relationship("Inventory", back_populates="product", lazy="selectin")
+    supply_links = relationship("ProductSupply", back_populates="product", lazy="selectin", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"Product(id={self.id}, name_product={self.name_product})"

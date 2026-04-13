@@ -27,6 +27,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
@@ -34,6 +35,7 @@ import { Alert } from "@/components/ui/Alert";
 import { getDashboardRoute } from "@/utils/routing";
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -75,8 +77,8 @@ export function LoginPage() {
 
   return (
     <AuthLayout
-      title="Iniciar sesión"
-      subtitle="Ingresa tus credenciales para acceder a tu panel"
+      title={t('common.login')}
+      subtitle={t('auth.subtitleLogin') || "Ingresa tus credenciales para acceder a tu panel"}
     >
       {error && (
         <div className="mb-4">
@@ -86,7 +88,7 @@ export function LoginPage() {
 
       <form onSubmit={handleSubmit} noValidate>
         <InputField
-          label="Correo electrónico"
+          label={t('auth.email')}
           name="email"
           type="email"
           value={formData.email}
@@ -98,7 +100,7 @@ export function LoginPage() {
         />
 
         <InputField
-          label="Contraseña"
+          label={t('auth.password')}
           name="password"
           type="password"
           value={formData.password}
@@ -116,28 +118,28 @@ export function LoginPage() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
             />
-            <span className="text-sm text-gray-600">Recuérdame</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t('auth.rememberMe')}</span>
           </label>
           <Link
-            to="/forgot-password"
-            className="text-sm text-[#1e40af] hover:text-[#1e3a8a]"
+            to="/auth/forgot-password"
+            className="text-sm font-bold text-[#1e40af] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
           >
-            ¿Olvidaste tu contraseña?
+            {t('auth.forgotPassword')}
           </Link>
         </div>
 
-        <Button type="submit" fullWidth isLoading={isLoading}>
-          Iniciar sesión
+        <Button type="submit" fullWidth isLoading={isLoading} className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all">
+          {t('common.login')}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
-        ¿No tienes cuenta?{" "}
+      <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
+        {t('auth.noAccountPhrase') || "¿No tienes cuenta?"}{" "}
         <Link
-          to="/register"
-          className="font-medium text-[#1e40af] hover:text-[#1e3a8a]"
+          to="/auth/register"
+          className="font-extrabold text-[#1e40af] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors underline decoration-2 underline-offset-4"
         >
-          Crear cuenta
+          {t('common.register')}
         </Link>
       </p>
     </AuthLayout>

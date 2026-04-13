@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   UserCheck, UserPlus, Clock, CheckCircle, XCircle,
-  ChevronRight, Loader2, Users, ShieldCheck, Trash2
+  Loader2, Users, ShieldCheck, Trash2, RefreshCw
 } from 'lucide-react';
 import {
   getPendingUsers,
@@ -97,14 +97,15 @@ function PendingUsersTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 transition-colors">
           Cuentas pendientes de aprobación
         </h3>
         <button
           onClick={fetchPending}
-          className="text-sm text-blue-700 hover:underline"
+          className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5"
         >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Actualizar
         </button>
       </div>
@@ -122,16 +123,16 @@ function PendingUsersTab() {
           <p className="text-sm mt-1">Todas las solicitudes están al día.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-left">
-                <th className="px-4 py-3 font-medium">Nombre</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Empresa</th>
-                <th className="px-4 py-3 font-medium">Teléfono</th>
-                <th className="px-4 py-3 font-medium">Registro</th>
-                <th className="px-4 py-3 font-medium text-center">Acción</th>
+              <tr className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800 text-gray-500 dark:text-gray-400 text-left font-bold uppercase tracking-wider text-[10px]">
+                <th className="px-4 py-4">Nombre</th>
+                <th className="px-4 py-4">Email</th>
+                <th className="px-4 py-4">Empresa</th>
+                <th className="px-4 py-4">Teléfono</th>
+                <th className="px-4 py-4">Registro</th>
+                <th className="px-4 py-4 text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -139,14 +140,14 @@ function PendingUsersTab() {
                 const id = user.id.toString();
                 const approved = successIds.has(id);
                 return (
-                  <tr key={id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">
+                  <tr key={id} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">
                       {user.name} {user.last_name}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{user.email}</td>
-                    <td className="px-4 py-3 text-gray-500">{user.business_name || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{user.phone || '—'}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{user.email}</td>
+                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-medium">{user.business_name || '—'}</td>
+                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-medium">{user.phone || '—'}</td>
+                    <td className="px-4 py-4 text-gray-400 dark:text-gray-500 text-xs font-bold">
                       {new Date(user.created_at).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -191,30 +192,32 @@ function PendingUsersTab() {
 
       {/* Modal de Confirmación de Rechazo */}
       {showConfirmDelete && userToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
             <div className="p-6">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
-                <XCircle size={28} />
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
+                <XCircle size={32} />
               </div>
-              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+              <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2 tracking-tight">
                 ¿Rechazar solicitud?
               </h3>
-              <p className="text-center text-gray-500 text-sm mb-6">
-                Estás a punto de rechazar y eliminar la cuenta de <strong>{userToDelete.email}</strong>. Esta acción no se puede deshacer.
+              <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+                Estás a punto de rechazar y eliminar la cuenta de <br />
+                <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
+                Esta acción no se puede deshacer.
               </p>
               
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button
                   onClick={() => setShowConfirmDelete(false)}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
                 >
-                  No, mantener
+                  Cancelar
                 </button>
                 <button
                   onClick={() => handleReject(userToDelete.id.toString())}
                   disabled={deletingId !== null}
-                  className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98] btn-pulse"
                 >
                   {deletingId ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -288,14 +291,15 @@ function ManageUsersTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 transition-colors">
           Listado general de cuentas
         </h3>
         <button
           onClick={fetchUsers}
-          className="text-sm text-blue-700 hover:underline"
+          className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5"
         >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Actualizar
         </button>
       </div>
@@ -312,36 +316,36 @@ function ManageUsersTab() {
           <p className="font-medium">No hay usuarios registrados</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-left">
-                <th className="px-4 py-3 font-medium">Nombre</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Rol / Cargo</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium">Consentimiento</th>
-                <th className="px-4 py-3 font-medium text-center">Acciones</th>
+              <tr className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800 text-gray-500 dark:text-gray-400 text-left font-bold uppercase tracking-wider text-[10px]">
+                <th className="px-4 py-4">Nombre</th>
+                <th className="px-4 py-4">Email</th>
+                <th className="px-4 py-4">Rol / Cargo</th>
+                <th className="px-4 py-4">Estado</th>
+                <th className="px-4 py-4">Consentimiento</th>
+                <th className="px-4 py-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => {
                 const id = user.id.toString();
                 return (
-                  <tr key={id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">
+                  <tr key={id} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">
                       {user.name} {user.last_name}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{user.email}</td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{user.email}</td>
+                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-bold">
                       <span className="capitalize">{user.role_name}</span>
-                      {user.occupation && <span className="text-xs text-gray-400 ml-1">({user.occupation})</span>}
+                      {user.occupation && <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">({user.occupation})</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase shadow-sm ${
                         user.is_active 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-gray-100 text-gray-500'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50' 
+                          : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700'
                       }`}>
                         {user.is_active ? 'Activo' : 'Inactivo'}
                       </span>
@@ -349,20 +353,20 @@ function ManageUsersTab() {
                     <td className="px-4 py-3">
                       {user.accepted_terms ? (
                         <div className="flex flex-col">
-                          <div className="flex items-center text-green-600 gap-1.5">
+                          <div className="flex items-center text-green-600 dark:text-green-400 gap-1.5">
                             <CheckCircle size={14} />
-                            <span className="text-[11px] font-medium leading-none">Aceptado</span>
+                            <span className="text-[11px] font-bold leading-none">Aceptado</span>
                           </div>
                           {user.terms_accepted_at && (
-                            <span className="text-[9px] text-gray-400 mt-0.5 leading-none">
-                              {new Date(user.terms_accepted_at).toLocaleString()}
+                            <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 leading-none font-bold">
+                              {new Date(user.terms_accepted_at as string).toLocaleString()}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center text-gray-400 gap-1.5">
+                        <div className="flex items-center text-gray-400 dark:text-gray-600 gap-1.5 font-bold">
                           <XCircle size={14} />
-                          <span className="text-[11px] font-medium">No registrado</span>
+                          <span className="text-[11px]">No registrado</span>
                         </div>
                       )}
                     </td>
@@ -386,31 +390,32 @@ function ManageUsersTab() {
 
       {/* Modal de Confirmación de Eliminación */}
       {showConfirmDelete && userToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
             <div className="p-6">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
-                <Trash2 size={28} />
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
+                <Trash2 size={32} />
               </div>
-              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
-                ¿Eliminar cuenta permanentemente?
+              <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2 tracking-tight">
+                ¿Eliminar cuenta?
               </h3>
-              <p className="text-center text-gray-500 text-sm mb-6">
-                Estás a punto de eliminar a <strong>{userToDelete.email}</strong>. 
-                Esta acción es irreversible y el usuario perderá todo acceso.
+              <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+                Estás a punto de eliminar a <br />
+                <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
+                Esta acción es irreversible y se perderá todo acceso.
               </p>
               
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button
                   onClick={() => setShowConfirmDelete(false)}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={() => handleDelete(userToDelete.id.toString())}
                   disabled={deletingId !== null}
-                  className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98] btn-pulse"
                 >
                   {deletingId ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -452,40 +457,43 @@ export default function UsersManagementPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <ShieldCheck className="w-8 h-8 text-blue-600" />
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+          <ShieldCheck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           Gestión de Usuarios
         </h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+      <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-6 w-fit shadow-inner transition-colors">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeTab === id
-                ? 'bg-white text-blue-800 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white dark:bg-blue-600 text-blue-800 dark:text-white shadow-lg scale-[1.02]'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700'
             }`}
           >
-            <Icon size={15} />
+            <Icon size={16} />
             {label}
-            <ChevronRight size={13} className={activeTab === id ? 'text-blue-400' : 'opacity-0'} />
           </button>
         ))}
       </div>
 
       {/* Contenido del tab */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 p-8 shadow-sm transition-all duration-300">
         {activeTab === 'pending' && <PendingUsersTab />}
         {activeTab === 'manage' && <ManageUsersTab />}
         {activeTab === 'create-employee' && (
-          <CreateUserForm userType="employee" typeDocuments={typeDocuments} />
+          <div className="max-w-3xl mx-auto">
+            <CreateUserForm userType="employee" typeDocuments={typeDocuments} />
+          </div>
         )}
         {activeTab === 'create-client' && (
-          <CreateUserForm userType="client" typeDocuments={typeDocuments} />
+          <div className="max-w-3xl mx-auto">
+            <CreateUserForm userType="client" typeDocuments={typeDocuments} />
+          </div>
         )}
       </div>
     </div>

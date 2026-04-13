@@ -152,23 +152,23 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Package className="w-8 h-8 text-green-600" />
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+            <Package className="w-8 h-8 text-green-600 dark:text-green-400" />
             Gestión de Inventario
           </h1>
-          <p className="text-gray-600 mt-1">Controla el stock y movimientos de productos</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Controla el stock y movimientos de productos</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-all font-bold shadow-lg hover:shadow-green-500/20 active:scale-95"
           >
             <Download size={18} />
             Exportar Excel
           </button>
           <button
             onClick={loadProducts}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
           >
             <RefreshCw size={18} />
             Actualizar
@@ -205,15 +205,15 @@ export default function InventoryPage() {
       </div>
 
       {/* Búsqueda y Filtros */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-200">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 items-end">
           {/* Categoría */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Categoría</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas</option>
               {categories.map(cat => (
@@ -224,11 +224,11 @@ export default function InventoryPage() {
 
           {/* Marca */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Marca</label>
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas</option>
               {brands.map(brand => (
@@ -239,11 +239,11 @@ export default function InventoryPage() {
 
           {/* Estilo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estilo</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Estilo</label>
             <select
               value={selectedStyle}
               onChange={(e) => setSelectedStyle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
               {styles.map(style => (
@@ -254,7 +254,7 @@ export default function InventoryPage() {
 
           {/* Producto (Búsqueda) */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Producto</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -262,18 +262,18 @@ export default function InventoryPage() {
                 placeholder="Nombre, ID, ref..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
               />
             </div>
           </div>
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Color</label>
             <select
               value={selectedColor}
               onChange={(e) => setSelectedColor(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
               {colors.map(color => (
@@ -284,11 +284,11 @@ export default function InventoryPage() {
 
           {/* Nivel de Stock */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Stock</label>
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
               <option value="en-stock">En Stock</option>
@@ -310,7 +310,7 @@ export default function InventoryPage() {
                 setSelectedState('');
                 setSearchTerm('');
               }}
-              className="w-full px-2 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700"
+              className="w-full px-2 py-2 text-xs border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-bold text-gray-700 dark:text-gray-300 active:scale-95 shadow-sm"
             >
               Limpiar
             </button>
@@ -320,21 +320,21 @@ export default function InventoryPage() {
 
 
       {/* Tabla de Productos */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700">Producto</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700">Categoría</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700">Marca</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700">Color</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700">Stock Actual</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700">Estado</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700">Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Producto</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Categoría</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Marca</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Color</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Stock Actual</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
@@ -363,8 +363,8 @@ export default function InventoryPage() {
                   }
 
                   return (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
+                    <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-6 py-3">
                         <div className="flex items-center gap-4">
                           {product.image_url && !failedImages.has(resolveImageUrl(product.image_url) || '') ? (
                             <button
@@ -373,7 +373,7 @@ export default function InventoryPage() {
                                 setViewingImage(imgUrl || null);
                                 setViewingProductName(product.name);
                               }}
-                              className="relative w-16 h-16 rounded-lg flex-shrink-0 overflow-hidden group cursor-pointer border border-gray-300"
+                              className="relative w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden group cursor-pointer border border-gray-300"
                               title="Haz click para ver la imagen"
                             >
                               <img
@@ -387,23 +387,23 @@ export default function InventoryPage() {
                               </div>
                             </button>
                           ) : (
-                            <div className="w-16 h-16 rounded-lg flex-shrink-0 border border-gray-300 bg-white flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-lg flex-shrink-0 border border-gray-300 bg-white flex items-center justify-center">
                               <Package size={24} className="text-gray-300" />
                             </div>
                           )}
                           <div>
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            <p className="text-xs text-gray-500">{product.style_name} · {product.brand_name}</p>
+                            <p className="font-bold text-gray-900 dark:text-white transition-colors">{product.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{product.style_name} · {product.brand_name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{product.category_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{product.brand_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{product.color || '-'}</td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="font-semibold text-lg text-gray-900">{stock}</span>
+                      <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.category_name}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.brand_name}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.color || '-'}</td>
+                      <td className="px-6 py-3 text-center">
+                        <span className="font-bold text-lg text-gray-900 dark:text-white transition-colors">{stock}</span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-3 text-center">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
                           {statusText}
                         </span>

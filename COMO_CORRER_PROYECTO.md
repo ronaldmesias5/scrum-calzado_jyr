@@ -7,6 +7,7 @@
 ## ⚡ Quick Start (3 pasos)
 
 ### 1️⃣ Clonar y Configurar
+
 ```bash
 git clone <REPO_URL> calzado-jyr
 cd calzado-jyr
@@ -14,9 +15,11 @@ cp .env.example .env
 ```
 
 **Para DEVELOPMENT local:**
+
 - No cambiar nada en `.env` — ya trae valores de ejemplo
 
 **Para PRODUCTION:**
+
 ```bash
 # En el archivo .env, actualizar:
 # - DATABASE_PASSWORD → generar contraseña segura
@@ -26,6 +29,7 @@ cp .env.example .env
 ```
 
 ### 2️⃣ Levantar Servicios
+
 ```bash
 docker compose up -d --build
 ```
@@ -35,6 +39,7 @@ Esperar 30-60 segundos a que todo inicie.
 **Nota:** Las migraciones de Alembic se ejecutan automáticamente al iniciar el backend. La BD se crea completa con tablas, índices, triggers y datos de prueba.
 
 ### 3️⃣ Acceder a la Aplicación
+
 ```
 Frontend:  http://localhost:5173
 Backend:   http://localhost:8000
@@ -47,36 +52,35 @@ Swagger:   http://localhost:8000/docs
 
 **Admin (Jefe - Acceso al Dashboard):**
 ```
-Email:     admin@calzadojyr.com
-Contraseña: admin123
+Email:     ronald.jefe@gmail.com
+Contraseña: Test123456!
 ```
-
-**Empleado (Cortador):**
-```
-Email:     cortador@calzadojyr.com
-Contraseña: cortador123
-```
-
-**Cliente:**
-```
-Email:     cliente@calzadojyr.com
-Contraseña: cliente123
-```
-
-Ver [USUARIOS_PRUEBA.md](USUARIOS_PRUEBA.md) para más detalles.
 
 ---
 
-## ✅ Verificación Rápida
+## 🛠️ Desarrollo Local (Sin Docker)
 
+Si prefieres correr el frontend o backend por separado:
+
+### Backend (con uv)
+```powershell
+cd be
+uv sync
+uv run uvicorn app.main:app --reload
+```
+
+### Frontend (con pnpm)
+**IMPORTANTE:** Usar ÚNICAMENTE `pnpm`, nunca `npm` ni `yarn`.
+```powershell
+cd fe
+pnpm install
+pnpm dev
+```
+
+---
+
+## ✅ Verificación Rápida BD (si necesario)
 ```bash
-# Ver estado de servicios
-docker compose ps
-
-# Ver logs del backend
-docker compose logs backend -f
-
-# Conectarse a BD (si necesario)
 docker compose exec db psql -U jyr_user -d calzado_jyr_db
   \dt                    # Ver tablas
   SELECT COUNT(*) FROM products;  # Ver productos (debe ser 65)
@@ -84,11 +88,11 @@ docker compose exec db psql -U jyr_user -d calzado_jyr_db
 ```
 
 **Debería ver:**
+
 - ✅ 3 servicios corriendo: `db`, `backend`, `frontend`
 - ✅ 65 productos en BD
 - ✅ Frontend carga sin errores
 - ✅ Login funciona
-
 
 ---
 
@@ -96,10 +100,10 @@ docker compose exec db psql -U jyr_user -d calzado_jyr_db
 
 | Servicio | URL |
 |----------|-----|
-| Frontend | http://localhost:5173 |
-| Backend | http://localhost:8000 |
-| API Swagger | http://localhost:8000/docs |
-| API ReDoc | http://localhost:8000/redoc |
+| Frontend | <http://localhost:5173> |
+| Backend | <http://localhost:8000> |
+| API Swagger | <http://localhost:8000/docs> |
+| API ReDoc | <http://localhost:8000/redoc> |
 | PostgreSQL | localhost:5432 |
 
 ---
@@ -113,4 +117,4 @@ docker compose exec db psql -U jyr_user -d calzado_jyr_db
 
 ---
 
-**¡Listo para correr! **
+**¡Listo para correr!**

@@ -12,7 +12,6 @@ import {
   Brand,
   Style,
   Category,
-  listStyles,
 } from '../../services/catalogService';
 
 interface ProductFormModalProps {
@@ -23,7 +22,6 @@ interface ProductFormModalProps {
   categories: Category[];
   onClose: () => void;
   onSave: () => void;
-  loadStyles: (brandId?: string) => Promise<void>;
 }
 
 export default function ProductFormModal({
@@ -34,7 +32,6 @@ export default function ProductFormModal({
   categories,
   onClose,
   onSave,
-  loadStyles,
 }: ProductFormModalProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -94,14 +91,13 @@ export default function ProductFormModal({
       }
 
       if (product) {
-        await updateProduct(
-          product.id,
-          formData.brand_id,
-          formData.style_id,
-          formData.category_id,
-          formData.name,
-          formData.description
-        );
+        await updateProduct(product.id, {
+          brand_id: formData.brand_id,
+          style_id: formData.style_id,
+          category_id: formData.category_id,
+          name: formData.name,
+          description: formData.description
+        });
       } else {
         await createProduct(
           formData.brand_id,
@@ -113,8 +109,9 @@ export default function ProductFormModal({
       }
       onSave();
       onClose();
-    } catch (err: any) {
-      setError(err.message || err.response?.data?.detail || 'Error al guardar el producto');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al guardar el producto';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -124,45 +121,45 @@ export default function ProductFormModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-all duration-300" onClick={onClose} />
       
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-slate-800 transition-all duration-300">
           {/* Header */}
-          <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b">
-            <h2 className="text-lg font-bold text-gray-900">
+          <div className="sticky top-0 bg-white dark:bg-slate-900 z-10 flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-slate-800 transition-colors">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               {product ? 'Editar Producto' : 'Nuevo Producto'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Contenido */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white dark:bg-slate-900">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-800 dark:text-red-200 font-medium">{error}</p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Marca * (Paso 1)
               </label>
               <select
                 required
                 value={formData.brand_id}
                 onChange={(e) => handleBrandChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
               >
-                <option value="">Selecciona una marca</option>
+                <option value="" className="dark:bg-slate-800">Selecciona una marca</option>
                 {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
+                  <option key={b.id} value={b.id} className="dark:bg-slate-800">
                     {b.name}
                   </option>
                 ))}
@@ -170,7 +167,7 @@ export default function ProductFormModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Estilo * (Paso 2)
               </label>
               <select
@@ -178,13 +175,13 @@ export default function ProductFormModal({
                 disabled={!formData.brand_id}
                 value={formData.style_id}
                 onChange={(e) => setFormData({ ...formData, style_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-slate-900"
               >
-                <option value="">
+                <option value="" className="dark:bg-slate-800">
                   {formData.brand_id ? 'Selecciona un estilo' : 'Primero selecciona una marca'}
                 </option>
                 {filteredStyles.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s.id} value={s.id} className="dark:bg-slate-800">
                     {s.name}
                   </option>
                 ))}
@@ -192,18 +189,18 @@ export default function ProductFormModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Categoría * (Paso 3)
               </label>
               <select
                 required
                 value={formData.category_id}
                 onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
               >
-                <option value="">Selecciona una categoría</option>
+                <option value="" className="dark:bg-slate-800">Selecciona una categoría</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id} className="dark:bg-slate-800">
                     {c.name}
                   </option>
                 ))}
@@ -211,46 +208,46 @@ export default function ProductFormModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Nombre (opcional)
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Si no ingresas, se genera automáticamente: '{estilo} - {categoría}'"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
+                placeholder="Si no ingresas, se genera automáticamente"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Descripción (opcional)
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 maxLength={500}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows={4}
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 dark:text-gray-100 font-medium transition-all"
               />
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 btn-pulse"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {product ? 'Actualizar' : 'Crear'}
+                {product ? 'Actualizar' : 'Crear Producto'}
               </button>
             </div>
           </form>

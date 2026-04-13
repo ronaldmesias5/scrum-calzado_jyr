@@ -1,0 +1,154 @@
+{
+  "common": {
+    "welcome": "Welcome to Calzado J&R",
+    "login": "Login",
+    "register": "Create Account",
+    "logout": "Logout",
+    "theme": "Theme",
+    "language": "Language",
+    "loading": "Loading..."
+  },
+  "auth": {
+    "email": "Email address",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot your password?",
+    "noAccount": "Don't have an account? Create account",
+    "haveAccount": "Already have an account? Login",
+    "loggingIn": "Logging in...",
+    "subtitleLogin": "Enter your credentials to access your panel",
+    "subtitleRegister": "Complete your details to register",
+    "names": "First Names",
+    "lastNames": "Last Names",
+    "docType": "Document Type",
+    "docTypeSelect": "Select your document type",
+    "idDoc": "Identity Document",
+    "phone": "Phone",
+    "businessName": "Business Name (optional)",
+    "confirmPassword": "Confirm Password",
+    "noAccountPhrase": "Don't have an account?",
+    "haveAccountPhrase": "Already have an account?",
+    "acceptTermsPart1": "I have read and accept the",
+    "termsAndConditions": "Terms and Conditions",
+    "acceptTermsPart2": "and the",
+    "privacyPolicy": "Privacy Policy",
+    "acceptTermsPart3": "of CALZADO J&R.",
+    "passwordStrength": {
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "passwordReq": {
+      "length": "At least 8 characters",
+      "upper": "One uppercase",
+      "lower": "One lowercase",
+      "number": "One number",
+      "special": "Special character"
+    }
+  },
+  "landing": {
+    "hero": {
+      "title": "J&R Footwear",
+      "subtitle": "Quality and Style at Your Reach",
+      "description": "We are a Colombian factory specialized in the production of high-quality national footwear for your business. With over 5 years of experience, we are dedicated to offering you the best products.",
+      "ctaCatalog": "View Catalog",
+      "ctaLogin": "Login"
+    },
+    "categories": {
+      "title": "Categories",
+      "subtitle": "Find the perfect footwear for every style and occasion.",
+      "caballero": "Menswear",
+      "caballeroDesc": "Elegant and comfortable footwear for men. From sports shoes to casual ones.",
+      "dama": "Womenswear",
+      "damaDesc": "Modern and sophisticated designs for women. Style and comfort in every model.",
+      "infantil": "Children",
+      "infantilDesc": "Durable and comfortable footwear for kids. Fun and quality in every step.",
+      "viewCollection": "View Collection"
+    },
+    "metrics": {
+      "experience": "Years of experience",
+      "models": "Models designed",
+      "quality": "Quality guarantee",
+      "clients": "Satisfied clients"
+    },
+    "nav": {
+      "home": "Home",
+      "catalog": "Catalog",
+      "about": "About Us",
+      "contact": "Contact",
+      "register": "Register"
+    },
+    "asesoria": {
+      "title": "Need Personalized Advice?",
+      "subtitle": "Our team is available to help you find the ideal footwear for your business.",
+      "cta": "Contact Manufacturer",
+      "benefits": {
+        "variety": "Variety",
+        "varietyDesc": "Large catalog of models for all tastes and occasions.",
+        "sizes": "Sizes",
+        "sizesDesc": "Availability in all sizes, from 21 to 43.",
+        "quality": "Quality",
+        "qualityDesc": "First-choice materials with high quality standards.",
+        "warranty": "Warranty",
+        "warrantyDesc": "All our products come with a warranty."
+      }
+    },
+    "whyUs": {
+      "title": "Why Choose Us?",
+      "subtitle": "At J&R Footwear we take pride in offering high-quality products, backed by over 5 years of experience in the footwear industry.",
+      "reasons": {
+        "national": "National Manufacturing",
+        "nationalDesc": "100% Colombian production with the highest quality standards.",
+        "exp": "Proven Experience",
+        "expDesc": "Over 5 years manufacturing excellent quality footwear.",
+        "design": "Unique Designs",
+        "designDesc": "Each collection is exclusively designed with current trends and timeless classics.",
+        "passion": "Passion for Detail",
+        "passionDesc": "Each pair of shoes is made with dedication and quality control at every stage."
+      }
+    },
+    "ctaFinal": {
+      "title": "Discover Our Complete Catalog!",
+      "subtitle": "Discover our complete collection and find the perfect footwear for your business. Quality, style and comfort guaranteed.",
+      "viewAll": "View Complete Catalog",
+      "registerNow": "Register Now"
+    },
+    "footer": {
+      "quickLinks": "Quick Links",
+      "contact": "Contact",
+      "copyright": "© 2026 J&R FOOTWEAR. All rights reserved.",
+      "location": "📍 Bogota, Colombia",
+      "phone": "📞 +57 601 234 5678"
+    }
+  },
+  "dashboard": {
+    "sidebar": {
+      "home": "Home",
+      "orders": "Orders",
+      "catalog": "Catalog",
+      "inventory": "Inventory",
+      "tasks": "Tasks",
+      "employees": "Employees",
+      "clients": "Clients",
+      "users": "Users",
+      "reactivation": "Reactivation",
+      "alerts": "Alerts",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "header": {
+      "searchPlaceholder": "Search orders, clients, products...",
+      "welcome": "Welcome",
+      "adminRole": "Administrator",
+      "logoutTooltip": "Logout",
+      "logoutAllTooltip": "Logout from all devices",
+      "notifications": "Notifications"
+    }
+  },
+  "roles": {
+    "admin": "Administrator",
+    "employee": "Employee",
+    "client": "Client",
+    "jefe": "Boss"
+  }
+}

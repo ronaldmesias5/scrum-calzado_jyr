@@ -15,6 +15,7 @@ interface ButtonProps {
   disabled?: boolean;
   variant?: "primary" | "secondary";
   onClick?: () => void;
+  className?: string;
 }
 
 export function Button({
@@ -25,6 +26,7 @@ export function Button({
   disabled = false,
   variant = "primary",
   onClick,
+  className,
 }: ButtonProps) {
 
   const baseClasses =
@@ -32,8 +34,8 @@ export function Button({
 
   const variantClasses =
     variant === "primary"
-      ? "bg-[#1e3a8a] text-white hover:bg-[#1e40af]"
-      : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50";
+      ? "bg-[#1e3a8a] dark:bg-blue-600 text-white hover:bg-[#1e40af] dark:hover:bg-blue-500 btn-shimmer btn-glow"
+      : "border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800";
 
   const widthClass = fullWidth ? "w-full" : "";
 
@@ -50,7 +52,7 @@ export function Button({
         onClick={onClick}
         aria-busy={isLoading}
         aria-label={isLoading ? "Procesando, por favor espera" : undefined}
-        className={`${baseClasses} ${variantClasses} ${widthClass}`}
+        className={`${baseClasses} ${variantClasses} ${widthClass} ${className || ""}`}
       >
         <span className="relative z-10">
           {isLoading ? (

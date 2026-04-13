@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+
 /* ════════════════════════════════════════
    CALZADO J&R — Estilos globales
    Colores de la marca:
@@ -21,6 +24,16 @@ body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply bg-white text-gray-900 transition-colors duration-300;
+}
+
+.dark body {
+  @apply bg-gray-950 text-gray-50;
+}
+
+/* Transiciones suaves para todos los elementos que cambian de color */
+* {
+  @apply transition-colors duration-200 border-gray-200 dark:border-gray-800;
 }
 
 /* ════════════════════════════════════════

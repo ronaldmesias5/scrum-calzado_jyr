@@ -35,8 +35,11 @@ import { TermsModal } from "@/components/ui/TermsModal";
 import { PrivacyPolicyModal } from "@/components/ui/PrivacyPolicyModal";
 import { getTypeDocuments } from "@/api/type-documents";
 import { TypeDocument } from "@/types/auth";
+import { PasswordStrengthIndicator } from "@/components/ui/PasswordStrengthIndicator";
+import { useTranslation } from "react-i18next";
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const { register } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -131,8 +134,8 @@ export function RegisterPage() {
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyPolicyModal onClose={() => setShowPrivacy(false)} />}
     <AuthLayout
-      title="Crear cuenta"
-      subtitle="Completa tus datos para registrarte"
+      title={t('common.register')}
+      subtitle={t('auth.subtitleRegister') || "Completa tus datos para registrarte"}
     >
       {error && (
         <div className="mb-4">
@@ -152,7 +155,7 @@ export function RegisterPage() {
 
       <form onSubmit={handleSubmit} noValidate>
         <InputField
-          label="Nombres"
+          label={t('auth.names') || "Nombres"}
           name="name"
           type="text"
           value={formData.name}
@@ -164,7 +167,7 @@ export function RegisterPage() {
         />
 
         <InputField
-          label="Apellidos"
+          label={t('auth.lastNames') || "Apellidos"}
           name="last_name"
           type="text"
           value={formData.last_name}
@@ -175,7 +178,7 @@ export function RegisterPage() {
         />
 
         <InputField
-          label="Correo electrónico"
+          label={t('auth.email')}
           name="email"
           type="email"
           value={formData.email}
@@ -187,8 +190,8 @@ export function RegisterPage() {
 
         {/* Selector de tipo de documento */}
         <div className="mb-4">
-          <label htmlFor="identity_document_type_id" className="block text-sm font-medium text-gray-700 mb-2">
-            Tipo de documento
+          <label htmlFor="identity_document_type_id" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            {t('auth.docType') || "Tipo de documento"}
           </label>
           <div className="relative">
             <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -197,9 +200,9 @@ export function RegisterPage() {
               name="identity_document_type_id"
               value={formData.identity_document_type_id}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e40af] focus:border-transparent outline-none transition"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-[#1e40af] focus:border-transparent outline-none transition"
             >
-              <option value="">Selecciona tu tipo de documento</option>
+              <option value="">{t('auth.docTypeSelect') || "Selecciona tu tipo de documento"}</option>
               {typeDocuments.map((doc) => (
                 <option key={doc.id} value={doc.id}>
                   {doc.name}
@@ -210,7 +213,7 @@ export function RegisterPage() {
         </div>
 
         <InputField
-          label="Documento de identidad"
+          label={t('auth.idDoc') || "Documento de identidad"}
           name="identity_document"
           type="text"
           value={formData.identity_document}
@@ -220,7 +223,7 @@ export function RegisterPage() {
         />
 
         <InputField
-          label="Teléfono"
+          label={t('auth.phone') || "Teléfono"}
           name="phone"
           type="tel"
           value={formData.phone}
@@ -231,7 +234,7 @@ export function RegisterPage() {
         />
 
         <InputField
-          label="Nombre del comercio (opcional)"
+          label={t('auth.businessName') || "Nombre del comercio (opcional)"}
           name="business_name"
           type="text"
           value={formData.business_name}
@@ -241,7 +244,7 @@ export function RegisterPage() {
         />
 
         <InputField
-          label="Contraseña"
+          label={t('auth.password')}
           name="password"
           type="password"
           value={formData.password}
@@ -252,9 +255,15 @@ export function RegisterPage() {
           onPaste={(e) => e.preventDefault()}
           onCopy={(e) => e.preventDefault()}
         />
+        
+        {formData.password && (
+          <div className="mb-4">
+            <PasswordStrengthIndicator password={formData.password} />
+          </div>
+        )}
 
         <InputField
-          label="Confirmar contraseña"
+          label={t('auth.confirmPassword') || "Confirmar contraseña"}
           name="confirmPassword"
           type="password"
           value={formData.confirmPassword}
@@ -267,8 +276,8 @@ export function RegisterPage() {
         />
 
         {/* Checkbox de aceptación consolidado */}
-        <div className="mb-6">
-          <label className="flex items-start gap-3 cursor-pointer">
+        <div className="mb-8">
+          <label className="flex items-start gap-4 cursor-pointer group">
             <input
               type="checkbox"
               checked={acceptedPolicies}
@@ -276,42 +285,42 @@ export function RegisterPage() {
                 setAcceptedPolicies(e.target.checked);
                 setError(null);
               }}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
+              className="mt-1 h-5 w-5 shrink-0 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 accent-[#1e3a8a] cursor-pointer"
             />
-            <span className="text-sm text-gray-600">
-              He leído y acepto los{" "}
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium leading-relaxed">
+              {t('auth.acceptTermsPart1') || "He leído y acepto los"}{" "}
               <button
                 type="button"
                 onClick={() => setShowTerms(true)}
-                className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
+                className="font-extrabold text-[#1e40af] dark:text-blue-400 underline decoration-2 underline-offset-4 hover:text-blue-800 dark:hover:text-blue-300"
               >
-                Términos y Condiciones
+                {t('auth.termsAndConditions') || "Términos y Condiciones"}
               </button>{" "}
-              y la{" "}
+              {t('auth.acceptTermsPart2') || "y la"}{" "}
               <button
                 type="button"
                 onClick={() => setShowPrivacy(true)}
-                className="font-medium text-[#1e40af] underline hover:text-[#1e3a8a]"
+                className="font-extrabold text-[#1e40af] dark:text-blue-400 underline decoration-2 underline-offset-4 hover:text-blue-800 dark:hover:text-blue-300"
               >
-                Política de Privacidad
+                {t('auth.privacyPolicy') || "Política de Privacidad"}
               </button>{" "}
-              de CALZADO J&R.
+              {t('auth.acceptTermsPart3') || "de CALZADO J&R."}
             </span>
           </label>
         </div>
 
-        <Button type="submit" fullWidth isLoading={isLoading} disabled={!acceptedPolicies}>
-          Crear cuenta
+        <Button type="submit" fullWidth isLoading={isLoading} disabled={!acceptedPolicies} className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all">
+          {t('common.register')}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
-        ¿Ya tienes cuenta?{" "}
+      <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
+        {t('auth.haveAccountPhrase') || "¿Ya tienes cuenta?"}{" "}
         <Link
-          to="/login"
-          className="font-medium text-[#1e40af] hover:text-[#1e3a8a]"
+          to="/auth/login"
+          className="font-extrabold text-[#1e40af] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors underline decoration-2 underline-offset-4"
         >
-          Iniciar sesión
+          {t('common.login')}
         </Link>
       </p>
     </AuthLayout>
