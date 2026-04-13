@@ -218,14 +218,14 @@ export default function ClientsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleEditClick(cli)}
-                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                           title="Editar información"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => toggleStatus(cli)}
-                          className={`p-2 rounded-lg transition-colors ${cli.is_active ? 'text-gray-400 hover:text-red-500 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
+                          className={`p-2 rounded-lg transition-colors ${cli.is_active ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30'}`}
                           title={cli.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}
                         >
                           {cli.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}

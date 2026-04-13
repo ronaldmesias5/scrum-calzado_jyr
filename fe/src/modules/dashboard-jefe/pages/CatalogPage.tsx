@@ -537,14 +537,14 @@ export default function CatalogPage() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => handleEditProduct(product)}
-                        className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                        className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
                         title="Editar producto"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(product)}
-                        className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        className="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
                         title="Eliminar producto"
                       >
                         <Trash2 size={16} />

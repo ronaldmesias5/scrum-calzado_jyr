@@ -553,7 +553,7 @@ export default function InsumosPage() {
   const sortedCategories = sortedCategoryObjects.map(c => c.name);
 
   return (
-    <div className="p-6 space-y-6 min-h-full bg-gray-50 dark:bg-slate-950 transition-colors">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -709,21 +709,21 @@ export default function InsumosPage() {
                         <button
                           onClick={() => { setLinkTarget(supply); }}
                           title="Vincular a productos"
-                          className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
+                          className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
                         >
                           <Link size={15} />
                         </button>
                         <button
                           onClick={() => { setEditTarget(supply); setShowForm(true); }}
                           title="Editar insumo"
-                          className="p-2 text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
                         >
                           <Edit2 size={15} />
                         </button>
                         <button
                           onClick={() => setDeleteId(supply.id)}
                           title="Eliminar insumo"
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                          className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                         >
                           <Trash2 size={15} />
                         </button>

@@ -262,11 +262,11 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-6 py-4">
                       {emp.is_active ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-semibold border border-green-200">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-200 dark:border-green-900/50">
                           <CheckCircle2 className="w-3 h-3" /> Activo
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-700 rounded-md text-xs font-semibold border border-red-200">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-200 dark:border-red-900/50">
                           <XCircle className="w-3 h-3" /> Inactivo
                         </span>
                       )}
@@ -275,7 +275,7 @@ export default function EmployeesPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleEditClick(emp)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                           title="Editar información"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -287,8 +287,8 @@ export default function EmployeesPage() {
                             currentUser?.id === emp.id 
                               ? 'opacity-20 cursor-not-allowed' 
                               : emp.is_active 
-                                ? 'text-gray-400 hover:text-red-500 hover:bg-red-50' 
-                                : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
+                                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30' 
+                                : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30'
                           }`}
                           title={currentUser?.id === emp.id ? 'No puedes desactivar tu propia cuenta' : (emp.is_active ? 'Desactivar cuenta' : 'Activar cuenta')}
                         >

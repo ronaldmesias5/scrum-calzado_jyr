@@ -132,7 +132,7 @@ function OrdersTable({ orders, onSelect }: { orders: Order[]; onSelect: (o: Orde
                 <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => onSelect(order)}
-                    className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all active:scale-95"
+                    className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all active:scale-95"
                   >
                     <ArrowRight className="w-5 h-5" />
                   </button>
