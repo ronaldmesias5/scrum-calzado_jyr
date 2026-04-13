@@ -40,6 +40,7 @@ export default function InventoryPage() {
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [showExportError, setShowExportError] = useState(false);
 
   const handleImageError = (imageUrl: string) => {
     setFailedImages(prev => new Set([...prev, imageUrl]));
@@ -119,7 +120,7 @@ export default function InventoryPage() {
     const productsWithStock = filteredProducts.filter(p => (p.stock_total || 0) > 0);
 
     if (productsWithStock.length === 0) {
-      alert('No hay productos con stock disponible para exportar');
+      setShowExportError(true);
       return;
     }
 
@@ -453,6 +454,25 @@ export default function InventoryPage() {
         productName={viewingProductName}
         onClose={() => setViewingImage(null)}
       />
+
+      {/* Modal de Error de Exportación */}
+      {showExportError && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center animate-in fade-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle size={28} className="text-amber-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Sin stock disponible</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-8">No hay productos con stock disponible para exportar en el listado actual.</p>
+            <button 
+              onClick={() => setShowExportError(false)}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

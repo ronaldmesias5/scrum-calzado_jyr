@@ -20,7 +20,7 @@ export default function DeleteConfirmModal({
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 transition-all">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
         {/* Header with Icon */}
         <div className="bg-red-50 dark:bg-red-900/20 px-6 py-5 flex items-center gap-3 border-b border-red-100 dark:border-red-900/30 transition-all">
           <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl shadow-inner">

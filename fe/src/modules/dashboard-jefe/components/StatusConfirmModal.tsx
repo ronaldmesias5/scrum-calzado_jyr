@@ -21,8 +21,8 @@ export default function StatusConfirmModal({
   const isActivating = !employee.is_active;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-slate-800 transition-all">
+    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-slate-800 transition-all">
         {/* Header with Icon */}
         <div className={`${isActivating ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'} px-6 py-5 flex items-center gap-4 border-b ${isActivating ? 'border-green-100 dark:border-green-900/30' : 'border-red-100 dark:border-red-900/30'} transition-all`}>
           <div className={`p-3 ${isActivating ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} rounded-xl`}>

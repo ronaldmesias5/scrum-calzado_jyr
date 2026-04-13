@@ -282,7 +282,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)' }}>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 transition-all">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 transition-all animate-in fade-in zoom-in duration-200">
         <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-between items-start rounded-t-2xl z-10">
           <div className="flex items-start gap-3 flex-1">
             <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0 mt-0.5"><Clipboard className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>

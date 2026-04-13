@@ -95,9 +95,9 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col">
-        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex-shrink-0 transition-colors">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Rellena los datos del insumo</p>
@@ -285,8 +285,8 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-gray-100 dark:border-slate-800">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nueva Categoría</h2>
@@ -379,8 +379,8 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-xl shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Vincular Productos</h2>
@@ -789,25 +789,25 @@ export default function InsumosPage() {
       )}
       {/* Modal Eliminar Insumo */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={28} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">¿Eliminar insumo?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6">Esta acción no se puede deshacer.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)}
-                className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all">
-                Cancelar
-              </button>
-              <button onClick={() => handleDelete(deleteId!)}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-95">
-                Eliminar
-              </button>
-            </div>
-          </div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center animate-in fade-in zoom-in duration-200">
+        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Trash2 size={28} className="text-red-500" />
         </div>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">¿Eliminar insumo?</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-8">Esta acción no se puede deshacer y el insumo se eliminará permanentemente.</p>
+        <div className="flex gap-3">
+          <button onClick={() => setDeleteId(null)}
+            className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all active:scale-95">
+            Cancelar
+          </button>
+          <button onClick={() => handleDelete(deleteId!)}
+            className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-95">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
       )}
     </div>
   );

@@ -95,7 +95,7 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
       onClose();
     } catch (error) {
       console.error('Error saving inventory:', error);
-      alert('Error al guardar los cambios');
+      // Podríamos añadir un estado de error específico aquí si fuera necesario
     } finally {
       setLoading(false);
     }
@@ -109,8 +109,8 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
   if (!isOpen || !product) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col transition-all">
+    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0 transition-colors">
           <div>
