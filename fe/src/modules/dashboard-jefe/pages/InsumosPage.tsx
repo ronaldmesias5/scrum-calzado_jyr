@@ -96,7 +96,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col">
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
@@ -112,7 +112,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           {/* Row 1: Categoría y Nombre */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Categoría *</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Categoría *</label>
               {categoryMode === 'select' ? (
                 <div className="flex gap-2">
                   <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
@@ -140,7 +140,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Nombre *</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Nombre *</label>
               <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 placeholder="Ej: Cuero bovino negro" />
@@ -150,14 +150,14 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           {/* Row 2: Color y Unidad */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Color</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Color</label>
               <input value={form.color ?? ''} onChange={e => setForm(p => ({ ...p, color: e.target.value }))}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 placeholder="Ej: Negro, Blanco..." />
             </div>
             
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Unidad</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Unidad</label>
               <select value={form.unit || 'unidades'} 
                 onChange={e => {
                   const val = e.target.value;
@@ -176,15 +176,15 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           {form.unit === 'tallas' ? (
             <div>
               <div className="flex items-center justify-between mb-3">
-                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Stock Inicial (Por Talla)</label>
+                 <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Stock Inicial (Por Talla)</label>
                  <span className="text-xs font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">Total: {form.stock_quantity} pares</span>
               </div>
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 bg-gray-50 dark:bg-slate-800 p-4 rounded-2xl border border-gray-200 dark:border-slate-700 max-h-56 overflow-y-auto">
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 max-h-56 overflow-y-auto">
                  {Array.from({ length: 23 }, (_, i) => String(i + 21)).map(talla => {
                     const qty = form.sizes?.[talla] || 0;
                     return (
                       <div key={talla} className={`p-2 rounded-xl border text-center transition-all ${qty > 0 ? 'bg-blue-500 border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700'}`}>
-                        <label className={`block text-[10px] font-black mb-1 ${qty > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>#{talla}</label>
+                        <label className={`block text-[10px] font-bold mb-1 ${qty > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>#{talla}</label>
                         <input
                           type="number"
                           min="0"
@@ -208,7 +208,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
             </div>
           ) : (
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Stock Inicial ({form.unit})</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Stock Inicial ({form.unit})</label>
               <input type="number" min={0} step={form.unit === 'metros' ? '0.01' : '1'} 
                 value={form.stock_quantity} 
                 onChange={e => setForm(p => ({ ...p, stock_quantity: form.unit === 'metros' ? parseFloat(e.target.value) || 0 : parseInt(e.target.value) || 0 }))}
@@ -217,7 +217,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           )}
 
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Descripción</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Descripción</label>
             <textarea rows={2} value={form.description ?? ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
               placeholder="Descripción opcional del insumo..." />
@@ -231,11 +231,11 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
         </div>
 
         <div className="flex items-center justify-between px-8 py-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
-          <button onClick={onClose} className="px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]">
+          <button onClick={onClose} className="px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all active:scale-[0.98]">
             Cancelar
           </button>
           <button onClick={handleSubmit} disabled={loading || !form.name.trim()}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98] btn-pulse">
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98] btn-pulse">
             {loading ? 'Guardando...' : 'Guardar Insumo'}
           </button>
         </div>
@@ -286,7 +286,7 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-gray-100 dark:border-slate-800">
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nueva Categoría</h2>
@@ -298,7 +298,7 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
         </div>
         <div className="p-8 space-y-4">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Nombre de la Categoría *</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Nombre de la Categoría *</label>
             <input
               autoFocus
               value={name}
@@ -315,11 +315,11 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
           )}
         </div>
         <div className="flex items-center justify-between px-8 py-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
-          <button onClick={onClose} className="px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]">
+          <button onClick={onClose} className="px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all active:scale-[0.98]">
             Cancelar
           </button>
           <button onClick={handleSubmit} disabled={loading || !name.trim()}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98]">
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98]">
             {loading ? 'Creando...' : 'Crear Categoría'}
           </button>
         </div>
@@ -380,7 +380,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-xl shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Vincular Productos</h2>
@@ -393,10 +393,10 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
           {/* Vinculados actualmente */}
           {supply.linked_products.length > 0 && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Productos vinculados</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Productos vinculados</p>
               <div className="space-y-2">
                 {supply.linked_products.map(lp => (
-                  <div key={lp.product_id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 rounded-2xl px-4 py-3 border border-gray-100 dark:border-slate-700">
+                  <div key={lp.product_id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-slate-700">
                     <div>
                       <p className="text-sm font-bold text-gray-900 dark:text-white">{lp.product_name}</p>
                       <p className="text-[10px] text-gray-500 dark:text-gray-400">{lp.quantity_required} {supply.unit ?? 'unidad(es)'} requerida(s)</p>
@@ -413,7 +413,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
 
           {/* Vincular nuevo producto */}
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Vincular nuevo producto</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Vincular nuevo producto</p>
             <div className="relative mb-3">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={search} onChange={e => setSearch(e.target.value)}
@@ -436,7 +436,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
 
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                   {supply?.category?.toLowerCase() === 'suelas'
                     ? 'Suela — asignación automática'
                     : 'Cantidad requerida por docena'}
@@ -456,7 +456,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
         </div>
 
         <div className="px-8 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30 flex-shrink-0">
-          <button onClick={onClose} className="w-full py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white rounded-2xl font-bold text-sm transition-all">
+          <button onClick={onClose} className="w-full py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white rounded-xl font-bold text-sm transition-all">
             Cerrar
           </button>
         </div>
@@ -557,19 +557,17 @@ export default function InsumosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30">
-              <Package2 size={22} className="text-white" />
-            </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+            <Package2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             Gestión de Insumos
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-14">Materiales de fabricación por proceso</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Materiales de fabricación por proceso</p>
         </div>
         <button
           onClick={() => { setEditTarget(null); setStartNewCategory(false); setShowForm(true); }}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 btn-pulse"
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
         >
-          <Plus size={16} />
+          <Plus size={18} />
           Nuevo Insumo
         </button>
       </div>
@@ -578,7 +576,7 @@ export default function InsumosPage() {
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setActiveCategory('all')}
-          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
             activeCategory === 'all'
               ? 'ring-2 ring-blue-500 ' + getCategoryColor('all')
               : getCategoryColor('all') + ' opacity-60 hover:opacity-100'
@@ -590,7 +588,7 @@ export default function InsumosPage() {
           <div key={cat.id} className="relative group/cat flex items-center">
             <button
               onClick={() => setActiveCategory(cat.name)}
-              className={`pl-4 pr-8 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              className={`pl-4 pr-8 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
                 activeCategory === cat.name
                   ? 'ring-2 ring-blue-500 ' + getCategoryColor(cat.name)
                   : getCategoryColor(cat.name) + ' opacity-60 hover:opacity-100'
@@ -610,7 +608,7 @@ export default function InsumosPage() {
 
         <button
           onClick={() => setShowCreateCategory(true)}
-          className="ml-2 px-4 py-2 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-dashed border-blue-300 dark:border-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-slate-700 transition-all flex items-center gap-1 active:scale-95"
+          className="ml-2 px-4 py-2 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-dashed border-blue-300 dark:border-slate-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-slate-700 transition-all flex items-center gap-1 active:scale-95"
         >
           <Plus size={14} /> Categoria
         </button>
@@ -621,20 +619,20 @@ export default function InsumosPage() {
         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-white rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
+          className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
           placeholder="Buscar insumo..."
         />
       </div>
 
       {/* Tabla */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
               <Package2 size={28} className="text-gray-300 dark:text-gray-600" />
             </div>
             <p className="text-gray-500 dark:text-gray-400 font-bold">No hay insumos registrados</p>
@@ -648,11 +646,11 @@ export default function InsumosPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
-                  <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Insumo</th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Categoría</th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Stock</th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Productos vinculados</th>
-                  <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Acciones</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Insumo</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Categoría</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Stock</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Productos vinculados</th>
+                  <th className="text-right px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
@@ -671,7 +669,7 @@ export default function InsumosPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${CATEGORY_BADGE[supply.category] ?? CATEGORY_BADGE.otros}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${CATEGORY_BADGE[supply.category] ?? CATEGORY_BADGE.otros}`}>
                         {CATEGORY_LABEL[supply.category] ?? supply.category}
                       </span>
                     </td>
@@ -682,7 +680,7 @@ export default function InsumosPage() {
                         ) : (
                           <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
                         )}
-                        <span className={`font-black text-lg ${supply.stock_quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        <span className={`font-bold text-lg ${supply.stock_quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                           {supply.stock_quantity}
                         </span>
                         <span className="text-[10px] text-gray-400">{supply.unit}</span>
@@ -770,19 +768,19 @@ export default function InsumosPage() {
       {/* Modal Eliminar Categoría */}
       {deleteCatId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Trash2 size={28} className="text-red-500" />
             </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white">¿Eliminar categoría?</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">¿Eliminar categoría?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6">Los insumos de esta categoría no serán eliminados, solo la categoría.</p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteCatId(null)}
-                className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm transition-all">
+                className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all">
                 Cancelar
               </button>
               <button onClick={() => handleDeleteCategory(deleteCatId)}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-95">
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-95">
                 Eliminar
               </button>
             </div>
@@ -792,19 +790,19 @@ export default function InsumosPage() {
       {/* Modal Eliminar Insumo */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Trash2 size={28} className="text-red-500" />
             </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white">¿Eliminar insumo?</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">¿Eliminar insumo?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteId(null)}
-                className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl font-bold text-sm transition-all">
+                className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all">
                 Cancelar
               </button>
               <button onClick={() => handleDelete(deleteId!)}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-95">
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/20 transition-all active:scale-95">
                 Eliminar
               </button>
             </div>

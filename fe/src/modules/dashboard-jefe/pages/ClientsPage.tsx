@@ -117,7 +117,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-300">
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -143,7 +143,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white dark:bg-slate-900/50 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-all duration-300">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
@@ -243,7 +243,7 @@ export default function ClientsPage() {
       {/* Modal de Edición */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between transition-colors">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Actualizar Cliente</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all">
@@ -254,7 +254,7 @@ export default function ClientsPage() {
             <form onSubmit={handleUpdate} className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre</label>
                   <input
                     type="text"
                     value={editForm.name}
@@ -264,7 +264,7 @@ export default function ClientsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Apellido</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Apellido</label>
                   <input
                     type="text"
                     value={editForm.last_name}
@@ -276,7 +276,7 @@ export default function ClientsPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre Comercial / Empresa</label>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre Comercial / Empresa</label>
                 <input
                   type="text"
                   value={editForm.business_name}
@@ -287,7 +287,7 @@ export default function ClientsPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Teléfono</label>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Teléfono</label>
                 <input
                   type="text"
                   value={editForm.phone}
@@ -298,7 +298,7 @@ export default function ClientsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Tipo Doc.</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Tipo Doc.</label>
                   <select
                     value={editForm.identity_document_type_id}
                     onChange={(e) => setEditForm({...editForm, identity_document_type_id: e.target.value})}
@@ -309,7 +309,7 @@ export default function ClientsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nro. Documento</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nro. Documento</label>
                   <input
                     type="text"
                     value={editForm.identity_document}
@@ -323,14 +323,14 @@ export default function ClientsPage() {
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl text-sm font-bold transition-all"
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-bold transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] btn-pulse"
+                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] btn-pulse"
                 >
                   {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Guardar Cambios
@@ -343,7 +343,7 @@ export default function ClientsPage() {
       {/* Modal de Creación */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between transition-colors">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Registrar Nuevo Cliente</h3>
               <button 
