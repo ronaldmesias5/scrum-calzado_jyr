@@ -345,16 +345,16 @@ export default function InventoryPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800">
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Producto</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Categoría</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Marca</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Color</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Stock Actual</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Estado</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Acciones</th>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Producto</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoría</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Color</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
@@ -374,8 +374,8 @@ export default function InventoryPage() {
 
                   return (
                     <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-4">
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-3">
                           {product.image_url && !failedImages.has(resolveImageUrl(product.image_url) || '') ? (
                             <button
                               onClick={() => {
@@ -402,29 +402,29 @@ export default function InventoryPage() {
                             </div>
                           )}
                           <div>
-                            <p className="font-bold text-gray-900 dark:text-white transition-colors">{product.name}</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">{product.name}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{product.style_name} · {product.brand_name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.category_name}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.brand_name}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.color || '-'}</td>
-                      <td className="px-6 py-3 text-center">
-                        <span className="font-bold text-lg text-gray-900 dark:text-white transition-colors">{stock}</span>
+                      <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.category_name}</td>
+                      <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.brand_name}</td>
+                      <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.color || '-'}</td>
+                      <td className="px-4 py-2 text-center">
+                        <span className="font-bold text-sm text-gray-900 dark:text-white transition-colors">{stock}</span>
                       </td>
-                      <td className="px-6 py-3 text-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
                           {statusText}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2 text-center">
                         <button
                           onClick={() => handleOpenAdjustModal(product)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors font-bold text-sm"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors font-bold text-xs"
                         >
-                          <Plus size={16} />
-                          Ajustar Stock
+                          <Plus size={14} />
+                          Ajustar
                         </button>
                       </td>
                     </tr>

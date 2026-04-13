@@ -99,42 +99,44 @@ function OrdersTable({ orders, onSelect }: { orders: Order[]; onSelect: (o: Orde
     <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/80">
+          <thead className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
             <tr>
-              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">ID Pedido</th>
-              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Cliente</th>
-              <th className="px-6 py-4 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Pares</th>
-              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Estado</th>
-              <th className="px-6 py-4 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Fecha</th>
-              <th className="px-6 py-4 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-xs">Acciones</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Pedido</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pares</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
-                <td className="px-6 py-4 font-mono font-bold text-blue-600 dark:text-blue-400">
+                <td className="px-4 py-2 font-mono font-bold text-sm text-blue-600 dark:text-blue-400">
                   #{order.id.substring(0, 8)}
                 </td>
-                <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-bold transition-colors">
-                  {order.customer_name && order.customer_last_name
-                    ? `${order.customer_name} ${order.customer_last_name}`
-                    : <span className="text-gray-400 font-mono text-xs">{order.customer_id.substring(0, 12)}...</span>}
+                <td className="px-4 py-2">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">
+                    {order.customer_name && order.customer_last_name
+                      ? `${order.customer_name} ${order.customer_last_name}`
+                      : <span className="text-gray-400 font-mono text-xs italic">Sin identificar</span>}
+                  </p>
                 </td>
-                <td className="px-6 py-4 text-center">
-                  <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold border border-blue-100 dark:border-blue-900/50">
-                    {order.total_pairs} pares
+                <td className="px-4 py-2 text-center">
+                  <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/50">
+                    {order.total_pairs}
                   </span>
                 </td>
-                <td className="px-6 py-4"><StatusBadge status={order.state} /></td>
-                <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs font-medium">
+                <td className="px-4 py-2"><StatusBadge status={order.state} /></td>
+                <td className="px-4 py-2 text-gray-600 dark:text-gray-400 text-xs font-medium">
                   {new Date(order.created_at).toLocaleDateString('es-CO')}
                 </td>
-                <td className="px-6 py-4 text-center">
+                <td className="px-4 py-2 text-center">
                   <button
                     onClick={() => onSelect(order)}
-                    className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all active:scale-95"
+                    className="p-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all active:scale-95 shadow-sm"
                   >
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </td>
               </tr>

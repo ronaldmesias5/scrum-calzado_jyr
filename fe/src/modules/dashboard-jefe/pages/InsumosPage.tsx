@@ -645,85 +645,91 @@ export default function InsumosPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
-                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Insumo</th>
-                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Categoría</th>
-                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Stock</th>
-                  <th className="text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Productos vinculados</th>
-                  <th className="text-right px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Acciones</th>
+                <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Insumo</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Categoría</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Stock</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Productos vinculados</th>
+                  <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                 {filtered.map(supply => (
                   <tr key={supply.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors group">
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-gray-900 dark:text-white">{supply.name}</p>
-                      {supply.color && (
-                        <p className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1">
-                          <span className="w-2.5 h-2.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white" style={{ backgroundColor: supply.color.toLowerCase() }} />
-                          {supply.color}
-                        </p>
-                      )}
-                      {supply.description && (
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-1">{supply.description}</p>
-                      )}
+                    <td className="px-4 py-2">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{supply.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {supply.color && (
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {supply.color}
+                          </p>
+                        )}
+                        {supply.description && (
+                          <>
+                            <span className="text-gray-300 dark:text-gray-700">·</span>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1">{supply.description}</p>
+                          </>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${CATEGORY_BADGE[supply.category] ?? CATEGORY_BADGE.otros}`}>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${CATEGORY_BADGE[supply.category] ?? CATEGORY_BADGE.otros}`}>
                         {CATEGORY_LABEL[supply.category] ?? supply.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         {supply.stock_quantity > 0 ? (
                           <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
                         ) : (
-                          <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
+                          <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />
                         )}
-                        <span className={`font-bold text-lg ${supply.stock_quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                          {supply.stock_quantity}
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          {supply.stock_quantity.toFixed(1)}
                         </span>
-                        <span className="text-[10px] text-gray-400">{supply.unit}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{supply.unit}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      {supply.linked_products.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {supply.linked_products.slice(0, 2).map(lp => (
-                            <span key={lp.product_id} className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg px-2 py-0.5 text-[10px] font-bold border border-blue-100 dark:border-blue-800">
-                              {lp.product_name.split(' ').slice(0, 2).join(' ')}
-                            </span>
-                          ))}
-                          {supply.linked_products.length > 2 && (
-                            <span className="text-[10px] text-gray-400 font-bold self-center">+{supply.linked_products.length - 2}</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-[10px] text-gray-400 italic">Sin vincular</span>
-                      )}
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-1">
+                        {supply.linked_products && supply.linked_products.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {supply.linked_products.slice(0, 3).map((prod: any) => (
+                              <span key={prod.product_id} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-[10px] font-bold border border-blue-100 dark:border-blue-800/50">
+                                {prod.product_name}
+                              </span>
+                            ))}
+                            {supply.linked_products.length > 3 && (
+                              <span className="text-[10px] text-gray-400 font-bold">+{supply.linked_products.length - 3}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 italic font-medium">Sin vincular</span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-4 py-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => { setLinkTarget(supply); }}
                           title="Vincular a productos"
-                          className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                          className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
                         >
-                          <Link size={15} />
+                          <Link size={14} />
                         </button>
                         <button
                           onClick={() => { setEditTarget(supply); setShowForm(true); }}
                           title="Editar insumo"
-                          className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                         >
-                          <Edit2 size={15} />
+                          <Edit2 size={14} />
                         </button>
                         <button
                           onClick={() => setDeleteId(supply.id)}
                           title="Eliminar insumo"
-                          className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                          className="p-1.5 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>

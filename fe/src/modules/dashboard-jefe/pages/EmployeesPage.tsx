@@ -5,10 +5,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  Users, Search, Edit2, Shield, ShieldOff, 
-  Mail, Phone, CreditCard, Loader2, AlertCircle,
-  CheckCircle2, XCircle, UserPlus, Scissors,
-  Hammer, Layers, Footprints, ShieldCheck
+  Users, Search, Edit2, Loader2, AlertCircle,
+  UserPlus, CheckCircle2, XCircle, Shield, ShieldOff
 } from 'lucide-react';
 import { getAllUsers, updateUser, type UpdateUserRequest } from '../services/adminApi';
 import { getTypeDocuments } from '@/api/type-documents';
@@ -200,67 +198,36 @@ export default function EmployeesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider font-bold">
-                  <th className="px-6 py-4">Empleado</th>
-                  <th className="px-6 py-4">Contacto</th>
-                  <th className="px-6 py-4">Cargo</th>
-                  <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4 text-right">Acciones</th>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Empleado</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detalles</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id.toString()} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold transition-all ${emp.is_active ? 'bg-blue-600 dark:bg-blue-500 animate-pulse' : 'bg-gray-400 dark:bg-gray-600'}`}>
+                  <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-2">
+                       <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-inner transition-colors ${emp.is_active ? 'bg-blue-600' : 'bg-gray-400 dark:bg-slate-700'}`}>
                           {emp.name[0]}{emp.last_name[0]}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors">{emp.name} {emp.last_name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                            <CreditCard className="w-3 h-3" />
-                            {emp.identity_document || 'Sin documento'}
-                          </p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">{emp.name} {emp.last_name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{emp.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-2 font-medium">
-                          <Mail className="w-3.5 h-3.5 text-gray-400" />
-                          {emp.email}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-2 font-medium">
-                          <Phone className="w-3.5 h-3.5 text-gray-400" />
-                          {emp.phone || 'N/A'}
-                        </p>
+                    <td className="px-4 py-2">
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-gray-700 dark:text-gray-200 font-bold uppercase tracking-wider">{emp.occupation || 'Empleado'}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{emp.identity_document || 'S/D'}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      {(() => {
-                        let Icon = Shield;
-                        let colorClass = 'bg-gray-50 text-gray-600 border-gray-100 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700';
-                        
-                        switch (emp.occupation) {
-                          case 'cortador': Icon = Scissors; colorClass = 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900/50'; break;
-                          case 'guarnecedor': Icon = Layers; colorClass = 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50'; break;
-                          case 'solador': Icon = Hammer; colorClass = 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50'; break;
-                          case 'emplantillador': Icon = Footprints; colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50'; break;
-                          case 'jefe': Icon = ShieldCheck; colorClass = 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/50'; break;
-                        }
-
-                        return (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${colorClass} transition-colors`}>
-                            <Icon className="w-3 h-3" />
-                            {emp.occupation ? emp.occupation.charAt(0).toUpperCase() + emp.occupation.slice(1) : 'Sin cargo'}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       {emp.is_active ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-widest border border-green-200 dark:border-green-900/50">
                           <CheckCircle2 className="w-3 h-3" /> Activo
@@ -271,11 +238,11 @@ export default function EmployeesPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleEditClick(emp)}
-                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                           title="Editar información"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -283,12 +250,12 @@ export default function EmployeesPage() {
                         <button
                           onClick={() => toggleStatus(emp)}
                           disabled={currentUser?.id === emp.id}
-                          className={`p-2 rounded-lg transition-colors ${
+                          className={`p-1.5 rounded-lg transition-colors ${
                             currentUser?.id === emp.id 
                               ? 'opacity-20 cursor-not-allowed' 
                               : emp.is_active 
-                                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30' 
-                                : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30'
+                                ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
+                                : 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
                           }`}
                           title={currentUser?.id === emp.id ? 'No puedes desactivar tu propia cuenta' : (emp.is_active ? 'Desactivar cuenta' : 'Activar cuenta')}
                         >
