@@ -4,7 +4,7 @@ export function DashboardFooter() {
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-auto mt-12 py-10 text-center border-t border-gray-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-colors duration-500">
+    <footer className="mt-auto py-10 text-center border-t border-gray-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6">
         <p className="text-base font-bold text-gray-800 dark:text-gray-200 tracking-tight">
           {t('landing.hero.title')} - {t('landing.hero.subtitle')}
