@@ -51,6 +51,7 @@ Swagger:   http://localhost:8000/docs
 ## 👤 Usuarios de Prueba
 
 **Admin (Jefe - Acceso al Dashboard):**
+
 ```
 Email:     ronald.jefe@gmail.com
 Contraseña: Test123456!
@@ -63,6 +64,7 @@ Contraseña: Test123456!
 Si prefieres correr el frontend o backend por separado:
 
 ### Backend (con uv)
+
 ```powershell
 cd be
 uv sync
@@ -70,7 +72,9 @@ uv run uvicorn app.main:app --reload
 ```
 
 ### Frontend (con pnpm)
+
 **IMPORTANTE:** Usar ÚNICAMENTE `pnpm`, nunca `npm` ni `yarn`.
+
 ```powershell
 cd fe
 pnpm install
@@ -80,21 +84,13 @@ pnpm dev
 ---
 
 ## ✅ Verificación Rápida BD (si necesario)
+
 ```bash
 docker compose exec db psql -U jyr_user -d calzado_jyr_db
   \dt                    # Ver tablas
   SELECT COUNT(*) FROM products;  # Ver productos (debe ser 65)
   \q
 ```
-
-**Debería ver:**
-
-- ✅ 3 servicios corriendo: `db`, `backend`, `frontend`
-- ✅ 65 productos en BD
-- ✅ Frontend carga sin errores
-- ✅ Login funciona
-
----
 
 ## 🔗 URLs Principales
 
