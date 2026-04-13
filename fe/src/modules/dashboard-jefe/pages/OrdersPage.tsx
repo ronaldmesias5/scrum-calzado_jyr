@@ -829,6 +829,22 @@ export default function OrdersPage() {
           <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
           <p className="text-gray-600 font-medium">Cargando pedidos...</p>
         </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-20 text-center shadow-sm flex flex-col items-center gap-4 transition-all">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
+            <Package size={28} className="text-gray-300 dark:text-gray-600" />
+          </div>
+          <div>
+            <p className="text-gray-900 dark:text-white font-bold text-lg">No se encontraron pedidos</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Prueba ajustando los filtros de búsqueda o el rango de fechas</p>
+          </div>
+          <button 
+            onClick={() => { setClientFilter(''); setStatusFilter(null); loadOrders(); }}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+          >
+            Ver todos los pedidos
+          </button>
+        </div>
       ) : (
         <>
           <OrdersTable orders={orders} onSelect={handleSelectOrder} />

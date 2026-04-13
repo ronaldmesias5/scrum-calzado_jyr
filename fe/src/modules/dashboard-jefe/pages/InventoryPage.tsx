@@ -320,35 +320,44 @@ export default function InventoryPage() {
 
 
       {/* Tabla de Productos */}
-      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Producto</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Categoría</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Marca</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Color</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Stock Actual</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    Cargando productos...
-                  </td>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Cargando inventario...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-4">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
+              <Package size={28} className="text-gray-300 dark:text-gray-600" />
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-bold text-lg">No se encontraron productos</p>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">Prueba ajustando los filtros de búsqueda</p>
+            </div>
+            <button 
+              onClick={() => { setSearchTerm(''); setSelectedCategory(''); setSelectedBrand(''); setSelectedStyle(''); setSelectedColor(''); setSelectedState(''); }}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800">
+                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Producto</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Categoría</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Marca</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Color</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Stock Actual</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Estado</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Acciones</th>
                 </tr>
-              ) : filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    No se encontraron productos
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map(product => {
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                {filteredProducts.map(product => {
                   const stock = product.stock_total || 0;
                   const threshold = product.insufficient_threshold || 12;
                   let statusColor = 'bg-green-100 text-green-700';
@@ -373,22 +382,22 @@ export default function InventoryPage() {
                                 setViewingImage(imgUrl || null);
                                 setViewingProductName(product.name);
                               }}
-                              className="relative w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden group cursor-pointer border border-gray-300"
+                              className="relative w-10 h-10 bg-gray-200 dark:bg-slate-700 rounded flex-shrink-0 overflow-hidden group cursor-pointer hover:shadow-lg transition-all"
                               title="Haz click para ver la imagen"
                             >
                               <img
                                 src={resolveImageUrl(product.image_url)}
                                 alt={product.name}
                                 onError={() => handleImageError(resolveImageUrl(product.image_url) || '')}
-                                className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                               />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
                                 <Maximize2 size={16} className="text-white" />
                               </div>
                             </button>
                           ) : (
-                            <div className="w-10 h-10 rounded-lg flex-shrink-0 border border-gray-300 bg-white flex items-center justify-center">
-                              <Package size={24} className="text-gray-300" />
+                            <div className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center">
+                              <Package size={22} className="text-gray-400" />
                             </div>
                           )}
                           <div>
@@ -419,11 +428,11 @@ export default function InventoryPage() {
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Modal para ajustar inventario */}
