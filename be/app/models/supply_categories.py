@@ -30,6 +30,12 @@ class SupplyCategory(Base):
         unique=True,
     )
 
+    color: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="blue",
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -37,4 +43,4 @@ class SupplyCategory(Base):
     )
 
     def __repr__(self) -> str:
-        return f"SupplyCategory(id={self.id}, name={self.name})"
+        return f"SupplyCategory(id={self.id}, name={self.name}, color={self.color})"

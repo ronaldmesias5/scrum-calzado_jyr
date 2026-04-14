@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
 
 export default function LandingHeader() {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { getHeaderClasses, getLogoClasses, getNavClasses, getButtonsClasses } = useHeaderAnimation();
 
   const navLinks = [
     { label: t('landing.nav.home'), href: '/' },
@@ -17,15 +19,15 @@ export default function LandingHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 shadow-sm transition-colors duration-500">
+    <header className={`sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 shadow-sm transition-colors duration-500 ${getHeaderClasses()}`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
         {/* Logo */}
-        <Link to="/" className="flex items-center">
+        <Link to="/" className={`flex items-center ${getLogoClasses()}`}>
           <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain" />
         </Link>
 
         {/* Nav desktop */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className={`hidden md:flex items-center gap-8 ${getNavClasses()}`}>
           {navLinks.map((link) => (
             <a
               key={link.label}
@@ -38,7 +40,7 @@ export default function LandingHeader() {
         </nav>
 
         {/* Botones desktop */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className={`hidden md:flex items-center gap-3 ${getButtonsClasses()}`}>
           <div className="flex items-center gap-2 mr-2">
             <LanguageSwitcher />
             <ThemeToggle />

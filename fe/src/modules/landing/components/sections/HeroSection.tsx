@@ -52,7 +52,7 @@ export default function HeroSection() {
         </p>
         <div className="flex flex-col sm:flex-row gap-5 justify-center">
           <Link
-            to="#"
+            to="/catalog"
             className="px-8 py-4 bg-white text-blue-900 dark:bg-blue-600 dark:text-white font-bold rounded-xl shadow-lg hover:scale-105 transform transition duration-200 btn-pulse"
           >
             {t('landing.hero.ctaCatalog')}

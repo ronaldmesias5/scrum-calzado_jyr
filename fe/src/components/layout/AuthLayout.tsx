@@ -27,6 +27,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useHeaderAnimation } from "@/hooks/useHeaderAnimation";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -36,20 +37,21 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   const { t } = useTranslation();
+  const { getHeaderClasses, getLogoClasses, getButtonsClasses } = useHeaderAnimation();
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
       {/* Header con logo y controles de idioma/tema */}
-      <header className="border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20">
+      <header className={`border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 ${getHeaderClasses()}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <Link to="/" className="flex items-center group">
+          <Link to="/" className={`flex items-center group ${getLogoClasses()}`}>
             <img
               src="/logo.png"
               alt="CALZADO J&R"
               className="h-16 w-16 object-contain bg-white rounded-lg p-1 shadow-sm group-hover:scale-110 transition-transform duration-300"
             />
           </Link>
-          <div className="flex items-center gap-4">
+          <div className={`flex items-center gap-4 ${getButtonsClasses()}`}>
             <div className="flex items-center gap-2">
               <LanguageSwitcher />
               <ThemeToggle />

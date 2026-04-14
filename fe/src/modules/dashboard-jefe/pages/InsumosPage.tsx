@@ -23,7 +23,29 @@ const DEFAULT_CATEGORIES: { key: string; label: string; color: string }[] = [
   { key: 'otros',      label: 'Otros',      color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' },
 ];
 
-const getCategoryColor = (key: string) => {
+// Mapa de colores: nombre del color -> clases Tailwind
+const COLOR_MAP: Record<string, string> = {
+  amber:    'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700',
+  blue:     'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700',
+  purple:   'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700',
+  green:    'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-700',
+  gray:     'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700',
+  red:      'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-700',
+  orange:   'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-700',
+  yellow:   'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-700',
+  lime:     'bg-lime-100 dark:bg-lime-900/40 text-lime-800 dark:text-lime-300 border border-lime-200 dark:border-lime-700',
+  cyan:     'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-700',
+  indigo:   'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700',
+  pink:     'bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-700',
+  rose:     'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-700',
+};
+
+const getCategoryColor = (key: string, categoryColor?: string) => {
+  // Si tenemos un color del backend, usarlo
+  if (categoryColor && COLOR_MAP[categoryColor]) {
+    return COLOR_MAP[categoryColor];
+  }
+  // Sino, usar el color predefinido
   const found = DEFAULT_CATEGORIES.find(c => c.key === key.toLowerCase());
   return found ? found.color : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
 };
@@ -468,7 +490,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
 // ─── Página Principal ────────────────────────────────────────
 export default function InsumosPage() {
   const [supplies, setSupplies] = useState<Supply[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; color: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -487,7 +509,7 @@ export default function InsumosPage() {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
-        const data: { id: string; name: string }[] = await res.json();
+        const data: { id: string; name: string; color: string }[] = await res.json();
         setCategories(data);
       }
     } catch (e) { console.error(e); }
@@ -548,7 +570,7 @@ export default function InsumosPage() {
   ])).sort();
   const sortedCategoryObjects = allCategories.map(name => {
     const found = categories.find(c => c.name === name);
-    return { id: found?.id ?? name, name };
+    return { id: found?.id ?? name, name, color: found?.color ?? 'gray' };
   });
   const sortedCategories = sortedCategoryObjects.map(c => c.name);
 
@@ -590,8 +612,8 @@ export default function InsumosPage() {
               onClick={() => setActiveCategory(cat.name)}
               className={`pl-4 pr-8 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
                 activeCategory === cat.name
-                  ? 'ring-2 ring-blue-500 ' + getCategoryColor(cat.name)
-                  : getCategoryColor(cat.name) + ' opacity-60 hover:opacity-100'
+                  ? 'ring-2 ring-blue-500 ' + getCategoryColor(cat.name, cat.color)
+                  : getCategoryColor(cat.name, cat.color) + ' opacity-60 hover:opacity-100'
               }`}
             >
               {CATEGORY_LABEL[cat.name] || cat.name}

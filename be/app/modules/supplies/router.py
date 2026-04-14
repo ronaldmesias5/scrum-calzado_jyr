@@ -39,6 +39,23 @@ from app.modules.supplies.schemas import (
 class InternalSupplyCategoryCreate(BaseModel):
     name: str
 
+# Paleta de colores predefinida
+PREDEFINED_COLORS = ['amber', 'blue', 'purple', 'green', 'gray']
+AVAILABLE_COLORS = ['red', 'orange', 'yellow', 'lime', 'cyan', 'indigo', 'pink', 'rose']
+
+def _get_next_category_color(db: Session) -> str:
+    """Asigna un color automático para una nueva categoría."""
+    existing_cats = db.execute(select(SupplyCategory)).scalars().all()
+    existing_colors = {cat.color for cat in existing_cats}
+    
+    # Usar colores disponibles que no estén usados
+    for color in AVAILABLE_COLORS:
+        if color not in existing_colors:
+            return color
+    
+    # Si se agotaron, reiniciar desde el inicio
+    return AVAILABLE_COLORS[0]
+
 router = APIRouter(
     prefix="/api/v1",
     tags=["supplies"],
@@ -76,11 +93,13 @@ def _supply_to_out(supply: Supplies) -> SupplyOut:
 @router.get("/supplies/categories", summary="Listar categorias de insumos")
 def list_supply_categories(db: Session = Depends(get_db)):
     cats = db.execute(select(SupplyCategory).order_by(SupplyCategory.name)).scalars().all()
-    return [{"id": str(c.id), "name": c.name} for c in cats]
+    return [{"id": str(c.id), "name": c.name, "color": c.color} for c in cats]
 
 @router.post("/supplies/categories", status_code=201, summary="Crear categoria de insumo")
 def create_supply_category(body: InternalSupplyCategoryCreate, db: Session = Depends(get_db)):
-    cat = SupplyCategory(name=body.name.lower())
+    # Asignar un color automático
+    color = _get_next_category_color(db)
+    cat = SupplyCategory(name=body.name.lower(), color=color)
     try:
         db.add(cat)
         db.commit()
@@ -88,7 +107,7 @@ def create_supply_category(body: InternalSupplyCategoryCreate, db: Session = Dep
     except Exception:
         db.rollback()
         raise HTTPException(status_code=400, detail="La categoría ya existe o es inválida")
-    return {"id": str(cat.id), "name": cat.name}
+    return {"id": str(cat.id), "name": cat.name, "color": cat.color}
 
 @router.delete("/supplies/categories/{category_id}", status_code=204, summary="Eliminar categoria de insumo")
 def delete_supply_category(category_id: str, db: Session = Depends(get_db)):

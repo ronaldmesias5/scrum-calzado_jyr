@@ -6,7 +6,8 @@
     "logout": "Cerrar Sesión",
     "theme": "Tema",
     "language": "Idioma",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "back": "Volver"
   },
   "auth": {
     "email": "Correo electrónico",
@@ -119,6 +120,12 @@
       "copyright": "© 2026 CALZADO J&R. Todos los derechos reservados.",
       "location": "📍 Bogotá, Colombia",
       "phone": "📞 +57 601 234 5678"
+    },
+    "catalog": {
+      "title": "Catálogo de Productos",
+      "subtitle": "Explora nuestra colección de calzado de alta calidad.",
+      "noProducts": "No se encontraron productos con los filtros seleccionados",
+      "needsLogin": "Para realizar tus pedidos, inicia sesión (venta al por mayor)."
     }
   },
   "dashboard": {

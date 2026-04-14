@@ -6,7 +6,8 @@
     "logout": "Logout",
     "theme": "Theme",
     "language": "Language",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "back": "Back"
   },
   "auth": {
     "email": "Email address",
@@ -119,6 +120,12 @@
       "copyright": "© 2026 J&R FOOTWEAR. All rights reserved.",
       "location": "📍 Bogota, Colombia",
       "phone": "📞 +57 601 234 5678"
+    },
+    "catalog": {
+      "title": "Product Catalog",
+      "subtitle": "Explore our collection of high-quality footwear.",
+      "noProducts": "No products found with the selected filters",
+      "needsLogin": "To place orders, please log in (wholesale sales)."
     }
   },
   "dashboard": {

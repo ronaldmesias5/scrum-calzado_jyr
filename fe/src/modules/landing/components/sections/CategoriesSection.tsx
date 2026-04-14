@@ -1,5 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
+import { getCatalogCategories, Category } from '../../services/publicCatalogService';
 
 /**
  * Componente: CategoriesSection.tsx
@@ -21,24 +23,52 @@ import { useTranslation } from 'react-i18next';
 
 export default function CategoriesSection() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [categoriesData, setCategoriesData] = useState<Category[]>([]);
 
-  const categories = [
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const data = await getCatalogCategories();
+      setCategoriesData(data);
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
+
+  const staticCategories = [
     {
+      id: 'caballero',
       name: t('landing.categories.caballero'),
       description: t('landing.categories.caballeroDesc'),
       image: '/caballero.png',
     },
     {
+      id: 'dama',
       name: t('landing.categories.dama'),
       description: t('landing.categories.damaDesc'),
       image: '/dama.png',
     },
     {
+      id: 'infantil',
       name: t('landing.categories.infantil'),
       description: t('landing.categories.infantilDesc'),
       image: '/infantil.png',
     },
   ];
+
+  const handleCategoryClick = (categoryId: string) => {
+    // Encontrar la categoría en los datos
+    const category = categoriesData.find(c => c.name.toLowerCase() === categoryId.toLowerCase());
+    if (category) {
+      navigate(`/catalog?category_id=${category.id}`);
+    } else {
+      navigate('/catalog');
+    }
+  };
 
   return (
     <section id="categorias" className="py-16 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
@@ -53,9 +83,9 @@ export default function CategoriesSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {categories.map((cat) => (
+          {staticCategories.map((cat) => (
             <div
-              key={cat.name}
+              key={cat.id}
               className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
             >
               <div className="relative overflow-hidden h-64">
@@ -73,12 +103,12 @@ export default function CategoriesSection() {
                 <p className="text-gray-500 dark:text-gray-400 text-base mb-6 leading-relaxed">
                   {cat.description}
                 </p>
-                <Link 
-                  to="#"
+                <button 
+                  onClick={() => handleCategoryClick(cat.id)}
                   className="inline-flex items-center justify-center w-full px-6 py-3 bg-blue-800 dark:bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-all duration-200 btn-pulse"
                 >
                   {t('landing.categories.viewCollection')}
-                </Link>
+                </button>
               </div>
             </div>
           ))}

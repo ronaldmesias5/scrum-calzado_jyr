@@ -32,6 +32,7 @@ import { useBadgeCounts } from '../../context/BadgeCountsContext';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
 
 export default function AdminHeader() {
   const { t } = useTranslation();
@@ -39,6 +40,7 @@ export default function AdminHeader() {
   const navigate = useNavigate();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { counts } = useBadgeCounts();
+  const { getHeaderClasses, getLogoClasses, getSearchClasses, getButtonsClasses } = useHeaderAnimation();
   // Total de avisos = pedidos pendientes + usuarios sin validar
   const totalBadge = counts.pedidos + counts.usuarios;
 
@@ -74,10 +76,10 @@ export default function AdminHeader() {
     : user?.email?.split('@')[0] ?? 'Administrador';
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-10 transition-colors duration-500">
+    <header className={`h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-10 transition-colors duration-500 ${getHeaderClasses()}`}>
       {/* Logo */}
       <div
-        className="flex items-center gap-3 cursor-pointer flex-shrink-0"
+        className={`flex items-center gap-3 cursor-pointer flex-shrink-0 ${getLogoClasses()}`}
         onClick={() => navigate('/dashboard/admin')}
       >
         <img src="/logo.png" alt="CALZADO J&R" className="h-10 w-10 object-contain" />
@@ -88,7 +90,7 @@ export default function AdminHeader() {
       </div>
 
       {/* Búsqueda */}
-      <div className="hidden md:flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2 w-80 transition-colors">
+      <div className={`hidden md:flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2 w-80 transition-colors ${getSearchClasses()}`}>
         <Search size={16} className="text-gray-400" />
         <input
           type="text"
@@ -98,7 +100,7 @@ export default function AdminHeader() {
       </div>
 
       {/* Notificaciones + usuario */}
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-4 ${getButtonsClasses()}`}>
         <LanguageSwitcher />
         <ThemeToggle />
         

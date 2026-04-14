@@ -24,6 +24,9 @@ export default function CatalogPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
+  const [categoryList, setCategoryList] = useState<string[]>([]);
+  const [brandList, setBrandList] = useState<string[]>([]);
+  const [styleList, setStyleList] = useState<string[]>([]);
 
   // Cargar productos
   const loadProducts = async () => {
@@ -35,6 +38,23 @@ export default function CatalogPage() {
       console.error('Error loading products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Cargar opciones de filtros
+  const loadFilterOptions = async () => {
+    try {
+      const [categories, brands, styles] = await Promise.all([
+        listCategories(),
+        listBrands(),
+        listStyles(),
+      ]);
+
+      setCategoryList(categories.map(c => c.name));
+      setBrandList(brands.map(b => b.name));
+      setStyleList(styles.map(s => s.name));
+    } catch (error) {
+      console.error('Error loading filter options:', error);
     }
   };
 
@@ -236,17 +256,17 @@ export default function CatalogPage() {
   };
 
   // Extraer valores únicos para los filtros
-  const categories = Array.from(new Set(products.map(p => p.category_name).filter(Boolean))) as string[];
-  const brands = Array.from(new Set(products.map(p => p.brand_name).filter(Boolean))) as string[];
+  const categories = categoryList;
+  const brands = brandList;
   const colors = Array.from(new Set(products.map(p => p.color).filter(Boolean))) as string[];
 
   // Obtener estilos filtrando por marca (si hay una seleccionada)
-  const styles = Array.from(new Set(
-    products
-      .filter(p => !selectedBrand || p.brand_name === selectedBrand)
-      .map(p => p.style_name)
-      .filter(Boolean)
-  )) as string[];
+  const styles = selectedBrand 
+    ? styleList.filter(s => {
+        // Filtrar estilos que pertenecen a la marca seleccionada
+        return products.some(p => p.style_name === s && p.brand_name === selectedBrand);
+      })
+    : styleList;
 
   // Si se selecciona una marca y el estilo actual no pertenece a esa marca, limpiar el estilo
   useEffect(() => {
@@ -280,6 +300,7 @@ export default function CatalogPage() {
   // Inicializar
   useEffect(() => {
     loadProducts();
+    loadFilterOptions();
   }, []);
 
   return (

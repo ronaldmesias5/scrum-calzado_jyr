@@ -53,6 +53,7 @@ import { ResetPasswordPage } from "@/modules/auth/pages/ResetPasswordPage";
 
 // Sprint 3 - Landing Page
 import LandingPage from "@/modules/landing/pages/LandingPage";
+import PublicCatalogPage from "@/modules/landing/pages/CatalogPage";
 
 // Sprint 3 - Dashboard Jefe
 import AdminLayout from "@/modules/dashboard-jefe/components/layout/AdminLayout";
@@ -97,6 +98,7 @@ function App() {
           {/* 🌐 Landing Page pública */}
           {/* ════════════════════════════════════════ */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/catalog" element={<PublicCatalogPage />} />
 
           {/* ════════════════════════════════════════ */}
           {/* 🔓 Rutas públicas de autenticación */}
