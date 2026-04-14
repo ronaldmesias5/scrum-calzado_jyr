@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
 import { Product, listBrands, listCategories, listStyles, Brand, Category, Style } from '../services/catalogService';
-import { listSupplies, Supply } from '../services/suppliesService';
+import { listSupplies, Supply, checkProductSupplies } from '../services/suppliesService';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const resolveImg = (url?: string | null) => {
@@ -80,6 +80,24 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
       setSelectedImageFile(null);
       setUseImageUrl(false);
       setSupplyLinks({});
+
+      // Cargar insumos actuales vinculados
+      const fetchCurrentSupplies = async () => {
+        try {
+          const res = await checkProductSupplies(product.id);
+          const links: Record<string, string> = {};
+          res.supplies.forEach(s => {
+            // Conversión: Backend (par) -> UI (docena) => * 12
+            // Usamos string para el estado del input
+            const qtyDozen = s.quantity_required * 12;
+            links[s.supply_id] = qtyDozen % 1 === 0 ? qtyDozen.toString() : qtyDozen.toFixed(2);
+          });
+          setSupplyLinks(links);
+        } catch (error) {
+          console.error('Error fetching current supplies:', error);
+        }
+      };
+      fetchCurrentSupplies();
     }
   }, [isOpen, product]);
 

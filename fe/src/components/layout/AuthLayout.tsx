@@ -28,6 +28,7 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useHeaderAnimation } from "@/hooks/useHeaderAnimation";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -44,11 +45,11 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       {/* Header con logo y controles de idioma/tema */}
       <header className={`border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 ${getHeaderClasses()}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <Link to="/" className={`flex items-center group ${getLogoClasses()}`}>
+          <Link to="/" className={`flex items-center ${getLogoClasses()}`}>
             <img
               src="/logo.png"
               alt="CALZADO J&R"
-              className="h-16 w-16 object-contain bg-white rounded-lg p-1 shadow-sm group-hover:scale-110 transition-transform duration-300"
+              className="h-16 w-16 object-contain"
             />
           </Link>
           <div className={`flex items-center gap-4 ${getButtonsClasses()}`}>
@@ -65,6 +66,11 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           </div>
         </div>
       </header>
+
+      {/* Breadcrumbs - Miga de pan */}
+      <div className="max-w-7xl mx-auto w-full px-6 pt-6">
+        <Breadcrumbs />
+      </div>
 
       {/* ════════════════════════════════════════ */}
       {/* Contenido principal centrado */}

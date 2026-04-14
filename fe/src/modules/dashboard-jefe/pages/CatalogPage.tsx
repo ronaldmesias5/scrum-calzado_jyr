@@ -94,7 +94,7 @@ export default function CatalogPage() {
   };
 
   // Guardar cambios del producto
-  const handleSaveProduct = async (updatedData: Partial<Product>, imageFile?: File) => {
+  const handleSaveProduct = async (updatedData: Partial<Product>, imageFile?: File, supplyLinks?: Record<string, number>) => {
     if (!editingProduct) return;
 
     try {
@@ -140,6 +140,32 @@ export default function CatalogPage() {
       // 3) Subir imagen por separado si el usuario seleccionó una
       if (imageFile) {
         await uploadProductImage(editingProduct.id, imageFile);
+      }
+
+      // 4) Sincronizar Insumos
+      if (supplyLinks) {
+        try {
+          const { checkProductSupplies, linkSupplyToProduct, unlinkSupplyFromProduct } = await import('../services/suppliesService');
+          
+          // Obtener actuales para saber qué desvincular
+          const currentRes = await checkProductSupplies(editingProduct.id);
+          const currentIds = currentRes.supplies.map(s => s.supply_id);
+          const newIds = Object.keys(supplyLinks);
+          
+          // Eliminar los que ya no están
+          for (const oldId of currentIds) {
+            if (!newIds.includes(oldId)) {
+              await unlinkSupplyFromProduct(editingProduct.id, oldId);
+            }
+          }
+          
+          // Vincular o actualizar todos los seleccionados
+          for (const [supplyId, qty] of Object.entries(supplyLinks)) {
+            await linkSupplyToProduct(editingProduct.id, supplyId, qty);
+          }
+        } catch (suppError) {
+          console.error('Error sincronizando insumos:', suppError);
+        }
       }
 
       // Recargar productos
@@ -306,9 +332,9 @@ export default function CatalogPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Layers className="w-8 h-8 text-orange-600" />
             Gestión de Catálogo
           </h1>
@@ -316,7 +342,7 @@ export default function CatalogPage() {
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center gap-2 btn-pulse shadow-lg hover:shadow-blue-500/20 active:scale-95"
+          className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2 btn-pulse shadow-lg hover:shadow-blue-500/20 active:scale-95"
         >
           <Plus size={18} /> Agregar Producto
         </button>
@@ -476,8 +502,8 @@ export default function CatalogPage() {
           <p className="text-gray-500 dark:text-gray-400 font-medium">No se encontraron productos</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-all duration-300">
-          <table className="w-full text-sm">
+        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl overflow-x-auto shadow-sm transition-all duration-300">
+          <table className="w-full text-sm min-w-max md:min-w-0">
             <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Producto</th>

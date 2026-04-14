@@ -4,8 +4,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2, Palette } from 'lucide-react';
 import { createOrder, getStyles, getClients, getCategories, getProducts, updateOrderDetails, OrderCreateRequest, OrderDetailItemCreateRequest, type OrderDetail } from '../services/ordersApi';
+import { resolveImageUrl } from '../services/catalogService';
+import ImageViewerModal from './ImageViewerModal';
 
 interface OrderFormModalProps {
   isOpen: boolean;
@@ -35,6 +37,8 @@ interface Product {
   category_name: string;
   brand_id: string;
   brand_name: string;
+  color?: string;
+  image_url?: string;
 }
 
 interface OrderLineItem {
@@ -43,6 +47,8 @@ interface OrderLineItem {
   style_name: string;
   brand_name: string;
   category_name: string;
+  color?: string;
+  image_url?: string;
   items: Array<{ size: string; amount: number }>;
 }
 
@@ -74,6 +80,11 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [availableSizes, setAvailableSizes] = useState<string[]>([]);
   const [sizeAmounts, setSizeAmounts] = useState<Record<string, string>>({});
+
+  // Estados para visor de imagen
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [viewingProductName, setViewingProductName] = useState('');
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -126,6 +137,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
               style_name: d.style_name ?? '',
               brand_name: d.brand_name ?? '',
               category_name: d.category_name ?? '',
+              color: d.colour ?? '',
+              image_url: d.image_url ?? '',
               items: [{ size: d.size, amount: d.amount }],
             });
             seen.set(d.product_id, preloaded.length - 1);
@@ -178,8 +191,44 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
     if (selectedStyle) {
       setSelectedProduct('');
       setSizeAmounts({});
+      setActivePreset(null);
     }
   }, [selectedStyle]);
+
+  const applyRelativeCurve = (curve: Record<string, number>, startSize: string, presetId: string) => {
+    const newAmounts: Record<string, string> = {};
+    const startIndex = availableSizes.indexOf(startSize);
+    if (startIndex === -1) return;
+    
+    availableSizes.forEach((size, idx) => {
+      const offset = idx - startIndex + 1;
+      newAmounts[size] = curve[String(offset)] ? String(curve[String(offset)]) : '0';
+    });
+    setSizeAmounts(newAmounts);
+    setActivePreset(presetId);
+  };
+
+  const applyFixedX = (amount: number, range: string[], presetId: string) => {
+    const newAmounts: Record<string, string> = {};
+    availableSizes.forEach(size => {
+      newAmounts[size] = range.includes(size) ? String(amount) : '0';
+    });
+    setSizeAmounts(newAmounts);
+    setActivePreset(presetId);
+  };
+
+  const applySpecificCurve = (curve: Record<string, number>, presetId: string) => {
+    const newAmounts: Record<string, string> = {};
+    availableSizes.forEach(size => {
+      newAmounts[size] = String(curve[size] || '0');
+    });
+    setSizeAmounts(newAmounts);
+    setActivePreset(presetId);
+  };
+
+  const PRESETS_CONFIG = {
+    COMERCIAL_PATTERN: { '1': 1, '2': 2, '3': 3, '4': 3, '5': 2, '6': 1 }
+  };
 
   const handleAddItem = () => {
     if (!selectedCategory || !selectedBrand || !selectedStyle || !selectedProduct) { 
@@ -204,6 +253,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
       style_name: product.style_name,
       brand_name: product.brand_name,
       category_name: product.category_name,
+      color: product.color,
+      image_url: product.image_url,
       items: itemsWithAmount.map(([size, amount]) => ({ size, amount: parseInt(amount as string) })),
     };
     setItems([...items, newItem]);
@@ -301,29 +352,320 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
               <p className="text-green-700 dark:text-green-300 mt-2">{isEditMode ? 'Los cambios han sido guardados.' : 'La orden ha sido registrada en el sistema.'}</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse"><AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" /><p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p></div>}
-              <div><label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Cliente <span className="text-red-600">*</span></label>{loading && !clients.length ? <div className="flex items-center justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div> : <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"><option value="" className="dark:bg-slate-800">Selecciona un cliente mayorista {clients.length > 0 && `(${clients.length})`}</option>{clients.map((client) => <option key={client.id} value={client.id} className="dark:bg-slate-800">{client.name} {client.last_name}</option>)}</select>}</div>
-              <div><label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Productos del Pedido <span className="text-red-600">*</span></label>{items.length === 0 ? <div className="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-2xl p-12 text-center mb-4 transition-colors"><Package className="w-16 h-16 text-gray-300 dark:text-gray-700 mx-auto mb-4 opacity-50" /><p className="text-gray-500 dark:text-gray-400 font-bold text-sm">No hay productos agregados</p></div> : <div className="space-y-3 mb-4">{items.map((item, idx) => <div key={idx} className="border border-gray-200 dark:border-slate-800 rounded-2xl p-5 bg-gray-50 dark:bg-slate-800/40 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/60"><div className="flex justify-between items-start mb-4"><div><p className="font-bold text-gray-900 dark:text-white">{item.product_name}</p><p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-0.5">{item.brand_name} • {item.category_name}</p></div><button onClick={() => handleRemoveItem(idx)} className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all active:scale-95"><Trash2 className="w-5 h-5" /></button></div><div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{item.items.map((sizeItem, sIdx) => <div key={sIdx} className="bg-white dark:bg-slate-700/50 border border-gray-100 dark:border-slate-700 px-3 py-2 rounded-xl flex items-center justify-between"><span className="text-xs font-bold text-gray-500 dark:text-gray-400">Talla {sizeItem.size}:</span><input type="number" min="0" value={sizeItem.amount} onChange={(e) => handleUpdateItemAmount(idx, sIdx, parseInt(e.target.value) || 0)} className="w-12 bg-transparent text-sm font-bold text-gray-900 dark:text-white text-center focus:outline-none" /></div>)}</div></div>)}</div>}
-                <div className="bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-900/50 space-y-5 transition-all">
-                  <h3 className="font-bold text-gray-900 dark:text-blue-400 text-sm flex items-center gap-2"><Plus className="w-4 h-4" />Agregar Producto</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wider">Categoría <span className="text-red-600">*</span></label><select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 shadow-sm transition-all"><option value="">Selecciona categoría</option>{categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>
-                    <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wider">Marca <span className="text-red-600">*</span></label><select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} disabled={!selectedCategory} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 shadow-sm disabled:opacity-50 transition-all"><option value="">Selecciona marca</option>{getAvailableBrands().map((brand) => <option key={brand} value={brand}>{brand}</option>)}</select></div>
-                    <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wider">Estilo <span className="text-red-600">*</span></label><select value={selectedStyle} onChange={(e) => setSelectedStyle(e.target.value)} disabled={!selectedBrand} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 shadow-sm disabled:opacity-50 transition-all"><option value="">Selecciona estilo</option>{getAvailableStyles().map((style) => <option key={style.id} value={style.id}>{style.name}</option>)}</select></div>
-                    <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wider">Producto/Variante <span className="text-red-600">*</span></label><select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} disabled={!selectedStyle} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 shadow-sm disabled:opacity-50 transition-all"><option value="">Selecciona producto</option>{getAvailableProducts().map((prod) => <option key={prod.id} value={prod.id}>{prod.name}</option>)}</select></div>
-                  </div>
-                  {selectedProduct && availableSizes.length > 0 && <div><label className="block text-xs font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wider">Tallas y Cantidades <span className="text-red-600">*</span></label><div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-56 overflow-y-auto bg-gray-50/50 dark:bg-slate-800/80 p-4 rounded-xl border border-gray-200 dark:border-slate-700 custom-scrollbar">{availableSizes.map((size) => <div key={size} className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Talla {size}</label><input type="number" min="0" placeholder="0" value={sizeAmounts[size] || ''} onChange={(e) => handleSizeAmountChange(size, e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all" /></div>)}</div></div>}
-                  <button onClick={handleAddItem} disabled={!selectedProduct} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50 font-bold text-sm flex items-center justify-center gap-2 btn-shimmer"><Plus className="w-4 h-4" />Agregar a la lista</button>
-                </div>
-                {items.length > 0 && <div className="bg-blue-600 dark:bg-blue-600 px-6 py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all transform hover:scale-[1.01]"><p className="text-sm text-blue-50 font-medium flex items-center justify-between">Total de pares del pedido: <strong className="text-2xl font-black">{totalPairs}</strong></p></div>}
+              
+              {/* Sección 1: Cliente */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Cliente del Pedido <span className="text-red-600">*</span></label>
+                {loading && !clients.length ? (
+                  <div className="flex items-center justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
+                ) : (
+                  <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-bold transition-all shadow-sm">
+                    <option value="">Seleccionar cliente mayorista...</option>
+                    {clients.map((client) => <option key={client.id} value={client.id}>{client.name} {client.last_name} {client.business_name ? `(${client.business_name})` : ''}</option>)}
+                  </select>
+                )}
               </div>
-              <div><label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Notas Adicionales (Opcional)</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm dark:text-gray-200 transition-all" placeholder="Ej: Cliente preferencial, empaque especial, fecha de entrega urgente..." /></div>
+
+              {/* Sección 2: Agregar Producto */}
+              <div className="bg-blue-50/30 dark:bg-blue-900/10 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/40 space-y-6 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-extrabold text-gray-900 dark:text-white text-lg tracking-tight">Agregar Nuevo Producto</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest">Categoría</label>
+                    <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm transition-all">
+                      <option value="">Categoría</option>
+                      {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest">Marca</label>
+                    <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} disabled={!selectedCategory} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm disabled:opacity-50 transition-all">
+                      <option value="">Marca</option>
+                      {getAvailableBrands().map((brand) => <option key={brand} value={brand}>{brand}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest">Estilo</label>
+                    <select value={selectedStyle} onChange={(e) => setSelectedStyle(e.target.value)} disabled={!selectedBrand} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm disabled:opacity-50 transition-all">
+                      <option value="">Estilo</option>
+                      {getAvailableStyles().map((style) => <option key={style.id} value={style.id}>{style.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Grid de Selección Visual de Productos/Colores */}
+                {selectedStyle && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <label className="block text-[10px] font-black text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">Selecciona Color / Variante <span className="text-red-600">*</span></label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {getAvailableProducts().map((prod) => (
+                        <div 
+                          key={prod.id}
+                          onClick={() => setSelectedProduct(prod.id)}
+                          className={`group cursor-pointer rounded-2xl p-2 border-2 transition-all duration-300 relative ${
+                            selectedProduct === prod.id 
+                              ? 'bg-white dark:bg-slate-800 border-blue-600 dark:border-blue-500 shadow-xl shadow-blue-500/10 scale-[1.02]' 
+                              : 'bg-white/50 dark:bg-slate-800/50 border-transparent hover:border-gray-300 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {/* Botón Zoom */}
+                          {prod.image_url && (
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setViewingImage(resolveImageUrl(prod.image_url)!);
+                                 setViewingProductName(prod.name);
+                               }}
+                               className="absolute top-3 right-3 z-10 p-1.5 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                             >
+                               <Maximize2 className="w-3.5 h-3.5" />
+                             </button>
+                          )}
+                          
+                          <div className="aspect-square bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden mb-3 shadow-inner">
+                            {prod.image_url ? (
+                              <img src={resolveImageUrl(prod.image_url)} alt={prod.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400"><Package className="w-8 h-8 opacity-20" /></div>
+                            )}
+                          </div>
+                          <div className="px-1 text-center">
+                            <p className={`text-xs font-black truncate ${selectedProduct === prod.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                              {prod.color || 'Unico'}
+                            </p>
+                          </div>
+                          
+                          {/* Indicator Check */}
+                          {selectedProduct === prod.id && (
+                            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transform animate-in zoom-in duration-300">
+                              <Check className="w-3 h-3 font-bold" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sizing Section */}
+                {selectedProduct && availableSizes.length > 0 && (
+                  <div className="space-y-5 animate-in zoom-in-95 duration-300">
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <label className="block text-[10px] font-black text-gray-700 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                          <Package className="w-3.5 h-3.5" />
+                          Numeraciones Rápidas
+                        </label>
+                        <button 
+                          onClick={() => { setSizeAmounts({}); setActivePreset(null); }}
+                          className="px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-red-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 border border-gray-200 dark:border-slate-700"
+                        >
+                          Limpiar Todo
+                        </button>
+                      </div>
+                      
+                      {/* Botones de Numeración Rápida con Colores */}
+                      <div className="flex flex-wrap gap-2.5 p-4 bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all">
+                        {(() => {
+                          const cat = categories.find(c => c.id === selectedCategory)?.name;
+                          const damaRange = ['33', '34', '35', '36', '37', '38'];
+                          const cabFullRange = ['33', '34', '35', '36', '37', '38', '39', '40', '41', '42'];
+                          
+                          const colors = [
+                            'bg-orange-600 shadow-orange-500/30', // Comercial
+                            'bg-blue-600 shadow-blue-500/30',   // 2x
+                            'bg-emerald-600 shadow-emerald-500/30', // 3x
+                            'bg-purple-600 shadow-purple-500/30', // 4x
+                            'bg-rose-600 shadow-rose-500/30',   // 5x
+                            'bg-amber-600 shadow-amber-500/30', // Comercial Grande
+                            'bg-indigo-600 shadow-indigo-500/30' // Curva
+                          ];
+
+                          const getBtnClass = (id: string, colorIdx: number) => {
+                            const active = activePreset === id;
+                            return `px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 shadow-lg ${
+                              active ? `${colors[colorIdx]} text-white scale-[1.05] ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-600 z-10` : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
+                            }`;
+                          };
+
+                          if (cat === 'Dama') {
+                            return (
+                              <>
+                                <button onClick={() => applyRelativeCurve(PRESETS_CONFIG.COMERCIAL_PATTERN, '33', 'com-dama')} className={getBtnClass('com-dama', 0)}>Comercial</button>
+                                {[2, 3, 4, 5].map((num, i) => (
+                                  <button key={num} onClick={() => applyFixedX(num, damaRange, `fixed-${num}-dama`)} className={getBtnClass(`fixed-${num}-dama`, i + 1)}>{num} x Talla</button>
+                                ))}
+                              </>
+                            );
+                          }
+
+                          if (cat === 'Caballero') {
+                            return (
+                              <>
+                                <button onClick={() => applyRelativeCurve(PRESETS_CONFIG.COMERCIAL_PATTERN, '33', 'com-cab-peq')} className={getBtnClass('com-cab-peq', 0)}>Comercial (33-38)</button>
+                                <button onClick={() => applySpecificCurve({'37':1, '38':2, '39':3, '40':3, '41':2, '42':1}, 'com-cab-grande')} className={getBtnClass('com-cab-grande', 5)}>Comercial Grande (37-42)</button>
+                                <button onClick={() => {
+                                  const curve: Record<string, number> = {};
+                                  cabFullRange.forEach(s => curve[s] = (s === '38' || s === '39') ? 2 : 1);
+                                  applySpecificCurve(curve, 'curva-cab');
+                                }} className={getBtnClass('curva-cab', 6)}>Curva (33-42)</button>
+                                {[2, 3, 4, 5].map((num, i) => (
+                                  <button key={num} onClick={() => applyFixedX(num, cabFullRange, `fixed-${num}-cab`)} className={getBtnClass(`fixed-${num}-cab`, i + 1)}>{num} x Talla (33-42)</button>
+                                ))}
+                              </>
+                            );
+                          }
+                          if (cat === 'Infantil') {
+                            const infSmall = ['21', '22', '23', '24', '25', '26'];
+                            const infLarge = ['27', '28', '29', '30', '31', '32'];
+                            const infFull = [...infSmall, ...infLarge];
+                            
+                            return (
+                              <div className="flex flex-col gap-4 w-full">
+                                <div className="space-y-2">
+                                  <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase ml-1">Rangos Específicos</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {[2, 3, 4, 5, 6].map((num, i) => (
+                                      <button key={`s-${num}`} onClick={() => applyFixedX(num, infSmall, `fixed-${num}-inf-s`)} className={getBtnClass(`fixed-${num}-inf-s`, i)}>{num} x Talla (21-26)</button>
+                                    ))}
+                                    {[2, 3, 4, 5, 6].map((num, i) => (
+                                      <button key={`l-${num}`} onClick={() => applyFixedX(num, infLarge, `fixed-${num}-inf-l`)} className={getBtnClass(`fixed-${num}-inf-l`, i + 1)}>{num} x Talla (27-32)</button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase ml-1">Curvas Completas (21-32)</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button onClick={() => applyFixedX(1, infFull, 'curve-1-inf')} className={getBtnClass('curve-1-inf', 2)}>Curva Sencilla (1xT)</button>
+                                    <button onClick={() => applyFixedX(2, infFull, 'curve-2-inf')} className={getBtnClass('curve-2-inf', 3)}>Curva Doble (2xT)</button>
+                                    <button onClick={() => applyFixedX(3, infFull, 'curve-3-inf')} className={getBtnClass('curve-3-inf', 4)}>Curva Triple (3xT)</button>
+                                    <button onClick={() => applyFixedX(4, infFull, 'curve-4-inf')} className={getBtnClass('curve-4-inf', 5)}>Curva Cuádruple (4xT)</button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return null;
+                        })()}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl">
+                        <AlertCircle className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                          <span className="text-blue-600 dark:text-blue-400 font-extrabold uppercase">Numeraciones Rápidas:</span> Elige un patrón para carga masiva y ajusta manualmente si es necesario.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 bg-gray-50/50 dark:bg-slate-800/80 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-inner">
+                      {availableSizes.map((size) => (
+                        <div key={size} className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase text-center">Talla {size}</label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            placeholder="0" 
+                            value={sizeAmounts[size] || ''} 
+                            onChange={(e) => handleSizeAmountChange(size, e.target.value)} 
+                            className={`w-full px-3 py-2.5 rounded-xl text-xs font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm ${
+                              (parseInt(sizeAmounts[size]) > 0)
+                                ? 'bg-white dark:bg-slate-700 border-2 border-orange-500 text-orange-600 dark:text-orange-400 scale-105 z-10' 
+                                : 'bg-white dark:bg-slate-800 border border-transparent text-gray-900 dark:text-white'
+                            }`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={handleAddItem} className="w-full px-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all font-black text-base flex items-center justify-center gap-3">
+                      <Plus className="w-6 h-6" /> 
+                      Añadir a la lista del Pedido
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Sección 3: Resumen del Pedido (Ahora al FINAL de la configuración) */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Clipboard className="w-4 h-4 text-gray-400" />
+                    Resumen de Productos
+                    {items.length > 0 && <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-[10px] rounded-full">{items.length} {items.length === 1 ? 'modelo' : 'modelos'}</span>}
+                  </label>
+                </div>
+                
+                {items.length === 0 ? (
+                  <div className="border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl p-10 text-center transition-colors">
+                    <Package className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
+                    <p className="text-gray-400 dark:text-gray-500 font-bold text-sm">No has añadido productos todavía</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {items.map((item, idx) => (
+                      <div key={idx} className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
+                        {/* List Item Content exactly as before ... */}
+                        <div className="flex gap-4 p-4 border-b border-gray-50 dark:border-slate-800">
+                          <div className="w-14 h-14 rounded-xl bg-gray-50 dark:bg-slate-800 flex-shrink-0 cursor-pointer overflow-hidden border border-gray-100 dark:border-slate-700 group relative" onClick={() => { const url = resolveImageUrl(item.image_url); if (url) { setViewingImage(url); setViewingProductName(item.product_name); } }}>
+                            {resolveImageUrl(item.image_url) ? (
+                              <><img src={resolveImageUrl(item.image_url)} alt={item.product_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" /><div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Maximize2 className="text-white w-3 h-3" /></div></>
+                            ) : <Package className="w-6 h-6 text-gray-300 mx-auto my-auto" />}
+                          </div>
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-extrabold text-gray-900 dark:text-white truncate">{item.product_name}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[9px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">{item.style_name}</span>
+                                  <span className="text-[9px] font-bold text-gray-400">• {item.color || 'Sin color'}</span>
+                                </div>
+                              </div>
+                              <button onClick={() => handleRemoveItem(idx)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20">
+                          <div className="flex flex-wrap gap-2">
+                            {item.items.map((s, sIdx) => <div key={sIdx} className="px-2 py-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg text-[10px] font-black text-gray-700 dark:text-gray-300">T{s.size}: <span className="text-blue-600">{s.amount}</span></div>)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Total pairs callout */}
+                    <div className="bg-blue-600 px-6 py-4 rounded-2xl shadow-xl shadow-blue-500/20">
+                      <p className="text-sm text-blue-50 font-bold flex items-center justify-between">Total acumulado en el pedido: <strong className="text-2xl font-black">{totalPairs} pares</strong></p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sección 4: Notas */}
+              <div className="pt-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Notas Finales</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm dark:text-gray-200 transition-all font-medium" placeholder="Comentarios sobre el cliente, entrega o productos..." />
+              </div>
             </div>
           )}
         </div>
         {!success && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={onClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || !selectedClient} className={`px-8 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50 btn-pulse`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
       </div>
+      
+      {/* Modal visor de imagen */}
+      <ImageViewerModal
+        isOpen={!!viewingImage}
+        imageUrl={viewingImage || ''}
+        productName={viewingProductName}
+        onClose={() => setViewingImage(null)}
+      />
     </div>
   );
 }

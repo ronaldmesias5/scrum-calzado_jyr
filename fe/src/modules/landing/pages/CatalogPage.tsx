@@ -12,6 +12,7 @@ import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
 import ProductCard from '../components/ProductCard';
 import CatalogFilters from '../components/CatalogFilters';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import {
   getPublicProducts,
   getCatalogCategories,
@@ -45,10 +46,25 @@ export default function CatalogPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Estilos filtrados según la marca seleccionada
+  const filteredStyles = selectedBrand
+    ? styles.filter(s => s.brand_id === selectedBrand)
+    : styles;
+
   // Cargar datos iniciales
   useEffect(() => {
     loadCatalogData();
   }, []);
+
+  // Resetear estilo si cambia la marca y el estilo ya no es válido
+  useEffect(() => {
+    if (selectedStyle) {
+      const isValidStyle = filteredStyles.some(s => s.id === selectedStyle);
+      if (!isValidStyle) {
+        setSelectedStyle('');
+      }
+    }
+  }, [selectedBrand, filteredStyles, selectedStyle]);
 
   // Recargar productos cuando cambian los filtros
   useEffect(() => {
@@ -114,7 +130,7 @@ export default function CatalogPage() {
     !!selectedColor ||
     !!searchTerm;
 
-  const handleOrderClick = (product: Product) => {
+  const handleOrderClick = (_product: Product) => {
     // Redirigir a login si no está autenticado
     navigate('/auth/login', { state: { returnTo: '/dashboard/orders' } });
   };
@@ -145,16 +161,7 @@ export default function CatalogPage() {
         {/* Header de catálogo with Breadcrumb */}
         <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-10 transition-colors duration-500">
           <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-              <button
-                onClick={() => navigate('/')}
-                className="hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Inicio
-              </button>
-              <span>/</span>
-              <span className="text-blue-600 dark:text-blue-400 font-medium">Catálogo</span>
-            </div>
+            <Breadcrumbs />
             <button
               onClick={() => navigate('/')}
               className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -186,7 +193,7 @@ export default function CatalogPage() {
               <CatalogFilters
                 categories={categories}
                 brands={brands}
-                styles={styles}
+                styles={filteredStyles}
                 colors={colors}
                 selectedCategory={selectedCategory}
                 selectedBrand={selectedBrand}

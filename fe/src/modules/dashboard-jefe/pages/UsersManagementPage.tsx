@@ -151,9 +151,9 @@ function PendingUsersTab() {
                       {new Date(user.created_at).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
                         {approved ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                          <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-bold uppercase tracking-wider">
                             <CheckCircle size={14} /> Aprobado
                           </span>
                         ) : (
@@ -161,7 +161,7 @@ function PendingUsersTab() {
                             <button
                               onClick={() => handleApprove(user.id.toString())}
                               disabled={approvingId === id || deletingId === id}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                             >
                               {approvingId === id ? (
                                 <Loader2 size={14} className="animate-spin" />
@@ -173,7 +173,7 @@ function PendingUsersTab() {
                             <button
                               onClick={() => openDeleteConfirm(user)}
                               disabled={approvingId === id || deletingId === id}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                             >
                               <XCircle size={14} />
                               Rechazar
@@ -464,21 +464,23 @@ export default function UsersManagementPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-6 w-fit shadow-inner transition-colors">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-              activeTab === id
-                ? 'bg-white dark:bg-blue-600 text-blue-800 dark:text-white shadow-lg scale-[1.02]'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Icon size={16} />
-            {label}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-2 -mx-2 px-2 custom-scrollbar">
+        <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-2 w-max min-w-full shadow-inner transition-colors">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+                activeTab === id
+                  ? 'bg-white dark:bg-blue-600 text-blue-800 dark:text-white shadow-lg scale-[1.02]'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Contenido del tab */}

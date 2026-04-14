@@ -1,4 +1,4 @@
-import { X, Search, Filter } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Brand, Category, Style } from '../services/publicCatalogService';
 

@@ -623,20 +623,32 @@ def create_product(
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    # Verificar que no exista un producto con el mismo nombre dentro del mismo estilo
+    # Verificar que no exista un producto con el mismo nombre dentro del mismo estilo, marca, categoría y color
     if req.name:
-        existing = db.execute(
-            select(Product).where(
-                (Product.style_id == style_uuid) &
-                (Product.brand_id == brand_uuid) &
-                (Product.name_product == req.name) &
-                (Product.deleted_at == None)
-            )
-        ).scalar()
+        stmt = select(Product).where(
+            (Product.style_id == style_uuid) &
+            (Product.brand_id == brand_uuid) &
+            (Product.category_id == category_uuid) &
+            (Product.name_product == req.name) &
+            (Product.deleted_at == None)
+        )
+        
+        # Considerar el color en la búsqueda si se proporciona
+        if req.color:
+            stmt = stmt.where(Product.color == req.color)
+        else:
+            stmt = stmt.where((Product.color == None) | (Product.color == ""))
+            
+        existing = db.execute(stmt).scalar()
+        
         if existing:
+            detail_msg = f"Ya existe un producto con el nombre '{req.name}' para este estilo, marca y categoría"
+            if req.color:
+                detail_msg += f" en color {req.color}"
+            
             raise HTTPException(
                 status_code=409,
-                detail=f"Ya existe un producto con el nombre '{req.name}' para este estilo y marca"
+                detail=detail_msg
             )
     
     product = Product(
@@ -721,6 +733,31 @@ def update_product(
     ).scalar()
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
+        
+    # Verificar que no exista otro producto con el mismo nombre, estilo, marca, categoría y color
+    if req.name:
+        stmt = select(Product).where(
+            (Product.id != product_uuid) &
+            (Product.style_id == style_uuid) &
+            (Product.brand_id == brand_uuid) &
+            (Product.category_id == category_uuid) &
+            (Product.name_product == req.name) &
+            (Product.deleted_at == None)
+        )
+        
+        if req.color:
+            stmt = stmt.where(Product.color == req.color)
+        else:
+            stmt = stmt.where((Product.color == None) | (Product.color == ""))
+            
+        existing = db.execute(stmt).scalar()
+        
+        if existing:
+            detail_msg = f"Ya existe otro producto con el nombre '{req.name}' para estas especificaciones"
+            raise HTTPException(
+                status_code=409,
+                detail=detail_msg
+            )
     
     product.name_product = req.name if req.name else style.name_style
     product.description_product = req.description

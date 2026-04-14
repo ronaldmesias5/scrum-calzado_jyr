@@ -112,7 +112,7 @@ export default function EmployeesPage() {
       setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
       setIsStatusModalOpen(false);
     } catch {
-      alert('Error al cambiar el estado del empleado.');
+      console.error('Error al cambiar el estado del empleado.');
     } finally {
       setIsStatusLoading(false);
       setEmployeeToToggle(null);
@@ -122,20 +122,20 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             Gestión de Empleados
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 transition-colors">
-            Administra el personal de la fábrica, asigna cargos y controla el acceso.
+            Administra el personal de la fábrica y controla sus accesos.
           </p>
         </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
         >
           <UserPlus size={18} />
           Nuevo Empleado
@@ -283,7 +283,7 @@ export default function EmployeesPage() {
             </div>
             
             <form onSubmit={handleUpdate} className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre</label>
                   <input

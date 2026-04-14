@@ -24,6 +24,7 @@ import ContactClientModal from '../components/ContactClientModal';
 import StatCard from '../components/StatCard';
 import ImageViewerModal from '../components/ImageViewerModal';
 import { resolveImageUrl } from '../services/catalogService';
+import { checkProductSupplies, type ProductSuppliesCheckResponse } from '../services/suppliesService';
 
 // ─────────────────────────────────────────
 // Helpers de estado
@@ -160,6 +161,8 @@ function OrderDetailView({
   onDelete,
   onEdit,
   onContactClient,
+  orderSupplies,
+  onUpdateItemsStatus,
   error,
 }: {
   order: OrderDetail;
@@ -169,6 +172,8 @@ function OrderDetailView({
   onDelete: (orderId: string) => void;
   onEdit: () => void;
   onContactClient: () => void;
+  onUpdateItemsStatus: (productId: string, newStatus: OrderStatus) => void;
+  orderSupplies: Record<string, ProductSuppliesCheckResponse>;
   error?: string | null;
 }) {
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -176,6 +181,12 @@ function OrderDetailView({
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [productionModal, setProductionModal] = useState<{
+    productId: string;
+    productName: string;
+    missingCount: number;
+    totalCount: number;
+  } | null>(null);
 
   const handleImageError = (imageUrl: string) => {
     setFailedImages(prev => new Set([...prev, imageUrl]));
@@ -190,6 +201,26 @@ function OrderDetailView({
   const canRevert          = order.state === 'completado';
   const isEverythingInStock = order.details.length > 0 && order.details.every(d => (d.stock_available ?? 0) >= d.amount);
 
+  // Agrupar por product_id para cálculos globales
+  const groups = order.details.reduce<Record<string, typeof order.details>>((acc, d) => {
+    const key = d.product_id;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(d);
+    return acc;
+  }, {});
+
+  const productCount = Object.keys(groups).length;
+  const completedProducts = Object.values(groups).filter(lines => lines.every(l => l.state === 'completado')).length;
+  const inProgressProducts = Object.values(groups).filter(lines => lines.some(l => l.state === 'en_progreso')).length;
+  
+  const progressText = completedProducts === productCount 
+    ? "Todos los productos terminados"
+    : completedProducts > 0 
+      ? `${completedProducts} de ${productCount} productos terminados`
+      : inProgressProducts > 0 
+        ? "Producción en curso"
+        : "Esperando inicio de producción";
+
   return (
     <div className="space-y-6">
       {error && (
@@ -199,19 +230,35 @@ function OrderDetailView({
         </div>
       )}
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
-            Pedido <span className="font-mono text-blue-600 dark:text-blue-400">#{order.id.substring(0, 8)}</span>
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 transition-colors">
-            Creado el {new Date(order.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
-          </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors">
+              Pedido <span className="font-mono text-blue-600 dark:text-blue-400">#{order.id.substring(0, 8)}</span>
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{progressText}</span>
+              {completedProducts < productCount && (
+                <span className="w-1 h-1 bg-gray-300 rounded-full" />
+              )}
+              {completedProducts < productCount && productCount - completedProducts > 0 && (
+                <span className="text-[10px] font-black text-orange-500 uppercase">Faltan {productCount - completedProducts} productos</span>
+              )}
+            </div>
+          </div>
+          <div className="sm:hidden">
+            <StatusBadge status={order.state} />
+          </div>
         </div>
-        <StatusBadge status={order.state} />
+        <div className="hidden sm:block">
+           <StatusBadge status={order.state} />
+        </div>
+        <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5 transition-colors sm:hidden">
+          Creado el {new Date(order.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -222,9 +269,9 @@ function OrderDetailView({
           {/* Resumen */}
           <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 transition-all duration-300">
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">Información del Pedido</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">ID Pedido</p>
+                <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-bold mb-1 tracking-widest">ID Pedido</p>
                 <p className="font-mono font-bold text-gray-900 dark:text-gray-100">#{order.id.substring(0, 8)}</p>
               </div>
               <div>
@@ -283,28 +330,24 @@ function OrderDetailView({
                   const productImageUrl = first.image_url ? resolveImageUrl(first.image_url) : null;
                   
                     const totalProductPairs = lines.reduce((s, l) => s + l.amount, 0);
+                    const totalToProduce = lines.reduce((acc, l) => acc + Math.max(0, l.amount - Math.floor(l.stock_available ?? 0)), 0);
                     const allAvailable = lines.every(l => (l.stock_available ?? 0) >= l.amount);
+                    
+                    // El estado del producto es el estado del primer item (asumimos consistencia por grupo)
+                    const productState = first.state || 'pendiente';
 
                     return (
                       <div key={productId} className={`bg-white dark:bg-slate-900/50 border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${allAvailable ? 'border-green-200 dark:border-green-900/50' : 'border-gray-200 dark:border-slate-800'}`}>
-                        <div className={`${allAvailable ? 'bg-green-50/50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-800'} border-b px-5 py-4 flex items-center justify-between`}>
+                         <div className={`${productState === 'completado' ? 'bg-green-50/50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30' : productState === 'en_progreso' ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-800'} border-b px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
                           <div className="flex items-center gap-4 min-w-0">
+                            {/* Inner content (image and name) stays as flex-row */}
+                            {/* ... already handled above ... */}
                             {productImageUrl && !failedImages.has(productImageUrl) ? (
                               <button
                                 onClick={() => { setViewingImage(productImageUrl); setViewingProductName(productName); }}
+                                className="relative w-20 h-20 sm:w-32 sm:h-32 border rounded-xl overflow-hidden bg-transparent cursor-pointer flex items-center justify-center flex-shrink-0"
                                 style={{
-                                  width: '140px',
-                                  height: '140px',
-                                  border: `1px solid ${allAvailable ? '#22c55e40' : '#33415540'}`,
-                                  borderRadius: '12px',
-                                  padding: '0',
-                                  overflow: 'hidden',
-                                  backgroundColor: 'transparent',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
+                                  borderColor: allAvailable ? '#22c55e40' : '#33415540',
                                 }}
                                 title="Click para ver imagen completa"
                               >
@@ -328,17 +371,12 @@ function OrderDetailView({
                                 />
                               </button>
                             ) : (
-                              <div style={{
-                                width: '140px',
-                                height: '140px',
-                                border: `1px solid ${allAvailable ? '#22c55e40' : '#33415540'}`,
-                                borderRadius: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: 'transparent',
-                                flexShrink: 0,
-                              }}>
+                              <div 
+                                className="w-20 h-20 sm:w-32 sm:h-32 border rounded-xl flex items-center justify-center bg-transparent flex-shrink-0"
+                                style={{
+                                  borderColor: allAvailable ? '#22c55e40' : '#33415540',
+                                }}
+                              >
                                 <Package className={`w-10 h-10 ${allAvailable ? 'text-green-300 dark:text-green-700' : 'text-gray-300 dark:text-gray-700'}`} />
                               </div>
                             )}
@@ -355,12 +393,54 @@ function OrderDetailView({
                               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
                                 {[brandName, styleName, categoryName].filter(Boolean).join(' · ')}
                               </p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <StatusBadge status={productState} size="sm" />
+                              </div>
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
+                          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
                             <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-blue-200 dark:border-blue-900/50">
                               {totalProductPairs} pares pedidos
                             </span>
+
+                            {/* Acciones de Producción por Producto */}
+                            <div className="flex items-center gap-2">
+                              {productState === 'pendiente' && (
+                                <button 
+                                  onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs })}
+                                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+                                >
+                                  <PlayCircle size={14} />
+                                  <span>Iniciar Producción</span>
+                                </button>
+                              )}
+                              
+                              {productState === 'en_progreso' && (
+                                <button 
+                                  onClick={() => onUpdateItemsStatus(productId, 'completado')}
+                                  className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+                                >
+                                  <CheckCircle size={14} />
+                                  <span>Marcar Terminado</span>
+                                </button>
+                              )}
+
+                              {productState === 'completado' && (
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => onUpdateItemsStatus(productId, 'en_progreso')}
+                                    className="p-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-400 rounded-lg transition-all text-xs font-bold"
+                                    title="Revertir a Producción"
+                                  >
+                                     <ArrowLeft size={14} />
+                                  </button>
+                                  <div className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50 rounded-lg text-xs font-black uppercase flex items-center gap-2">
+                                    <Package size={14} />
+                                    Listo para Entrega
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {/* Tallas y cantidades */}
@@ -389,6 +469,83 @@ function OrderDetailView({
                             })}
                           </div>
                         </div>
+
+                        {/* Métricas de Insumos para Producción */}
+                        {(() => {
+                          const productSuppliesData = orderSupplies[productId];
+                          const totalToProduce = lines.reduce((acc, l) => acc + Math.max(0, l.amount - Math.floor(l.stock_available ?? 0)), 0);
+
+                          if (totalToProduce === 0) return (
+                            <div className="px-5 py-3 bg-green-50/50 dark:bg-green-950/10 border-t border-green-100 dark:border-green-900/30 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <p className="text-[10px] font-bold text-green-700 dark:text-green-400 uppercase tracking-wider">No se requiere producción: Todo disponible en bodega</p>
+                            </div>
+                          );
+
+                          return (
+                            <div className="px-5 py-4 bg-blue-50/20 dark:bg-slate-800/10 border-t border-gray-100 dark:border-slate-800 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                  <h3 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Insumos para Producción </h3>
+                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium">(Calculados según requerimiento por docena en catálogo)</p>
+                                </div>
+                                <span className="px-2 py-1 bg-blue-600 text-white text-[10px] font-black rounded-lg uppercase">Faltan {totalToProduce} pares</span>
+                              </div>
+
+                              {!productSuppliesData ? (
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 italic">Cargando métricas de materiales...</p>
+                              ) : productSuppliesData.supplies.length === 0 ? (
+                                <p className="text-[10px] font-bold text-orange-500 dark:text-orange-400 italic">Este producto no tiene insumos vinculados para calcular métricas.</p>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {productSuppliesData.supplies.map(s => {
+                                    const neededMissing = totalToProduce * s.quantity_required;
+                                    const neededTotal = totalProductPairs * s.quantity_required;
+                                    const hasStockMissing = s.stock_quantity >= neededMissing;
+                                    const hasStockTotal = s.stock_quantity >= neededTotal;
+                                    
+                                    const fmt = (n: number) => n % 1 === 0 ? n.toString() : n.toFixed(2);
+
+                                    return (
+                                      <div key={s.supply_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-200 dark:hover:border-blue-900/40">
+                                        <div className="mb-2 sm:mb-0">
+                                          <p className="text-[10px] font-black text-gray-800 dark:text-gray-200 truncate leading-tight">{s.supply_name}</p>
+                                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">{s.supply_category || 'General'}</p>
+                                          <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[9px] font-black text-gray-400">Stock:</span>
+                                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">{fmt(s.stock_quantity)}</span>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:gap-6 border-t sm:border-t-0 sm:border-l border-gray-50 dark:border-slate-800 pt-2 sm:pt-0 sm:pl-6">
+                                          <div className="flex flex-col">
+                                            <span className="text-[8px] font-black text-gray-400 uppercase leading-none mb-1">Para Faltantes ({totalToProduce}p)</span>
+                                            <div className="flex items-center gap-1.5">
+                                              <span className={`text-[10px] font-black ${hasStockMissing ? 'text-gray-900 dark:text-white' : 'text-red-600'}`}>
+                                                {fmt(neededMissing)}
+                                              </span>
+                                              {hasStockMissing ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col">
+                                            <span className="text-[8px] font-black text-gray-400 uppercase leading-none mb-1">Para Total ({totalProductPairs}p)</span>
+                                            <div className="flex items-center gap-1.5">
+                                              <span className={`text-[10px] font-black ${hasStockTotal ? 'text-gray-900 dark:text-white' : 'text-red-600'}`}>
+                                                {fmt(neededTotal)}
+                                              </span>
+                                              {hasStockTotal ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                 })}
@@ -396,6 +553,142 @@ function OrderDetailView({
             );
           })()}
         </div>
+
+        {/* Modal Inicio Producción Independiente */}
+        {productionModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                    <PlayCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Iniciar Producción</h2>
+                    <p className="text-xs text-gray-500 font-medium">{productionModal.productName} • </p>
+                    <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-tighter">Cantidades totales para el lote</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setProductionModal(null)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-gray-400"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">¿Qué cantidad deseas fabricar?</p>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Opción 1: Solo faltantes */}
+                  {(() => {
+                    const supplies = orderSupplies[productionModal.productId]?.supplies || [];
+                    const allSufficient = supplies.every(s => s.stock_quantity >= productionModal.missingCount * s.quantity_required);
+
+                    return (
+                      <button 
+                        onClick={() => {
+                          onUpdateItemsStatus(productionModal.productId, 'en_progreso');
+                          setProductionModal(null);
+                        }}
+                        className={`group flex flex-col p-4 border rounded-xl transition-all text-left ${allSufficient ? 'border-gray-200 dark:border-slate-800 hover:border-blue-500 hover:bg-blue-50/30' : 'border-red-100 dark:border-red-900/20 hover:border-red-500 bg-red-50/10'}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">Opción A: Pares Faltantes</span>
+                            {allSufficient ? (
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[9px] font-black rounded uppercase">Material Disponible</span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[9px] font-black rounded uppercase">Sin Material</span>
+                            )}
+                          </div>
+                          <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded uppercase">{productionModal.missingCount} pares</span>
+                        </div>
+                        
+                        {/* Detalle de insumos para esta opción */}
+                        {supplies.length > 0 && (
+                          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 py-1 border-t border-gray-100 dark:border-slate-800/50">
+                            {supplies.slice(0, 4).map(s => {
+                               const needed = productionModal.missingCount * s.quantity_required;
+                               const ok = s.stock_quantity >= needed;
+                               return (
+                                 <div key={s.supply_id} className="flex items-center justify-between text-[9px] mt-1">
+                                   <span className="text-gray-500 truncate max-w-[120px]">{s.supply_name}</span>
+                                   <span className={`font-bold ${ok ? 'text-green-600' : 'text-red-500'}`}>
+                                      {ok ? '✓' : 'Falta'}
+                                   </span>
+                                 </div>
+                               );
+                            })}
+                            {supplies.length > 4 && <span className="text-[9px] text-gray-400 italic mt-1">+{supplies.length - 4} más...</span>}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })()}
+
+                  {/* Opción 2: Lote completo */}
+                  {(() => {
+                    const supplies = orderSupplies[productionModal.productId]?.supplies || [];
+                    const allSufficient = supplies.every(s => s.stock_quantity >= productionModal.totalCount * s.quantity_required);
+
+                    return (
+                      <button 
+                        onClick={() => {
+                          onUpdateItemsStatus(productionModal.productId, 'en_progreso');
+                          setProductionModal(null);
+                        }}
+                        className={`group flex flex-col p-4 border rounded-xl transition-all text-left ${allSufficient ? 'border-gray-200 dark:border-slate-800 hover:border-orange-500 hover:bg-orange-50/30' : 'border-red-100 dark:border-red-900/20 hover:border-red-500 bg-red-50/10'}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">Opción B: Lote Completo</span>
+                            {allSufficient ? (
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[9px] font-black rounded uppercase">Material Disponible</span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[9px] font-black rounded uppercase">Alerta Insumos</span>
+                            )}
+                          </div>
+                          <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded uppercase">{productionModal.totalCount} pares</span>
+                        </div>
+                        
+                        {/* Detalle de insumos para esta opción */}
+                        {supplies.length > 0 && (
+                          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 py-1 border-t border-gray-100 dark:border-slate-800/50">
+                            {supplies.slice(0, 4).map(s => {
+                               const needed = productionModal.totalCount * s.quantity_required;
+                               const ok = s.stock_quantity >= needed;
+                               return (
+                                 <div key={s.supply_id} className="flex items-center justify-between text-[9px] mt-1">
+                                   <span className="text-gray-500 truncate max-w-[120px]">{s.supply_name}</span>
+                                   <span className={`font-bold ${ok ? 'text-green-600' : 'text-red-500'}`}>
+                                      {ok ? '✓' : `Faltan ${(needed - s.stock_quantity).toFixed(1)}`}
+                                   </span>
+                                 </div>
+                               );
+                            })}
+                            {supplies.length > 4 && <span className="text-[9px] text-gray-400 italic mt-1">+{supplies.length - 4} más...</span>}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
+                 <div className="flex gap-3">
+                   <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                   <div className="text-[10px] text-blue-700 dark:text-blue-300 font-bold leading-relaxed">
+                     <span className="font-black uppercase mr-1 underline decoration-blue-400">Nota de Producción:</span> 
+                     <p className="mt-1">Al iniciar fábrica se descontarán automáticamente los materiales. Haz clic en una opción para confirmar.</p>
+                   </div>
+                 </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Columna derecha: info cliente + acciones */}
         <div className="space-y-4">
@@ -625,6 +918,7 @@ export default function OrdersPage() {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
   const [clientFilter, setClientFilter] = useState('');
+  const [orderSupplies, setOrderSupplies] = useState<Record<string, ProductSuppliesCheckResponse>>({});
   const [isUpdating, setIsUpdating] = useState(false);
   const [totalByStatus, setTotalByStatus] = useState<Record<OrderStatus, number>>({
     pendiente: 0, en_progreso: 0, completado: 0, cancelado: 0,
@@ -666,11 +960,82 @@ export default function OrdersPage() {
     try {
       const detail = await getOrderDetail(order.id);
       setSelectedOrder(detail);
+
+      // Cargar insumos para los productos del pedido
+      const productIds = Array.from(new Set(detail.details.map(d => d.product_id)));
+      const suppliesMap: Record<string, ProductSuppliesCheckResponse> = {};
+      
+      await Promise.all(productIds.map(async (id) => {
+        try {
+          const res = await checkProductSupplies(id);
+          suppliesMap[id] = res;
+        } catch (err) {
+          console.error('Error cargando insumos para producto:', id, err);
+        }
+      }));
+      setOrderSupplies(suppliesMap);
+
       setView('detail');
     } catch {
       setError('No se pudo cargar el detalle del pedido.');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleUpdateItemsStatus = async (productId: string, newStatus: OrderStatus) => {
+    if (!selectedOrder) return;
+    setIsUpdating(true);
+    setError(null);
+    try {
+      // 1. Preparar la actualización local (y para envío si el backend lo soporta)
+      const updatedDetails = selectedOrder.details.map(item => {
+        if (item.product_id === productId) {
+          return { ...item, state: newStatus };
+        }
+        return item;
+      });
+
+      // 2. Determinar nuevo estado global
+      // - Si todo completado -> completo
+      // - Si algo en progreso o parcialmente completado -> en_progreso
+      // - Si nada iniciado -> pendiente
+      const allCompleted = updatedDetails.every(d => d.state === 'completado');
+      const anyInProg = updatedDetails.some(d => d.state === 'en_progreso') || (updatedDetails.some(d => d.state === 'completado') && !allCompleted);
+      
+      let newGlobalStatus: OrderStatus = 'pendiente';
+      if (allCompleted) newGlobalStatus = 'completado';
+      else if (anyInProg) newGlobalStatus = 'en_progreso';
+
+      // 3. Persistencia asistida: Actualizamos tanto el estado global como las líneas mediante el API
+      // Nota: Si el backend no soporta estados por línea en el PUT, al menos actualizamos el global.
+      // Pero 'updateOrderDetails' se usa para delivery_date y items.
+      
+      // Actualizamos global primero
+      if (newGlobalStatus !== selectedOrder.state) {
+        await updateOrderStatus(selectedOrder.id, { state: newGlobalStatus });
+      }
+
+      // Intentamos actualizar detalles (incluyendo el estado si el backend lo acepta)
+      const res = await updateOrderDetails(selectedOrder.id, {
+        delivery_date: selectedOrder.delivery_date,
+        details: updatedDetails.map(d => ({
+          product_id: d.product_id,
+          size: d.size,
+          colour: d.colour,
+          amount: d.amount,
+          state: d.state // Intentamos pasar el estado
+        } as any))
+      });
+
+      setSelectedOrder(res);
+      // Recargar lista para reflejar cambios
+      loadOrders();
+    } catch (err) {
+      console.error('Error actualizando estados:', err);
+      setError('No se pudieron actualizar los estados de producción.');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -726,6 +1091,8 @@ export default function OrdersPage() {
           onDelete={handleDeleteOrder}
           onEdit={() => setIsEditModalOpen(true)}
           onContactClient={() => setIsContactModalOpen(true)}
+          onUpdateItemsStatus={handleUpdateItemsStatus}
+          orderSupplies={orderSupplies}
           error={error}
         />
         <OrderFormModal
@@ -757,9 +1124,9 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <ShoppingCart className="w-8 h-8 text-red-600 dark:text-red-500" />
             Gestión de Pedidos
           </h1>
@@ -769,7 +1136,7 @@ export default function OrdersPage() {
         </div>
         <button
           onClick={() => setIsFormOpen(true)}
-          className="px-6 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
+          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
         >
           <Plus className="w-4 h-4" />
           Nuevo Pedido
@@ -786,8 +1153,8 @@ export default function OrdersPage() {
       <SummaryCards totals={totalByStatus} />
 
       {/* Filtros */}
-      <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 flex gap-4 flex-wrap items-end shadow-sm transition-all duration-300">
-        <div className="flex-1 min-w-48">
+      <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row gap-4 items-stretch md:items-end shadow-sm transition-all duration-300">
+        <div className="flex-1">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
             <Search className="w-4 h-4 inline mr-1 text-blue-500" />
             Buscar cliente
@@ -800,7 +1167,7 @@ export default function OrdersPage() {
             className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
-        <div>
+        <div className="w-full md:w-auto">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
             <Filter className="w-4 h-4 inline mr-1 text-blue-500" />
             Estado
@@ -808,7 +1175,7 @@ export default function OrdersPage() {
           <select
             value={statusFilter || ''}
             onChange={(e) => { setStatusFilter((e.target.value as OrderStatus) || null); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           >
             <option value="">Todos</option>
             <option value="pendiente">Pendiente</option>
@@ -819,10 +1186,10 @@ export default function OrdersPage() {
         </div>
         <button
           onClick={() => loadOrders()}
-          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center"
           title="Recargar"
         >
-          <RefreshCw className="w-4 h-4 text-gray-600" />
+          <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
 

@@ -19,8 +19,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
-import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, Plus, RefreshCw, Maximize2, Download } from 'lucide-react';
+// @ts-ignore
+const XLSX = window.XLSX;
+import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, Plus, RefreshCw, Maximize2, Download, XCircle } from 'lucide-react';
 import { Product, listProducts, resolveImageUrl } from '../services/catalogService';
 import AdjustInventoryModal from '../components/AdjustInventoryModal';
 import ImageViewerModal from '../components/ImageViewerModal';
@@ -41,6 +42,21 @@ export default function InventoryPage() {
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [showExportError, setShowExportError] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (showExportError) {
+      const timer = setTimeout(() => setShowExportError(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showExportError]);
+
+  useEffect(() => {
+    if (showSaveSuccess) {
+      const timer = setTimeout(() => setShowSaveSuccess(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSaveSuccess]);
 
   const handleImageError = (imageUrl: string) => {
     setFailedImages(prev => new Set([...prev, imageUrl]));
@@ -124,52 +140,95 @@ export default function InventoryPage() {
       return;
     }
 
-    // Preparar datos para el Excel
-    const data = productsWithStock.map(p => ({
-      'Nombre Producto': p.name,
-      'Marca': p.brand_name,
-      'Estilo': p.style_name,
-      'Categoría': p.category_name,
-      'Color': p.color || 'N/A',
-      'Stock Total': p.stock_total || 0,
-      'Mínimo Requerido': p.insufficient_threshold || 12,
-      'Estado': (p.stock_total || 0) >= (p.insufficient_threshold || 12) ? 'Suficiente' : 'Insuficiente',
-    }));
+    // Preparar encabezados con estilo
+    const headers = [
+      'Nombre Producto', 'Marca', 'Estilo', 'Categoría', 'Color',
+      'Stock Total', 'Mínimo Requerido', 'Estado'
+    ];
+
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: "1E40AF" } }, // Dark Blue
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: "E5E7EB" } },
+        bottom: { style: "thin", color: { rgb: "E5E7EB" } }
+      }
+    };
+
+    // Crear filas de datos
+    const rows = productsWithStock.map(p => {
+      const stock = p.stock_total || 0;
+      const threshold = p.insufficient_threshold || 12;
+      const isSufficient = stock >= threshold;
+      const statusText = isSufficient ? 'Suficiente' : 'Insuficiente';
+
+      // Estilo para la celda de estado
+      const statusStyle = {
+        font: { bold: true, color: { rgb: isSufficient ? "15803D" : "C2410C" } },
+        fill: { fgColor: { rgb: isSufficient ? "DCFCE7" : "FFEDD5" } },
+        alignment: { horizontal: "center" }
+      };
+
+      const centerStyle = { alignment: { horizontal: "center" } };
+
+      return [
+        { v: p.name },
+        { v: p.brand_name },
+        { v: p.style_name },
+        { v: p.category_name },
+        { v: p.color || 'N/A' },
+        { v: stock, s: centerStyle },
+        { v: threshold, s: centerStyle },
+        { v: statusText, s: statusStyle }
+      ];
+    });
+
+    // Combinar encabezados y filas
+    const data = [
+      headers.map(h => ({ v: h, s: headerStyle })),
+      ...rows
+    ];
 
     // Crear libro y hoja
-    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    // Ajustar anchos de columna
+    ws['!cols'] = [
+      { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 15 }
+    ];
+
     XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
 
-    // Generar nombre de archivo
+    // Generar nombre de archivo y descargar
     const filename = `inventario_stock_${new Date().toLocaleDateString('es-CO').replace(/\//g, '-')}.xlsx`;
-
-    // Descargar
     XLSX.writeFile(wb, filename);
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Package className="w-8 h-8 text-green-600 dark:text-green-400" />
             Gestión de Inventario
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Controla el stock y movimientos de productos</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-all font-bold shadow-lg hover:shadow-green-500/20 active:scale-95"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-all font-bold shadow-lg hover:shadow-green-500/20 active:scale-95"
           >
             <Download size={18} />
             Exportar Excel
           </button>
           <button
             onClick={loadProducts}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
           >
             <RefreshCw size={18} />
             Actualizar
@@ -455,24 +514,19 @@ export default function InventoryPage() {
         onClose={() => setViewingImage(null)}
       />
 
-      {/* Modal de Error de Exportación */}
-      {showExportError && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-slate-800 text-center animate-in fade-in zoom-in duration-200">
-            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle size={28} className="text-amber-500" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Sin stock disponible</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-8">No hay productos con stock disponible para exportar en el listado actual.</p>
-            <button 
-              onClick={() => setShowExportError(false)}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-            >
-              Entendido
-            </button>
+      {/* Toast de Error de Exportación */}
+      <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform ${showExportError ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
+        <div className="bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-400/50 backdrop-blur-md">
+          <AlertTriangle size={20} className="animate-bounce" />
+          <div className="flex flex-col">
+            <p className="text-sm font-bold">Sin stock disponible</p>
+            <p className="text-[10px] opacity-90 font-medium">No hay productos para exportar en el listado actual.</p>
           </div>
+          <button onClick={() => setShowExportError(false)} className="ml-2 p-1 hover:bg-white/20 rounded-lg transition-colors">
+            <XCircle size={16} />
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

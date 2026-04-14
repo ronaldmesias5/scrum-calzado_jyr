@@ -33,6 +33,7 @@ export interface Brand {
 export interface Style {
   id: string;
   name: string;
+  brand_id?: string;
 }
 
 export interface Category {

@@ -132,7 +132,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
         <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors">
           
           {/* Row 1: Categoría y Nombre */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Categoría *</label>
               {categoryMode === 'select' ? (
@@ -170,7 +170,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           </div>
 
           {/* Row 2: Color y Unidad */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Color</label>
               <input value={form.color ?? ''} onChange={e => setForm(p => ({ ...p, color: e.target.value }))}
@@ -231,10 +231,17 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           ) : (
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Stock Inicial ({form.unit})</label>
-              <input type="number" min={0} step={form.unit === 'metros' ? '0.01' : '1'} 
-                value={form.stock_quantity} 
-                onChange={e => setForm(p => ({ ...p, stock_quantity: form.unit === 'metros' ? parseFloat(e.target.value) || 0 : parseInt(e.target.value) || 0 }))}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
+              <input 
+                type="number" 
+                min={0} 
+                step="any" 
+                value={form.stock_quantity === 0 ? '' : form.stock_quantity} 
+                onChange={e => {
+                  const val = e.target.value === '' ? 0 : (form.unit === 'metros' ? parseFloat(e.target.value) : parseInt(e.target.value));
+                  setForm(p => ({ ...p, stock_quantity: isNaN(val) ? 0 : val }));
+                }}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              />
             </div>
           )}
 
@@ -252,12 +259,12 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, dynamicCateg
           )}
         </div>
 
-        <div className="flex items-center justify-between px-8 py-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
-          <button onClick={onClose} className="px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all active:scale-[0.98]">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-8 py-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30 gap-3">
+          <button onClick={onClose} className="w-full sm:w-auto px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all active:scale-[0.98]">
             Cancelar
           </button>
           <button onClick={handleSubmit} disabled={loading || !form.name.trim()}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98] btn-pulse">
+            className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98] btn-pulse">
             {loading ? 'Guardando...' : 'Guardar Insumo'}
           </button>
         </div>
@@ -461,7 +468,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                   {supply?.category?.toLowerCase() === 'suelas'
                     ? 'Suela — asignación automática'
-                    : 'Cantidad requerida por docena'}
+                    : 'Cantidad requerida por docena (12 pares)'}
                 </label>
                 {supply?.category?.toLowerCase() !== 'suelas' && (
                   <input type="number" min={0} step={0.01} placeholder="Ej: 1.50" value={qty}
@@ -566,7 +573,7 @@ export default function InsumosPage() {
 
   const allCategories = Array.from(new Set([
     ...categories.map(c => c.name),
-    ...supplies.map(s => s.category.toLowerCase()),
+    ...supplies.map(s => s.category),
   ])).sort();
   const sortedCategoryObjects = allCategories.map(name => {
     const found = categories.find(c => c.name === name);
@@ -577,9 +584,9 @@ export default function InsumosPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Package2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             Gestión de Insumos
           </h1>
@@ -587,7 +594,7 @@ export default function InsumosPage() {
         </div>
         <button
           onClick={() => { setEditTarget(null); setStartNewCategory(false); setShowForm(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
         >
           <Plus size={18} />
           Nuevo Insumo
@@ -637,7 +644,7 @@ export default function InsumosPage() {
       </div>
 
       {/* Búsqueda */}
-      <div className="relative max-w-sm">
+      <div className="relative w-full sm:max-w-sm">
         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -707,7 +714,7 @@ export default function InsumosPage() {
                           <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />
                         )}
                         <span className="text-sm font-bold text-gray-900 dark:text-white">
-                          {supply.stock_quantity.toFixed(1)}
+                          {supply.stock_quantity % 1 === 0 ? supply.stock_quantity : supply.stock_quantity.toFixed(2)}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{supply.unit}</span>
                       </div>
@@ -769,7 +776,7 @@ export default function InsumosPage() {
         onClose={() => setShowCreateCategory(false)}
         onCreated={(name) => {
           fetchCategories();
-          setCategories(prev => [...prev, { id: name, name }]);
+          setCategories(prev => [...prev, { id: name, name, color: 'blue' }]);
         }}
       />
 

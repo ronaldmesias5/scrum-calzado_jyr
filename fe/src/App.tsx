@@ -74,6 +74,12 @@ import ClientsPage from "@/modules/dashboard-jefe/pages/ClientsPage";
 // Sprint 7 - Supplies module
 import InsumosPage from "@/modules/dashboard-jefe/pages/InsumosPage";
 
+// Additional Dashboard sections
+import TasksPage from "@/modules/dashboard-jefe/pages/TasksPage";
+import AlertsPage from "@/modules/dashboard-jefe/pages/AlertsPage";
+import ReportsPage from "@/modules/dashboard-jefe/pages/ReportsPage";
+import SettingsPage from "@/modules/dashboard-jefe/pages/SettingsPage";
+
 function App() {
   const [showCookiePolicy, setShowCookiePolicy] = useState(false);
 
@@ -132,15 +138,14 @@ function App() {
             <Route path="orders" element={<OrdersPage />} />
             <Route path="catalog" element={<CatalogPage />} />
             <Route path="inventory" element={<InventoryPage />} />
-            <Route path="tasks" element={<div className="p-4 text-gray-500">Tareas - Próximamente</div>} />
+            <Route path="tasks" element={<TasksPage />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="usuarios" element={<UsersManagementPage />} />
             <Route path="insumos" element={<InsumosPage />} />
-            <Route path="reactivation" element={<div className="p-4 text-gray-500">Reactivación - Próximamente</div>} />
-            <Route path="alerts" element={<div className="p-4 text-gray-500">Alertas - Próximamente</div>} />
-            <Route path="reports" element={<div className="p-4 text-gray-500">Reportes - Próximamente</div>} />
-            <Route path="settings" element={<div className="p-4 text-gray-500">Configuración - Próximamente</div>} />
+            <Route path="alerts" element={<AlertsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
 
           {/* ════════════════════════════════════════ */}

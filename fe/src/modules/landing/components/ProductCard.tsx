@@ -1,5 +1,4 @@
 import { ShoppingCart, Package } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Product, resolveImageUrl } from '../services/publicCatalogService';
 
@@ -18,7 +17,6 @@ export default function ProductCard({
   categoryName,
   onOrderClick,
 }: ProductCardProps) {
-  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Determinar rango de tallas según categoría

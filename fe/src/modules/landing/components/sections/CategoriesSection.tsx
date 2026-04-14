@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { getCatalogCategories, Category } from '../../services/publicCatalogService';
@@ -26,10 +26,6 @@ export default function CategoriesSection() {
   const navigate = useNavigate();
   const [categoriesData, setCategoriesData] = useState<Category[]>([]);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
   const loadCategories = async () => {
     try {
       const data = await getCatalogCategories();
@@ -38,6 +34,10 @@ export default function CategoriesSection() {
       console.error('Error cargando categorías:', error);
     }
   };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   const staticCategories = [
     {
