@@ -296,7 +296,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       <button
         type="submit"
         disabled={loading}
-        className="mt-8 flex items-center justify-center gap-3 px-8 py-3.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-black text-sm rounded-2xl transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-[0.98] disabled:opacity-60 grow-0 w-full sm:w-auto btn-pulse"
+        className="mt-8 flex items-center justify-center gap-3 px-8 py-3.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-black text-sm rounded-2xl transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-[0.98] disabled:opacity-60 grow-0 w-full sm:w-auto"
       >
         {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={20} />}
         {isEmployee ? 'CREAR EMPLEADO' : 'CREAR CLIENTE'}

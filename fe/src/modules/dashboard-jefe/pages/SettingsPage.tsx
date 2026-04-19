@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next';
-import { Settings, Bell, Globe, Shield, CreditCard, Save, Smartphone, Mail, Eye, Package, ShoppingBag } from 'lucide-react';
+// SettingsPage
+import { Settings, Bell, Globe, Shield, CreditCard, Save, Smartphone, Package, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function SettingsPage() {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
 
   return (
     <div className="space-y-6">

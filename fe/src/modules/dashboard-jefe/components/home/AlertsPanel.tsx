@@ -1,10 +1,11 @@
-import { AlertTriangle, XCircle, Info } from 'lucide-react';
+import { AlertTriangle, XCircle, Info, CheckCircle } from 'lucide-react';
 import type { Alert } from '../../types/dashboard';
 
-const config = {
+const config: Record<string, { icon: any; color: string; bg: string }> = {
   warning: { icon: AlertTriangle, color: 'text-yellow-500', bg: 'bg-yellow-50' },
   error: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
   info: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-50' },
+  success: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50' },
 };
 
 interface Props {
@@ -17,7 +18,10 @@ export default function AlertsPanel({ alerts }: Props) {
       <h2 className="font-bold text-gray-900 dark:text-white mb-4 transition-colors">⚠ Alertas</h2>
       <div className="flex flex-col gap-2">
         {alerts.map((alert) => {
-          const { icon: Icon, color, bg } = config[alert.type] || config.info;
+          const conf = config[alert.type] || config.info;
+          const Icon = conf!.icon;
+          const color = conf!.color;
+          const bg = conf!.bg;
           return (
             <div key={alert.id} className="flex gap-3 items-start border-b border-gray-50 dark:border-slate-800 pb-3 last:border-0 last:pb-0 transition-colors">
               <div className={`p-1.5 rounded-full ${bg} dark:bg-slate-800/80 mt-0.5 flex-shrink-0`}>

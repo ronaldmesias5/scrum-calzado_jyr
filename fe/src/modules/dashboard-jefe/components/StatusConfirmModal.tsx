@@ -84,7 +84,7 @@ export default function StatusConfirmModal({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`flex-1 px-4 py-3 ${isActivating ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'} text-white rounded-xl font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm btn-pulse`}
+            className={`flex-1 px-4 py-3 ${isActivating ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'} text-white rounded-xl font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm`}
           >
             {loading ? (
               <Loader2 className="animate-spin" size={18} />

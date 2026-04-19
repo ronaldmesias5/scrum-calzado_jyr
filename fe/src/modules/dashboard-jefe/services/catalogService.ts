@@ -54,6 +54,7 @@ export interface Product {
   insufficient_threshold?: number;
   image_url?: string;
   stock_total?: number;
+  manufactured_pairs?: number;
   created_at?: string;
 }
 

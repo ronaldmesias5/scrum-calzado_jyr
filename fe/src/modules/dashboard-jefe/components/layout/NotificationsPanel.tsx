@@ -52,6 +52,7 @@ function buildNotification(order: Order): Notification {
     pendiente: 'Nuevo Pedido Mayorista',
     en_progreso: 'Pedido en Producción',
     completado: 'Pedido Completado',
+    entregado: 'Pedido Entregado',
     cancelado: 'Pedido Cancelado',
   };
 
@@ -59,6 +60,7 @@ function buildNotification(order: Order): Notification {
     pendiente: `${clientName} ha realizado un pedido de ${order.total_pairs} pares`,
     en_progreso: `El pedido de ${clientName} (${order.total_pairs} pares) está en producción`,
     completado: `El pedido #${order.id.substring(0, 8)} de ${clientName} ha sido completado`,
+    entregado: `El pedido #${order.id.substring(0, 8)} de ${clientName} ha sido entregado`,
     cancelado: `El pedido #${order.id.substring(0, 8)} de ${clientName} fue cancelado`,
   };
 

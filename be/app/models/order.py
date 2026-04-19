@@ -38,6 +38,7 @@ class OrderStatus(str, Enum):
     pendiente = "pendiente"
     en_progreso = "en_progreso"
     completado = "completado"
+    entregado = "entregado"
     cancelado = "cancelado"
 
 
@@ -196,6 +197,12 @@ class OrderDetail(Base):
         Integer,
         nullable=False,
         comment="Cantidad de pares",
+    )
+
+    observations: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Observaciones específicas del producto",
     )
 
     # Estado

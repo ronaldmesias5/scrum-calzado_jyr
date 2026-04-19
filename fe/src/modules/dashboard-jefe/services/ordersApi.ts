@@ -11,7 +11,7 @@ import axios from '@/api/axios';
 // Tipos
 // ────────────────────────────────────────────────
 
-export type OrderStatus = 'pendiente' | 'en_progreso' | 'completado' | 'cancelado';
+export type OrderStatus = 'pendiente' | 'en_progreso' | 'completado' | 'entregado' | 'cancelado';
 
 export interface OrderDetailItem {
   id: string;
@@ -62,6 +62,7 @@ export interface OrderDetailItemCreateRequest {
   size: string;
   colour?: string | null;
   amount: number;
+  observations?: string;
 }
 
 export interface OrderCreateRequest {
@@ -203,4 +204,85 @@ export async function getClients(): Promise<any[]> {
 export async function getProducts(): Promise<any[]> {
   const response = await axios.get('/api/v1/catalog/products');
   return response.data?.products || [];
+}
+
+// ────────────────────────────────────────────────
+// Tareas de Producción
+// ────────────────────────────────────────────────
+
+export interface ProductionTaskCreate {
+  product_id: string;
+  assigned_to: string;
+  type: string;
+  description?: string;
+  priority?: string;
+}
+
+export interface ProductionTask {
+  id: string;
+  order_id: string;
+  product_id: string;
+  assigned_to?: string;
+  assigned_user_name?: string;
+  assigned_user_occupation?: string;
+  vale_number?: number;
+  status: string;
+  type: string;
+  created_at: string;
+}
+
+/** Crea las 4 tareas de producción para una orden */
+export async function createProductionTasks(orderId: string, tasks: ProductionTaskCreate[]): Promise<ProductionTask[]> {
+  const response = await axios.post<ProductionTask[]>(`/api/v1/admin/orders/${orderId}/tasks`, { tasks });
+  return response.data;
+}
+
+/** Obtiene las tareas de producción de una orden */
+export async function getOrderTasks(order_id: string): Promise<ProductionTask[]> {
+  const response = await axios.get<ProductionTask[]>(`/api/v1/admin/orders/${order_id}/tasks`, {
+    params: { _ts: Date.now() },
+    headers: { 'Cache-Control': 'no-cache' },
+  });
+  return response.data;
+}
+
+/** Obtiene el siguiente número de vale disponible */
+export async function getNextValeNumber(): Promise<number> {
+  const response = await axios.get<{ next_number: number }>('/api/v1/admin/orders/tasks/next-number');
+  return response.data.next_number;
+}
+
+/** Cambia el estado de una tarea de producción */
+export async function updateProductionTaskStatus(task_id: string, status: string): Promise<ProductionTask> {
+  const response = await axios.patch<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}/status`, { status });
+  return response.data;
+}
+
+/** Obtiene TODAS las tareas de producción con filtros */
+export async function getAllProductionTasks(filters: {
+  status?: string;
+  type?: string;
+  assigned_to?: string;
+} = {}): Promise<ProductionTask[]> {
+  const response = await axios.get<ProductionTask[]>('/api/v1/admin/orders/tasks/all', { params: filters });
+  return response.data;
+}
+
+// ────────────────────────────────────────────────
+// Movimientos de Inventario
+// ────────────────────────────────────────────────
+
+export interface InventoryMovementCreate {
+  product_id: string;
+  quantity: number;
+  movement_type: 'entrada' | 'salida' | 'ajuste' | 'reserva';
+  reference_id?: string;
+  reference_type?: string;
+  notes?: string;
+}
+
+/** Crea un movimiento de inventario cuando un producto se completa en producción */
+export async function createInventoryMovement(movement: InventoryMovementCreate): Promise<any> {
+  const response = await axios.post('/api/v1/inventory/movements', movement);
+  return response.data;
 }

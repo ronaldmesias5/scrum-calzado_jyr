@@ -8,9 +8,11 @@ Descripción: Rutas API para gestión de órdenes en el dashboard del jefe.
 import uuid
 from typing import Annotated
 from datetime import datetime, timezone
+from decimal import Decimal
+import traceback
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy import func, desc, select, delete as sa_delete
+from sqlalchemy import func, desc, select, delete as sa_delete, update as sa_update, and_
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db, get_current_user
@@ -19,6 +21,7 @@ from app.models.user import User
 from app.models.product import Product
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement, InventoryMovementType
+from app.models.tasks import Task
 from app.modules.orders.schemas import (
     OrderResponse,
     OrderListResponse,
@@ -27,6 +30,9 @@ from app.modules.orders.schemas import (
     OrderCreateRequest,
     OrderUpdateStatusRequest,
     OrderUpdateDetailsRequest,
+    ProductionBatchTasksRequest,
+    ProductionTaskResponse,
+    TaskStatusUpdateRequest,
 )
 
 def _order_to_response(order: Order) -> OrderResponse:
@@ -73,11 +79,11 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
                 brand_name=d.product.brand.name_brand if (d.product and d.product.brand) else None,
                 image_url=d.product.image_url if d.product else None,
                 size=d.size,
-                colour=d.colour,
+                colour=d.colour or (d.product.color if d.product else None),
                 amount=d.amount,
                 stock_available=next(
                     (float(inv.amount) for inv in d.product.inventory 
-                     if inv.size == d.size and inv.colour == d.colour), 
+                     if inv.size == d.size and inv.colour == (d.colour or (d.product.color if d.product else None))), 
                     0.0
                 ) if d.product else 0.0,
                 state=d.state,
@@ -92,6 +98,54 @@ router = APIRouter(
     prefix="/api/v1/admin/orders",
     tags=["orders"],
 )
+
+
+@router.get("/tasks/next-number", summary="Obtener el siguiente número de vale")
+def get_next_vale_number(db: Session = Depends(get_db)):
+    try:
+        max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
+        return {"next_number": int(max_vale) + 1}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al calcular número de vale: {str(e)}")
+
+
+@router.get("/tasks/all", response_model=list[ProductionTaskResponse])
+def list_all_production_tasks(
+    db: Session = Depends(get_db),
+    status: str | None = Query(None, description="Filtrar por estado"),
+    type: str | None = Query(None, description="Filtrar por tipo/cargo"),
+    assigned_to: uuid.UUID | None = Query(None, description="Filtrar por empleado"),
+) -> list[ProductionTaskResponse]:
+    """
+    Lista TODAS las tareas de producción del sistema con filtros.
+    """
+    query = select(Task)
+    if status:
+        query = query.where(Task.status == status)
+    if type:
+        query = query.where(Task.type == type)
+    if assigned_to:
+        query = query.where(Task.assigned_to == assigned_to)
+    
+    query = query.order_by(desc(Task.created_at))
+    result = db.execute(query)
+    tasks = result.scalars().all()
+    
+    return [
+        ProductionTaskResponse(
+            id=t.id,
+            order_id=t.order_id,
+            product_id=t.product_id,
+            assigned_to=t.assigned_to,
+            assigned_user_name=t.assigned_user.name_user + " " + t.assigned_user.last_name if t.assigned_user else "Desconocido",
+            assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+            type=t.type,
+            status=t.status,
+            vale_number=t.vale_number,
+            created_at=t.created_at
+        ) for t in tasks
+    ]
 
 
 @router.get("", response_model=OrderListResponse)
@@ -265,60 +319,97 @@ def update_order_status(
         if not order:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
 
-        # Nota: Si un pedido se marca como 'completado' por error y luego se revierte a otro estado,
-        # el stock se restaurará automáticamente.
-        # Esto permite corregir errores de despacho sin intervención manual en el inventario.
-        # --- Lógica de Inventario Segura ---
+        # --- Lógica de Inventario Segura con Reservas ---
         
-        # 1. Caso: El pedido pasa a 'completado' -> DESCONTAR STOCK REAL
-        if order_update.state == OrderStatus.completado and order.state != OrderStatus.completado:
-            # Validar stock para todas las líneas antes de proceder
+        # 1. Caso: El pedido pasa a 'entregado' -> RESTAR DE RESERVED (pares fabricados que se entregan)
+        if order_update.state == OrderStatus.entregado and order.state != OrderStatus.entregado:
             for detail in order.details:
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail.product_id) &
                     (Inventory.size == detail.size) &
+                    (Inventory.colour == detail.colour) &
                     (Inventory.deleted_at == None)
                 )
                 inventory_item = db.execute(stmt).scalar_one_or_none()
                 
-                if not inventory_item or inventory_item.amount < detail.amount:
-                    product_name = db.execute(select(Product.name_product).where(Product.id == detail.product_id)).scalar() or "desconocido"
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Stock insuficiente para {product_name} (Talla: {detail.size}). "
-                               f"Se requieren {detail.amount} y solo hay {inventory_item.amount if inventory_item else 0} en bodega."
-                    )
-                
-                # Descontar físicamente
-                inventory_item.amount -= detail.amount
-                
-                # Registrar el despacho físico
-                db.add(InventoryMovement(
-                    id=uuid.uuid4(),
-                    product_id=detail.product_id,
-                    user_id=current_user.id,
-                    type_of_movement=InventoryMovementType.salida,
-                    size=detail.size,
-                    colour=detail.colour,
-                    amount=detail.amount,
-                    reason=f"Despacho por pedido completado: {order.id}",
-                    movement_date=datetime.now(timezone.utc)
-                ))
+                if inventory_item:
+                    quantity = Decimal(detail.amount)
+                    
+                    # Restar de RESERVED (pares fabricados que se están entregando)
+                    if inventory_item.reserved >= quantity:
+                        inventory_item.reserved -= quantity
+                        db.add(inventory_item)
+                    else:
+                        print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail.product_id} talla {detail.size}")
+                    
+                    # Registrar el despacho al cliente
+                    db.add(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=detail.product_id,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.salida,
+                        size=detail.size,
+                        colour=detail.colour,
+                        amount=quantity,
+                        reason=f"Entrega al cliente - Pedido {order.id}",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
         
-        # 2. Caso: El pedido ya estaba 'completado' y ahora cambia a otro estado -> RESTAURAR STOCK
-        elif order.state == OrderStatus.completado and order_update.state != OrderStatus.completado:
+        # 2. Caso: El pedido pasa a 'completado' -> ENTRADA PARA EMPLANTILLADO
+        # Los pares ya fueron fabricados y están en el inventario cuando se completó emplantillado
+        elif order_update.state == OrderStatus.completado and order.state != OrderStatus.completado:
             for detail in order.details:
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail.product_id) &
+                    (Inventory.size == detail.size) &
+                    (Inventory.colour == detail.colour) &
+                    (Inventory.deleted_at == None)
+                )
+                inventory_item = db.execute(stmt).scalar_one_or_none()
+                
+                if inventory_item:
+                    quantity = Decimal(detail.amount)
+                    
+                    # Restar de RESERVED (pares fabricados que se están entregando)
+                    if inventory_item.reserved >= quantity:
+                        inventory_item.reserved -= quantity
+                        db.add(inventory_item)
+                    else:
+                        print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail.product_id} talla {detail.size}")
+                    
+                    # Registrar el despacho al cliente
+                    db.add(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=detail.product_id,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.salida,
+                        size=detail.size,
+                        colour=detail.colour,
+                        amount=quantity,
+                        reason=f"Entrega al cliente - Pedido {order.id}",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+        
+        # 3. Caso: El pedido ya estaba 'completado' y ahora cambia a OTRO ESTADO (excepto 'entregado')
+        # Restaurar pares a RESERVED si se revierte
+        elif order.state == OrderStatus.completado and order_update.state not in (OrderStatus.completado, OrderStatus.entregado):
+            for detail in order.details:
+                stmt = select(Inventory).where(
+                    (Inventory.product_id == detail.product_id) &
+                    (Inventory.colour == detail.colour) &
                     (Inventory.size == detail.size) &
                     (Inventory.deleted_at == None)
                 )
                 inventory_item = db.execute(stmt).scalar_one_or_none()
                 
                 if inventory_item:
-                    inventory_item.amount += detail.amount
+                    quantity = Decimal(detail.amount)
                     
-                    # Registrar devolución al almacén
+                    # Restaurar a RESERVED si vuelve atrás
+                    inventory_item.reserved += quantity
+                    db.add(inventory_item)
+                    
+                    # Registrar devolución
                     db.add(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=detail.product_id,
@@ -326,15 +417,27 @@ def update_order_status(
                         type_of_movement=InventoryMovementType.entrada,
                         size=detail.size,
                         colour=detail.colour,
-                        amount=detail.amount,
-                        reason=f"Devolución: Pedido # {order.id} cambió de completado a {order_update.state.value}",
+                        amount=quantity,
+                        reason=f"Devolución: Pedido #{order.id} cambió de completado a {order_update.state.value}",
                         movement_date=datetime.now(timezone.utc)
                     ))
         
-        # Actualizar con el campo correcto 'state'
+        # Actualizar estado de la orden
         order.state = order_update.state
+        
+        # Si la orden pasa a 'entregado', actualizar TODOS los detalles a 'entregado' con UPDATE SQL explícito
+        if order_update.state == OrderStatus.entregado:
+            db.execute(
+                sa_update(OrderDetail).where(
+                    OrderDetail.order_id == order_id
+                ).values(state=OrderStatus.entregado)
+            )
+        
         db.commit()
         db.refresh(order)
+        # Refrescar explícitamente los detalles después del commit
+        for detail in order.details:
+            db.refresh(detail)
 
         return _order_to_detail_response(order)
     except HTTPException:
@@ -393,7 +496,7 @@ def update_order_details(
                 size=detail_data.size,
                 colour=detail_data.colour,
                 amount=detail_data.amount,
-                state=order.state,
+                state=detail_data.state or order.state,
                 order_date=datetime.now(timezone.utc),
                 created_by=current_user.id
             )
@@ -404,6 +507,21 @@ def update_order_details(
         order.total_pairs = total_pairs
         if order_data.delivery_date is not None:
             order.delivery_date = order_data.delivery_date
+
+        # 5. Determinar automáticamente el nuevo estado de la orden basado en detalles
+        all_details = db.execute(select(OrderDetail).where(OrderDetail.order_id == order.id)).scalars().all()
+        if all_details:
+            states = [d.state for d in all_details]
+            # Si todos están completado o entregado -> completado
+            if all(s in (OrderStatus.completado, OrderStatus.entregado) for s in states):
+                order.state = OrderStatus.completado
+            # Si alguno está en_progreso -> en_progreso
+            elif any(s == OrderStatus.en_progreso for s in states):
+                order.state = OrderStatus.en_progreso
+            # Si todos están pendiente -> pendiente
+            elif all(s == OrderStatus.pendiente for s in states):
+                order.state = OrderStatus.pendiente
+            # Else: mantener estado actual
 
         order.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -454,4 +572,230 @@ def delete_order(
         db.rollback()
         print(f"Error al eliminar orden: {e}")
         raise HTTPException(status_code=500, detail="Error al eliminar la orden")
+
+@router.post("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
+def create_production_tasks(
+    order_id: uuid.UUID,
+    request: ProductionBatchTasksRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[ProductionTaskResponse]:
+    """
+    Crea un conjunto de tareas de producción para una orden.
+    Los pares se reservarán en inventario cuando se completa la etapa final (emplantillado).
+    """
+    try:
+        if current_user.occupation != "jefe":
+            raise HTTPException(status_code=403, detail="Solo el jefe puede asignar tareas")
+        
+        # Verificar orden
+        order = db.execute(select(Order).where(Order.id == order_id)).scalar_one_or_none()
+        if not order:
+            raise HTTPException(status_code=404, detail="Orden no encontrada")
+
+        # NO reservar pares aquí - se reservarán cuando se complete emplantillado
+        # Así evitamos contar los pares múltiples veces
+
+        # Calcular siguiente vale_number global (solo si no existe ya para este order+product)
+        max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
+        next_vale = int(max_vale) + 1
+
+        new_tasks = []
+        now = datetime.now(timezone.utc)
+        
+        for t_data in request.tasks:
+            # Reutilizar el vale_number si ya existe una tarea para el mismo order+product
+            existing_vale = db.execute(
+                select(func.min(Task.vale_number)).where(
+                    Task.order_id == order_id,
+                    Task.product_id == t_data.product_id,
+                    Task.vale_number.isnot(None)
+                )
+            ).scalar()
+            task_vale = int(existing_vale) if existing_vale else next_vale
+
+            task = Task(
+                id=uuid.uuid4(),
+                assigned_to=t_data.assigned_to,
+                order_id=order_id,
+                product_id=t_data.product_id,
+                vale_number=task_vale,
+                type=t_data.type,
+                description_task=t_data.description or f"Tarea de {t_data.type} para la orden {order_id}",
+                priority=t_data.priority,
+                assignment_date=now,
+                created_by=current_user.id
+            )
+            db.add(task)
+            new_tasks.append(task)
+        
+        db.commit()
+        
+        # Recargar para asegurar relaciones y defaults (created_at)
+        results = []
+        for t in new_tasks:
+            db.refresh(t)
+            results.append(ProductionTaskResponse(
+                id=t.id,
+                order_id=t.order_id,
+                product_id=t.product_id,
+                assigned_to=t.assigned_to,
+                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Desconocido",
+                assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+                type=t.type,
+                status=t.status,
+                vale_number=t.vale_number,
+                created_at=t.created_at
+            ))
+        
+        return results
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al crear tareas: {str(e)}")
+
+@router.get("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
+def get_order_tasks(
+    order_id: uuid.UUID,
+    db: Annotated[Session, Depends(get_db)],
+    product_id: uuid.UUID | None = None,
+) -> list[ProductionTaskResponse]:
+    """
+    Lista las tareas de producción de una orden.
+    Si se pasa product_id, filtra al nivel del servidor (más preciso que filtrar en frontend).
+    """
+    try:
+        query = select(Task).where(Task.order_id == order_id)
+        if product_id:
+            query = query.where(Task.product_id == product_id)
+        
+        tasks = db.execute(query).scalars().all()
+        
+        return [
+            ProductionTaskResponse(
+                id=t.id,
+                order_id=t.order_id,
+                product_id=t.product_id,
+                assigned_to=t.assigned_to,
+                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Desconocido",
+                assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+                type=t.type,
+                status=t.status,
+                vale_number=t.vale_number,
+                created_at=t.created_at
+            ) for t in tasks
+        ]
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al listar tareas: {str(e)}")
+
+@router.patch("/tasks/{task_id}/status", response_model=ProductionTaskResponse)
+def update_task_status(
+    task_id: uuid.UUID,
+    request: TaskStatusUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Actualiza el estado de una tarea de producción."""
+    if current_user.occupation != "jefe":
+        raise HTTPException(status_code=403, detail="Solo el jefe puede modificar tareas")
+    
+    # Obtener tarea
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    
+    # Actualizar el status
+    task.status = request.status
+    
+    # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
+    if task.type == "emplantillado" and request.status == "completado":
+        if task.product_id and task.order_id:
+            # Obtener orden para detalles
+            order = db.query(Order).filter(Order.id == task.order_id).first()
+            if order:
+                # Actualizar OrderDetails
+                details = db.query(OrderDetail).filter(
+                    OrderDetail.order_id == task.order_id,
+                    OrderDetail.product_id == task.product_id
+                ).all()
+                
+                for detail in details:
+                    detail.state = "completado"
+                    
+                    # NUEVA: Agregar ENTRADA al inventario (pares fabricados)
+                    stmt = select(Inventory).where(
+                        (Inventory.product_id == detail.product_id) &
+                        (Inventory.size == detail.size) &
+                        (Inventory.colour == detail.colour) &
+                        (Inventory.deleted_at == None)
+                    )
+                    inventory_item = db.execute(stmt).scalar_one_or_none()
+                    
+                    if inventory_item:
+                        # Agregar los pares fabricados a RESERVED (pares fabricados en producción)
+                        quantity = Decimal(detail.amount)
+                        inventory_item.reserved = inventory_item.reserved + quantity
+                        db.add(inventory_item)  # Marcar como actualizado
+                        
+                        # Registrar ENTRADA en movimientos
+                        db.add(InventoryMovement(
+                            id=uuid.uuid4(),
+                            product_id=detail.product_id,
+                            user_id=current_user.id,
+                            type_of_movement=InventoryMovementType.entrada,
+                            size=detail.size,
+                            colour=detail.colour,
+                            amount=quantity,
+                            reason=f"Entrada por producción completada - Vale #{task.vale_number}",
+                            movement_date=datetime.now(timezone.utc)
+                        ))
+                    else:
+                        # Crear registro de inventario si no existe
+                        quantity = Decimal(detail.amount)
+                        new_inventory = Inventory(
+                            id=uuid.uuid4(),
+                            product_id=detail.product_id,
+                            size=detail.size,
+                            colour=detail.colour,
+                            amount=Decimal(0),
+                            reserved=quantity,
+                            minimum_stock=0,
+                        )
+                        db.add(new_inventory)
+                        
+                        # Registrar ENTRADA
+                        db.add(InventoryMovement(
+                            id=uuid.uuid4(),
+                            product_id=detail.product_id,
+                            user_id=current_user.id,
+                            type_of_movement=InventoryMovementType.entrada,
+                            size=detail.size,
+                            colour=detail.colour,
+                            amount=quantity,
+                            reason=f"Entrada por producción completada - Vale #{task.vale_number}",
+                            movement_date=datetime.now(timezone.utc)
+                        ))
+    
+    # Commit una sola vez
+    db.commit()
+    
+    # Obtener usuario
+    user = db.query(User).filter(User.id == task.assigned_to).first()
+    user_name = f"{user.name_user} {user.last_name}" if user else "Desconocido"
+    
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=user.occupation if user else None,
+        type=task.type,
+        status=task.status,
+        vale_number=task.vale_number,
+        created_at=task.created_at
+    )
 

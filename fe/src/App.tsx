@@ -75,7 +75,7 @@ import ClientsPage from "@/modules/dashboard-jefe/pages/ClientsPage";
 import InsumosPage from "@/modules/dashboard-jefe/pages/InsumosPage";
 
 // Additional Dashboard sections
-import TasksPage from "@/modules/dashboard-jefe/pages/TasksPage";
+import ProductionTaskDashboard from "@/modules/dashboard-jefe/pages/TasksPage";
 import AlertsPage from "@/modules/dashboard-jefe/pages/AlertsPage";
 import ReportsPage from "@/modules/dashboard-jefe/pages/ReportsPage";
 import SettingsPage from "@/modules/dashboard-jefe/pages/SettingsPage";
@@ -138,7 +138,7 @@ function App() {
             <Route path="orders" element={<OrdersPage />} />
             <Route path="catalog" element={<CatalogPage />} />
             <Route path="inventory" element={<InventoryPage />} />
-            <Route path="tasks" element={<TasksPage />} />
+            <Route path="tasks" element={<ProductionTaskDashboard />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="usuarios" element={<UsersManagementPage />} />

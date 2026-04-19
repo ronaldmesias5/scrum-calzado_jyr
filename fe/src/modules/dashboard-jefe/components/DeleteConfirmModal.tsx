@@ -79,7 +79,7 @@ export default function DeleteConfirmModal({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm btn-pulse"
+            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
           >
             <Trash2 size={18} />
             {loading ? 'Eliminando...' : 'Sí, Eliminar'}

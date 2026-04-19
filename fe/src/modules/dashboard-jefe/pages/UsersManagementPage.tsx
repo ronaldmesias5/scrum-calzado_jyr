@@ -217,7 +217,7 @@ function PendingUsersTab() {
                 <button
                   onClick={() => handleReject(userToDelete.id.toString())}
                   disabled={deletingId !== null}
-                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98] btn-pulse"
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
                 >
                   {deletingId ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -415,7 +415,7 @@ function ManageUsersTab() {
                 <button
                   onClick={() => handleDelete(userToDelete.id.toString())}
                   disabled={deletingId !== null}
-                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98] btn-pulse"
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
                 >
                   {deletingId ? (
                     <Loader2 size={18} className="animate-spin" />

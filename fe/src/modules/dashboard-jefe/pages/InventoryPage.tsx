@@ -228,7 +228,7 @@ export default function InventoryPage() {
           </button>
           <button
             onClick={loadProducts}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95 btn-pulse"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95"
           >
             <RefreshCw size={18} />
             Actualizar
@@ -411,7 +411,8 @@ export default function InventoryPage() {
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoría</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Color</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock Comprado</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pares Fabricados</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -473,6 +474,9 @@ export default function InventoryPage() {
                         <span className="font-bold text-sm text-gray-900 dark:text-white transition-colors">{stock}</span>
                       </td>
                       <td className="px-4 py-2 text-center">
+                        <span className="font-bold text-sm text-blue-600 dark:text-blue-400 transition-colors">{product.manufactured_pairs || 0}</span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
                           {statusText}
                         </span>
@@ -517,7 +521,7 @@ export default function InventoryPage() {
       {/* Toast de Error de Exportación */}
       <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform ${showExportError ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
         <div className="bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-400/50 backdrop-blur-md">
-          <AlertTriangle size={20} className="animate-bounce" />
+          <AlertTriangle size={20} />
           <div className="flex flex-col">
             <p className="text-sm font-bold">Sin stock disponible</p>
             <p className="text-[10px] opacity-90 font-medium">No hay productos para exportar en el listado actual.</p>

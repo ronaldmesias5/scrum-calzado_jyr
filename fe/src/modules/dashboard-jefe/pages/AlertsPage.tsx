@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Bell, AlertTriangle, Info, CheckCircle2, Search, Trash2, Loader2 } from 'lucide-react';
+// AlertsPage
+import { Bell, AlertTriangle, Info, CheckCircle2, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { getAlerts } from '../services/dashboardService';
 import { Alert } from '../types/dashboard';
 
 export default function AlertsPage() {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 

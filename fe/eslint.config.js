@@ -6,7 +6,7 @@
  *   - Define reglas de código limpio (naming, indentation, no-unused-vars)
  *   - Integra React-specific rules (react-hooks, react-refresh)
  *   - integra TypeScript support
- *   - Ejecutado con: npm run lint
+ *   - Ejecutado con: pnpm run lint
  * 
  * ¿Impacto?
  *   MEDIO — Mejora calidad de código, pero no bloquea builds.

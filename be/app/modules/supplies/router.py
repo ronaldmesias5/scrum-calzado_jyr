@@ -15,6 +15,7 @@ Endpoints:
 import uuid
 from datetime import datetime
 
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -38,6 +39,7 @@ from app.modules.supplies.schemas import (
 
 class InternalSupplyCategoryCreate(BaseModel):
     name: str
+    global_stage: Optional[str] = "otros"
 
 # Paleta de colores predefinida
 PREDEFINED_COLORS = ['amber', 'blue', 'purple', 'green', 'gray']
@@ -93,13 +95,17 @@ def _supply_to_out(supply: Supplies) -> SupplyOut:
 @router.get("/supplies/categories", summary="Listar categorias de insumos")
 def list_supply_categories(db: Session = Depends(get_db)):
     cats = db.execute(select(SupplyCategory).order_by(SupplyCategory.name)).scalars().all()
-    return [{"id": str(c.id), "name": c.name, "color": c.color} for c in cats]
+    return [{"id": str(c.id), "name": c.name, "color": c.color, "global_stage": c.global_stage} for c in cats]
 
 @router.post("/supplies/categories", status_code=201, summary="Crear categoria de insumo")
 def create_supply_category(body: InternalSupplyCategoryCreate, db: Session = Depends(get_db)):
     # Asignar un color automático
     color = _get_next_category_color(db)
-    cat = SupplyCategory(name=body.name.lower(), color=color)
+    cat = SupplyCategory(
+        name=body.name.lower(), 
+        color=color,
+        global_stage=body.global_stage
+    )
     try:
         db.add(cat)
         db.commit()
@@ -107,7 +113,7 @@ def create_supply_category(body: InternalSupplyCategoryCreate, db: Session = Dep
     except Exception:
         db.rollback()
         raise HTTPException(status_code=400, detail="La categoría ya existe o es inválida")
-    return {"id": str(cat.id), "name": cat.name, "color": cat.color}
+    return {"id": str(cat.id), "name": cat.name, "color": cat.color, "global_stage": cat.global_stage}
 
 @router.delete("/supplies/categories/{category_id}", status_code=204, summary="Eliminar categoria de insumo")
 def delete_supply_category(category_id: str, db: Session = Depends(get_db)):

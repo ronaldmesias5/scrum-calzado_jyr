@@ -30,6 +30,12 @@ class SupplyCategory(Base):
         unique=True,
     )
 
+    global_stage: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        default="otros",
+    )
+
     color: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

@@ -342,7 +342,7 @@ export default function CatalogPage() {
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2 btn-pulse shadow-lg hover:shadow-blue-500/20 active:scale-95"
+          className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95"
         >
           <Plus size={18} /> Agregar Producto
         </button>

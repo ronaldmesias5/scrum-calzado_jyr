@@ -17,6 +17,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.incidence import Incidence
+    from app.models.order import Order
 
 
 class TaskPriority(str, Enum):
@@ -57,6 +58,24 @@ class Task(Base):
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
+    )
+
+    vale_number: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True
+    )
+
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=True,
     )
 
     description_task: Mapped[str] = mapped_column(
@@ -139,6 +158,9 @@ class Task(Base):
 
     # Incidencias reportadas en esta tarea
     incidences = relationship("Incidence", back_populates="task", lazy="selectin")
+
+    # Orden vinculada (opcional)
+    order = relationship("Order", lazy="select")
 
     def __repr__(self) -> str:
         return f"Task(id={self.id}, type={self.type}, status={self.status}, priority={self.priority})"

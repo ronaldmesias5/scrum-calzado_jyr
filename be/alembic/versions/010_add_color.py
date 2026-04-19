@@ -1,6 +1,6 @@
 """Add color field to supply_categories.
 
-Revision ID: 010_add_color_to_supply_categories
+Revision ID: 010_add_color
 Revises: 009_create_supply_categories
 Create Date: 2026-04-14 01:50:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '010_add_color_to_supply_categories'
+revision = '010_add_color'
 down_revision = '009_create_supply_categories'
 branch_labels = None
 depends_on = None

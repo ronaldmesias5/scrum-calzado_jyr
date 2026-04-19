@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2, Palette } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2 } from 'lucide-react';
 import { createOrder, getStyles, getClients, getCategories, getProducts, updateOrderDetails, OrderCreateRequest, OrderDetailItemCreateRequest, type OrderDetail } from '../services/ordersApi';
 import { resolveImageUrl } from '../services/catalogService';
 import ImageViewerModal from './ImageViewerModal';
@@ -49,6 +49,7 @@ interface OrderLineItem {
   category_name: string;
   color?: string;
   image_url?: string;
+  observations?: string;
   items: Array<{ size: string; amount: number }>;
 }
 
@@ -71,7 +72,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
   const [styles, setStyles] = useState<Style[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<OrderLineItem[]>([]);
-  const [notes, setNotes] = useState<string>('');
+  // notes removed from requirements
   
   // Nuevos estados para el flujo mejorado
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -139,6 +140,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
               category_name: d.category_name ?? '',
               color: d.colour ?? '',
               image_url: d.image_url ?? '',
+              observations: (d as any).observations ?? '',
               items: [{ size: d.size, amount: d.amount }],
             });
             seen.set(d.product_id, preloaded.length - 1);
@@ -255,6 +257,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
       category_name: product.category_name,
       color: product.color,
       image_url: product.image_url,
+      observations: '',
       items: itemsWithAmount.map(([size, amount]) => ({ size, amount: parseInt(amount as string) })),
     };
     setItems([...items, newItem]);
@@ -267,12 +270,6 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
 
   const handleRemoveItem = (index: number) => { setItems(items.filter((_, i) => i !== index)); };
 
-  const handleUpdateItemAmount = (itemIdx: number, sizeIdx: number, newAmount: number) => {
-    setItems(items.map((item, i) => {
-      if (i !== itemIdx) return item;
-      return { ...item, items: item.items.map((s, j) => j === sizeIdx ? { ...s, amount: Math.max(0, newAmount) } : s) };
-    }));
-  };
 
   const handleSizeAmountChange = (size: string, value: string) => { setSizeAmounts({ ...sizeAmounts, [size]: value }); };
 
@@ -315,7 +312,20 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
       setError(null);
       const details: OrderDetailItemCreateRequest[] = [];
       let totalPairs = 0;
-      items.forEach((item) => { item.items.forEach(({ size, amount }) => { if (amount > 0) { details.push({ product_id: item.product_id, size, amount }); totalPairs += amount; } }); });
+      items.forEach((item) => { 
+        item.items.forEach(({ size, amount }) => { 
+          if (amount > 0) { 
+            details.push({ 
+              product_id: item.product_id, 
+              size, 
+              amount,
+              colour: item.color || undefined,
+              observations: item.observations || undefined
+            }); 
+            totalPairs += amount; 
+          } 
+        }); 
+      });
       if (details.length === 0) { setError('Debes ingresar al menos un par en el pedido'); setLoading(false); return; }
       if (isEditMode) {
         await updateOrderDetails(editOrder!.id, { details });
@@ -324,7 +334,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
         await createOrder(orderData);
       }
       setSuccess(true);
-      setTimeout(() => { setSelectedClient(''); setItems([]); setNotes(''); onClose(); onSuccess?.(); }, 1500);
+      setTimeout(() => { setSelectedClient(''); setItems([]); onClose(); onSuccess?.(); }, 1500);
     } catch (err) { setError('Error ' + (isEditMode ? 'editando' : 'creando') + ' la orden: ' + (err instanceof Error ? err.message : 'Desconocido')); } finally { setLoading(false); }
   };
 
@@ -353,7 +363,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
             </div>
           ) : (
             <div className="space-y-8">
-              {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse"><AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" /><p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p></div>}
+              {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3"><AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" /><p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p></div>}
               
               {/* Sección 1: Cliente */}
               <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all">
@@ -421,7 +431,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                              <button 
                                onClick={(e) => {
                                  e.stopPropagation();
-                                 setViewingImage(resolveImageUrl(prod.image_url)!);
+                                 setViewingImage(resolveImageUrl(prod.image_url) ?? null);
                                  setViewingProductName(prod.name);
                                }}
                                className="absolute top-3 right-3 z-10 p-1.5 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
@@ -577,7 +587,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                             value={sizeAmounts[size] || ''} 
                             onChange={(e) => handleSizeAmountChange(size, e.target.value)} 
                             className={`w-full px-3 py-2.5 rounded-xl text-xs font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm ${
-                              (parseInt(sizeAmounts[size]) > 0)
+                              (parseInt(sizeAmounts[size] || '0') > 0)
                                 ? 'bg-white dark:bg-slate-700 border-2 border-orange-500 text-orange-600 dark:text-orange-400 scale-105 z-10' 
                                 : 'bg-white dark:bg-slate-800 border border-transparent text-gray-900 dark:text-white'
                             }`}
@@ -614,7 +624,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                       <div key={idx} className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
                         {/* List Item Content exactly as before ... */}
                         <div className="flex gap-4 p-4 border-b border-gray-50 dark:border-slate-800">
-                          <div className="w-14 h-14 rounded-xl bg-gray-50 dark:bg-slate-800 flex-shrink-0 cursor-pointer overflow-hidden border border-gray-100 dark:border-slate-700 group relative" onClick={() => { const url = resolveImageUrl(item.image_url); if (url) { setViewingImage(url); setViewingProductName(item.product_name); } }}>
+                          <div className="w-14 h-14 rounded-xl bg-gray-50 dark:bg-slate-800 flex-shrink-0 cursor-pointer overflow-hidden border border-gray-100 dark:border-slate-700 group relative" onClick={() => { const url = resolveImageUrl(item.image_url); if (url != null) { setViewingImage(url); setViewingProductName(item.product_name); } }}>
                             {resolveImageUrl(item.image_url) ? (
                               <><img src={resolveImageUrl(item.image_url)} alt={item.product_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" /><div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Maximize2 className="text-white w-3 h-3" /></div></>
                             ) : <Package className="w-6 h-6 text-gray-300 mx-auto my-auto" />}
@@ -632,9 +642,24 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                             </div>
                           </div>
                         </div>
-                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20">
+                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20 space-y-3">
                           <div className="flex flex-wrap gap-2">
                             {item.items.map((s, sIdx) => <div key={sIdx} className="px-2 py-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg text-[10px] font-black text-gray-700 dark:text-gray-300">T{s.size}: <span className="text-blue-600">{s.amount}</span></div>)}
+                          </div>
+                          
+                          {/* Observations field per item */}
+                          <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+                             <label className="block text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase mb-1 tracking-widest">Observación para este modelo:</label>
+                             <textarea
+                               value={item.observations || ''}
+                               onChange={(e) => {
+                                 const val = e.target.value;
+                                 setItems(prev => prev.map((it, i) => i === idx ? { ...it, observations: val } : it));
+                               }}
+                               className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-[11px] font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
+                               placeholder="Ej: Cordón largo, acabado mate..."
+                               rows={1}
+                             />
                           </div>
                         </div>
                       </div>
@@ -648,15 +673,11 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                 )}
               </div>
 
-              {/* Sección 4: Notas */}
-              <div className="pt-2">
-                <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Notas Finales</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm dark:text-gray-200 transition-all font-medium" placeholder="Comentarios sobre el cliente, entrega o productos..." />
-              </div>
+              {/* Notes removed per user request */}
             </div>
           )}
         </div>
-        {!success && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={onClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || !selectedClient} className={`px-8 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50 btn-pulse`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
+        {!success && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={onClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || !selectedClient} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
       </div>
       
       {/* Modal visor de imagen */}

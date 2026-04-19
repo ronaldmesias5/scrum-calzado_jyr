@@ -504,6 +504,11 @@ def list_products(
             .where((Inventory.product_id == prod.id) & (Inventory.deleted_at == None))
         ).scalar() or 0
         
+        manufactured_pairs = db.execute(
+            select(func.sum(Inventory.reserved).label("total"))
+            .where((Inventory.product_id == prod.id) & (Inventory.deleted_at == None))
+        ).scalar() or 0
+        
         products_response.append({
             "id": str(prod.id),
             "name": prod.name_product,
@@ -520,6 +525,7 @@ def list_products(
             "category_id": str(prod.category_id),
             "category_name": prod.category.name_category if prod.category else "Unknown",
             "stock_total": int(stock_total),
+            "manufactured_pairs": int(manufactured_pairs),
             "created_at": prod.created_at.isoformat() if prod.created_at else None,
         })
     

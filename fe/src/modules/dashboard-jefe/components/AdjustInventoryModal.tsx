@@ -206,7 +206,7 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
                   <div className="flex-1 p-4 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-orange-100 dark:border-orange-900/30">
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Estado Visual</p>
                     <span className={`text-lg font-black flex items-center gap-2 ${insufficientThreshold > totalPairs ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`}>
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${insufficientThreshold > totalPairs ? "bg-orange-500" : "bg-green-500"}`}></div>
+                      <div className={`w-3 h-3 rounded-full ${insufficientThreshold > totalPairs ? "bg-orange-500" : "bg-green-500"}`}></div>
                       {insufficientThreshold > totalPairs ? "INSUFICIENTE" : "SUFICIENTE"}
                     </span>
                   </div>
@@ -227,7 +227,7 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-3 btn-pulse"
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-3"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : `Guardar Cambios (${totalPairs} pares)`}
           </button>

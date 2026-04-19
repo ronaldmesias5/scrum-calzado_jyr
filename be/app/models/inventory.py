@@ -71,6 +71,12 @@ class Inventory(Base):
         nullable=False,
     )
 
+    reserved: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        nullable=False,
+        default=0,
+    )
+
     minimum_stock: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

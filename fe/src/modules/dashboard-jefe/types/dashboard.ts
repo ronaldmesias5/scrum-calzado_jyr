@@ -15,7 +15,7 @@ export interface RecentOrder {
   date: string;
 }
 
-export type AlertType = 'warning' | 'error' | 'info';
+export type AlertType = 'warning' | 'error' | 'info' | 'success';
 
 export interface Alert {
   id: string;

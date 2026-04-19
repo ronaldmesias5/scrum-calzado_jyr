@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next';
+// ReportsPage
 import { BarChart, TrendingUp, DollarSign, Package, ShoppingBag, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function ReportsPage() {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
 
   return (
     <div className="space-y-6">

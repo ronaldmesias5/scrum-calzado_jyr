@@ -11,7 +11,7 @@
 
 # ────────────────────────────
 # Stage 1 — base
-# Instala dependencias npm. Se reutiliza en dev y builder.
+# Instala dependencias con pnpm. Se reutiliza en dev y builder.
 # ¿Por qué copiar solo package*.json primero?
 #   Docker invalidará la capa de pnpm install SOLO si estos
 #   archivos cambian, no si cambia el código fuente.

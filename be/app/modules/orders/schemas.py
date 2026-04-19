@@ -33,6 +33,7 @@ class OrderDetailItemResponse(BaseModel):
     stock_available: float | None = None
     state: OrderStatus | None = None
     order_date: datetime | None = None
+    observations: str | None = None
 
     class Config:
         from_attributes = True
@@ -44,6 +45,8 @@ class OrderDetailItemCreateRequest(BaseModel):
     size: str = Field(..., min_length=1, max_length=10, description="Talla")
     colour: str | None = Field(None, max_length=100, description="Color")
     amount: int = Field(..., gt=0, description="Cantidad de pares")
+    state: OrderStatus | None = Field(None, description="Estado de esta línea de pedido")
+    observations: str | None = Field(None, max_length=500, description="Observaciones del producto")
 
     class Config:
         from_attributes = True
@@ -126,3 +129,38 @@ class OrderUpdateDetailsRequest(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ────────────────────────────────────────────────
+# Esquemas para Tareas de Producción
+# ────────────────────────────────────────────────
+
+class TaskStatusUpdateRequest(BaseModel):
+    status: str = Field(..., description="Nuevo estado (pendiente, en_progreso, completado, cancelado)")
+
+class ProductionTaskCreate(BaseModel):
+    """Esquema para crear una tarea de producción vinculada a una orden."""
+    product_id: UUID = Field(..., description="ID del producto especifico de este pedido")
+    assigned_to: UUID = Field(..., description="ID del empleado asignado")
+    type: str = Field(..., description="Etapa (corte, guarnicion, soladura, emplantillado)")
+    description: str | None = Field(None, description="Descripción opcional de la tarea")
+    priority: str = Field("media", description="Prioridad de la tarea")
+
+class ProductionTaskResponse(BaseModel):
+    id: UUID
+    order_id: UUID
+    product_id: UUID | None = None
+    assigned_to: UUID
+    type: str
+    status: str
+    vale_number: int | None = None
+    assigned_user_name: str | None = None
+    assigned_user_occupation: str | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ProductionBatchTasksRequest(BaseModel):
+    """Request para crear las 4 tareas de una orden de golpe."""
+    tasks: List[ProductionTaskCreate]
