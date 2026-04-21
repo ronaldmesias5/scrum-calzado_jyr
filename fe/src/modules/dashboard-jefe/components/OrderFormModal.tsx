@@ -8,12 +8,15 @@ import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maxim
 import { createOrder, getStyles, getClients, getCategories, getProducts, updateOrderDetails, OrderCreateRequest, OrderDetailItemCreateRequest, type OrderDetail } from '../services/ordersApi';
 import { resolveImageUrl } from '../services/catalogService';
 import ImageViewerModal from './ImageViewerModal';
+import SummarySizer from './SummarySizer';
 
 interface OrderFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   editOrder?: OrderDetail;
+  /** Cuando se pasa, el modal muestra SOLO las tallas de ese producto del pedido */
+  editProductId?: string;
 }
 
 interface Style {
@@ -61,8 +64,12 @@ interface Client {
   business_name?: string;
 }
 
-export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }: OrderFormModalProps) {
+export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, editProductId }: OrderFormModalProps) {
   const isEditMode = !!editOrder;
+  /** true = editar cantidades de un producto específico del pedido */
+  const isSingleProductEdit = isEditMode && !!editProductId;
+  /** true = agregar un producto nuevo al pedido existente */
+  const isAddProductMode = isEditMode && !editProductId;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -169,7 +176,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
     }
   }, [selectedCategory, categories]);
 
-  // Resetear marca, estilo, producto cuando cambia categoría
+  // Resetear marca, estilo, producto cuando cambia categor├¡a
   useEffect(() => {
     if (selectedCategory) {
       setSelectedBrand('');
@@ -232,6 +239,10 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
     COMERCIAL_PATTERN: { '1': 1, '2': 2, '3': 3, '4': 3, '5': 2, '6': 1 }
   };
 
+  const handleUpdateSummaryItemSizes = (idx: number, newSizes: Array<{ size: string; amount: number }>) => {
+    setItems(prev => prev.map((it, i) => i === idx ? { ...it, items: newSizes } : it));
+  };
+
   const handleAddItem = () => {
     if (!selectedCategory || !selectedBrand || !selectedStyle || !selectedProduct) { 
       setError('Por favor selecciona categoría, marca, estilo y producto'); 
@@ -276,20 +287,20 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
   // Funciones helper para filtrar datos
   const getAvailableBrands = () => {
     if (!selectedCategory) return [];
-    // Obtener productos de la categoría seleccionada
+    // Obtener productos de la categor├¡a seleccionada
     const categoryProducts = products.filter(p => p.category_id === selectedCategory);
-    // Obtener marcas únicas
+    // Obtener marcas ├║nicas
     const uniqueBrands = Array.from(new Set(categoryProducts.map(p => p.brand_name)));
     return uniqueBrands;
   };
 
   const getAvailableStyles = () => {
     if (!selectedBrand) return [];
-    // Obtener estilos que pertenezcan a la categoría Y marca seleccionadas
+    // Obtener estilos que pertenezcan a la categor├¡a Y marca seleccionadas
     const filteredProducts = products.filter(
       p => p.category_id === selectedCategory && p.brand_name === selectedBrand
     );
-    // Obtener estilos únicos para esa marca
+    // Obtener estilos ├║nicos para esa marca
     const uniqueStyleIds = Array.from(new Set(filteredProducts.map(p => p.style_id)));
     return uniqueStyleIds
       .map(id => styles.find(s => s.id === id && s.brand_name === selectedBrand))
@@ -298,7 +309,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
 
   const getAvailableProducts = () => {
     if (!selectedStyle) return [];
-    // Obtener todos los productos que coincidan con estilo + categoría (sin filtrar por marca en este punto)
+    // Obtener todos los productos que coincidan con estilo + categor├¡a (sin filtrar por marca en este punto)
     return products.filter(
       p => p.style_id === selectedStyle && p.category_id === selectedCategory
     );
@@ -348,8 +359,12 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
           <div className="flex items-start gap-3 flex-1">
             <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0 mt-0.5"><Clipboard className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors">{isEditMode ? 'Editar Pedido' : 'Crear Nuevo Pedido Mayorista'}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">{isEditMode ? 'Modifica productos y cantidades del pedido' : 'Selecciona categoría, estilo, tallas y cantidades'}</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors">
+                {isSingleProductEdit ? 'Editar Producto' : isAddProductMode ? 'Agregar Producto al Pedido' : isEditMode ? 'Editar Pedido' : 'Crear Nuevo Pedido Mayorista'}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
+                {isSingleProductEdit ? 'Ajusta las cantidades por talla del producto seleccionado' : isAddProductMode ? 'Selecciona el nuevo producto y sus cantidades' : isEditMode ? 'Modifica productos y cantidades del pedido' : 'Selecciona categoría, estilo, tallas y cantidades'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all flex-shrink-0 ml-4 mt-0.5"><X className="w-6 h-6" /></button>
@@ -365,7 +380,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
             <div className="space-y-8">
               {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3"><AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" /><p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p></div>}
               
-              {/* Sección 1: Cliente */}
+              {/* Sección 1: Cliente — solo al crear pedido nuevo */}
+              {!isEditMode && (
               <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all">
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Cliente del Pedido <span className="text-red-600">*</span></label>
                 {loading && !clients.length ? (
@@ -377,8 +393,10 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                   </select>
                 )}
               </div>
+              )}
 
-              {/* Sección 2: Agregar Producto */}
+              {/* Sección 2: Agregar Producto — oculta en modo edición de producto específico */}
+              {!isSingleProductEdit && (
               <div className="bg-blue-50/30 dark:bg-blue-900/10 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/40 space-y-6 transition-all">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
@@ -411,7 +429,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                   </div>
                 </div>
 
-                {/* Grid de Selección Visual de Productos/Colores */}
+                {/* Grid de Selecci├│n Visual de Productos/Colores */}
                 {selectedStyle && (
                   <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
                     <label className="block text-[10px] font-black text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">Selecciona Color / Variante <span className="text-red-600">*</span></label>
@@ -426,7 +444,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                               : 'bg-white/50 dark:bg-slate-800/50 border-transparent hover:border-gray-300 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-800'
                           }`}
                         >
-                          {/* Botón Zoom */}
+                          {/* Bot├│n Zoom */}
                           {prod.image_url && (
                              <button 
                                onClick={(e) => {
@@ -501,8 +519,9 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
 
                           const getBtnClass = (id: string, colorIdx: number) => {
                             const active = activePreset === id;
-                            return `px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 shadow-lg ${
-                              active ? `${colors[colorIdx]} text-white scale-[1.05] ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-600 z-10` : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
+                            const safeColor = colors[colorIdx % colors.length];
+                            return `px-3 py-2 rounded-xl text-[10px] uppercase transition-all shadow-sm ${safeColor} text-white ${
+                              active ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-600 font-extrabold scale-[1.05] z-10' : 'font-bold opacity-80 hover:opacity-100 hover:scale-[1.02]'
                             }`;
                           };
 
@@ -602,27 +621,34 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                   </div>
                 )}
               </div>
+              )}
 
-              {/* Sección 3: Resumen del Pedido (Ahora al FINAL de la configuración) */}
+              {/* Sección 3: Resumen del Pedido */}
+              {/* isSingleProductEdit: solo ese producto. isAddProductMode: sin resumen. creación: todos. */}
+              {!isAddProductMode && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                     <Clipboard className="w-4 h-4 text-gray-400" />
-                    Resumen de Productos
-                    {items.length > 0 && <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-[10px] rounded-full">{items.length} {items.length === 1 ? 'modelo' : 'modelos'}</span>}
+                    {isSingleProductEdit ? 'Editar Cantidades' : 'Resumen de Productos'}
+                    {!isSingleProductEdit && items.length > 0 && <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-[10px] rounded-full">{items.length} {items.length === 1 ? 'modelo' : 'modelos'}</span>}
                   </label>
                 </div>
                 
-                {items.length === 0 ? (
-                  <div className="border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl p-10 text-center transition-colors">
-                    <Package className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-                    <p className="text-gray-400 dark:text-gray-500 font-bold text-sm">No has añadido productos todavía</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {items.map((item, idx) => (
-                      <div key={idx} className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
-                        {/* List Item Content exactly as before ... */}
+                {(() => {
+                  const itemsToDisplay = isSingleProductEdit
+                    ? items.filter(it => it.product_id === editProductId)
+                    : items;
+                  return itemsToDisplay.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl p-10 text-center transition-colors">
+                      <Package className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
+                      <p className="text-gray-400 dark:text-gray-500 font-bold text-sm">{isSingleProductEdit ? 'Producto no encontrado en el pedido' : 'No has añadido productos todavía'}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {itemsToDisplay.map((item) => {
+                        const idx = items.findIndex(it => it.product_id === item.product_id);
+                        return (<div key={item.product_id} className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
                         <div className="flex gap-4 p-4 border-b border-gray-50 dark:border-slate-800">
                           <div className="w-14 h-14 rounded-xl bg-gray-50 dark:bg-slate-800 flex-shrink-0 cursor-pointer overflow-hidden border border-gray-100 dark:border-slate-700 group relative" onClick={() => { const url = resolveImageUrl(item.image_url); if (url != null) { setViewingImage(url); setViewingProductName(item.product_name); } }}>
                             {resolveImageUrl(item.image_url) ? (
@@ -635,7 +661,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                                 <p className="font-extrabold text-gray-900 dark:text-white truncate">{item.product_name}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-[9px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">{item.style_name}</span>
-                                  <span className="text-[9px] font-bold text-gray-400">• {item.color || 'Sin color'}</span>
+                                  <span className="text-[9px] font-bold text-gray-400">ÔÇó {item.color || 'Sin color'}</span>
                                 </div>
                               </div>
                               <button onClick={() => handleRemoveItem(idx)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
@@ -643,8 +669,12 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                           </div>
                         </div>
                         <div className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20 space-y-3">
-                          <div className="flex flex-wrap gap-2">
-                            {item.items.map((s, sIdx) => <div key={sIdx} className="px-2 py-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg text-[10px] font-black text-gray-700 dark:text-gray-300">T{s.size}: <span className="text-blue-600">{s.amount}</span></div>)}
+                          <div className="pt-2">
+                             <SummarySizer 
+                               categoryName={item.category_name} 
+                               initialItems={item.items} 
+                               onChange={(newItems) => handleUpdateSummaryItemSizes(idx, newItems)} 
+                             />
                           </div>
                           
                           {/* Observations field per item */}
@@ -662,22 +692,24 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder }
                              />
                           </div>
                         </div>
+                        </div>);
+                      })}
+                      {!isSingleProductEdit && (
+                      <div className="bg-blue-600 px-6 py-4 rounded-2xl shadow-xl shadow-blue-500/20">
+                        <p className="text-sm text-blue-50 font-bold flex items-center justify-between">Total acumulado en el pedido: <strong className="text-2xl font-black">{totalPairs} pares</strong></p>
                       </div>
-                    ))}
-                    
-                    {/* Total pairs callout */}
-                    <div className="bg-blue-600 px-6 py-4 rounded-2xl shadow-xl shadow-blue-500/20">
-                      <p className="text-sm text-blue-50 font-bold flex items-center justify-between">Total acumulado en el pedido: <strong className="text-2xl font-black">{totalPairs} pares</strong></p>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
+              )}
 
               {/* Notes removed per user request */}
             </div>
           )}
         </div>
-        {!success && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={onClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || !selectedClient} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
+        {!success && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={onClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || (!isEditMode && !selectedClient)} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
       </div>
       
       {/* Modal visor de imagen */}

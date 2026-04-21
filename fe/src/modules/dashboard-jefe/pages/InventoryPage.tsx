@@ -21,9 +21,10 @@
 import { useState, useEffect } from 'react';
 // @ts-ignore
 const XLSX = window.XLSX;
-import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, Plus, RefreshCw, Maximize2, Download, XCircle } from 'lucide-react';
+import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, RefreshCw, Maximize2, Download, XCircle } from 'lucide-react';
 import { Product, listProducts, resolveImageUrl } from '../services/catalogService';
 import AdjustInventoryModal from '../components/AdjustInventoryModal';
+import ViewManufacturedModal from '../components/ViewManufacturedModal';
 import ImageViewerModal from '../components/ImageViewerModal';
 import StatCard from '../components/StatCard';
 
@@ -38,6 +39,7 @@ export default function InventoryPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [isViewManufacturedOpen, setIsViewManufacturedOpen] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
@@ -129,6 +131,11 @@ export default function InventoryPage() {
   const handleOpenAdjustModal = (product: Product) => {
     setSelectedProduct(product);
     setIsAdjustModalOpen(true);
+  };
+
+  const handleOpenViewManufacturedModal = (product: Product) => {
+    setSelectedProduct(product);
+    setIsViewManufacturedOpen(true);
   };
 
   const handleExportExcel = () => {
@@ -411,10 +418,9 @@ export default function InventoryPage() {
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoría</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Color</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock Comprado</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock Bodega</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pares Fabricados</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
@@ -471,25 +477,34 @@ export default function InventoryPage() {
                       <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.brand_name}</td>
                       <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">{product.color || '-'}</td>
                       <td className="px-4 py-2 text-center">
-                        <span className="font-bold text-sm text-gray-900 dark:text-white transition-colors">{stock}</span>
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="font-bold text-sm text-gray-900 dark:text-white transition-colors">{stock}</span>
+                          <button
+                            onClick={() => handleOpenAdjustModal(product)}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors font-bold text-xs"
+                          >
+                            + Ajustar
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-center">
-                        <span className="font-bold text-sm text-blue-600 dark:text-blue-400 transition-colors">{product.manufactured_pairs || 0}</span>
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400 transition-colors">{product.manufactured_pairs || 0}</span>
+                          <button
+                            onClick={() => handleOpenViewManufacturedModal(product)}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-bold text-xs"
+                          >
+                            👁️
+                            Ver
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
                           {statusText}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() => handleOpenAdjustModal(product)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors font-bold text-xs"
-                        >
-                          <Plus size={14} />
-                          Ajustar
-                        </button>
-                      </td>
+
                     </tr>
                   );
                 })}
@@ -508,6 +523,16 @@ export default function InventoryPage() {
           setSelectedProduct(null);
         }}
         onSave={handleSaveInventory}
+      />
+
+      {/* Modal para ver pares fabricados por talla */}
+      <ViewManufacturedModal
+        isOpen={isViewManufacturedOpen}
+        product={selectedProduct}
+        onClose={() => {
+          setIsViewManufacturedOpen(false);
+          setSelectedProduct(null);
+        }}
       />
 
       {/* Modal visor de imagen */}

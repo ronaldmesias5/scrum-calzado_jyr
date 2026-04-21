@@ -471,10 +471,12 @@ def update_order_details(
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
 
-    if order.state in (OrderStatus.cancelado, OrderStatus.completado):
+    # Permitir cambios de estado en detalles incluso si la orden está completada,
+    # pero bloquear ediciones de cantidades/datos en órdenes canceladas o completadas
+    if order.state == OrderStatus.cancelado:
         raise HTTPException(
             status_code=400,
-            detail="No se pueden editar pedidos cancelados o completados",
+            detail="No se pueden editar pedidos cancelados",
         )
 
     if not order_data.details:
@@ -508,18 +510,24 @@ def update_order_details(
         if order_data.delivery_date is not None:
             order.delivery_date = order_data.delivery_date
 
-        # 5. Determinar automáticamente el nuevo estado de la orden basado en detalles
-        all_details = db.execute(select(OrderDetail).where(OrderDetail.order_id == order.id)).scalars().all()
-        if all_details:
-            states = [d.state for d in all_details]
-            # Si todos están completado o entregado -> completado
-            if all(s in (OrderStatus.completado, OrderStatus.entregado) for s in states):
+        # 5. Determinar automáticamente el nuevo estado de la orden
+        # Calculado directamente desde order_data.details (evita problema con autoflush=False)
+        detail_states = [
+            d.state if d.state is not None else OrderStatus.pendiente
+            for d in order_data.details
+        ]
+        if detail_states:
+            # Si TODOS están entregado -> entregado
+            if all(s == OrderStatus.entregado for s in detail_states):
+                order.state = OrderStatus.entregado
+            # Si TODOS están completado o entregado (pero no todos entregado) -> completado
+            elif all(s in (OrderStatus.completado, OrderStatus.entregado) for s in detail_states):
                 order.state = OrderStatus.completado
             # Si alguno está en_progreso -> en_progreso
-            elif any(s == OrderStatus.en_progreso for s in states):
+            elif any(s == OrderStatus.en_progreso for s in detail_states):
                 order.state = OrderStatus.en_progreso
             # Si todos están pendiente -> pendiente
-            elif all(s == OrderStatus.pendiente for s in states):
+            elif all(s == OrderStatus.pendiente for s in detail_states):
                 order.state = OrderStatus.pendiente
             # Else: mantener estado actual
 

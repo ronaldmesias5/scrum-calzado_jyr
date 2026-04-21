@@ -5,7 +5,7 @@ export interface Metric {
   changePositive?: boolean;
 }
 
-export type OrderStatusKey = 'pendiente' | 'en_progreso' | 'completado' | 'cancelado';
+export type OrderStatusKey = 'pendiente' | 'en_progreso' | 'completado' | 'entregado' | 'cancelado';
 
 export interface RecentOrder {
   orderId: string;

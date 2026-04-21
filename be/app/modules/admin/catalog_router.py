@@ -1123,3 +1123,100 @@ def bulk_update_inventory(
         "message": f"Inventario actualizado: {created_count} creados, {updated_count} actualizados"
     }
 
+
+@router.patch("/products/{product_id}/manufactured-pairs", summary="Actualizar pares fabricados", response_model=dict)
+def update_manufactured_pairs(
+    product_id: str,
+    request: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Actualiza el número de pares fabricados (reserved) para un producto.
+    
+    **Parámetros:**
+    - product_id: ID del producto
+    - quantity: Cantidad de pares fabricados a establecer
+    """
+    product_uuid = UUID(product_id)
+    quantity = request.get('quantity', 0)
+    
+    # Buscar el producto
+    product = db.query(Product).filter(Product.id == product_uuid).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Obtener o crear inventario por color (si el producto tiene color)
+    inventory = db.query(Inventory).filter(
+        (Inventory.product_id == product_uuid) &
+        (Inventory.colour == product.color) &
+        (Inventory.deleted_at == None)
+    ).first()
+    
+    if inventory:
+        # Actualizar reserved
+        old_reserved = inventory.reserved or 0
+        inventory.reserved = quantity
+        inventory.updated_at = datetime.now(timezone.utc)
+    else:
+        # Crear nuevo registro de inventario con reserved
+        inventory = Inventory(
+            id=uuid.uuid4(),
+            product_id=product_uuid,
+            colour=product.color,
+            reserved=quantity,
+        )
+        db.add(inventory)
+    
+    db.commit()
+    
+    return {
+        "product_id": str(product_uuid),
+        "product_name": product.name_product,
+        "manufactured_pairs": quantity,
+        "message": f"Pares fabricados actualizados a {quantity}"
+    }
+
+
+@router.get("/products/{product_id}/inventory-by-size", summary="Obtener inventario de pares fabricados por talla", response_model=dict)
+def get_inventory_by_size(
+    product_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Obtiene el desglose de pares fabricados (reserved) por talla para un producto.
+    
+    **Retorna:**
+    - inventory: Lista de objetos con {size, reserved}
+    """
+    product_uuid = UUID(product_id)
+    
+    # Buscar el producto
+    product = db.query(Product).filter(Product.id == product_uuid).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Obtener todos los registros de inventario para este producto
+    inventory_items = db.query(Inventory).filter(
+        (Inventory.product_id == product_uuid) &
+        (Inventory.deleted_at == None)
+    ).all()
+    
+    # Convertir a formato de respuesta
+    inventory_list = [
+        {
+            "size": int(item.size) if item.size else 0,
+            "reserved": item.reserved or 0
+        }
+        for item in inventory_items
+        if item.reserved and item.reserved > 0  # Solo incluir si hay pares fabricados
+    ]
+    
+    return {
+        "product_id": str(product_uuid),
+        "product_name": product.name_product,
+        "category": product.category.name_category if product.category else "Unknown",
+        "inventory": inventory_list
+    }
+

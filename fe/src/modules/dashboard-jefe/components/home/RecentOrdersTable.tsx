@@ -1,19 +1,6 @@
 import { ArrowRight } from 'lucide-react';
-import type { RecentOrder, OrderStatusKey } from '../../types/dashboard';
-
-const statusLabel: Record<OrderStatusKey, string> = {
-  pendiente:   'Pendiente',
-  en_progreso: 'En Producción',
-  completado:  'Completado',
-  cancelado:   'Cancelado',
-};
-
-const statusClass: Record<OrderStatusKey, string> = {
-  pendiente:   'bg-yellow-100 text-yellow-700',
-  en_progreso: 'bg-blue-100 text-blue-700',
-  completado:  'bg-green-100 text-green-700',
-  cancelado:   'bg-red-100 text-red-600',
-};
+import type { RecentOrder } from '../../types/dashboard';
+import { StatusBadge } from '../StatusBadgeComponent';
 
 interface Props {
   orders: RecentOrder[];
@@ -56,9 +43,7 @@ export default function RecentOrdersTable({ orders, onViewAll }: Props) {
                   <td className="px-3 py-3 text-gray-700 dark:text-gray-300">{order.clientName}</td>
                   <td className="px-3 py-3 text-gray-700 dark:text-gray-300">{order.quantity}</td>
                   <td className="px-3 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusClass[order.status]} dark:bg-slate-800/80`}>
-                      {statusLabel[order.status]}
-                    </span>
+                    <StatusBadge status={order.status} />
                   </td>
                   <td className="px-3 py-3 text-gray-500 dark:text-gray-400">{order.date}</td>
                 </tr>

@@ -10,7 +10,7 @@ import {
   ShoppingCart, Package, Filter, Search, Loader2, AlertCircle, Clock,
   Zap, CheckCircle, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
   ArrowRight, Mail, Phone, User, Plus, ArrowLeft,
-  PlayCircle, Ban, RefreshCw, Trash2, Eraser
+  PlayCircle, Ban, RefreshCw, Trash2, Eraser, Edit2
 } from 'lucide-react';
 import {
   getOrders,
@@ -32,6 +32,7 @@ import OrderFormModal from '../components/OrderFormModal';
 import ContactClientModal from '../components/ContactClientModal';
 import StatCard from '../components/StatCard';
 import ImageViewerModal from '../components/ImageViewerModal';
+import { StatusBadge } from '../components/StatusBadgeComponent';
 import { resolveImageUrl } from '../services/catalogService';
 import { checkProductSupplies, type ProductSuppliesCheckResponse } from '../services/suppliesService';
 
@@ -53,37 +54,6 @@ const CAT_TO_STAGE: Record<string, string> = {
 const getStageByCat = (cat: string) => CAT_TO_STAGE[cat.toLowerCase()] || 'otros';
 
 // ─────────────────────────────────────────
-// Helpers de estado
-// ─────────────────────────────────────────
-
-function StatusIcon({ status }: { status: OrderStatus }) {
-  switch (status) {
-    case 'pendiente': return <Clock className="w-4 h-4" />;
-    case 'en_progreso': return <Zap className="w-4 h-4" />;
-    case 'completado': return <CheckCircle className="w-4 h-4" />;
-    case 'entregado': return <CheckCircle2 className="w-4 h-4" />;
-    case 'cancelado': return <XCircle className="w-4 h-4" />;
-    default: return null;
-  }
-}
-
-function StatusBadge({ status }: { status: OrderStatus }) {
-  const styles: Record<OrderStatus, { bg: string; text: string; border: string; label: string }> = {
-    pendiente:   { bg: 'bg-yellow-50 dark:bg-yellow-950/30', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-900/50', label: 'Pendiente' },
-    en_progreso: { bg: 'bg-blue-50 dark:bg-blue-950/30',   text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-900/50',   label: 'En Producción' },
-    completado:  { bg: 'bg-green-50 dark:bg-green-950/30',  text: 'text-green-700 dark:text-green-400', border: 'border-green-200 dark:border-green-900/50',  label: 'Completado' },
-    entregado:   { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900/50', label: 'Entregado' },
-    cancelado:   { bg: 'bg-red-50 dark:bg-red-950/30',    text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-900/50',    label: 'Cancelado' },
-  };
-  const s = styles[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${s.bg} ${s.text} ${s.border}`}>
-      <StatusIcon status={status} />
-      {s.label}
-    </span>
-  );
-}
-
 // ─────────────────────────────────────────
 // Cards de resumen
 // ─────────────────────────────────────────
@@ -136,7 +106,7 @@ function OrdersTable({ orders, onSelect }: { orders: Order[]; onSelect: (o: Orde
               <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pares</th>
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
-              <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detalles</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
@@ -195,6 +165,7 @@ function OrderDetailView({
   setProductionModal,
   error,
   onOrderUpdate,
+  setIsEditModalOpen,
 }: {
   order: OrderDetail;
   isUpdating: boolean;
@@ -220,13 +191,14 @@ function OrderDetailView({
   } | null>>;
   onOrderUpdate?: (updatedOrder: OrderDetail) => void;
   error?: string | null;
+  setIsEditModalOpen: (productId?: string) => void;
 }) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-
 
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -322,6 +294,45 @@ function OrderDetailView({
     setFailedImages(prev => new Set([...prev, imageUrl]));
   };
 
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      setLoadingTasks(true);
+      // Filtrar los detalles para eliminar el producto seleccionado
+      const updatedDetails = order.details.filter(d => d.product_id !== productId);
+      
+      // Si no hay más detalles, no permitir (la orden debe tener al menos un producto)
+      if (updatedDetails.length === 0) {
+        setSuccessToast('La orden debe tener al menos un producto');
+        setTimeout(() => setSuccessToast(null), 3000);
+        return;
+      }
+
+      // Actualizar la orden sin el producto eliminado
+      const response = await updateOrderDetails(order.id, {
+        delivery_date: order.delivery_date,
+        details: updatedDetails.map(d => ({
+          product_id: d.product_id,
+          size: d.size,
+          colour: d.colour,
+          amount: d.amount,
+          state: d.state
+        } as any))
+      });
+
+      // Actualizar la orden en el componente padre
+      onOrderUpdate?.(response);
+      setProductToDelete(null);
+      setSuccessToast('Producto eliminado de la orden');
+      setTimeout(() => setSuccessToast(null), 3000);
+    } catch (err) {
+      console.error('Error eliminando producto:', err);
+      setSuccessToast('Error al eliminar el producto');
+      setTimeout(() => setSuccessToast(null), 3000);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
   const handleUpdateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
       setLoadingTasks(true);
@@ -409,8 +420,7 @@ function OrderDetailView({
   };
 
   const canStartProduction = order.state === 'pendiente';
-  const canComplete        = order.state === 'en_progreso';
-  const canCancel          = order.state !== 'cancelado' && order.state !== 'completado' && order.state !== 'entregado';
+  const canCancel          = order.state === 'pendiente';
   const canDelete          = order.state === 'cancelado';
   const canRestore         = order.state === 'cancelado';
   const isEverythingInStock = order.details.length > 0 && order.details.every(d => (d.stock_available ?? 0) >= d.amount);
@@ -430,13 +440,13 @@ function OrderDetailView({
   }, {});
 
   const productCount = Object.keys(groups).length;
-  const completedProducts = Object.values(groups).filter(lines => lines.every(l => l.state === 'completado')).length;
+  const completedProducts = Object.values(groups).filter(lines => lines.every(l => l.state === 'completado' || l.state === 'entregado')).length;
   const inProgressProducts = Object.values(groups).filter(lines => lines.some(l => l.state === 'en_progreso')).length;
   
   const progressText = order.state === 'entregado'
     ? "Completado y Entregado al Cliente"
     : completedProducts === productCount 
-    ? "Todos los productos terminados"
+    ? "Todos los productos terminados y listos para entregar"
     : completedProducts > 0 
       ? `${completedProducts} de ${productCount} productos terminados`
       : inProgressProducts > 0 
@@ -705,12 +715,55 @@ function OrderDetailView({
                                 </div>
                               )}
                             </div>
+                            
+                           {/* Botones de editar y eliminar producto — solo cuando está pendiente */}
+                            {productState === 'pendiente' && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setIsEditModalOpen(productId)}
+                                  className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold flex-1"
+                                >
+                                  <Edit2 size={14} />
+                                  <span>Editar</span>
+                                </button>
+                                {!productToDelete && (
+                                  <button
+                                    onClick={() => setProductToDelete(productId)}
+                                    className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold flex-1"
+                                  >
+                                    <Trash2 size={14} />
+                                    <span>Eliminar</span>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {/* Confirmación de eliminación */}
+                            {productToDelete === productId && (
+                              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm space-y-2">
+                                <p className="text-red-800 font-medium">¿Confirmas la eliminación?</p>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleDeleteProduct(productId)}
+                                    disabled={loadingTasks}
+                                    className="flex-1 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 font-medium text-xs"
+                                  >
+                                    {loadingTasks ? 'Eliminando...' : 'Sí, eliminar'}
+                                  </button>
+                                  <button
+                                    onClick={() => setProductToDelete(null)}
+                                    className="flex-1 py-1.5 border border-gray-300 rounded hover:bg-white font-medium text-xs"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         {/* Tallas y cantidades */}
                         <div className="p-5">
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                            {lines.map((line) => {
+                            {[...lines].sort((a, b) => parseInt(a.size || "0") - parseInt(b.size || "0")).map((line) => {
                               const hasStock = (line.stock_available ?? 0) >= line.amount;
                               const stockColor = hasStock ? 'text-green-600 dark:text-green-400' : (line.stock_available ?? 0) > 0 ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400';
                               const bgColor = hasStock ? 'bg-green-50/30 dark:bg-green-950/10' : 'bg-gray-50 dark:bg-slate-800/30';
@@ -741,7 +794,7 @@ function OrderDetailView({
                               <h3 className="text-xs font-black text-green-700 dark:text-green-400 uppercase tracking-widest">✓ Producto Fabricado y Listo</h3>
                             </div>
                             <button
-                              onClick={() => onStatusChange(order.id, 'entregado')}
+                              onClick={() => onUpdateItemsStatus(productId, 'entregado')}
                               disabled={isUpdating}
                               className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 text-sm"
                             >
@@ -917,7 +970,7 @@ function OrderDetailView({
                               <thead>
                                 <tr className="text-gray-400 uppercase tracking-widest border-b border-gray-50 dark:border-slate-800">
                                   <th className="p-2 text-left">Talla</th>
-                                  {order.details.filter(d => d.product_id === productionModal?.productId).map(d => (
+                                  {[...order.details.filter(d => d.product_id === productionModal?.productId)].sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0')).map(d => (
                                     <th key={d.size} className="p-2 text-center border-l border-gray-50 dark:border-slate-800">{d.size}</th>
                                   ))}
                                 </tr>
@@ -925,7 +978,7 @@ function OrderDetailView({
                               <tbody>
                                 <tr className="text-gray-700 dark:text-gray-300">
                                   <td className="p-2 uppercase tracking-tighter text-orange-600">Fabricar</td>
-                                  {order.details.filter(d => d.product_id === productionModal?.productId).map(d => (
+                                  {[...order.details.filter(d => d.product_id === productionModal?.productId)].sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0')).map(d => (
                                     <td key={d.size} className="p-2 text-center border-l border-gray-50 dark:border-slate-800 font-black">{d.amount}</td>
                                   ))}
                                 </tr>
@@ -955,8 +1008,9 @@ function OrderDetailView({
                             <thead>
                               <tr className="text-gray-400 uppercase tracking-widest border-b border-gray-50 dark:border-slate-800">
                                 <th className="p-2 text-left">Talla</th>
-                                {order.details
-                                  .filter(d => d.product_id === productionModal?.productId)
+                                {[...order.details
+                                  .filter(d => d.product_id === productionModal?.productId)]
+                                  .sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'))
                                   .map(d => (
                                     <th key={d.size} className="p-2 text-center border-l border-gray-50 dark:border-slate-800">{d.size}</th>
                                   ))}
@@ -965,8 +1019,9 @@ function OrderDetailView({
                             <tbody>
                               <tr className="text-blue-600 dark:text-blue-400">
                                 <td className="p-2 uppercase tracking-tighter">Faltante</td>
-                                {order.details
-                                  .filter(d => d.product_id === productionModal?.productId)
+                                {[...order.details
+                                  .filter(d => d.product_id === productionModal?.productId)]
+                                  .sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'))
                                   .map(d => {
                                     const stockSize = d.stock_available || 0;
                                     const missing = Math.max(0, d.amount - stockSize);
@@ -997,7 +1052,7 @@ function OrderDetailView({
                         <div className="overflow-x-auto bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-orange-100 dark:border-orange-900/30 p-2">
                           <table className="w-full text-[10px] font-bold">
                             {(() => {
-                              const details = order.details.filter(d => d.product_id === productionModal?.productId);
+                              const details = [...order.details.filter(d => d.product_id === productionModal?.productId)].sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'));
                               
                               return (
                                 <>
@@ -1122,9 +1177,10 @@ function OrderDetailView({
                            <tbody>
                              {/* Mostrar cada línea de details tal cual, sin agrupar */}
                              {(() => {
-                               const details = order.details
+                               const details = [...order.details
                                  .filter(d => d.product_id === productionModal?.productId)
-                                 .filter(d => (selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount) > 0);
+                                 .filter(d => (selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount) > 0)]
+                                 .sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'));
                                
                                return (
                                  <>
@@ -1518,9 +1574,17 @@ function OrderDetailView({
           <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300">
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Acciones</h2>
 
-
-
             <div className="space-y-2.5">
+              {/* Agregar Producto al Pedido */}
+              {order.state !== 'entregado' && order.state !== 'cancelado' && (
+                <button
+                  onClick={() => setIsEditModalOpen(undefined)}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-bold flex items-center justify-center gap-2 text-sm shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  Agregar Producto
+                </button>
+              )}
               {/* Despachar directamente si hay stock total (SOLO para pendientes SIN fabricación) */}
               {canCompleteFromStock && (
                 <button
@@ -1530,20 +1594,6 @@ function OrderDetailView({
                 >
                   {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   Completar desde Inventario
-                </button>
-              )}
-
-
-
-              {/* Completar pedido (fabricado) */}
-              {canComplete && (
-                <button
-                  onClick={() => onStatusChange(order.id, 'completado')}
-                  disabled={isUpdating}
-                  className="w-full py-2.5 border-2 border-green-500 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-950/20 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 text-sm shadow-md shadow-green-500/10"
-                >
-                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                  Marcar como Entregado
                 </button>
               )}
 
@@ -1656,7 +1706,9 @@ export default function OrdersPage() {
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | undefined>(undefined);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1797,7 +1849,6 @@ export default function OrdersPage() {
     setIsUpdating(true);
     setError(null);
     try {
-      // 1. Preparar la actualización local (y para envío si el backend lo soporta)
       const updatedDetails = selectedOrder.details.map(item => {
         if (item.product_id === productId) {
           return { ...item, state: newStatus };
@@ -1805,13 +1856,8 @@ export default function OrdersPage() {
         return item;
       });
 
-      // 2. Determinar nuevo estado global
-      // - Si todo completado -> completo
-      // - Si algo en progreso o parcialmente completado -> en_progreso
-      // - Si nada iniciado -> pendiente
-      
-      // Actualizar detalles (esto debería actualizar automáticamente el estado global en el backend)
-      const res = await updateOrderDetails(selectedOrder.id, {
+      // El backend calcula el estado global automáticamente al actualizar detalles
+      await updateOrderDetails(selectedOrder.id, {
         delivery_date: selectedOrder.delivery_date,
         details: updatedDetails.map(d => ({
           product_id: d.product_id,
@@ -1822,12 +1868,18 @@ export default function OrdersPage() {
         } as any))
       });
 
-      setSelectedOrder(res);
-      // Recargar lista para reflejar cambios
-      loadOrders();
-    } catch (err) {
+      // Pequeño delay para asegurar que el backend procesó
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Refrescar la orden completa para obtener el estado global actualizado
+      const refreshed = await getOrderDetail(selectedOrder.id);
+      setSelectedOrder(refreshed);
+      setOrders(prev => prev.map(o => o.id === refreshed.id ? { ...o, state: refreshed.state } : o));
+    } catch (err: unknown) {
       console.error('Error actualizando estados:', err);
-      setError('No se pudieron actualizar los estados de producción.');
+      // Extraer mensaje de error específico del backend
+      const errorMsg = (err as any)?.response?.data?.detail || (err as any)?.message || 'Error desconocido al actualizar estados';
+      setError(`No se pudo actualizar el estado: ${errorMsg}`);
     } finally {
       setIsUpdating(false);
     }
@@ -1894,11 +1946,16 @@ export default function OrdersPage() {
           setProductionModal={setProductionModal}
           onOrderUpdate={setSelectedOrder}
           error={error}
+          setIsEditModalOpen={(productId?: string) => {
+            setEditingProductId(productId);
+            setIsEditModalOpen(true);
+          }}
         />
         <OrderFormModal
           isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
+          onClose={() => { setIsEditModalOpen(false); setEditingProductId(undefined); }}
           editOrder={selectedOrder}
+          editProductId={editingProductId}
           onSuccess={async () => {
             setIsEditModalOpen(false);
             try {
