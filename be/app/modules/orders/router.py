@@ -320,9 +320,55 @@ def update_order_status(
             raise HTTPException(status_code=404, detail="Orden no encontrada")
 
         # --- Lógica de Inventario Segura con Reservas ---
+        # FLUJO:
+        # - Pedido 'completado' -> SUMAR a reserved (entrada de pares fabricados)
+        # - Pedido 'entregado' -> RESTAR de reserved (salida de pares fabricados)
         
-        # 1. Caso: El pedido pasa a 'entregado' -> RESTAR DE RESERVED (pares fabricados que se entregan)
-        if order_update.state == OrderStatus.entregado and order.state != OrderStatus.entregado:
+        # 1. Caso: El pedido pasa a 'completado' -> SUMAR A RESERVED (entrada de pares fabricados)
+        if order_update.state == OrderStatus.completado and order.state != OrderStatus.completado:
+            for detail in order.details:
+                stmt = select(Inventory).where(
+                    (Inventory.product_id == detail.product_id) &
+                    (Inventory.size == detail.size) &
+                    (Inventory.colour == detail.colour) &
+                    (Inventory.deleted_at == None)
+                )
+                inventory_item = db.execute(stmt).scalar_one_or_none()
+                
+                quantity = Decimal(detail.amount)
+                
+                if inventory_item:
+                    # SUMAR a reserved (entrada de pares fabricados del pedido)
+                    inventory_item.reserved += quantity
+                    db.add(inventory_item)
+                else:
+                    # Crear nuevo registro si no existe
+                    inventory_item = Inventory(
+                        id=uuid.uuid4(),
+                        product_id=detail.product_id,
+                        size=detail.size,
+                        colour=detail.colour,
+                        amount=0,  # Stock bodega se mantiene en 0, solo reserved tiene los del pedido
+                        reserved=quantity,
+                        minimum_stock=0
+                    )
+                    db.add(inventory_item)
+                
+                # Registrar la entrada de pares fabricados
+                db.add(InventoryMovement(
+                    id=uuid.uuid4(),
+                    product_id=detail.product_id,
+                    user_id=current_user.id,
+                    type_of_movement=InventoryMovementType.entrada,
+                    size=detail.size,
+                    colour=detail.colour,
+                    amount=quantity,
+                    reason=f"Entrada de pares fabricados - Pedido {order.id}",
+                    movement_date=datetime.now(timezone.utc)
+                ))
+        
+        # 2. Caso: El pedido pasa a 'entregado' -> RESTAR DE RESERVED (salida de pares fabricados)
+        elif order_update.state == OrderStatus.entregado and order.state != OrderStatus.entregado:
             for detail in order.details:
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail.product_id) &
@@ -335,14 +381,14 @@ def update_order_status(
                 if inventory_item:
                     quantity = Decimal(detail.amount)
                     
-                    # Restar de RESERVED (pares fabricados que se están entregando)
+                    # RESTAR de reserved (salida de pares fabricados que se entregan)
                     if inventory_item.reserved >= quantity:
                         inventory_item.reserved -= quantity
                         db.add(inventory_item)
                     else:
                         print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail.product_id} talla {detail.size}")
                     
-                    # Registrar el despacho al cliente
+                    # Registrar la salida de pares al cliente
                     db.add(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=detail.product_id,
@@ -355,43 +401,8 @@ def update_order_status(
                         movement_date=datetime.now(timezone.utc)
                     ))
         
-        # 2. Caso: El pedido pasa a 'completado' -> ENTRADA PARA EMPLANTILLADO
-        # Los pares ya fueron fabricados y están en el inventario cuando se completó emplantillado
-        elif order_update.state == OrderStatus.completado and order.state != OrderStatus.completado:
-            for detail in order.details:
-                stmt = select(Inventory).where(
-                    (Inventory.product_id == detail.product_id) &
-                    (Inventory.size == detail.size) &
-                    (Inventory.colour == detail.colour) &
-                    (Inventory.deleted_at == None)
-                )
-                inventory_item = db.execute(stmt).scalar_one_or_none()
-                
-                if inventory_item:
-                    quantity = Decimal(detail.amount)
-                    
-                    # Restar de RESERVED (pares fabricados que se están entregando)
-                    if inventory_item.reserved >= quantity:
-                        inventory_item.reserved -= quantity
-                        db.add(inventory_item)
-                    else:
-                        print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail.product_id} talla {detail.size}")
-                    
-                    # Registrar el despacho al cliente
-                    db.add(InventoryMovement(
-                        id=uuid.uuid4(),
-                        product_id=detail.product_id,
-                        user_id=current_user.id,
-                        type_of_movement=InventoryMovementType.salida,
-                        size=detail.size,
-                        colour=detail.colour,
-                        amount=quantity,
-                        reason=f"Entrega al cliente - Pedido {order.id}",
-                        movement_date=datetime.now(timezone.utc)
-                    ))
-        
-        # 3. Caso: El pedido ya estaba 'completado' y ahora cambia a OTRO ESTADO (excepto 'entregado')
-        # Restaurar pares a RESERVED si se revierte
+        # 3. Caso: El pedido vuelve atrás desde 'completado' a otro estado
+        # Revertir: RESTAR de reserved lo que se había sumado
         elif order.state == OrderStatus.completado and order_update.state not in (OrderStatus.completado, OrderStatus.entregado):
             for detail in order.details:
                 stmt = select(Inventory).where(
@@ -486,10 +497,14 @@ def update_order_details(
         )
 
     try:
+        # 0. Primero, obtener los detalles ANTIGUOS para comparar estados
+        old_details = db.query(OrderDetail).filter(OrderDetail.order_id == order.id).all()
+        old_details_map = {d.product_id: d for d in old_details}
+        
         # 1. Eliminar detalles antiguos
         db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
 
-        # 2. Crear los NUEVOS detalles (SIN tocar inventario físico)
+        # 2. Crear los NUEVOS detalles
         total_pairs = 0
         for detail_data in order_data.details:
             detail = OrderDetail(
@@ -504,6 +519,84 @@ def update_order_details(
             )
             db.add(detail)
             total_pairs += detail_data.amount
+            
+            # 2.1 LÓGICA DE INVENTARIO: Si un producto pasa a "entregado"
+            old_detail = old_details_map.get(detail_data.product_id)
+            if old_detail and old_detail.state != OrderStatus.entregado and detail_data.state == OrderStatus.entregado:
+                # Pasar de completado -> entregado: RESTAR de reserved
+                stmt = select(Inventory).where(
+                    (Inventory.product_id == detail_data.product_id) &
+                    (Inventory.size == detail_data.size) &
+                    (Inventory.colour == detail_data.colour) &
+                    (Inventory.deleted_at == None)
+                )
+                inventory_item = db.execute(stmt).scalar_one_or_none()
+                
+                if inventory_item:
+                    quantity = Decimal(detail_data.amount)
+                    
+                    # RESTAR de reserved (salida de pares fabricados que se entregan)
+                    if inventory_item.reserved >= quantity:
+                        inventory_item.reserved -= quantity
+                        db.add(inventory_item)
+                    else:
+                        print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail_data.product_id} talla {detail_data.size}")
+                    
+                    # Registrar la salida de pares al cliente
+                    db.add(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=detail_data.product_id,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.salida,
+                        size=detail_data.size,
+                        colour=detail_data.colour,
+                        amount=quantity,
+                        reason=f"Entrega al cliente - Pedido {order.id}",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+            
+            # 2.2 LÓGICA DE INVENTARIO: Si un producto pasa a "completado" (desde otro estado que no sea completado/entregado)
+            elif old_detail and old_detail.state not in (OrderStatus.completado, OrderStatus.entregado) and detail_data.state == OrderStatus.completado:
+                # Pasar a completado: SUMAR a reserved
+                stmt = select(Inventory).where(
+                    (Inventory.product_id == detail_data.product_id) &
+                    (Inventory.size == detail_data.size) &
+                    (Inventory.colour == detail_data.colour) &
+                    (Inventory.deleted_at == None)
+                )
+                inventory_item = db.execute(stmt).scalar_one_or_none()
+                
+                quantity = Decimal(detail_data.amount)
+                
+                if inventory_item:
+                    # SUMAR a reserved (entrada de pares fabricados del pedido)
+                    inventory_item.reserved += quantity
+                    db.add(inventory_item)
+                else:
+                    # Crear nuevo registro si no existe
+                    inventory_item = Inventory(
+                        id=uuid.uuid4(),
+                        product_id=detail_data.product_id,
+                        size=detail_data.size,
+                        colour=detail_data.colour,
+                        amount=0,
+                        reserved=quantity,
+                        minimum_stock=0
+                    )
+                    db.add(inventory_item)
+                
+                # Registrar la entrada de pares fabricados
+                db.add(InventoryMovement(
+                    id=uuid.uuid4(),
+                    product_id=detail_data.product_id,
+                    user_id=current_user.id,
+                    type_of_movement=InventoryMovementType.entrada,
+                    size=detail_data.size,
+                    colour=detail_data.colour,
+                    amount=quantity,
+                    reason=f"Entrada de pares fabricados - Pedido {order.id}",
+                    movement_date=datetime.now(timezone.utc)
+                ))
 
         # 4. Actualizar cabecera del pedido
         order.total_pairs = total_pairs

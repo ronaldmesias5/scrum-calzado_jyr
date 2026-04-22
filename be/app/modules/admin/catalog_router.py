@@ -1186,9 +1186,10 @@ def get_inventory_by_size(
 ):
     """
     Obtiene el desglose de pares fabricados (reserved) por talla para un producto.
+    Suma los reserved de múltiples pedidos si existen para la misma talla.
     
     **Retorna:**
-    - inventory: Lista de objetos con {size, reserved}
+    - inventory: Lista de objetos con {size, reserved} agrupado y sumado por talla
     """
     product_uuid = UUID(product_id)
     
@@ -1203,20 +1204,26 @@ def get_inventory_by_size(
         (Inventory.deleted_at == None)
     ).all()
     
-    # Convertir a formato de respuesta
+    # Agrupar y sumar reserved por talla
+    size_map: dict[int, Decimal] = {}
+    for item in inventory_items:
+        if item.reserved and item.reserved > 0:
+            size_key = int(item.size) if item.size else 0
+            size_map[size_key] = size_map.get(size_key, Decimal(0)) + item.reserved
+    
+    # Convertir a lista ordenada por talla
     inventory_list = [
-        {
-            "size": int(item.size) if item.size else 0,
-            "reserved": item.reserved or 0
-        }
-        for item in inventory_items
-        if item.reserved and item.reserved > 0  # Solo incluir si hay pares fabricados
+        {"size": size, "reserved": float(reserved)}
+        for size, reserved in sorted(size_map.items())
     ]
+    
+    total_reserved = sum(reserved for _, reserved in size_map.items())
     
     return {
         "product_id": str(product_uuid),
         "product_name": product.name_product,
         "category": product.category.name_category if product.category else "Unknown",
-        "inventory": inventory_list
+        "inventory": inventory_list,
+        "total_reserved": float(total_reserved)
     }
 
