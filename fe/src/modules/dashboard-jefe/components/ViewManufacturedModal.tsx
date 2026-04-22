@@ -42,7 +42,7 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
         setError(null);
         try {
           const response = await api.get(
-            `/api/v1/admin/products/${product.id}/inventory-by-size`
+            `/api/v1/admin/catalog/products/${product.id}/inventory-by-size`
           );
           
           setInventory(response.data.inventory || []);

@@ -324,8 +324,6 @@ function ManageUsersTab() {
                 <th className="px-4 py-4">Email</th>
                 <th className="px-4 py-4">Rol / Cargo</th>
                 <th className="px-4 py-4">Estado</th>
-                <th className="px-4 py-4">Consentimiento</th>
-                <th className="px-4 py-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -349,36 +347,6 @@ function ManageUsersTab() {
                       }`}>
                         {user.is_active ? 'Activo' : 'Inactivo'}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {user.accepted_terms ? (
-                        <div className="flex flex-col">
-                          <div className="flex items-center text-green-600 dark:text-green-400 gap-1.5">
-                            <CheckCircle size={14} />
-                            <span className="text-[11px] font-bold leading-none">Aceptado</span>
-                          </div>
-                          {user.terms_accepted_at && (
-                            <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 leading-none font-bold">
-                              {new Date(user.terms_accepted_at as string).toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-gray-400 dark:text-gray-600 gap-1.5 font-bold">
-                          <XCircle size={14} />
-                          <span className="text-[11px]">No registrado</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => openDeleteConfirm(user)}
-                        disabled={deletingId === id || user.role_name === 'admin'}
-                        title={user.role_name === 'admin' ? "No se puede eliminar un administrador" : "Eliminar usuario"}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30"
-                      >
-                        <Trash2 size={18} />
-                      </button>
                     </td>
                   </tr>
                 );

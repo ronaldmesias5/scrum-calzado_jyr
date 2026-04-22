@@ -99,7 +99,7 @@ function OrdersTable({ orders, onSelect }: { orders: Order[]; onSelect: (o: Orde
     <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+          <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Pedido</th>
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
@@ -468,9 +468,9 @@ function OrderDetailView({
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-800 font-medium">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+          <p className="text-sm text-red-800 dark:text-red-300 font-medium">{error}</p>
         </div>
       )}
       {/* Header */}
@@ -739,19 +739,19 @@ function OrderDetailView({
                             )}
                             {/* Confirmación de eliminación */}
                             {productToDelete === productId && (
-                              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm space-y-2">
-                                <p className="text-red-800 font-medium">¿Confirmas la eliminación?</p>
+                              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3 text-sm space-y-2">
+                                <p className="text-red-800 dark:text-red-300 font-medium">¿Confirmas la eliminación?</p>
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleDeleteProduct(productId)}
                                     disabled={loadingTasks}
-                                    className="flex-1 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 font-medium text-xs"
+                                    className="flex-1 py-1.5 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 font-medium text-xs"
                                   >
                                     {loadingTasks ? 'Eliminando...' : 'Sí, eliminar'}
                                   </button>
                                   <button
                                     onClick={() => setProductToDelete(null)}
-                                    className="flex-1 py-1.5 border border-gray-300 rounded hover:bg-white font-medium text-xs"
+                                    className="flex-1 py-1.5 border border-gray-300 dark:border-slate-600 rounded hover:bg-white dark:hover:bg-slate-700 dark:text-gray-300 font-medium text-xs transition-colors"
                                   >
                                     No
                                   </button>
@@ -1610,19 +1610,19 @@ function OrderDetailView({
                 </button>
               )}
               {canCancel && confirmCancel && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-                  <p className="text-red-800 font-medium mb-2">¿Confirmas la cancelación?</p>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3 text-sm">
+                  <p className="text-red-800 dark:text-red-300 font-medium mb-2">¿Confirmas la cancelación?</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => { onStatusChange(order.id, 'cancelado'); setConfirmCancel(false); }}
                       disabled={isUpdating}
-                      className="flex-1 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 font-medium text-xs"
+                      className="flex-1 py-1.5 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 font-medium text-xs"
                     >
                       Sí, cancelar
                     </button>
                     <button
                       onClick={() => setConfirmCancel(false)}
-                      className="flex-1 py-1.5 border border-gray-300 rounded hover:bg-white font-medium text-xs"
+                      className="flex-1 py-1.5 border border-gray-300 dark:border-slate-600 rounded hover:bg-white dark:hover:bg-slate-700 dark:text-gray-300 font-medium text-xs transition-colors"
                     >
                       No
                     </button>
@@ -2001,9 +2001,9 @@ export default function OrdersPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+          <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
         </div>
       )}
 

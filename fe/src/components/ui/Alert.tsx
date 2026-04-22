@@ -14,19 +14,19 @@ interface AlertProps {
 export function Alert({ type, message, onClose }: AlertProps) {
   const styles = {
     success: {
-      bg: "bg-green-50 border-green-200",
-      text: "text-green-800",
-      icon: <CheckCircle className="h-5 w-5 text-green-500" aria-hidden="true" />,
+      bg: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50",
+      text: "text-green-800 dark:text-green-300",
+      icon: <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" aria-hidden="true" />,
     },
     error: {
-      bg: "bg-red-50 border-red-200",
-      text: "text-red-800",
-      icon: <AlertCircle className="h-5 w-5 text-red-500" aria-hidden="true" />,
+      bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50",
+      text: "text-red-800 dark:text-red-300",
+      icon: <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" aria-hidden="true" />,
     },
     info: {
-      bg: "bg-blue-50 border-blue-200",
-      text: "text-blue-800",
-      icon: <Info className="h-5 w-5 text-blue-500" aria-hidden="true" />,
+      bg: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50",
+      text: "text-blue-800 dark:text-blue-300",
+      icon: <Info className="h-5 w-5 text-blue-500 dark:text-blue-400" aria-hidden="true" />,
     },
   };
 

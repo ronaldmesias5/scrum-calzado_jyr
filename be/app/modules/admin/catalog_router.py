@@ -6,6 +6,7 @@ Admin y Jefe pueden crear, editar, eliminar: Marcas, Estilos, Productos e Invent
 import uuid
 import os
 from pathlib import Path
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
@@ -18,6 +19,7 @@ from app.models.brand import Brand
 from app.models.style import Style
 from app.models.category import Category
 from app.models.product import Product
+from app.models.product_supplies import ProductSupply
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement, InventoryMovementType
 from app.models.user import User
@@ -1205,11 +1207,11 @@ def get_inventory_by_size(
     ).all()
     
     # Agrupar y sumar reserved por talla
-    size_map: dict[int, Decimal] = {}
+    size_map: dict = {}
     for item in inventory_items:
         if item.reserved and item.reserved > 0:
             size_key = int(item.size) if item.size else 0
-            size_map[size_key] = size_map.get(size_key, Decimal(0)) + item.reserved
+            size_map[size_key] = size_map.get(size_key, 0) + item.reserved
     
     # Convertir a lista ordenada por talla
     inventory_list = [

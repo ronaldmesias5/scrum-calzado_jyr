@@ -2,10 +2,10 @@ import { ShoppingBag, Zap, CheckCircle, UserCheck } from 'lucide-react';
 import type { Metric } from '../../types/dashboard';
 
 const CARD_CONFIG = [
-  { icon: ShoppingBag, iconColor: 'text-orange-500', bgColor: 'bg-orange-50'  },
-  { icon: Zap,         iconColor: 'text-blue-500',   bgColor: 'bg-blue-50'    },
-  { icon: CheckCircle, iconColor: 'text-green-600',  bgColor: 'bg-green-50'   },
-  { icon: UserCheck,   iconColor: 'text-purple-600', bgColor: 'bg-purple-50'  },
+  { icon: ShoppingBag, iconColor: 'text-orange-500 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-900/20'  },
+  { icon: Zap,         iconColor: 'text-blue-500 dark:text-blue-400',     bgColor: 'bg-blue-50 dark:bg-blue-900/20'    },
+  { icon: CheckCircle, iconColor: 'text-green-600 dark:text-green-400',   bgColor: 'bg-green-50 dark:bg-green-900/20'   },
+  { icon: UserCheck,   iconColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-900/20'  },
 ];
 
 interface Props {
@@ -29,7 +29,7 @@ export default function MetricsCards({ metrics }: Props) {
             className="bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-all duration-300"
           >
             <div className="flex items-center justify-between">
-              <div className={`p-2.5 rounded-xl ${bgColor} dark:bg-slate-800/80`}>
+              <div className={`p-2.5 rounded-xl ${bgColor}`}>
                 <Icon size={20} className={iconColor} />
               </div>
               {m.change && (

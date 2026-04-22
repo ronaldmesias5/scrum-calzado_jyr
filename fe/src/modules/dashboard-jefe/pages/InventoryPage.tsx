@@ -412,7 +412,7 @@ export default function InventoryPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Producto</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoría</th>
@@ -427,14 +427,14 @@ export default function InventoryPage() {
                 {filteredProducts.map(product => {
                   const stock = product.stock_total || 0;
                   const threshold = product.insufficient_threshold || 12;
-                  let statusColor = 'bg-green-100 text-green-700';
+                  let statusColor = 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
                   let statusText = 'Suficiente';
                   
                   if (stock === 0) {
-                    statusColor = 'bg-red-100 text-red-700';
+                    statusColor = 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
                     statusText = 'Sin Stock';
                   } else if (stock < threshold) {
-                    statusColor = 'bg-orange-100 text-orange-700';
+                    statusColor = 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
                     statusText = 'Insuficiente';
                   }
 

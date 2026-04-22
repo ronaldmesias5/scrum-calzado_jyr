@@ -25,18 +25,18 @@ export default function RecentOrdersTable({ orders, onViewAll }: Props) {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 transition-colors">
-                <th className="text-left px-3 py-2 font-medium rounded-l-lg">ID Pedido</th>
-                <th className="text-left px-3 py-2 font-medium">Cliente</th>
-                <th className="text-left px-3 py-2 font-medium">Pares</th>
-                <th className="text-left px-3 py-2 font-medium">Estado</th>
-                <th className="text-left px-3 py-2 font-medium rounded-r-lg">Fecha</th>
+            <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
+              <tr>
+                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Pedido</th>
+                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pares</th>
+                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={order.orderId} className="border-t border-gray-50 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                <tr key={order.orderId} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="px-3 py-3 font-mono font-semibold text-gray-900 dark:text-gray-200">
                     #{order.orderId.substring(0, 8)}
                   </td>
