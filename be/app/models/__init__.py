@@ -26,6 +26,7 @@ from app.models.inventory_movement import InventoryMovement
 from app.models.supply_categories import SupplyCategory
 from app.models.supplies import Supplies
 from app.models.supplies_movement import SuppliesMovement
+from app.models.product_supplies import ProductSupply
 
 # Modelos de órdenes
 from app.models.order import Order
@@ -55,6 +56,7 @@ __all__ = [
     "SupplyCategory",
     "Supplies",
     "SuppliesMovement",
+    "ProductSupply",
     "Order",
     "Vale",
     "Task",

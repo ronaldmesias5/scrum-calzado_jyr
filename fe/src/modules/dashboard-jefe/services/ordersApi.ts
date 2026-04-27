@@ -274,6 +274,7 @@ export async function getAllProductionTasks(filters: {
 
 export interface InventoryMovementCreate {
   product_id: string;
+  size: string;
   quantity: number;
   movement_type: 'entrada' | 'salida' | 'ajuste' | 'reserva';
   reference_id?: string;
@@ -283,6 +284,6 @@ export interface InventoryMovementCreate {
 
 /** Crea un movimiento de inventario cuando un producto se completa en producción */
 export async function createInventoryMovement(movement: InventoryMovementCreate): Promise<any> {
-  const response = await axios.post('/api/v1/inventory/movements', movement);
+  const response = await axios.post('/api/v1/admin/catalog/inventory/movements', movement);
   return response.data;
 }

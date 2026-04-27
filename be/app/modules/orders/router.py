@@ -83,7 +83,7 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
                 amount=d.amount,
                 stock_available=next(
                     (float(inv.amount) for inv in d.product.inventory 
-                     if inv.size == d.size and inv.colour == (d.colour or (d.product.color if d.product else None))), 
+                     if inv.size == d.size and (not inv.colour or inv.colour == (d.colour or (d.product.color if d.product else None)))), 
                     0.0
                 ) if d.product else 0.0,
                 state=d.state,
@@ -810,6 +810,12 @@ def update_task_status(
     
     # Actualizar el status
     task.status = request.status
+    
+    # Asignar fecha de completado si se marca como completado por primera vez o si se marca como pagado
+    if request.status in ["completado", "pagado"] and not task.completed_at:
+        task.completed_at = datetime.now(timezone.utc)
+    elif request.status in ["pendiente", "en_progreso"]:
+        task.completed_at = None
     
     # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
     if task.type == "emplantillado" and request.status == "completado":

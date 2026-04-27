@@ -254,10 +254,11 @@ export default function ProductionTaskDashboard() {
             const borderColor = BORDER_COLORS[task.type] || 'border-gray-200 dark:border-slate-700';
             const cardBgColor = CARD_BG_COLORS[task.type] || 'bg-white dark:bg-slate-800';
             const isCompleted = task.status === 'completado';
+            const isPaid = task.status === 'pagado';
             const isCancelled = task.status === 'cancelado';
             const blocked = isTaskBlocked(task);
-            // La tarea es editable solo si: no está completada, no está cancelada, y no está bloqueada
-            const isEditable = !isCompleted && !isCancelled && !blocked;
+            // La tarea es editable solo si: no está completada, no está pagada, no está cancelada, y no está bloqueada
+            const isEditable = !isCompleted && !isPaid && !isCancelled && !blocked;
 
             return (
               <div key={task.id} className={`group relative border-2 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col ${`${cardBgColor} ${borderColor}`}`}>
@@ -290,11 +291,12 @@ export default function ProductionTaskDashboard() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Estado</p>
                     <div className={`px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-wider whitespace-nowrap shadow-sm ${
-                        task.status === 'completado' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' :
-                        task.status === 'en_progreso' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                        task.status === 'pagado' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' :
+                        task.status === 'completado' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                        task.status === 'en_progreso' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
                         'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800'
                       }`}>
-                        {task.status === 'completado' ? '✅ Completado' : task.status === 'en_progreso' ? '🔄 En Curso' : '❌ Cancelado'}
+                        {task.status === 'pagado' ? '✅ Pagado' : task.status === 'completado' ? '✅ Completado' : task.status === 'en_progreso' ? '🔄 En Curso' : '❌ Cancelado'}
                       </div>
                   </div>
                   
@@ -320,8 +322,12 @@ export default function ProductionTaskDashboard() {
                       <div className="w-full text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 text-center">
                         🔒 Etapa anterior pendiente
                       </div>
-                    ) : isCompleted ? (
+                    ) : isPaid ? (
                       <div className="w-full text-xs font-black uppercase tracking-wider text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-700 rounded-xl px-4 py-3 text-center">
+                        ✅ Tarea Pagada
+                      </div>
+                    ) : isCompleted ? (
+                      <div className="w-full text-xs font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl px-4 py-3 text-center">
                         ✅ Tarea Completada
                       </div>
                     ) : (

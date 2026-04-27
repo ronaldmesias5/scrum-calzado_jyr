@@ -30,22 +30,18 @@ export function Button({
 }: ButtonProps) {
 
   const baseClasses =
-    "btn-glow rounded-lg px-6 py-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 relative overflow-hidden";
+    "rounded-lg px-6 py-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 relative overflow-hidden";
 
   const variantClasses =
     variant === "primary"
-      ? "bg-[#1e3a8a] dark:bg-blue-600 text-white hover:bg-[#1e40af] dark:hover:bg-blue-500 btn-shimmer btn-glow"
+      ? "bg-[#1e3a8a] dark:bg-blue-600 text-white hover:bg-[#1e40af] dark:hover:bg-blue-500"
       : "border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800";
 
   const widthClass = fullWidth ? "w-full" : "";
 
   return (
     <>
-      <style>{`
-        .btn-glow:active {
-          transform: scale(0.98);
-        }
-      `}</style>
+
       <button
         type={type}
         disabled={isLoading || disabled}

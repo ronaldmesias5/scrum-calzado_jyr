@@ -1434,14 +1434,15 @@ function OrderDetailView({
                                 
                                 // Crear movimientos de salida para cada talla según la opción seleccionada
                                 for (const detail of productDetails) {
-                                  // Calcular cantidad a descontar
+                                  // Calcular cantidad a descontar de bodega (los pares que YA existían y se usarán para este pedido)
                                   const quantityToDiscount = selectedOption === 'A' 
-                                    ? Math.max(0, detail.amount - (detail.stock_available || 0))  // Faltantes
-                                    : detail.amount;  // Total del pedido
+                                    ? Math.min(detail.amount, detail.stock_available || 0)  // Se toman de bodega los que hay (hasta el límite del pedido)
+                                    : 0;  // Lote completo: no se toma nada de bodega, se fabrica todo nuevo
                                   
                                   if (quantityToDiscount > 0) {
                                     await createInventoryMovement({
                                       product_id: detail.product_id,
+                                      size: detail.size,
                                       quantity: quantityToDiscount,
                                       movement_type: 'salida',
                                       reference_id: order.id,
@@ -1803,24 +1804,14 @@ export default function OrdersPage() {
 
   // Lógica de auto-apertura desde parámentros de URL
   useEffect(() => {
-    if (!loading && orders.length > 0 && !autoOpened) {
+    if (!loading && !autoOpened) {
       const orderId = searchParams.get('order');
-      const productId = searchParams.get('product');
       if (orderId) {
-        // Encontrar el pedido (o forzar carga si no está en la página actual)
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-          handleSelectOrder(order).then(() => {
-            if (productId) {
-              // Si hay producto, intentamos abrir el modal de producción directamente
-              // Necesitamos esperar a que selectedOrder se actualice (esto es asíncrono)
-            }
-          });
-          setAutoOpened(true);
-        }
+        handleSelectOrder(orderId);
+        setAutoOpened(true);
       }
     }
-  }, [orders, loading, searchParams, autoOpened]);
+  }, [loading, searchParams, autoOpened]);
 
   // Segunda fase de auto-apertura: Abrir el modal de producción una vez cargado el detalle
   useEffect(() => {

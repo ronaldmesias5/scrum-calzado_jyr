@@ -40,6 +40,7 @@ class TaskStatus(str, Enum):
     pendiente = "pendiente"
     en_progreso = "en_progreso"
     completado = "completado"
+    pagado = "pagado"
     cancelado = "cancelado"
 
 
@@ -107,6 +108,11 @@ class Task(Base):
     assignment_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+    )
+
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     created_by: Mapped[uuid.UUID | None] = mapped_column(

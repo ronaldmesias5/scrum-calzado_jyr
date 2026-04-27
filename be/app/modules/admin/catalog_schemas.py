@@ -115,3 +115,13 @@ class BulkInventoryUpdateRequest(BaseModel):
             except (ValueError, TypeError) as e:
                 raise ValueError(f"Cantidad para talla {size} debe ser un número válido, recibió: {qty}. Error: {str(e)}")
         return v
+
+class InventoryMovementCreateRequest(BaseModel):
+    """Request para registrar un movimiento de inventario (salida o entrada)"""
+    product_id: str = Field(..., description="UUID del producto")
+    size: str = Field(..., description="Talla")
+    quantity: int = Field(..., gt=0, description="Cantidad a mover")
+    movement_type: str = Field(..., description="'entrada' o 'salida'")
+    reference_id: Optional[str] = Field(None, description="UUID de la orden o referencia")
+    reference_type: Optional[str] = Field(None, description="Tipo de referencia (ej: orden_produccion)")
+    notes: Optional[str] = Field(None, description="Notas opcionales")

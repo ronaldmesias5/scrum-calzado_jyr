@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 from datetime import datetime, timezone
+from decimal import Decimal
 
 UPLOADS_DIR = Path("/app/uploads")
 
@@ -33,6 +34,7 @@ from app.modules.admin.catalog_schemas import (
     InventoryCreateRequest,
     InventoryResponse,
     BulkInventoryUpdateRequest,
+    InventoryMovementCreateRequest,
 )
 from app.modules.auth.schemas import MessageResponse
 
@@ -915,21 +917,31 @@ def create_or_update_inventory(
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
     # Buscar inventario existente
-    existing_inv = db.execute(
+    # Buscar inventario existente (tomar todos para auto-sanar duplicados)
+    existing_invs = db.execute(
         select(Inventory).where(
-            (Inventory.product_id == product_uuid) &
-            (Inventory.size == req.size) &
-            (Inventory.deleted_at == None)
+            (Inventory.product_id == product_uuid)
+            & (Inventory.size == req.size)
+            & (Inventory.deleted_at == None)
         )
-    ).scalar()
+    ).scalars().all()
     
-    if existing_inv:
+    if existing_invs:
+        existing_inv = existing_invs[0]
+        old_amount = sum(float(inv.amount or 0) for inv in existing_invs)
+        
         # Calcular diferencia para el movimiento
-        diff = req.quantity - float(existing_inv.amount)
+        diff = req.quantity - old_amount
         
         # Actualizar
         existing_inv.amount = req.quantity
         existing_inv.updated_at = datetime.now(timezone.utc)
+        
+        # Eliminar los duplicados si existen para evitar sumas fantasma
+        for dup in existing_invs[1:]:
+            dup.deleted_at = datetime.now(timezone.utc)
+            dup.amount = 0
+            db.add(dup)
         
         if diff != 0:
             movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
@@ -1067,23 +1079,30 @@ def bulk_update_inventory(
             
             print(f"[DEBUG] Procesando talla {size} = {quantity}")
             
-            # Buscar inventario existente
-            existing_inv = db.execute(
+            # Buscar inventario existente (tomar todos para auto-sanar duplicados)
+            existing_invs = db.execute(
                 select(Inventory).where(
                     (Inventory.product_id == product_uuid) &
                     (Inventory.size == size) &
                     (Inventory.deleted_at == None)
                 )
-            ).scalar()
+            ).scalars().all()
             
-            if existing_inv:
-                old_amount = existing_inv.amount
-                diff = quantity - float(existing_inv.amount)
+            if existing_invs:
+                existing_inv = existing_invs[0]
+                old_amount = sum(float(inv.amount or 0) for inv in existing_invs)
+                diff = quantity - old_amount
                 
-                # Actualizar
+                # Actualizar el principal
                 existing_inv.amount = quantity
                 existing_inv.updated_at = datetime.now(timezone.utc)
                 db.add(existing_inv)
+                
+                # Eliminar los duplicados si existen para evitar sumas fantasma
+                for dup in existing_invs[1:]:
+                    dup.deleted_at = datetime.now(timezone.utc)
+                    dup.amount = 0
+                    db.add(dup)
                 
                 print(f"[DEBUG]   Actualizado: {old_amount} → {quantity} (diff={diff})")
                 
@@ -1271,3 +1290,69 @@ def get_inventory_by_size(
         "total_reserved": float(total_reserved)
     }
 
+@router.post("/inventory/movements", summary="Registrar un movimiento de inventario")
+def create_inventory_movement(
+    request: InventoryMovementCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Registra un movimiento (salida/entrada) y actualiza el inventario (amount) disponible en bodega.
+    Usado principalmente para descontar stock al iniciar producción de faltantes.
+    """
+    _require_admin_or_jefe(current_user)
+    
+    product_uuid = UUID(request.product_id)
+    
+    # 1. Buscar inventario para ese producto y talla
+    inventory_items = db.execute(
+        select(Inventory).where(
+            (Inventory.product_id == product_uuid) &
+            (Inventory.size == request.size) &
+            (Inventory.deleted_at == None)
+        )
+    ).scalars().all()
+    
+    if not inventory_items:
+        raise HTTPException(status_code=404, detail="Inventario no encontrado para esta talla")
+        
+    # Usar el registro principal (el primero)
+    inv = inventory_items[0]
+    
+    # 2. Actualizar amount dependiendo del tipo de movimiento
+    if request.movement_type == 'salida':
+        if inv.amount < request.quantity:
+            # En vez de error bloqueante, permitimos quedar en negativo temporalmente o lo ajustamos a 0
+            # para no bloquear el inicio de producción si hay discrepancias menores.
+            print(f"⚠️ Advertencia: Descontando {request.quantity} de un stock de {inv.amount}. Quedará negativo.")
+        inv.amount -= Decimal(request.quantity)
+    elif request.movement_type == 'entrada':
+        inv.amount += Decimal(request.quantity)
+    # Si es 'reserva' o 'ajuste', la lógica podría ser diferente, por ahora nos enfocamos en salida/entrada.
+        
+    db.add(inv)
+    
+    # 3. Registrar el movimiento
+    mov_type_enum = InventoryMovementType.salida if request.movement_type == 'salida' else InventoryMovementType.entrada
+    if request.movement_type == 'ajuste':
+        mov_type_enum = InventoryMovementType.ajuste
+    
+    movement = InventoryMovement(
+        id=uuid.uuid4(),
+        product_id=product_uuid,
+        user_id=current_user.id,
+        type_of_movement=mov_type_enum,
+        size=request.size,
+        colour=inv.colour, # Usar el color del inventario
+        amount=Decimal(request.quantity),
+        reason=request.notes or f"Movimiento manual de {request.movement_type} (Referencia: {request.reference_id})",
+        movement_date=datetime.now(timezone.utc)
+    )
+    db.add(movement)
+    
+    try:
+        db.commit()
+        return {"status": "success", "message": "Inventario actualizado correctamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al registrar movimiento: {str(e)}")
