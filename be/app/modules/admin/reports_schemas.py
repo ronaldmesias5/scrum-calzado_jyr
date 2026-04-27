@@ -24,7 +24,7 @@ class TopProductResponse(BaseModel):
 
 class TaskDetail(BaseModel):
     id: UUID
-    order_id: UUID
+    order_id: Optional[UUID] = None
     product_name: str
     process_name: str
     amount: int
@@ -52,7 +52,7 @@ class OrderItemSummary(BaseModel):
 class OrderSummary(BaseModel):
     id: UUID
     total_pairs: int
-    total_price: float
+    total_price: float = 0.0
     state: str
     created_at: datetime
     items: List[OrderItemSummary] = []

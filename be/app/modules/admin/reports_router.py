@@ -445,8 +445,8 @@ def get_all_customers_report(
     orders = db.execute(query).scalars().all()
     
     total_orders = len(orders)
-    total_pairs = sum(o.total_pairs for o in orders)
-    total_spent = sum(o.total_price for o in orders)
+    total_pairs = sum((o.total_pairs or 0) for o in orders)
+    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders)
     
     orders_list = []
     for o in orders:
@@ -465,8 +465,8 @@ def get_all_customers_report(
             ))
         orders_list.append(OrderSummary(
             id=o.id,
-            total_pairs=o.total_pairs,
-            total_price=o.total_price,
+            total_pairs=o.total_pairs or 0,
+            total_price=getattr(o, 'total_price', 0.0) or 0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
             items=items
@@ -541,8 +541,8 @@ def get_customer_report(
     orders = db.execute(query).scalars().all()
     
     total_orders = len(orders)
-    total_pairs = sum(o.total_pairs for o in orders)
-    total_spent = sum(o.total_price for o in orders)
+    total_pairs = sum((o.total_pairs or 0) for o in orders)
+    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders)
     
     orders_metric = []
     for o in orders:
@@ -565,8 +565,8 @@ def get_customer_report(
             
         orders_metric.append(OrderSummary(
             id=o.id,
-            total_pairs=o.total_pairs,
-            total_price=o.total_price,
+            total_pairs=o.total_pairs or 0,
+            total_price=getattr(o, 'total_price', 0.0) or 0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
             items=items
@@ -618,11 +618,11 @@ def get_global_production(
     
     pairs_query = (
         select(Task.created_at, OrderDetail.amount)
-        .join(OrderDetail, (Task.order_id == OrderDetail.order_id) & (Task.product_id == OrderDetail.product_id))
+        .outerjoin(OrderDetail, (Task.order_id == OrderDetail.order_id) & (Task.product_id == OrderDetail.product_id))
         .where(Task.created_at >= start_date, Task.created_at <= end_date, Task.status == 'completado')
     )
     if state:
-        pairs_query = pairs_query.join(Order, Task.order_id == Order.id).where(Order.state == state)
+        pairs_query = pairs_query.outerjoin(Order, Task.order_id == Order.id).where(Order.state == state)
         
     pairs_results = db.execute(pairs_query).all()
     total_pairs_period = sum(row.amount for row in pairs_results)
@@ -677,8 +677,8 @@ def get_global_production(
             ))
         orders_data.append(OrderSummary(
             id=o.id,
-            total_pairs=o.total_pairs,
-            total_price=o.total_price,
+            total_pairs=o.total_pairs or 0,
+            total_price=getattr(o, 'total_price', 0.0) or 0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
             items=items
