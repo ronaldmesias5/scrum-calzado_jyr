@@ -24,7 +24,8 @@ import {
   type OrderDetail,
   type OrderStatus,
   createProductionTasks,
-  updateProductionTaskStatus
+  updateProductionTaskStatus,
+  createInventoryMovement
 } from '../services/ordersApi';
 import { getAllUsers } from '../services/adminApi';
 import { type UserResponse } from '@/types/auth';
@@ -1149,7 +1150,10 @@ function OrderDetailView({
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
                              <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Cliente: <span className="text-gray-900 dark:text-white uppercase">{order.customer_name} {order.customer_last_name}</span></p>
                              <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Color: <span className="text-gray-900 dark:text-white uppercase">{order.details.find(d => d.product_id === productionModal?.productId)?.colour || 'N/A'}</span></p>
-                             <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Cantidad: <span className="text-blue-600 dark:text-blue-400">{productionModal?.totalCount || 0} pares</span></p>
+                             {selectedOption === 'A' && (
+                               <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Pedido Original: <span className="text-gray-900 dark:text-white">{productionModal?.totalCount || 0} pares</span></p>
+                             )}
+                             <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Cantidad: <span className="text-blue-600 dark:text-blue-400">{selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0)} pares</span></p>
                           </div>
                           {/* Observations display */}
                           {(() => {
@@ -1421,6 +1425,37 @@ function OrderDetailView({
                             };
 
                             await createProductionTasks(order.id, [taskData]);
+                            
+                            // Descontar del inventario de bodega si es la PRIMERA etapa (corte)
+                            if (nextPendingStage.key === 'corte') {
+                              try {
+                                // Obtener detalles del pedido para este producto
+                                const productDetails = order.details.filter(d => d.product_id === productionModal?.productId);
+                                
+                                // Crear movimientos de salida para cada talla según la opción seleccionada
+                                for (const detail of productDetails) {
+                                  // Calcular cantidad a descontar
+                                  const quantityToDiscount = selectedOption === 'A' 
+                                    ? Math.max(0, detail.amount - (detail.stock_available || 0))  // Faltantes
+                                    : detail.amount;  // Total del pedido
+                                  
+                                  if (quantityToDiscount > 0) {
+                                    await createInventoryMovement({
+                                      product_id: detail.product_id,
+                                      quantity: quantityToDiscount,
+                                      movement_type: 'salida',
+                                      reference_id: order.id,
+                                      reference_type: 'orden_produccion',
+                                      notes: `Salida de bodega para producción - Orden ${order.id.substring(0, 8)} - Talla ${detail.size} (${selectedOption === 'A' ? 'Solo faltantes' : 'Lote completo'})`
+                                    });
+                                  }
+                                }
+                              } catch (invError) {
+                                console.error('Error al descontar inventario:', invError);
+                                setSuccessToast('⚠️ Tarea creada pero hubo error al descontar del inventario');
+                                setTimeout(() => setSuccessToast(null), 4000);
+                              }
+                            }
                             
                             // Auto-marcar la tarea anterior como completada al iniciar la siguiente
                             const nextIndex2 = STAGES_LOGIC.findIndex(s => s.key === nextPendingStage.key);
