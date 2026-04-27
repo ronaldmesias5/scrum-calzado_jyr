@@ -30,6 +30,7 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
   const [sizeQuantities, setSizeQuantities] = useState<Record<number, number>>({});
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [insufficientThreshold, setInsufficientThreshold] = useState(12);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Cargar inventario existente cuando se abre el modal
   useEffect(() => {
@@ -65,17 +66,32 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
 
   const handleSave = async () => {
     setLoading(true);
+    setSaveMessage(null);
     try {
-      if (!product) return;
+      if (!product) {
+        setSaveMessage({ type: 'error', text: 'Error: Producto no encontrado' });
+        return;
+      }
       
       // Convertir el Record<number, number> a Record<string, number> para el API
       const quantitiesForApi: Record<string, number> = {};
       Object.entries(sizeQuantities).forEach(([size, qty]) => {
-        quantitiesForApi[size] = qty as number;
+        const qtyNum = Number(qty);
+        if (isNaN(qtyNum) || qtyNum < 0) {
+          throw new Error(`Cantidad inválida para talla ${size}`);
+        }
+        quantitiesForApi[size] = Math.floor(qtyNum); // Asegurar que es entero
       });
+
+      if (Object.keys(quantitiesForApi).length === 0) {
+        setSaveMessage({ type: 'error', text: 'Error: Debe ingresar cantidades para al menos una talla' });
+        setLoading(false);
+        return;
+      }
       
       // Guardar inventario
-      await bulkUpdateInventory(product.id, quantitiesForApi);
+      const response = await bulkUpdateInventory(product.id, quantitiesForApi);
+      console.log('Respuesta de guardado:', response);
       
       // Guardar cambios en el umbral si cambió
       if (insufficientThreshold !== (product.insufficient_threshold || 12)) {
@@ -92,10 +108,17 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
       
       // Ejecutar callback opcional
       await onSave(sizeQuantities);
-      onClose();
+      
+      setSaveMessage({ type: 'success', text: '✅ Inventario guardado correctamente' });
+      setTimeout(() => {
+        setSaveMessage(null);
+        onClose();
+      }, 1500);
     } catch (error) {
       console.error('Error saving inventory:', error);
-      // Podríamos añadir un estado de error específico aquí si fuera necesario
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido al guardar el inventario';
+      setSaveMessage({ type: 'error', text: `❌ Error: ${errorMsg}` });
+      setTimeout(() => setSaveMessage(null), 4000);
     } finally {
       setLoading(false);
     }
@@ -127,6 +150,15 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
 
         {/* Body */}
         <div className="p-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 custom-scrollbar">
+          {saveMessage && (
+            <div className={`mb-6 p-4 rounded-xl font-bold text-sm transition-all ${
+              saveMessage.type === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40'
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40'
+            }`}>
+              {saveMessage.text}
+            </div>
+          )}
           {loadingInventory ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">

@@ -1025,105 +1025,114 @@ def bulk_update_inventory(
     _require_admin_or_jefe(current_user)
     
     try:
-        product_uuid = uuid.UUID(req.product_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
-    
-    # Verificar que el producto exista
-    product = db.execute(
-        select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-    ).scalar()
-    if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    
-    updated_count = 0
-    created_count = 0
-    results = []
-    
-    # Iterar sobre cada talla y cantidad
-    for size_str, quantity in req.quantities.items():
-        # Mantener size como string (VARCHAR en BD)
-        size = str(size_str).strip()
-        if not size:
-            continue
+        try:
+            product_uuid = uuid.UUID(req.product_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
         
-        # Buscar inventario existente
-        existing_inv = db.execute(
-            select(Inventory).where(
-                (Inventory.product_id == product_uuid) &
-                (Inventory.size == size) &
-                (Inventory.deleted_at == None)
-            )
+        # Verificar que el producto exista
+        product = db.execute(
+            select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
         ).scalar()
+        if not product:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
         
-        if existing_inv:
-            # Calcular diferencia
-            diff = quantity - float(existing_inv.amount)
+        updated_count = 0
+        created_count = 0
+        results = []
+        
+        # Iterar sobre cada talla y cantidad
+        for size_str, quantity in req.quantities.items():
+            # Mantener size como string (VARCHAR en BD)
+            size = str(size_str).strip()
+            if not size:
+                continue
             
-            # Actualizar
-            existing_inv.amount = quantity
-            existing_inv.updated_at = datetime.now(timezone.utc)
-            db.add(existing_inv)
+            # Convertir cantidad a Decimal para asegurar precisión
+            quantity = int(quantity) if isinstance(quantity, (int, float)) else int(str(quantity))
             
-            if diff != 0:
-                movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
-                db.add(InventoryMovement(
-                    id=uuid.uuid4(),
-                    product_id=product_uuid,
-                    user_id=current_user.id,
-                    type_of_movement=movement_type,
-                    size=size,
-                    amount=abs(diff),
-                    reason="Ajuste masivo (Panel Admin)",
-                    movement_date=datetime.now(timezone.utc)
-                ))
-            
-            updated_count += 1
-            results.append({
-                "size": size,
-                "quantity": quantity,
-                "action": "updated"
-            })
-        else:
-            # Solo crear si quantity > 0 (no crear registros vacíos)
-            if quantity > 0:
-                inventory = Inventory(
-                    id=uuid.uuid4(),
-                    product_id=product_uuid,
-                    size=size,
-                    amount=quantity,
+            # Buscar inventario existente
+            existing_inv = db.execute(
+                select(Inventory).where(
+                    (Inventory.product_id == product_uuid) &
+                    (Inventory.size == size) &
+                    (Inventory.deleted_at == None)
                 )
-                db.add(inventory)
+            ).scalar()
+            
+            if existing_inv:
+                # Calcular diferencia
+                diff = quantity - float(existing_inv.amount)
                 
-                # Registrar entrada inicial masiva
-                db.add(InventoryMovement(
-                    id=uuid.uuid4(),
-                    product_id=product_uuid,
-                    user_id=current_user.id,
-                    type_of_movement=InventoryMovementType.entrada,
-                    size=size,
-                    amount=quantity,
-                    reason="Stock masivo inicial (Panel Admin)",
-                    movement_date=datetime.now(timezone.utc)
-                ))
+                # Actualizar
+                existing_inv.amount = quantity
+                existing_inv.updated_at = datetime.now(timezone.utc)
+                db.add(existing_inv)
                 
-                created_count += 1
+                if diff != 0:
+                    movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
+                    db.add(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=product_uuid,
+                        user_id=current_user.id,
+                        type_of_movement=movement_type,
+                        size=size,
+                        amount=abs(diff),
+                        reason="Ajuste masivo (Panel Admin)",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+                
+                updated_count += 1
                 results.append({
                     "size": size,
                     "quantity": quantity,
-                    "action": "created"
+                    "action": "updated"
                 })
-    
-    db.commit()
-    
-    return {
-        "product_id": str(product_uuid),
-        "product_name": product.name_product,
-        "updated_count": updated_count,
-        "created_count": created_count,
-        "results": results,
-        "message": f"Inventario actualizado: {created_count} creados, {updated_count} actualizados"
-    }
+            else:
+                # Solo crear si quantity > 0 (no crear registros vacíos)
+                if quantity > 0:
+                    inventory = Inventory(
+                        id=uuid.uuid4(),
+                        product_id=product_uuid,
+                        size=size,
+                        amount=quantity,
+                    )
+                    db.add(inventory)
+                    
+                    # Registrar entrada inicial masiva
+                    db.add(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=product_uuid,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.entrada,
+                        size=size,
+                        amount=quantity,
+                        reason="Stock masivo inicial (Panel Admin)",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+                    
+                    created_count += 1
+                    results.append({
+                        "size": size,
+                        "quantity": quantity,
+                        "action": "created"
+                    })
+        
+        db.commit()
+        
+        return {
+            "product_id": str(product_uuid),
+            "product_name": product.name_product,
+            "updated_count": updated_count,
+            "created_count": created_count,
+            "results": results,
+            "message": f"Inventario actualizado: {created_count} creados, {updated_count} actualizados"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al actualizar inventario: {str(e)}")
 
 
 @router.patch("/products/{product_id}/manufactured-pairs", summary="Actualizar pares fabricados", response_model=dict)

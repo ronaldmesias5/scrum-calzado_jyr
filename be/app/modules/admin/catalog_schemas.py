@@ -108,6 +108,10 @@ class BulkInventoryUpdateRequest(BaseModel):
         if not v:
             raise ValueError("quantities no puede estar vacío")
         for size, qty in v.items():
-            if not isinstance(qty, int) or qty < 0:
-                raise ValueError(f"Cantidad para talla {size} debe ser un número >= 0")
+            try:
+                qty_num = int(qty) if isinstance(qty, (int, float)) else int(str(qty))
+                if qty_num < 0:
+                    raise ValueError(f"Cantidad para talla {size} debe ser >= 0, recibió: {qty}")
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Cantidad para talla {size} debe ser un número válido, recibió: {qty}. Error: {str(e)}")
         return v
