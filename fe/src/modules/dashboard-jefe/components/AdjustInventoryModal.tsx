@@ -93,6 +93,11 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
       const response = await bulkUpdateInventory(product.id, quantitiesForApi);
       console.log('Respuesta de guardado:', response);
       
+      // Verificar que el guardado fue exitoso
+      if (response && response.updated_count === 0 && response.created_count === 0) {
+        console.warn('Advertencia: No se crearon ni actualizaron registros');
+      }
+      
       // Guardar cambios en el umbral si cambió
       if (insufficientThreshold !== (product.insufficient_threshold || 12)) {
         await updateProduct(product.id, {
@@ -106,7 +111,8 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
         });
       }
       
-      // Ejecutar callback opcional
+      // Ejecutar callback opcional para actualizar la lista de productos
+      // El callback se encargará de recargar datos desde la BD
       await onSave(sizeQuantities);
       
       setSaveMessage({ type: 'success', text: '✅ Inventario guardado correctamente' });

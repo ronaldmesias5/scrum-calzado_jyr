@@ -1120,9 +1120,16 @@ def bulk_update_inventory(
         
         db.commit()
         
+        # Calcular stock_total actualizado
+        stock_total = db.execute(
+            select(func.sum(Inventory.amount).label("total"))
+            .where((Inventory.product_id == product_uuid) & (Inventory.deleted_at == None))
+        ).scalar() or 0
+        
         return {
             "product_id": str(product_uuid),
             "product_name": product.name_product,
+            "stock_total": int(stock_total),
             "updated_count": updated_count,
             "created_count": created_count,
             "results": results,
