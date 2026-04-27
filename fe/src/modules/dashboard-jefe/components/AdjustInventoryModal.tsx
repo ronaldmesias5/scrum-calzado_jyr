@@ -74,28 +74,35 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
       }
       
       // Convertir el Record<number, number> a Record<string, number> para el API
+      // IMPORTANTE: Enviar TODAS las tallas, incluso las que están en 0
       const quantitiesForApi: Record<string, number> = {};
-      Object.entries(sizeQuantities).forEach(([size, qty]) => {
-        const qtyNum = Number(qty);
+      
+      // Obtener todas las tallas de la categoría
+      const allSizes = getSizesByCategory(product.category_name);
+      
+      // Incluir TODAS las tallas: si no está en sizeQuantities, es 0
+      allSizes.forEach(size => {
+        const qty = sizeQuantities[size];
+        const qtyNum = qty !== undefined ? Number(qty) : 0;
+        
         if (isNaN(qtyNum) || qtyNum < 0) {
           throw new Error(`Cantidad inválida para talla ${size}`);
         }
-        quantitiesForApi[size] = Math.floor(qtyNum); // Asegurar que es entero
+        
+        quantitiesForApi[String(size)] = Math.floor(qtyNum); // Asegurar que es entero
       });
-
-      if (Object.keys(quantitiesForApi).length === 0) {
-        setSaveMessage({ type: 'error', text: 'Error: Debe ingresar cantidades para al menos una talla' });
-        setLoading(false);
-        return;
-      }
+      
+      console.log('Cantidades a enviar:', quantitiesForApi);
       
       // Guardar inventario
       const response = await bulkUpdateInventory(product.id, quantitiesForApi);
       console.log('Respuesta de guardado:', response);
       
       // Verificar que el guardado fue exitoso
-      if (response && response.updated_count === 0 && response.created_count === 0) {
-        console.warn('Advertencia: No se crearon ni actualizaron registros');
+      if (response && (response.updated_count > 0 || response.created_count > 0)) {
+        console.log(`✅ Guardado exitoso: ${response.updated_count} actualizados, ${response.created_count} creados`);
+      } else {
+        console.warn('⚠️ Advertencia: No se crearon ni actualizaron registros. Posible problema.');
       }
       
       // Guardar cambios en el umbral si cambió

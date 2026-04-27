@@ -1037,19 +1037,35 @@ def bulk_update_inventory(
         if not product:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         
+        print(f"[DEBUG] Actualizando inventario para producto {product.name_product} ({product_uuid})")
+        print(f"[DEBUG] Cantidades recibidas: {req.quantities}")
+        
         updated_count = 0
         created_count = 0
         results = []
         
-        # Iterar sobre cada talla y cantidad
+        # PRIMERO: Obtener todas las tallas actuales del producto
+        current_inventory = db.execute(
+            select(Inventory).where(
+                (Inventory.product_id == product_uuid) &
+                (Inventory.deleted_at == None)
+            )
+        ).scalars().all()
+        
+        print(f"[DEBUG] Inventario actual tiene {len(current_inventory)} registros")
+        for inv in current_inventory:
+            print(f"  - Talla {inv.size}: {inv.amount}")
+        
+        # SEGUNDO: Actualizar o crear las tallas en el request
         for size_str, quantity in req.quantities.items():
-            # Mantener size como string (VARCHAR en BD)
             size = str(size_str).strip()
             if not size:
                 continue
             
-            # Convertir cantidad a Decimal para asegurar precisión
+            # Convertir cantidad a entero
             quantity = int(quantity) if isinstance(quantity, (int, float)) else int(str(quantity))
+            
+            print(f"[DEBUG] Procesando talla {size} = {quantity}")
             
             # Buscar inventario existente
             existing_inv = db.execute(
@@ -1061,13 +1077,15 @@ def bulk_update_inventory(
             ).scalar()
             
             if existing_inv:
-                # Calcular diferencia
+                old_amount = existing_inv.amount
                 diff = quantity - float(existing_inv.amount)
                 
                 # Actualizar
                 existing_inv.amount = quantity
                 existing_inv.updated_at = datetime.now(timezone.utc)
                 db.add(existing_inv)
+                
+                print(f"[DEBUG]   Actualizado: {old_amount} → {quantity} (diff={diff})")
                 
                 if diff != 0:
                     movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
@@ -1089,7 +1107,7 @@ def bulk_update_inventory(
                     "action": "updated"
                 })
             else:
-                # Solo crear si quantity > 0 (no crear registros vacíos)
+                # Solo crear si quantity > 0
                 if quantity > 0:
                     inventory = Inventory(
                         id=uuid.uuid4(),
@@ -1099,7 +1117,8 @@ def bulk_update_inventory(
                     )
                     db.add(inventory)
                     
-                    # Registrar entrada inicial masiva
+                    print(f"[DEBUG]   Creado: {quantity}")
+                    
                     db.add(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=product_uuid,
@@ -1117,14 +1136,20 @@ def bulk_update_inventory(
                         "quantity": quantity,
                         "action": "created"
                     })
+                else:
+                    print(f"[DEBUG]   Skipped (quantity=0)")
         
+        print(f"[DEBUG] Ejecutando commit...")
         db.commit()
+        print(f"[DEBUG] Commit exitoso. Updates: {updated_count}, Creates: {created_count}")
         
         # Calcular stock_total actualizado
         stock_total = db.execute(
             select(func.sum(Inventory.amount).label("total"))
             .where((Inventory.product_id == product_uuid) & (Inventory.deleted_at == None))
         ).scalar() or 0
+        
+        print(f"[DEBUG] Stock total después del commit: {stock_total}")
         
         return {
             "product_id": str(product_uuid),
@@ -1138,6 +1163,7 @@ def bulk_update_inventory(
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[ERROR] Excepción en bulk_update_inventory: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al actualizar inventario: {str(e)}")
 
