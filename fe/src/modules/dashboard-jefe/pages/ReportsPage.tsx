@@ -1,24 +1,25 @@
 import { useState, useEffect } from 'react';
 import { 
   BarChart, TrendingUp, Package, ShoppingBag, 
-  ArrowUpRight, Calendar, Users, Briefcase, FileText, Download, CheckCircle, Search,
-  Award, Star, Activity, PieChart, ExternalLink
+  Calendar, Users, Briefcase, Download, CheckCircle,
+  Award, Star, Activity, ExternalLink
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { 
   getDashboardReports, getEmployeeReport, getCustomerReport, 
-  getGlobalProduction, getGlobalSales, markTasksAsPaid,
+  getGlobalProduction, markTasksAsPaid,
   getRoleReport, getAllCustomersReport,
   DashboardReportResponse, EmployeeReportResponse, CustomerReportResponse,
-  ProductionGlobalReport, SalesGlobalReport, TaskDetail
+  ProductionGlobalReport
 } from '../services/reportsApi';
+import { exportEmployeePDF, exportCustomerPDF, exportProductionPDF } from '../utils/reportsUtils';
+import { TaskCard } from '../components/TaskCard';
 import axios from '@/api/axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function ReportsPage() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'generator'>('dashboard');
   
   return (
@@ -189,7 +190,6 @@ function ReportGeneratorTab() {
   const [employeeReport, setEmployeeReport] = useState<EmployeeReportResponse | null>(null);
   const [customerReport, setCustomerReport] = useState<CustomerReportResponse | null>(null);
   const [productionReport, setProductionReport] = useState<ProductionGlobalReport | null>(null);
-  const [salesReport, setSalesReport] = useState<SalesGlobalReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [globalDays, setGlobalDays] = useState(7);
   const [dateMode, setDateMode] = useState<'preset' | 'custom'>('preset');
@@ -282,7 +282,6 @@ function ReportGeneratorTab() {
     setEmployeeReport(null);
     setCustomerReport(null);
     setProductionReport(null);
-    setSalesReport(null);
     setSelectedTaskIds([]);
     setPaidSuccess(null);
     setReportError(null);
@@ -533,8 +532,24 @@ function ReportGeneratorTab() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Empleado</Button>
-              <Button className="text-sm font-bold py-2"><Download className="w-4 h-4 mr-2" /> Exportar PDF</Button>
+              <Button variant="secondary" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Empleado</Button>
+              <Button 
+                onClick={() => {
+                  let startDate: string | undefined;
+                  let endDate: string | undefined;
+                  if (dateMode === 'custom' && customStart && customEnd) {
+                    startDate = new Date(customStart).toISOString();
+                    endDate = new Date(customEnd + 'T23:59:59').toISOString();
+                  } else {
+                    endDate = new Date().toISOString();
+                    startDate = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+                  }
+                  employeeReport && exportEmployeePDF(employeeReport, isRoleReport ? `Reporte de Cargo: ${selectedRole?.toUpperCase()}` : `Reporte de Empleado: ${employeeReport.name}`, startDate, endDate);
+                }}
+                className="text-sm font-bold py-2"
+              >
+                <Download className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
             </div>
           </div>
 
@@ -543,6 +558,7 @@ function ReportGeneratorTab() {
             const filteredTasks = employeeReport.tasks_list.filter(t => taskStatusFilter === 'all' || t.status === taskStatusFilter);
             const totalTasks = filteredTasks.length;
             const totalPairs = filteredTasks.reduce((sum, t) => sum + t.amount, 0);
+            const totalEarnings = filteredTasks.reduce((sum, t) => sum + (t.task_total_price || 0), 0);
 
             return (
               <>
@@ -562,6 +578,13 @@ function ReportGeneratorTab() {
                     <p className="text-4xl font-black text-gray-900 dark:text-white">{totalPairs}</p>
                   </div>
                 </div>
+
+                {totalEarnings > 0 && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400">Total Ganancias ({taskStatusFilter === 'all' ? 'todas las tareas' : taskStatusFilter})</span>
+                    <span className="text-xl font-black text-green-700 dark:text-green-400">${totalEarnings.toLocaleString('es-CO')}</span>
+                  </div>
+                )}
 
                 <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Desglose por Etapa</h3>
                 <div className="space-y-3 mb-8">
@@ -638,44 +661,34 @@ function ReportGeneratorTab() {
                       </div>
                     )}
 
-                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                      {filteredTasks.map(task => (
-                        <div
-                          key={task.id}
-                          onClick={() => {
-                            if (task.status !== 'completado') return;
-                            setSelectedTaskIds(prev =>
-                              prev.includes(task.id) ? prev.filter(id => id !== task.id) : [...prev, task.id]
-                            );
-                          }}
-                          className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                            task.status === 'pagado'
-                              ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 cursor-default'
-                              : selectedTaskIds.includes(task.id)
-                              ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-400'
-                              : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 hover:border-blue-300'
-                          }`}
-                        >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
-                            task.status === 'pagado' ? 'bg-green-500 border-green-500' :
-                            selectedTaskIds.includes(task.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-                          }`}>
-                            {(selectedTaskIds.includes(task.id) || task.status === 'pagado') && (
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M16.7 5.3a1 1 0 00-1.4 0L8 12.6 4.7 9.3a1 1 0 00-1.4 1.4l4 4a1 1 0 001.4 0l8-8a1 1 0 000-1.4z"/></svg>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">{task.process_name}</span>
-                              <span className={`text-xs font-black px-2 py-0.5 rounded-lg ${task.status === 'pagado' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                {task.status === 'pagado' ? '✓ Pagado' : 'Completado'}
-                              </span>
-                            </div>
-                            <p className="text-[10px] font-bold text-gray-500 truncate">Pedido #{task.order_id.toString().substring(0, 8)} - {task.product_name}</p>
-                            <p className="text-[10px] text-gray-400 mt-1">{new Date(task.created_at).toLocaleDateString()} · {task.amount} pares</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[650px] overflow-y-auto pr-1 pb-4">
+                      {filteredTasks.map(task => {
+                        const mappedTask = {
+                          ...task,
+                          type: task.process_name,
+                          assigned_user_name: employeeReport.name,
+                          total_pairs: task.amount,
+                          task_prices: { [task.process_name]: task.price_per_dozen },
+                          vale_number: task.vale_number
+                        } as any;
+
+                        return (
+                          <TaskCard
+                            key={task.id}
+                            task={mappedTask}
+                            compact={true}
+                            selectable={task.status === 'completado'}
+                            selected={selectedTaskIds.includes(task.id)}
+                            onSelect={(id) => {
+                              if (task.status !== 'completado') return;
+                              setSelectedTaskIds(prev =>
+                                prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]
+                              );
+                            }}
+                            onViewOrder={(orderId, productId) => navigate(`/dashboard/admin/orders?order=${orderId}&product=${productId}`)}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -713,8 +726,24 @@ function ReportGeneratorTab() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Cliente</Button>
-              <Button className="text-sm font-bold py-2"><Download className="w-4 h-4 mr-2" /> Exportar PDF</Button>
+              <Button variant="secondary" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Cliente</Button>
+              <Button 
+                onClick={() => {
+                  let sd: string | undefined;
+                  let ed: string | undefined;
+                  if (dateMode === 'custom' && customStart && customEnd) {
+                    sd = new Date(customStart).toISOString();
+                    ed = new Date(customEnd + 'T23:59:59').toISOString();
+                  } else {
+                    ed = new Date().toISOString();
+                    sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+                  }
+                  customerReport && exportCustomerPDF(customerReport, isAllCustomers ? "Reporte General de Cartera" : `Reporte de Cliente: ${customerReport.name}`, sd, ed);
+                }}
+                className="text-sm font-bold py-2"
+              >
+                <Download className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
             </div>
           </div>
 
@@ -845,7 +874,23 @@ function ReportGeneratorTab() {
                 ))}
               </div>
             </div>
-            <Button className="text-sm font-bold py-2 w-full lg:w-auto"><Download className="w-4 h-4 mr-2" /> Exportar PDF</Button>
+            <Button 
+              onClick={() => {
+                let sd: string | undefined;
+                let ed: string | undefined;
+                if (dateMode === 'custom' && customStart && customEnd) {
+                  sd = new Date(customStart).toISOString();
+                  ed = new Date(customEnd + 'T23:59:59').toISOString();
+                } else {
+                  ed = new Date().toISOString();
+                  sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+                }
+                productionReport && exportProductionPDF(productionReport, sd, ed);
+              }}
+              className="text-sm font-bold py-2 w-full lg:w-auto"
+            >
+              <Download className="w-4 h-4 mr-2" /> Exportar PDF
+            </Button>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

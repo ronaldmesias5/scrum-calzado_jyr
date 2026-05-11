@@ -4,10 +4,14 @@
 
 ## 📋 Descripción General
 
-Sistema integral para la gestión y producción de calzado, diseñado con una arquitectura modular para escalar eficientemente. El sistema ofrece tres dashboards especializados:
-- **Dashboard Jefe**: Supervisión total, validación de clientes, gestión de empleados, catálogo y pedidos.
-- **Dashboard Empleados**: Control de tareas asignadas (cortado, guarnecido, solado, emplantillado) y seguimiento de producción.
-- **Dashboard Clientes**: Acceso al catálogo dinámico, realización de pedidos y seguimiento en tiempo real.
+Sistema integral para la gestión y producción de calzado, diseñado con una arquitectura modular para escalar eficientemente.
+
+**Dashboards implementados:**
+- **Dashboard Jefe**: Supervisión total, validación de clientes, gestión de empleados, catálogo, pedidos, inventario, insumos, tareas de producción.
+- **Dashboard Empleados**: (En desarrollo)
+- **Dashboard Clientes**: (En desarrollo)
+
+**Estado actual:** Sprints 1-5 completados. Sprint 6-7 en progreso.
 
 ---
 
@@ -63,7 +67,7 @@ scrum/
 
 ### ⚛️ Frontend
 
-- **React 18+ (Vite)**: Interfaz reactiva y rápida.
+- **React 19+ (Vite)**: Interfaz reactiva y rápida.
 - **TypeScript**: Seguridad en tiempo de desarrollo.
 - **TailwindCSS 4**: Diseño premium, moderno y responsive.
 - **Lucide Icons**: Iconografía profesional.

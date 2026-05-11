@@ -1,8 +1,8 @@
 # Arquitectura del Proyecto - Sistema de Gestión y Producción de Calzado - CALZADO J&R
 
 **Arquitecto:** Ronald Guerrero  
-**Última Actualización:** 19 de Marzo de 2026  
-**Estado:** ✅ MVP Phase 1 Completado (Sprints 1-5)
+**Última Actualización:** 9 de Mayo de 2026  
+**Estado:** ✅ MVP Fase 1 (Sprints 1-5) | 🔄 En desarrollo (Sprints 6-7)
 
 ---
 
@@ -20,13 +20,14 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
                     ┌────────────▼────────────────────┐
                     │  Backend (FastAPI + Python)     │
                     │  - REST API asincrónica         │
-                    │  - 23+ routers/endpoints        │
-                    │  - Middleware (auth, CORS)      │
+                    │  - 8 routers modulares          │
+                    │  - Middleware (auth, CORS,      │
+                    │    rate-limit, security)        │
                     └────────────┬────────────────────┘
                                  │ SQL/TCP
                     ┌────────────▼────────────────────┐
                     │  PostgreSQL 17 + Docker         │
-                    │  - 10 tablas + audit columns    │
+                    │  - 19 tablas + audit columns    │
                     │  - Triggers y constraints       │
                     └─────────────────────────────────┘
 ```
@@ -42,7 +43,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Python** | 3.12-slim | Runtime principal del servidor |
 | **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
 | **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
-| **Alembic** | 3.0+ | Sistema de migraciones de BD |
+| **Alembic** | 1.14.0 | Sistema de migraciones de BD |
 | **Pydantic** | 2.0+ | Validación y serialización de datos |
 | **PyJWT** | 2.8+ | Creación y validación de JWT tokens |
 | **bcrypt** | 4.2+ | Hash criptográfico de contraseñas |
@@ -71,7 +72,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Docker** | 27+ | Containerización de servicios |
 | **Docker Compose** | 2.27+ | Orquestación local 3 contenedores |
 
-### Testing (Planeado Sprint 7+)
+### Testing (Implementado)
 
 | Capa | Herramientas | Descripción |
 |-----|-------------|-----------|

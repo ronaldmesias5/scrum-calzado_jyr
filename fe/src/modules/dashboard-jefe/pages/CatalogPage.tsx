@@ -126,6 +126,7 @@ export default function CatalogPage() {
         style_id,
         category_id,
         insufficient_threshold: editingProduct.insufficient_threshold || 12,
+        task_prices: (updatedData as any).task_prices ?? editingProduct.task_prices ?? {},
       };
 
       await updateProduct(editingProduct.id, dataToSend);
@@ -221,6 +222,8 @@ export default function CatalogPage() {
         productData.name || style.name,
         productData.description,
         productData.color,
+        undefined,
+        productData.task_prices,
       );
 
       // 2) Subir imagen por separado si hay una

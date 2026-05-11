@@ -27,6 +27,7 @@ export interface OrderDetailItem {
   stock_available?: number;
   state?: OrderStatus;
   order_date?: string;
+  observations?: string | null;
 }
 
 export interface Order {
@@ -216,6 +217,7 @@ export interface ProductionTaskCreate {
   type: string;
   description?: string;
   priority?: string;
+  amount: number;
 }
 
 export interface ProductionTask {
@@ -226,9 +228,22 @@ export interface ProductionTask {
   assigned_user_name?: string;
   assigned_user_occupation?: string;
   vale_number?: number;
+  amount: number;
+  description_task?: string;
   status: string;
   type: string;
   created_at: string;
+  task_prices?: {
+    corte?: number;
+    guarnicion?: number;
+    soladura?: number;
+    emplantillado?: number;
+    [key: string]: number | undefined;
+  };
+  total_pairs?: number;
+  product_name?: string;
+  product_category?: string;
+  product_image?: string;
 }
 
 /** Crea las 4 tareas de producción para una orden */

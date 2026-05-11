@@ -17,8 +17,8 @@
 | **occupation_type** | jefe, cortador, guarnecedor, solador, emplantillador | Cargos operativos en la fábrica. |
 | **supplies_movement_type** | entrada, salida | Tipo de flujo de materia prima. |
 | **inventory_movement_type** | entrada, salida, ajuste | Tipo de flujo de producto terminado. |
-| **order_status** | pendiente, en_progreso, completado, cancelado | Estado de un pedido mayorista. |
-| **task_status** | pendiente, en_progreso, completado, cancelado | Estado de una tarea de producción. |
+| **order_status** | pendiente, en_progreso, completado, entregado, cancelado | Estado de un pedido mayorista. |
+| **task_status** | pendiente, por_liquidar, en_progreso, completado, pagado, cancelado | Estado de una tarea de producción. |
 | **task_priority** | baja, media, alta | Prioridad de las tareas asignadas. |
 | **task_type** | corte, guarnicion, soladura, emplantillado | Etapa de producción de calzado. |
 | **incidence_status** | abierta, en_progreso, resuelta, cerrrada | Estado de un reporte de problema. |

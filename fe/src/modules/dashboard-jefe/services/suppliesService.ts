@@ -54,6 +54,8 @@ export interface SupplyUpdatePayload {
 export interface ProductSupplyCheck {
   supply_id: string;
   supply_name: string;
+  supply_color?: string | null;
+  supply_unit?: string | null;
   supply_category: string;
   quantity_required: number;
   stock_quantity: number;

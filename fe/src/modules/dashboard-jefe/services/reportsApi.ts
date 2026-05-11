@@ -50,6 +50,9 @@ export interface TaskDetail {
   amount: number;
   status: string;
   created_at: string;
+  price_per_dozen?: number;
+  task_total_price?: number;
+  vale_number?: number;
 }
 
 export interface TaskBreakdown {
@@ -62,6 +65,7 @@ export interface EmployeeReportResponse {
   name: string;
   total_tasks_completed: number;
   total_pairs_produced: number;
+  total_earnings?: number;
   tasks_breakdown: TaskBreakdown[];
   tasks_list: TaskDetail[];
 }

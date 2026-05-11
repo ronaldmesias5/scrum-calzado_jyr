@@ -22,9 +22,28 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS supply_categories (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(50) NOT NULL UNIQUE,
+            global_stage VARCHAR(50) DEFAULT 'otros',
+            color VARCHAR(20) NOT NULL DEFAULT 'blue',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
+    
+    # Add columns if they don't exist (for existing tables from the old SQL migration)
+    for col, col_def in [
+        ("global_stage", "VARCHAR(50) DEFAULT 'otros'"),
+        ("color", "VARCHAR(20) NOT NULL DEFAULT 'blue'"),
+    ]:
+        op.execute(f"""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'supply_categories' AND column_name = '{col}'
+                ) THEN
+                    ALTER TABLE supply_categories ADD COLUMN {col} {col_def};
+                END IF;
+            END $$;
+        """)
     
     # Insert predefined categories (idempotent with ON CONFLICT)
     op.execute("""

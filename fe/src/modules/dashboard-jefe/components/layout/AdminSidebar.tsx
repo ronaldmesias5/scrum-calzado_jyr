@@ -2,9 +2,10 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Home, ShoppingCart, Layers, Package, CheckSquare,
-  Users, UserCheck, Bell, BarChart, Settings, UserCog, Package2, X
+  Users, UserCheck, Bell, BarChart, Settings, UserCog, Package2, X, LogOut
 } from 'lucide-react';
 import { useBadgeCounts } from '../../context/BadgeCountsContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const { counts } = useBadgeCounts();
   const { t } = useTranslation();
+  const { logout } = useAuth();
 
   const BASE_ITEMS = [
     { label: t('dashboard.sidebar.home'),         icon: Home,        path: '/dashboard/admin',              badgeKey: null },
@@ -93,6 +95,17 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             </NavLink>
           ))}
         </nav>
+
+        {/* Botón Salir — parte inferior */}
+        <div className="border-t border-gray-100 dark:border-slate-800 p-3">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
+          >
+            <LogOut size={17} className="group-hover:-translate-x-0.5 transition-transform" />
+            Cerrar Sesión
+          </button>
+        </div>
       </aside>
     </>
   );

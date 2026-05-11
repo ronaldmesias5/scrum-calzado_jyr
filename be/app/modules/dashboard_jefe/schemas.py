@@ -38,7 +38,7 @@ class RecentOrderSchema(BaseModel):
     order_id: str
     client_name: str
     quantity: int
-    status: Literal["pending", "in_production", "ready", "delivered"]
+    status: str # Permitir cualquier estado de la BD (pendiente, en_progreso, etc.)
     date: str
 
 
@@ -46,8 +46,8 @@ class AlertSchema(BaseModel):
     id: str
     type: Literal["warning", "error", "info"]
     title: str
-    description: str
-    timestamp: str
+    message: str
+    time: str
 
 
 class DashboardMetricsResponse(BaseModel):

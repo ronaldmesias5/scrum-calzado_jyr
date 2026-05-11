@@ -33,8 +33,8 @@ def test_role_report():
         tasks = db.execute(query).scalars().all()
         print(f"Found {len(tasks)} tasks")
         
-        # 3. Test pairs query
-        task_pairs_query = select(func.sum(OrderDetail.amount)).join(Task, (Task.order_id == OrderDetail.order_id) & (Task.product_id == OrderDetail.product_id)).where(Task.assigned_to.in_(user_ids))
+        # 3. Test pairs query (usando Task.amount como fuente de verdad)
+        task_pairs_query = select(func.sum(func.coalesce(Task.amount, 0))).where(Task.assigned_to.in_(user_ids))
         total_pairs = db.execute(task_pairs_query).scalar() or 0
         print(f"Total pairs: {total_pairs}")
         

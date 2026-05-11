@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 // AlertsPage
-import { Bell, AlertTriangle, Info, CheckCircle2, Trash2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Bell, AlertTriangle, Info, CheckCircle2, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { getAlerts } from '../services/dashboardService';
 import { Alert } from '../types/dashboard';
 
@@ -59,16 +58,20 @@ export default function AlertsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-           <Button 
+          <button
             onClick={loadAlerts}
-            className="flex-1 sm:flex-none bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm transition-all"
-           >
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all"
+          >
+            <RefreshCw className="w-4 h-4" />
             Actualizar
-          </Button>
-          <Button className="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+          </button>
+          <button
+            onClick={() => setAlerts([])}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-sm shadow-red-500/20 active:scale-95 transition-all"
+          >
             <Trash2 className="w-4 h-4" />
             Limpiar Todo
-          </Button>
+          </button>
         </div>
       </div>
 

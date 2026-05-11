@@ -29,7 +29,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Text, DateTime, ForeignKey, Boolean, Integer, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -99,6 +99,14 @@ class Product(Base):
         Boolean,
         nullable=False,
         default=True,
+    )
+
+    # Precios por tarea (COP por docena): {corte, guarnicion, soladura, emplantillado}
+    task_prices: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default='{}',
     )
 
     # ────────────────────────────────────────────────────────────────────────────

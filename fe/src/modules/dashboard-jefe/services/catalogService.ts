@@ -56,6 +56,13 @@ export interface Product {
   stock_total?: number;
   manufactured_pairs?: number;
   created_at?: string;
+  task_prices?: {
+    corte?: number;
+    guarnicion?: number;
+    soladura?: number;
+    emplantillado?: number;
+    [key: string]: number | undefined;
+  };
 }
 
 export interface InventoryItem {
@@ -145,7 +152,8 @@ export const createProduct = async (
   name?: string,
   description?: string,
   color?: string,
-  insufficient_threshold?: number
+  insufficient_threshold?: number,
+  task_prices?: { corte?: number; guarnicion?: number; soladura?: number; emplantillado?: number }
 ): Promise<Product> => {
   const res = await axios.post('/api/v1/admin/catalog/products', {
     name,
@@ -155,6 +163,7 @@ export const createProduct = async (
     brand_id,
     style_id,
     category_id,
+    task_prices,
   });
   return res.data;
 };

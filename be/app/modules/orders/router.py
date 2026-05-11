@@ -13,7 +13,7 @@ import traceback
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy import func, desc, select, delete as sa_delete, update as sa_update, and_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import get_db, get_current_user
 from app.models.order import Order, OrderStatus, OrderDetail
@@ -120,7 +120,19 @@ def list_all_production_tasks(
     """
     Lista TODAS las tareas de producción del sistema con filtros.
     """
-    query = select(Task)
+    # Subconsulta para obtener el total de pares por orden y producto
+    pairs_subquery = (
+        select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
+        .where(OrderDetail.deleted_at == None)
+        .group_by(OrderDetail.order_id, OrderDetail.product_id)
+        .subquery()
+    )
+
+    query = select(Task, pairs_subquery.c.total).outerjoin(
+        pairs_subquery,
+        and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
+    ).options(joinedload(Task.product)).where(Task.deleted_at == None)
+
     if status:
         query = query.where(Task.status == status)
     if type:
@@ -130,7 +142,7 @@ def list_all_production_tasks(
     
     query = query.order_by(desc(Task.created_at))
     result = db.execute(query)
-    tasks = result.scalars().all()
+    tasks_data = result.all() # Retorna tuplas (Task, total)
     
     return [
         ProductionTaskResponse(
@@ -143,8 +155,15 @@ def list_all_production_tasks(
             type=t.type,
             status=t.status,
             vale_number=t.vale_number,
-            created_at=t.created_at
-        ) for t in tasks
+            created_at=t.created_at,
+            task_prices=t.product.task_prices if t.product else {},
+            total_pairs=t.amount if t.amount > 0 else int(total or 0),
+            amount=t.amount if t.amount > 0 else int(total or 0),
+            description_task=t.description_task,
+            product_name=t.product.name_product if t.product else None,
+            product_category=t.product.category.name_category if t.product and t.product.category else None,
+            product_image=t.product.image_url if t.product else None
+        ) for t, total in tasks_data
     ]
 
 
@@ -499,7 +518,11 @@ def update_order_details(
     try:
         # 0. Primero, obtener los detalles ANTIGUOS para comparar estados
         old_details = db.query(OrderDetail).filter(OrderDetail.order_id == order.id).all()
-        old_details_map = {d.product_id: d for d in old_details}
+        # Índice compuesto por (product_id, size, colour) para emparejar correctamente
+        # cada línea antigua con su nueva versión, incluso cuando hay múltiples tallas/colores.
+        old_details_map = {
+            (d.product_id, d.size, d.colour or ""): d for d in old_details
+        }
         
         # 1. Eliminar detalles antiguos
         db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
@@ -514,6 +537,7 @@ def update_order_details(
                 colour=detail_data.colour,
                 amount=detail_data.amount,
                 state=detail_data.state or order.state,
+                observations=detail_data.observations,
                 order_date=datetime.now(timezone.utc),
                 created_by=current_user.id
             )
@@ -521,7 +545,7 @@ def update_order_details(
             total_pairs += detail_data.amount
             
             # 2.1 LÓGICA DE INVENTARIO: Si un producto pasa a "entregado"
-            old_detail = old_details_map.get(detail_data.product_id)
+            old_detail = old_details_map.get((detail_data.product_id, detail_data.size, detail_data.colour or ""))
             if old_detail and old_detail.state != OrderStatus.entregado and detail_data.state == OrderStatus.entregado:
                 # Pasar de completado -> entregado: RESTAR de reserved
                 stmt = select(Inventory).where(
@@ -557,7 +581,9 @@ def update_order_details(
             
             # 2.2 LÓGICA DE INVENTARIO: Si un producto pasa a "completado" (desde otro estado que no sea completado/entregado)
             elif old_detail and old_detail.state not in (OrderStatus.completado, OrderStatus.entregado) and detail_data.state == OrderStatus.completado:
-                # Pasar a completado: SUMAR a reserved
+                # Determinar si es "Completado desde bodega" (stock existente) o fabricación real
+                is_from_warehouse = detail_data.observations and "Completado desde bodega" in (detail_data.observations or "")
+
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail_data.product_id) &
                     (Inventory.size == detail_data.size) &
@@ -565,38 +591,69 @@ def update_order_details(
                     (Inventory.deleted_at == None)
                 )
                 inventory_item = db.execute(stmt).scalar_one_or_none()
-                
+
                 quantity = Decimal(detail_data.amount)
-                
-                if inventory_item:
-                    # SUMAR a reserved (entrada de pares fabricados del pedido)
-                    inventory_item.reserved += quantity
-                    db.add(inventory_item)
-                else:
-                    # Crear nuevo registro si no existe
-                    inventory_item = Inventory(
+
+                if is_from_warehouse:
+                    # ─── CASO "COMPLETADO DESDE BODEGA": descontar del stock (amount) ───
+                    # No hubo fabricación, el producto ya existía en bodega.
+                    if inventory_item:
+                        inventory_item.amount -= quantity
+                        db.add(inventory_item)
+                    else:
+                        # Crear registro si no existe (con saldo negativo)
+                        inventory_item = Inventory(
+                            id=uuid.uuid4(),
+                            product_id=detail_data.product_id,
+                            size=detail_data.size,
+                            colour=detail_data.colour,
+                            amount=-quantity,
+                            reserved=Decimal(0),
+                            minimum_stock=0
+                        )
+                        db.add(inventory_item)
+
+                    # Registrar movimiento de salida (stock sale de bodega)
+                    db.add(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=detail_data.product_id,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.salida,
                         size=detail_data.size,
                         colour=detail_data.colour,
-                        amount=0,
-                        reserved=quantity,
-                        minimum_stock=0
-                    )
-                    db.add(inventory_item)
-                
-                # Registrar la entrada de pares fabricados
-                db.add(InventoryMovement(
-                    id=uuid.uuid4(),
-                    product_id=detail_data.product_id,
-                    user_id=current_user.id,
-                    type_of_movement=InventoryMovementType.entrada,
-                    size=detail_data.size,
-                    colour=detail_data.colour,
-                    amount=quantity,
-                    reason=f"Entrada de pares fabricados - Pedido {order.id}",
-                    movement_date=datetime.now(timezone.utc)
-                ))
+                        amount=quantity,
+                        reason=f"Despacho desde bodega - Pedido {order.id}",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+                else:
+                    # ─── CASO FABRICACIÓN: sumar a reserved (pares fabricados) ───
+                    if inventory_item:
+                        inventory_item.reserved += quantity
+                        db.add(inventory_item)
+                    else:
+                        inventory_item = Inventory(
+                            id=uuid.uuid4(),
+                            product_id=detail_data.product_id,
+                            size=detail_data.size,
+                            colour=detail_data.colour,
+                            amount=0,
+                            reserved=quantity,
+                            minimum_stock=0
+                        )
+                        db.add(inventory_item)
+
+                    # Registrar la entrada de pares fabricados
+                    db.add(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=detail_data.product_id,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.entrada,
+                        size=detail_data.size,
+                        colour=detail_data.colour,
+                        amount=quantity,
+                        reason=f"Entrada de pares fabricados - Pedido {order.id}",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
 
         # 4. Actualizar cabecera del pedido
         order.total_pairs = total_pairs
@@ -705,7 +762,29 @@ def create_production_tasks(
         now = datetime.now(timezone.utc)
         
         for t_data in request.tasks:
-            # Reutilizar el vale_number si ya existe una tarea para el mismo order+product
+            # 1. Verificar si ya existe una tarea ACTIVA de este tipo para este order+product
+            # (Evitar duplicados si el usuario hace clic varias veces)
+            # Solo consideramos activas las que NO están canceladas
+            existing_task = db.execute(
+                select(Task).where(
+                    Task.order_id == order_id,
+                    Task.product_id == t_data.product_id,
+                    Task.type == t_data.type,
+                    Task.status != 'cancelado',
+                    Task.deleted_at == None,
+                )
+            ).scalar_one_or_none()
+            
+            if existing_task:
+                # Ya existe una tarea activa: actualizamos el assigned_to si cambió,
+                # pero NO creamos un duplicado
+                if str(existing_task.assigned_to) != str(t_data.assigned_to):
+                    existing_task.assigned_to = t_data.assigned_to
+                    db.add(existing_task)
+                new_tasks.append(existing_task)
+                continue
+
+            # 2. Reutilizar el vale_number si ya existe una tarea para el mismo order+product
             existing_vale = db.execute(
                 select(func.min(Task.vale_number)).where(
                     Task.order_id == order_id,
@@ -721,6 +800,7 @@ def create_production_tasks(
                 order_id=order_id,
                 product_id=t_data.product_id,
                 vale_number=task_vale,
+                amount=t_data.amount,
                 type=t_data.type,
                 description_task=t_data.description or f"Tarea de {t_data.type} para la orden {order_id}",
                 priority=t_data.priority,
@@ -732,10 +812,24 @@ def create_production_tasks(
         
         db.commit()
         
-        # Recargar para asegurar relaciones y defaults (created_at)
+        # Recargar tareas con producto para devolver task_prices y total_pairs
+        task_ids = [t.id for t in new_tasks]
+        
+        pairs_subquery = (
+            select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
+            .group_by(OrderDetail.order_id, OrderDetail.product_id)
+            .subquery()
+        )
+
+        query = select(Task, pairs_subquery.c.total).outerjoin(
+            pairs_subquery,
+            and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
+        ).options(joinedload(Task.product), joinedload(Task.assigned_user)).where(Task.id.in_(task_ids))
+        
+        reloaded_data = db.execute(query).unique().all()
+        
         results = []
-        for t in new_tasks:
-            db.refresh(t)
+        for t, total in reloaded_data:
             results.append(ProductionTaskResponse(
                 id=t.id,
                 order_id=t.order_id,
@@ -746,7 +840,14 @@ def create_production_tasks(
                 type=t.type,
                 status=t.status,
                 vale_number=t.vale_number,
-                created_at=t.created_at
+                created_at=t.created_at,
+                task_prices=t.product.task_prices if t.product else {},
+                total_pairs=t.amount if t.amount > 0 else int(total or 0),
+                amount=t.amount if t.amount > 0 else int(total or 0),
+                description_task=t.description_task,
+                product_name=t.product.name_product if t.product else None,
+                product_category=t.product.category.name_category if t.product and t.product.category else None,
+                product_image=t.product.image_url if t.product else None
             ))
         
         return results
@@ -768,11 +869,21 @@ def get_order_tasks(
     Si se pasa product_id, filtra al nivel del servidor (más preciso que filtrar en frontend).
     """
     try:
-        query = select(Task).where(Task.order_id == order_id)
+        pairs_subquery = (
+            select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
+            .group_by(OrderDetail.order_id, OrderDetail.product_id)
+            .subquery()
+        )
+
+        query = select(Task, pairs_subquery.c.total).outerjoin(
+            pairs_subquery,
+            and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
+        ).options(joinedload(Task.product)).where(Task.order_id == order_id, Task.deleted_at == None)
+        
         if product_id:
             query = query.where(Task.product_id == product_id)
         
-        tasks = db.execute(query).scalars().all()
+        tasks_data = db.execute(query).all()
         
         return [
             ProductionTaskResponse(
@@ -785,8 +896,15 @@ def get_order_tasks(
                 type=t.type,
                 status=t.status,
                 vale_number=t.vale_number,
-                created_at=t.created_at
-            ) for t in tasks
+                created_at=t.created_at,
+                task_prices=t.product.task_prices if t.product else {},
+                total_pairs=t.amount if t.amount > 0 else int(total or 0),
+                amount=t.amount if t.amount > 0 else int(total or 0),
+                description_task=t.description_task,
+                product_name=t.product.name_product if t.product else None,
+                product_category=t.product.category.name_category if t.product and t.product.category else None,
+                product_image=t.product.image_url if t.product else None
+            ) for t, total in tasks_data
         ]
     except Exception as e:
         traceback.print_exc()
@@ -803,8 +921,9 @@ def update_task_status(
     if current_user.occupation != "jefe":
         raise HTTPException(status_code=403, detail="Solo el jefe puede modificar tareas")
     
-    # Obtener tarea
-    task = db.query(Task).filter(Task.id == task_id).first()
+    # Obtener tarea con producto cargado
+    query = select(Task).options(joinedload(Task.product)).where(Task.id == task_id)
+    task = db.execute(query).unique().scalar_one_or_none()
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
     
@@ -814,7 +933,7 @@ def update_task_status(
     # Asignar fecha de completado si se marca como completado por primera vez o si se marca como pagado
     if request.status in ["completado", "pagado"] and not task.completed_at:
         task.completed_at = datetime.now(timezone.utc)
-    elif request.status in ["pendiente", "en_progreso"]:
+    elif request.status in ["por_liquidar", "en_progreso"]:
         task.completed_at = None
     
     # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
@@ -902,7 +1021,9 @@ def update_task_status(
         assigned_user_occupation=user.occupation if user else None,
         type=task.type,
         status=task.status,
+        description_task=task.description_task,
         vale_number=task.vale_number,
-        created_at=task.created_at
+        created_at=task.created_at,
+        task_prices=task.product.task_prices if task.product else {}
     )
 

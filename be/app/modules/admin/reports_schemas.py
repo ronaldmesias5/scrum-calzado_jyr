@@ -3,6 +3,15 @@ from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 
+
+class TaskPriceDetail(BaseModel):
+    """Precio calculado para un producto dentro de una tarea"""
+    product_id: UUID
+    product_name: str
+    pairs: int
+    price_per_dozen: float
+    total_price: float
+
 class KPIResponse(BaseModel):
     total_orders: int
     total_pairs_sold: int
@@ -29,7 +38,13 @@ class TaskDetail(BaseModel):
     process_name: str
     amount: int
     status: str
+    vale_number: Optional[int] = None
     created_at: datetime
+    price_per_dozen: float = 0.0
+    task_total_price: float = 0.0
+    product_category: Optional[str] = None
+    product_image: Optional[str] = None
+    product_details: List['TaskPriceDetail'] = []  # Desglose por producto del pedido
 
 class TaskBreakdown(BaseModel):
     process_name: str
@@ -40,6 +55,7 @@ class EmployeeReportResponse(BaseModel):
     name: str
     total_tasks_completed: int
     total_pairs_produced: int
+    total_earnings: float = 0.0
     tasks_breakdown: List[TaskBreakdown]
     tasks_list: List[TaskDetail] = []
 

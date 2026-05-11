@@ -58,10 +58,11 @@ def get_metrics(db: Session = Depends(get_db)) -> DashboardMetricsResponse:
     # 2. Stock total (sumatoria de todas las tallas/colores)
     total_stock = db.query(func.sum(Inventory.amount)).scalar() or 0
     
-    # 3. Alertas (productos con stock <= stock mínimo)
-    low_stock_alerts = db.query(Inventory).filter(
-        (Inventory.amount <= Inventory.minimum_stock) & 
-        (Inventory.deleted_at == None)
+    # 3. Alertas (Incidencias abiertas reportadas por empleados)
+    from app.models.incidence import Incidence, IncidenceStatus
+    open_incidences_count = db.query(Incidence).filter(
+        Incidence.state == IncidenceStatus.abierta,
+        Incidence.deleted_at == None
     ).count()
     
     return DashboardMetricsResponse(
@@ -69,7 +70,7 @@ def get_metrics(db: Session = Depends(get_db)) -> DashboardMetricsResponse:
             MetricSchema(label="Pedidos Pendientes", value=pending, change="Refrescado", change_positive=True),
             MetricSchema(label="En Producción", value=production, change="Refrescado", change_positive=True),
             MetricSchema(label="Pares en Stock", value=int(total_stock), change="Total", change_positive=True),
-            MetricSchema(label="Alertas de Stock", value=low_stock_alerts, change="Bajo mínimo", change_positive=False),
+            MetricSchema(label="Incidencias Abiertas", value=open_incidences_count, change="Por resolver", change_positive=False),
         ]
     )
 
@@ -110,24 +111,32 @@ def get_recent_orders(db: Session = Depends(get_db)) -> RecentOrdersResponse:
     summary="Alertas activas del sistema",
 )
 def get_alerts(db: Session = Depends(get_db)) -> AlertsResponse:
-    """Retorna las alertas de stock bajo."""
-    from app.models.inventory import Inventory
-    from app.models.product import Product
+    """Retorna las alertas basadas en incidencias abiertas."""
+    from app.models.incidence import Incidence, IncidenceStatus
+    from app.models.tasks import Task
+    from app.models.user import User
     
-    low_stock_items = db.query(Inventory).join(Product).filter(
-        (Inventory.amount <= Inventory.minimum_stock) & 
-        (Inventory.deleted_at == None)
-    ).all()
+    open_incidences = db.query(Incidence).filter(
+        Incidence.state == IncidenceStatus.abierta,
+        Incidence.deleted_at == None
+    ).order_by(Incidence.created_at.desc()).all()
     
     alerts = []
-    for item in low_stock_items:
-        product_name = item.product.name_product if item.product else "Desconocido"
+    for inc in open_incidences:
+        # Obtener información del empleado que reportó (a través de la tarea)
+        task = db.query(Task).filter(Task.id == inc.task_id).first()
+        reporter_name = "Desconocido"
+        if task and task.assigned_to:
+            user = db.query(User).filter(User.id == task.assigned_to).first()
+            if user:
+                reporter_name = f"{user.name_user} {user.last_name}"
+        
         alerts.append(AlertSchema(
-            id=str(item.id),
-            type="warning",
-            title="Stock Bajo",
-            message=f"El producto {product_name} (Talla: {item.size}) está bajo el mínimo ({int(item.amount)}/{item.minimum_stock}).",
-            time="Ahora"
+            id=str(inc.id),
+            type="error", # Usar error para incidencias reportadas
+            title=f"Incidencia: {inc.type_incidence}",
+            message=f"Reportado por {reporter_name}: {inc.description_incidence or 'Sin descripción'}",
+            time=inc.created_at.strftime("%H:%M") if inc.created_at else "Ahora"
         ))
         
     return AlertsResponse(alerts=alerts)

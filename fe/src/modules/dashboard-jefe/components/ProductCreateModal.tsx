@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Upload, Plus } from 'lucide-react';
+import { X, Upload, Plus, DollarSign } from 'lucide-react';
 import { listBrands, listCategories, listStyles, Brand, Category, Style } from '../services/catalogService';
 import { listSupplies, Supply } from '../services/suppliesService';
+
+interface TaskPrices {
+  corte: number;
+  guarnicion: number;
+  soladura: number;
+  emplantillado: number;
+}
 
 interface ProductFormData {
   name: string;
@@ -13,6 +20,7 @@ interface ProductFormData {
   description: string;
   image_url: string;
   is_active: boolean;
+  task_prices: TaskPrices;
 }
 
 interface ProductCreateModalProps {
@@ -46,6 +54,7 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
     description: '',
     image_url: '',
     is_active: true,
+    task_prices: { corte: 0, guarnicion: 0, soladura: 0, emplantillado: 0 },
   });
 
   // Cargar marcas y categorías
@@ -80,6 +89,7 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
         description: '',
         image_url: '',
         is_active: true,
+        task_prices: { corte: 0, guarnicion: 0, soladura: 0, emplantillado: 0 },
       });
       setImagePreview(null);
       setSelectedImageFile(null);
@@ -504,6 +514,41 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Precios por Tarea */}
+          <div className="border-t border-gray-100 dark:border-slate-800 pt-5 transition-colors">
+            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 transition-colors">
+              <span className="flex items-center gap-2">
+                <DollarSign className="w-3.5 h-3.5 text-green-500" />
+                Precios por Tarea
+                <span className="opacity-70 normal-case tracking-normal text-xs font-semibold ml-1">(COP por docena — Opcional)</span>
+              </span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key: 'corte' as const, label: 'Corte', color: 'text-amber-600 dark:text-amber-400' },
+                { key: 'guarnicion' as const, label: 'Guarnición', color: 'text-indigo-600 dark:text-indigo-400' },
+                { key: 'soladura' as const, label: 'Soladura', color: 'text-blue-700 dark:text-blue-400' },
+                { key: 'emplantillado' as const, label: 'Emplantillado', color: 'text-emerald-600 dark:text-emerald-400' },
+              ]).map(t => (
+                <div key={t.key} className="space-y-1">
+                  <label className={`block text-xs font-bold uppercase tracking-wide ${t.color}`}>{t.label}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={500}
+                    value={formData.task_prices[t.key] || ''}
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      task_prices: { ...prev.task_prices, [t.key]: parseFloat(e.target.value) || 0 }
+                    }))}
+                    placeholder="0"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:border-blue-500 rounded-xl outline-none text-sm font-bold transition-all"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Estado del Producto */}

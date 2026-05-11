@@ -275,11 +275,6 @@ function ManageUsersTab() {
     }
   };
 
-  const openDeleteConfirm = (user: UserResponse) => {
-    setUserToDelete(user);
-    setShowConfirmDelete(true);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-gray-400">

@@ -530,6 +530,7 @@ def list_products(
             "category_name": prod.category.name_category if prod.category else "Unknown",
             "stock_total": int(stock_total),
             "manufactured_pairs": int(manufactured_pairs),
+            "task_prices": prod.task_prices or {},
             "created_at": prod.created_at.isoformat() if prod.created_at else None,
         })
     
@@ -671,6 +672,7 @@ def create_product(
         style_id=style_uuid,
         category_id=category_uuid,
         state=True,
+        task_prices=req.task_prices.dict() if req.task_prices else {},
     )
     db.add(product)
     db.commit()
@@ -691,6 +693,7 @@ def create_product(
         "style_name": style.name_style,
         "category_id": str(product.category_id),
         "category_name": category.name_category,
+        "task_prices": product.task_prices or {},
         "message": "Producto creado exitosamente"
     }
 
@@ -776,6 +779,8 @@ def update_product(
     product.brand_id = brand_uuid
     product.style_id = style_uuid
     product.category_id = category_uuid
+    if req.task_prices is not None:
+        product.task_prices = req.task_prices.dict()
     product.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(product)
@@ -795,6 +800,7 @@ def update_product(
         "style_name": style.name_style,
         "category_id": str(product.category_id),
         "category_name": category.name_category,
+        "task_prices": product.task_prices or {},
         "message": "Producto actualizado exitosamente"
     }
 

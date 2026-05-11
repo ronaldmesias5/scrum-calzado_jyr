@@ -3,7 +3,7 @@
  * Descripción: Página de gestión de pedidos mayoristas del dashboard.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Scissors, Hammer, Sparkles, PenTool, Maximize2,
@@ -167,6 +167,9 @@ function OrderDetailView({
   error,
   onOrderUpdate,
   setIsEditModalOpen,
+  onCompleteFromWarehouse,
+  successToast,
+  setSuccessToast,
 }: {
   order: OrderDetail;
   isUpdating: boolean;
@@ -193,6 +196,9 @@ function OrderDetailView({
   onOrderUpdate?: (updatedOrder: OrderDetail) => void;
   error?: string | null;
   setIsEditModalOpen: (productId?: string) => void;
+  onCompleteFromWarehouse: (productId: string, lines: any[]) => void;
+  successToast: string | null;
+  setSuccessToast: (msg: string | null) => void;
 }) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -200,8 +206,6 @@ function OrderDetailView({
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-
-  const [successToast, setSuccessToast] = useState<string | null>(null);
 
   const [employees, setEmployees] = useState<UserResponse[]>([]);
   const [productionStep, setProductionStep] = useState(1);
@@ -214,6 +218,11 @@ function OrderDetailView({
   useEffect(() => {
     if (productionModal) {
       setProductionStep(productionModal.forceProgress ? 2 : 1);
+      
+      // FIX: Asegurar que selectedOption sea 'A' al abrir (especialmente en forceProgress)
+      // para que la tabla de numeración muestre los faltantes reales inmediatamente.
+      setSelectedOption('A');
+
       // Only clear if not forcing progress to avoid flickering locked states
       if (!productionModal.forceProgress) {
         setCurrentTasks([]);
@@ -242,6 +251,8 @@ function OrderDetailView({
               if (t?.type) newAssignments[t.type] = t.assigned_to || '';
             });
             setAssignments(newAssignments);
+            // Si hay tareas existentes, siempre mostrar Opción A (porque es la cantidad real que se guardó)
+            setSelectedOption('A');
             setProductionStep(2);
           } else {
             setCurrentTasks([]);
@@ -290,6 +301,46 @@ function OrderDetailView({
       }
     }
   }, [productionModal, order?.id]);
+
+  // ✅ SOLUCIÓN DEFINITIVA: useMemo para sincronizar tabla con selectedOption
+  // Esta es la fuente de verdad para los detalles mostrados en la tabla
+  // Se recalcula SIEMPRE que selectedOption cambia, garantizando sincronización
+  const tableDetails = useMemo(() => {
+    if (!productionModal?.productId || !order?.details) return [];
+    
+    // 1. Intentar obtener el desglose desde el metadato de la tarea de Corte (fuente de verdad persistente)
+    const corteTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === 'corte') : null;
+    if (corteTask && (corteTask as any).description_task?.includes('METADATA:')) {
+      try {
+        const metaStr = (corteTask as any).description_task.split('METADATA:')[1];
+        const metadata = JSON.parse(metaStr);
+        if (metadata?.breakdown) {
+          // Reconstruir los detalles basados en el metadato persistido
+          const baseDetails = order.details.filter(d => d.product_id === productionModal.productId);
+          return baseDetails
+            .filter(d => metadata.breakdown[d.size] !== undefined)
+            .map(d => ({
+              ...d,
+              amount: metadata.breakdown[d.size] // Usar la cantidad que se guardó al crear la tarea
+            }))
+            .sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'));
+        }
+      } catch (e) {
+        console.error('Error al parsear metadato de tarea:', e);
+      }
+    }
+
+    // 2. Fallback: Cálculo dinámico basado en stock (para nuevos vales o vales sin metadato)
+    let filtered = order.details
+      .filter(d => d.product_id === productionModal.productId)
+      .map(d => ({
+        ...d,
+        amount: selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount
+      }))
+      .filter(d => d.amount > 0);
+
+    return filtered.sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'));
+  }, [selectedOption, order.details, productionModal?.productId, currentTasks]);
 
   const handleImageError = (imageUrl: string) => {
     setFailedImages(prev => new Set([...prev, imageUrl]));
@@ -578,6 +629,9 @@ function OrderDetailView({
                     
                     // El estado del producto es el estado del primer item (asumimos consistencia por grupo)
                     const productState = first.state || 'pendiente';
+                    
+                    // Definir taskForProduct aquí para que esté disponible en todo el scope del map
+                    const taskForProduct = Array.isArray(currentTasks) ? currentTasks.find(t => t.product_id?.toLowerCase() === productId.toLowerCase()) : null;
 
                     return (
                       <div key={productId} className={`bg-white dark:bg-slate-900/50 border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${allAvailable ? 'border-green-200 dark:border-green-900/50' : 'border-gray-200 dark:border-slate-800'}`}>
@@ -633,9 +687,20 @@ function OrderDetailView({
                                     Todo en Bodega
                                   </span>
                                 )}
+                                {first.observations?.includes('Completado desde bodega') && (
+                                  <span className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-amber-200 dark:border-amber-900/50">
+                                    <Clock size={10} />
+                                    Vía Bodega
+                                  </span>
+                                )}
                               </div>
                               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
                                 {[brandName, styleName, categoryName].filter(Boolean).join(' · ')}
+                                {taskForProduct?.vale_number && (
+                                  <span className="text-red-600 dark:text-red-400 font-black ml-2">
+                                    • Vale #{taskForProduct.vale_number}
+                                  </span>
+                                )}
                               </p>
                               <div className="mt-2 flex items-center gap-2">
                                 <StatusBadge status={productState} />
@@ -646,29 +711,32 @@ function OrderDetailView({
                         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
                             <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
                               {totalProductPairs} pares pedidos
-                              {(() => {
-                                const taskForProduct = Array.isArray(currentTasks) ? currentTasks.find(t => t.product_id?.toLowerCase() === productId.toLowerCase()) : null;
-                                if (taskForProduct?.vale_number) {
-                                  return (
-                                    <span className="text-red-600 dark:text-red-400 font-black">
-                                      • Vale #{taskForProduct.vale_number}
-                                    </span>
-                                  );
-                                }
-                                return null;
-                              })()}
                             </span>
 
                             {/* Acciones de Producción por Producto */}
                             <div className="flex items-center gap-2">
                               {productState === 'pendiente' && (
-                                <button 
-                                  onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs })}
-                                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
-                                >
-                                  <PlayCircle size={14} />
-                                  <span>Iniciar Producción</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs })}
+                                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+                                  >
+                                    <PlayCircle size={14} />
+                                    <span>Iniciar Producción</span>
+                                  </button>
+
+                                  {allAvailable && (
+                                    <button 
+                                      onClick={() => onCompleteFromWarehouse(productId, order.details.filter(d => d.product_id === productId))}
+                                      disabled={isUpdating}
+                                      className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold border border-green-500"
+                                      title="Usar existencias de bodega para completar inmediatamente"
+                                    >
+                                      <Zap size={14} className="fill-white" />
+                                      <span>Completar desde Bodega</span>
+                                    </button>
+                                  )}
+                                </div>
                               )}
                               
                               {productState === 'en_progreso' && (
@@ -684,14 +752,16 @@ function OrderDetailView({
 
                               {productState === 'completado' && (
                                 <div className="flex items-center gap-2">
-                                  <button 
-                                    onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs, forceProgress: true })}
-                                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
-                                    title="Ver detalles del vale"
-                                  >
-                                    <Package size={14} />
-                                    <span>Ver Vale</span>
-                                  </button>
+                                  {taskForProduct && (
+                                    <button 
+                                      onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs, forceProgress: true })}
+                                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+                                      title="Ver detalles del vale"
+                                    >
+                                      <Package size={14} />
+                                      <span>Ver Vale</span>
+                                    </button>
+                                  )}
                                   <div className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50 rounded-lg text-xs font-black uppercase flex items-center gap-2">
                                     <Package size={14} />
                                     Listo para Entrega
@@ -701,14 +771,16 @@ function OrderDetailView({
 
                               {productState === 'entregado' && (
                                 <div className="flex items-center gap-2">
-                                  <button 
-                                    onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs, forceProgress: true })}
-                                    className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
-                                    title="Ver detalles del vale entregado"
-                                  >
-                                    <Package size={14} />
-                                    <span>Ver Vale</span>
-                                  </button>
+                                  {taskForProduct && (
+                                    <button 
+                                      onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs, forceProgress: true })}
+                                      className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+                                      title="Ver detalles del vale entregado"
+                                    >
+                                      <Package size={14} />
+                                      <span>Ver Vale</span>
+                                    </button>
+                                  )}
                                   <div className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 rounded-lg text-xs font-black uppercase flex items-center gap-2">
                                     <CheckCircle2 size={14} />
                                     Entregado al Cliente
@@ -1150,10 +1222,7 @@ function OrderDetailView({
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
                              <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Cliente: <span className="text-gray-900 dark:text-white uppercase">{order.customer_name} {order.customer_last_name}</span></p>
                              <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Color: <span className="text-gray-900 dark:text-white uppercase">{order.details.find(d => d.product_id === productionModal?.productId)?.colour || 'N/A'}</span></p>
-                             {selectedOption === 'A' && (
-                               <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Pedido Original: <span className="text-gray-900 dark:text-white">{productionModal?.totalCount || 0} pares</span></p>
-                             )}
-                             <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Cantidad: <span className="text-blue-600 dark:text-blue-400">{selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0)} pares</span></p>
+                             <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Cantidad: <span className="text-blue-600 dark:text-blue-400">{tableDetails.reduce((sum, d) => sum + d.amount, 0)} pares</span></p>
                           </div>
                           {/* Observations display */}
                           {(() => {
@@ -1180,18 +1249,14 @@ function OrderDetailView({
                          <table className="w-full">
                            <tbody>
                              {/* Mostrar cada línea de details tal cual, sin agrupar */}
+                             {/* ✅ USANDO tableDetails del useMemo para garantizar sincronización */}
                              {(() => {
-                               const details = [...order.details
-                                 .filter(d => d.product_id === productionModal?.productId)
-                                 .filter(d => (selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount) > 0)]
-                                 .sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'));
-                               
                                return (
                                  <>
                                    {/* Fila superior: Tallas */}
                                    <tr className="border-b border-gray-50 dark:border-slate-800/50">
                                      <td className="px-4 py-2 bg-gray-50/30 dark:bg-slate-800/20 text-[10px] font-black text-gray-400 uppercase tracking-tighter border-r border-gray-100 dark:border-slate-800">Talla</td>
-                                     {details.map(d => (
+                                     {tableDetails.map(d => (
                                        <td key={`${d.id}`} className="px-4 py-2 text-center text-[11px] font-black text-blue-600 dark:text-blue-400 border-r border-gray-50 dark:border-slate-800 last:border-0">
                                          {d.size}
                                        </td>
@@ -1200,8 +1265,8 @@ function OrderDetailView({
                                    {/* Fila inferior: Cantidades */}
                                    <tr>
                                      <td className="px-4 py-2 bg-gray-50/30 dark:bg-slate-800/20 text-[10px] font-black text-gray-400 uppercase tracking-tighter border-r border-gray-100 dark:border-slate-800">Cant.</td>
-                                     {details.map(d => {
-                                       const qty = selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount;
+                                     {tableDetails.map(d => {
+                                       const qty = d.amount;
                                        return (
                                          <td key={`${d.id}`} className="px-4 py-2 text-center text-xs font-black text-gray-900 dark:text-white border-r border-gray-50 dark:border-slate-800 last:border-0">
                                            {qty}
@@ -1256,6 +1321,27 @@ function OrderDetailView({
                                      <h5 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">{stage.label}</h5>
                                      {isUnreachable && <p className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">Bloqueado hasta completar {prevStage?.label}</p>}
                                      {isCompleted && <p className="text-[9px] font-bold text-green-600 uppercase tracking-tighter">Tarea Completada</p>}
+                                     {(() => {
+                                       const pricePerDozen = (currentTask?.task_prices as Record<string, number> | undefined)?.[stage.key] ?? 0;
+                                       if (pricePerDozen <= 0) return null;
+                                       // Si la tarea ya fue creada, usar su amount guardado en DB (fuente de verdad única).
+                                       // Si aún no existe (plannign), usar la opción seleccionada por el usuario.
+                                       const pares = currentTask
+                                         ? (currentTask.amount || 0)
+                                         : (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0));
+                                       if (pares <= 0) return null;
+                                       const taskCost = Math.round((pares / 12) * pricePerDozen);
+                                       return (
+                                         <div className="mt-1 flex flex-col">
+                                           <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400">
+                                             ${pricePerDozen.toLocaleString('es-CO')} / docena
+                                           </p>
+                                           <p className="text-[10px] font-black text-green-700 dark:text-green-400">
+                                             Total: ${taskCost.toLocaleString('es-CO')} ({pares} pares)
+                                           </p>
+                                         </div>
+                                       );
+                                     })()}
                                    </div>
                                  </div>
                                  <span className="text-[9px] font-black px-2 py-0.5 bg-black/5 dark:bg-white/5 rounded uppercase tracking-tighter text-gray-600 dark:text-gray-400">Cargo: {stage.occupation}</span>
@@ -1348,15 +1434,28 @@ function OrderDetailView({
                                      {(() => {
                                         const productSupplies = orderSupplies[productionModal?.productId]?.supplies || [];
                                         const stageSupplies = productSupplies.filter(is => getStageByCat(is.supply_category) === stage.key);
+                                        const totalPairs = selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0);
                                         
                                         if (stageSupplies.length === 0) return <span className="text-[10px] text-gray-400 italic">No hay insumos específicos</span>;
                                         
-                                        return stageSupplies.map(is => (
-                                          <span key={is.supply_id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900/50 text-[10px] font-bold text-gray-700 dark:text-gray-300 rounded-lg border border-black/5 dark:border-white/5">
-                                            <Package className="w-3 h-3 text-blue-500" />
-                                            {is.supply_name}
-                                          </span>
-                                        ));
+                                        return stageSupplies.map(is => {
+                                          // Usar misma fórmula que en detalle del pedido: cantidad = pares * quantity_required
+                                          const calcQty = is.quantity_required > 0 && totalPairs > 0
+                                            ? parseFloat((totalPairs * is.quantity_required).toFixed(2))
+                                            : null;
+                                          
+                                          return (
+                                            <span key={is.supply_id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900/50 text-[10px] font-bold text-gray-700 dark:text-gray-300 rounded-lg border border-black/5 dark:border-white/5">
+                                              <Package className="w-3 h-3 text-blue-500 shrink-0" />
+                                              <span className="flex flex-col leading-tight">
+                                                <span>{is.supply_name}{is.supply_color ? <span className="font-normal text-gray-400 dark:text-gray-500"> · {is.supply_color}</span> : null}</span>
+                                                {calcQty !== null && (
+                                                  <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wide">{calcQty} {is.supply_unit || 'unid.'}</span>
+                                                )}
+                                              </span>
+                                            </span>
+                                          );
+                                        });
                                      })()}
                                   </div>
                                 </div>
@@ -1416,12 +1515,29 @@ function OrderDetailView({
                           try {
                             await onUpdateItemsStatus(productionModal?.productId, 'en_progreso');
                             
+                            // Para corte (primera etapa) usar la opción seleccionada por el usuario.
+                            // Para etapas siguientes, usar el amount que ya tiene la tarea de corte
+                            // (no puede cambiar entre etapas: si se fabricaron 20 pares en corte, en guarnición también son 20).
+                            const corteTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === 'corte') : null;
+                            const amountForTask = nextPendingStage.key === 'corte'
+                              ? (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0))
+                              : (corteTask?.amount || (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0)));
+
+                            // Calcular el desglose de tallas para persistirlo en la descripción
+                            const productDetailsForMetadata = order.details.filter(d => d.product_id === productionModal?.productId);
+                            const breakdownMetadata: Record<string, number> = {};
+                            productDetailsForMetadata.forEach(d => {
+                              const qty = selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount;
+                              if (qty > 0) breakdownMetadata[d.size] = qty;
+                            });
+
                             const taskData = {
                               product_id: productionModal?.productId,
                               assigned_to: assignedUser || '',
                               type: nextPendingStage.key,
-                              description: `Iniciando ${nextPendingStage.label} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'})`,
-                              priority: 'media'
+                              description: `Iniciando ${nextPendingStage.label} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'}) | METADATA: ${JSON.stringify({ breakdown: breakdownMetadata, option: selectedOption })}`,
+                              priority: 'media',
+                              amount: amountForTask
                             };
 
                             await createProductionTasks(order.id, [taskData]);
@@ -1470,6 +1586,29 @@ function OrderDetailView({
                             
                             setSuccessToast(`¡Etapa de ${nextPendingStage.label.toUpperCase()} iniciada!`);
                             setTimeout(() => setSuccessToast(null), 4000);
+                            
+                            // Si fue CORTE (primera etapa), recargar orden para actualizar stock_available y recalcular missingCount
+                            if (nextPendingStage.key === 'corte') {
+                              try {
+                                const updatedOrder = await getOrderDetail(order.id);
+                                // Actualizar el estado con la orden recargada (tiene stock_available actualizado)
+                                if (onOrderUpdate) onOrderUpdate(updatedOrder);
+                                
+                                // Recalcular missingCount y totalCount con los valores actualizados
+                                const lines = updatedOrder.details.filter(d => d.product_id?.toLowerCase() === productionModal?.productId?.toLowerCase());
+                                const newTotalToProduce = lines.reduce((acc, l) => acc + Math.max(0, l.amount - Math.max(0, Math.floor(l.stock_available ?? 0))), 0);
+                                const newTotalProductPairs = lines.reduce((s, l) => s + l.amount, 0);
+                                
+                                // Actualizar el modal con los nuevos valores
+                                setProductionModal(prev => prev ? {
+                                  ...prev,
+                                  missingCount: newTotalToProduce,
+                                  totalCount: newTotalProductPairs
+                                } : null);
+                              } catch (err) {
+                                console.error('Error al recargar orden:', err);
+                              }
+                            }
                             
                             // Refresh tasks usando la instancia configurada (con baseURL y auth)
                             const currentProductId = productionModal?.productId;
@@ -1764,6 +1903,7 @@ export default function OrdersPage() {
     forceProgress?: boolean;
   } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
   const [totalByStatus, setTotalByStatus] = useState<Record<OrderStatus, number>>({
     pendiente: 0, en_progreso: 0, completado: 0, entregado: 0, cancelado: 0,
   });
@@ -1820,19 +1960,45 @@ export default function OrdersPage() {
       if (productId && selectedOrder) {
         const item = selectedOrder.details.find(d => d.product_id === productId);
         if (item) {
-          // Calcular el total de pares para este producto sumando todos los detalles
-          const totalProductPairsForProduct = selectedOrder.details
-            .filter(d => d.product_id === productId)
-            .reduce((sum, d) => sum + d.amount, 0);
-          
-          // Abrir el modal de producción para este producto
-          setProductionModal({
-            productId: item.product_id,
-            productName: item.product_name || 'Producto',
-            missingCount: 0,
-            totalCount: totalProductPairsForProduct,
-            forceProgress: true
-          });
+          // Cargar las tareas existentes para este producto para usar su amount como fuente de verdad
+          getOrderTasks(selectedOrder.id)
+            .then(allTasks => {
+              const productsTasksForModal = allTasks.filter(t => t.product_id?.toLowerCase() === productId.toLowerCase());
+              const itemsForProduct = selectedOrder.details.filter(d => d.product_id === productId);
+              const totalProductPairsForProduct = itemsForProduct.reduce((sum, d) => sum + d.amount, 0);
+              
+              // Si existen tareas, usar su amount como la cantidad real a mostrar (fuente de verdad)
+              let displayMissingCount = itemsForProduct.reduce((sum, d) => sum + Math.max(0, d.amount - (d.stock_available || 0)), 0);
+              if (productsTasksForModal.length > 0) {
+                // Las tareas ya fueron creadas: usar su amount como cantidad definitiva
+                displayMissingCount = productsTasksForModal[0]?.amount || displayMissingCount;
+              }
+              
+              // Abrir el modal de producción para este producto
+              setProductionModal({
+                productId: item.product_id,
+                productName: item.product_name || 'Producto',
+                missingCount: displayMissingCount,
+                totalCount: totalProductPairsForProduct,
+                forceProgress: true
+              });
+              // Actualizar currentTasks para que el modal tenga acceso a ellas (SE DELEGA A OrderDetailView)
+              // setCurrentTasks no existe en este scope
+            })
+            .catch(err => {
+              console.error('Error al cargar tareas para modal:', err);
+              // Fallback: calcular normalmente si hay error
+              const itemsForProduct = selectedOrder.details.filter(d => d.product_id === productId);
+              const totalProductPairsForProduct = itemsForProduct.reduce((sum, d) => sum + d.amount, 0);
+              const missingCountForProduct = itemsForProduct.reduce((sum, d) => sum + Math.max(0, d.amount - (d.stock_available || 0)), 0);
+              setProductionModal({
+                productId: item.product_id,
+                productName: item.product_name || 'Producto',
+                missingCount: missingCountForProduct,
+                totalCount: totalProductPairsForProduct,
+                forceProgress: true
+              });
+            });
           // Limpiar parámetros para evitar reaperturas infinitas
           const newUrl = window.location.pathname;
           window.history.replaceState({}, '', newUrl);
@@ -1867,6 +2033,53 @@ export default function OrdersPage() {
       setError('No se pudo cargar el detalle del pedido.');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleCompleteFromWarehouse = async (productId: string, _lines: any[]) => {
+    if (!selectedOrder) return;
+    setIsUpdating(true);
+    setError(null);
+    try {
+      // 1. Actualizar estados y añadir nota de "Completado desde bodega"
+      //    El backend se encarga de descontar del inventario (amount) en lugar de
+      //    sumar a reserved, porque no hubo fabricación: el stock ya existía.
+      const updatedDetails = selectedOrder.details.map(item => {
+        if (item.product_id === productId) {
+          return {
+            ...item,
+            state: 'completado' as OrderStatus,
+            observations: item.observations
+              ? `${item.observations} | ✓ Completado desde bodega`
+              : '✓ Completado desde bodega'
+          };
+        }
+        return item;
+      });
+
+      await updateOrderDetails(selectedOrder.id, {
+        delivery_date: selectedOrder.delivery_date,
+        details: updatedDetails.map(d => ({
+          product_id: d.product_id,
+          size: d.size,
+          colour: d.colour,
+          amount: d.amount,
+          state: d.state,
+          observations: (d as any).observations
+        } as any))
+      });
+
+      // Refrescar
+      const refreshed = await getOrderDetail(selectedOrder.id);
+      setSelectedOrder(refreshed);
+      setOrders(prev => prev.map(o => o.id === refreshed.id ? { ...o, state: refreshed.state } : o));
+      setSuccessToast('✓ Producto completado desde bodega con éxito');
+      setTimeout(() => setSuccessToast(null), 3000);
+    } catch (err: any) {
+      console.error('Error al completar desde bodega:', err);
+      setError('No se pudo completar desde bodega: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -1972,6 +2185,9 @@ export default function OrdersPage() {
           setProductionModal={setProductionModal}
           onOrderUpdate={setSelectedOrder}
           error={error}
+          onCompleteFromWarehouse={handleCompleteFromWarehouse}
+          successToast={successToast}
+          setSuccessToast={setSuccessToast}
           setIsEditModalOpen={(productId?: string) => {
             setEditingProductId(productId);
             setIsEditModalOpen(true);

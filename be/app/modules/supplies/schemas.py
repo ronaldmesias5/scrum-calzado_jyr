@@ -85,6 +85,8 @@ class LinkSupplyToProduct(BaseModel):
 class ProductSupplyOut(BaseModel):
     supply_id: str
     supply_name: str
+    supply_color: str | None = None
+    supply_unit: str | None = None
     supply_category: str
     quantity_required: float
     stock_quantity: float

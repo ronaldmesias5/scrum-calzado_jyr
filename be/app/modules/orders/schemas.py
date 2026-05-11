@@ -136,7 +136,7 @@ class OrderUpdateDetailsRequest(BaseModel):
 # ────────────────────────────────────────────────
 
 class TaskStatusUpdateRequest(BaseModel):
-    status: str = Field(..., description="Nuevo estado (pendiente, en_progreso, completado, cancelado)")
+    status: str = Field(..., description="Nuevo estado (por_liquidar, en_progreso, completado, pagado, cancelado)")
 
 class ProductionTaskCreate(BaseModel):
     """Esquema para crear una tarea de producción vinculada a una orden."""
@@ -145,6 +145,7 @@ class ProductionTaskCreate(BaseModel):
     type: str = Field(..., description="Etapa (corte, guarnicion, soladura, emplantillado)")
     description: str | None = Field(None, description="Descripción opcional de la tarea")
     priority: str = Field("media", description="Prioridad de la tarea")
+    amount: int = Field(..., description="Cantidad de pares")
 
 class ProductionTaskResponse(BaseModel):
     id: UUID
@@ -154,9 +155,16 @@ class ProductionTaskResponse(BaseModel):
     type: str
     status: str
     vale_number: int | None = None
+    amount: int = 0
+    description_task: str | None = None
     assigned_user_name: str | None = None
     assigned_user_occupation: str | None = None
     created_at: datetime
+    task_prices: dict = {}   # precios por tarea del producto
+    total_pairs: int = 0
+    product_name: str | None = None
+    product_category: str | None = None
+    product_image: str | None = None
 
     class Config:
         from_attributes = True

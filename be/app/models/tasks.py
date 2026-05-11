@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.incidence import Incidence
     from app.models.order import Order
+    from app.models.product import Product
 
 
 class TaskPriority(str, Enum):
@@ -38,6 +39,7 @@ class TaskType(str, Enum):
 class TaskStatus(str, Enum):
     """Estado de una tarea"""
     pendiente = "pendiente"
+    por_liquidar = "por_liquidar"
     en_progreso = "en_progreso"
     completado = "completado"
     pagado = "pagado"
@@ -65,6 +67,13 @@ class Task(Base):
         Integer,
         nullable=True,
         index=True
+    )
+
+    amount: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="Cantidad de pares asignados a esta tarea"
     )
 
     order_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -161,6 +170,9 @@ class Task(Base):
 
     # Usuario asignado a la tarea
     assigned_user = relationship("User", foreign_keys=[assigned_to], lazy="selectin")
+
+    # Producto de la tarea
+    product = relationship("Product", lazy="select")
 
     # Incidencias reportadas en esta tarea
     incidences = relationship("Incidence", back_populates="task", lazy="selectin")

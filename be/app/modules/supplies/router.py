@@ -311,6 +311,8 @@ def check_product_supplies(product_id: str, db: Session = Depends(get_db)) -> Pr
         supply_items.append(ProductSupplyOut(
             supply_id=str(supply.id),
             supply_name=supply.name_supplies,
+            supply_color=supply.color,
+            supply_unit=supply.unit or "unidades",
             supply_category=supply.category.value if hasattr(supply.category, "value") else supply.category,
             quantity_required=link.quantity_required,
             stock_quantity=supply.stock_quantity,

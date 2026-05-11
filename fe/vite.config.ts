@@ -41,6 +41,12 @@ export default defineConfig({
     port: 5173,
     host: "0.0.0.0",
     open: false,
+    proxy: {
+      "/api": {
+        target: "http://be:8000",
+        changeOrigin: true,
+      },
+    },
     watch: {
       // En Windows con Docker, inotify no funciona — polling detecta cambios de archivos
       usePolling: true,

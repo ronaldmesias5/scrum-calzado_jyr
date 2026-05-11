@@ -16,13 +16,15 @@
 #   Docker invalidará la capa de pnpm install SOLO si estos
 #   archivos cambian, no si cambia el código fuente.
 # ────────────────────────────
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Habilitar pnpm vía Corepack (incluido en Node 20+, sin instalación adicional).
 # ¿Qué es Corepack? Gestor de gestores de paquetes integrado en Node.js.
 # ¿Por qué no instalar pnpm globalmente? Corepack es la forma oficial y no
 #   requiere npm ni acceso root; lee la versión de "packageManager" en package.json.
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# pnpm 10.x no tiene la validación estricta de build scripts que rompe en v11.
+# Si se actualiza a v11+, usar package.json → pnpm.onlyBuiltDependencies.
+RUN corepack enable && corepack prepare pnpm@10 --activate
 
 WORKDIR /app
 
@@ -31,6 +33,9 @@ COPY package.json pnpm-lock.yaml ./
 
 # Instalar dependencias. Usar --no-frozen-lockfile si es necesario
 # regenerar el pnpm-lock.yaml en caso de que esté desincronizado.
+# pnpm 11+ — los build scripts se aprueban vía package.json → pnpm.onlyBuiltDependencies
+# NOTA: Si hay error [ERR_PNPM_IGNORED_BUILDS], verifica que package.json incluya
+# "pnpm": { "onlyBuiltDependencies": ["esbuild", "core-js"] }
 RUN pnpm install
 
 # ────────────────────────────

@@ -3,7 +3,9 @@
  * Single source of truth para todas las peticiones HTTP
  */
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// En desarrollo con Vite proxy, usamos ruta relativa.
+// En producción, nginx sirve ambos en el mismo dominio.
+export const API_URL = import.meta.env.VITE_API_URL || "";
 
 export const API_CONFIG = {
   baseURL: API_URL,

@@ -26,25 +26,33 @@ from starlette.responses import JSONResponse
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Rate limiter simple en memoria (para producción usar Redis).
     
-    NOTA: En desarrollo (ENV=dev), el rate limiting está DESHABILITADO.
-    En producción, se aplicarán límites estrictos.
+    Comportamiento por entorno:
+      - development: rate limiting DESHABILITADO
+      - staging: rate limiting ACTIVO con límites altos (para pruebas)
+      - production: rate limiting ESTRICTO
     """
     
     def __init__(self, app):
         super().__init__(app)
         self.requests = defaultdict(list)  # {client_ip: [timestamp, timestamp, ...]}
-        self.is_development = os.getenv("ENV", "dev").lower() in ("dev", "development")
+        env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+        self.is_development = env in ("dev", "development")
+        self.is_staging = env in ("staging", "qa")
+        self.is_production = env in ("prod", "production")
+        
+        # Multiplicador: staging tiene límites 10x más altos que producción
+        self.multiplier = 10 if self.is_staging else 1
         
         # Reglas: {path: (max_requests, time_window_seconds)}
-        # Solo aplican en PRODUCCIÓN
         self.limits = {
             "/api/v1/auth/login": (5, 900),      # 5 requests en 15 minutos
             "/api/v1/auth/register": (3, 3600),  # 3 requests en 1 hora
             "/api/v1/auth/forgot-password": (3, 3600),  # 3 requests en 1 hora
+            "/api/v1/auth/reset-password": (5, 1800),   # 5 requests en 30 min
         }
     
     async def dispatch(self, request: Request, call_next) -> JSONResponse:
-        # En desarrollo, NO aplicar rate limiting
+        # Solo deshabilitar en desarrollo local
         if self.is_development:
             response = await call_next(request)
             return response
@@ -54,12 +62,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         current_time = time.time()
         
         # Determinar límite aplicable
-        max_requests = 100
+        max_requests = 100 * self.multiplier
         time_window = 60
         
         for limit_path, (limit_count, limit_seconds) in self.limits.items():
             if path.startswith(limit_path):
-                max_requests = limit_count
+                max_requests = limit_count * self.multiplier
                 time_window = limit_seconds
                 break
         

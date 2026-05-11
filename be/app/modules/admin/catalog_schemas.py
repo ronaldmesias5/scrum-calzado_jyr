@@ -6,6 +6,17 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional
 
 
+class TaskPrices(BaseModel):
+    """Precios por tarea en COP por docena (12 pares)"""
+    corte: float = Field(0.0, ge=0)
+    guarnicion: float = Field(0.0, ge=0)
+    soladura: float = Field(0.0, ge=0)
+    emplantillado: float = Field(0.0, ge=0)
+
+    class Config:
+        from_attributes = True
+
+
 # ─────────────────────────────────────────
 # MARCAS
 # ─────────────────────────────────────────
@@ -58,6 +69,7 @@ class ProductCreateRequest(BaseModel):
     brand_id: str = Field(..., description="UUID de la marca")
     style_id: str = Field(..., description="UUID del estilo (debe pertenecer a la marca)")
     category_id: str = Field(..., description="UUID de la categoría")
+    task_prices: Optional[TaskPrices] = Field(None, description="Precios por tarea en COP por docena")
 
 
 class ProductResponse(BaseModel):
@@ -74,6 +86,7 @@ class ProductResponse(BaseModel):
     style_name: str
     category_id: str
     category_name: str
+    task_prices: Optional[TaskPrices] = None
     created_at: Optional[str]
 
 
