@@ -120,51 +120,63 @@ def list_all_production_tasks(
     """
     Lista TODAS las tareas de producción del sistema con filtros.
     """
-    # Subconsulta para obtener el total de pares por orden y producto
-    pairs_subquery = (
-        select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
-        .where(OrderDetail.deleted_at == None)
-        .group_by(OrderDetail.order_id, OrderDetail.product_id)
-        .subquery()
-    )
+    try:
+        # Subconsulta para obtener el total de pares por orden y producto
+        pairs_subquery = (
+            select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
+            .where(OrderDetail.deleted_at == None)
+            .group_by(OrderDetail.order_id, OrderDetail.product_id)
+            .subquery()
+        )
 
-    query = select(Task, pairs_subquery.c.total).outerjoin(
-        pairs_subquery,
-        and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
-    ).options(joinedload(Task.product)).where(Task.deleted_at == None)
+        query = select(Task, pairs_subquery.c.total).outerjoin(
+            pairs_subquery,
+            and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
+        ).options(joinedload(Task.product)).where(Task.deleted_at == None)
 
-    if status:
-        query = query.where(Task.status == status)
-    if type:
-        query = query.where(Task.type == type)
-    if assigned_to:
-        query = query.where(Task.assigned_to == assigned_to)
-    
-    query = query.order_by(desc(Task.created_at))
-    result = db.execute(query)
-    tasks_data = result.all() # Retorna tuplas (Task, total)
-    
-    return [
-        ProductionTaskResponse(
-            id=t.id,
-            order_id=t.order_id,
-            product_id=t.product_id,
-            assigned_to=t.assigned_to,
-            assigned_user_name=t.assigned_user.name_user + " " + t.assigned_user.last_name if t.assigned_user else "Desconocido",
-            assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
-            type=t.type,
-            status=t.status,
-            vale_number=t.vale_number,
-            created_at=t.created_at,
-            task_prices=t.product.task_prices if t.product else {},
-            total_pairs=t.amount if t.amount > 0 else int(total or 0),
-            amount=t.amount if t.amount > 0 else int(total or 0),
-            description_task=t.description_task,
-            product_name=t.product.name_product if t.product else None,
-            product_category=t.product.category.name_category if t.product and t.product.category else None,
-            product_image=t.product.image_url if t.product else None
-        ) for t, total in tasks_data
-    ]
+        if status:
+            query = query.where(Task.status == status)
+        if type:
+            query = query.where(Task.type == type)
+        if assigned_to:
+            query = query.where(Task.assigned_to == assigned_to)
+        
+        query = query.order_by(desc(Task.created_at))
+        result = db.execute(query)
+        tasks_data = result.all()  # Retorna tuplas (Task, total)
+        
+        tasks_list = []
+        for t, total in tasks_data:
+            try:
+                tasks_list.append(ProductionTaskResponse(
+                    id=t.id,
+                    order_id=t.order_id,
+                    product_id=t.product_id,
+                    assigned_to=t.assigned_to,
+                    assigned_user_name=t.assigned_user.name_user + " " + t.assigned_user.last_name if t.assigned_user else "Desconocido",
+                    assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+                    type=t.type,
+                    status=t.status,
+                    vale_number=t.vale_number,
+                    created_at=t.created_at,
+                    task_prices=t.product.task_prices if t.product else {},
+                    total_pairs=t.amount if t.amount > 0 else int(total or 0),
+                    amount=t.amount if t.amount > 0 else int(total or 0),
+                    description_task=t.description_task,
+                    product_name=t.product.name_product if t.product else None,
+                    product_category=t.product.category.name_category if t.product and t.product.category else None,
+                    product_image=t.product.image_url if t.product else None
+                ))
+            except Exception as e:
+                traceback.print_exc()
+                print(f"⚠️ Error procesando tarea {t.id}: {str(e)}")
+                continue
+        
+        return tasks_list
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al listar tareas: {str(e)}")
 
 
 @router.get("", response_model=OrderListResponse)
