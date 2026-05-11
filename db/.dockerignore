@@ -2,7 +2,7 @@
 # .dockerignore — Archivos a ignorar al construir imagen Docker
 # ============================================================
 # Especifica qué archivos/carpetas debe ignorar Docker al
-# construir la imagen desde db/Dockerfile.
+# construir el contexto (por si se usa build ./db en el futuro).
 #
 # Reduce el tamaño del contexto de build y acelera construcción.
 # ============================================================

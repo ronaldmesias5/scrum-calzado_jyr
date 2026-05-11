@@ -3,7 +3,7 @@
 ## Propósito de esta Carpeta
 
 Esta carpeta es la **capa de infraestructura y operaciones** de PostgreSQL. Contiene:
-- `Dockerfile` — Imagen personalizada de PostgreSQL con configuraciones técnicas
+- `.dockerignore` — Archivos que Docker ignora al construir contexto
 - `init/init.sql` — Scripts de bootstrap que se ejecutan al inicializar PostgreSQL
 - Este README — Documentación de arquitectura
 
@@ -33,37 +33,16 @@ be/alembic/versions/          ← Esquema y datos de NEGOCIO (versionado en git)
 - ❌ Inserción de datos (roles, productos, etc.)
 - ❌ Versionamiento de esquema (eso es responsabilidad de **Alembic**)
 
-## 🐘 ¿Qué es `db/Dockerfile`?
+## 🐘 Uso de PostgreSQL en Docker
 
-Dockerfile personalizado para PostgreSQL que:
-- ✅ Usa `postgres:17-alpine` como base
-- ✅ Copia scripts de `init/` a `/docker-entrypoint-initdb.d/`
-- ✅ Garantiza que todas las máquinas tengan la misma config
+El servicio `db` en `docker-compose.yml` usa la imagen oficial directamente:
 
-**Cómo usarlo (opcional):**
-
-Actualmente, `docker-compose.yml` usa la imagen pública:
 ```yaml
 db:
-  image: postgres:17-alpine  # ← Imagen pública
+  image: postgres:17-alpine
 ```
 
-Si quieres usar la imagen personalizada:
-```yaml
-db:
-  build: ./db  # ← Construir imagen desde Dockerfile local
-```
-
-**Ventajas de usar `build ./db`:**
-- Versionable en git (control completo)
-- Reproducible en cualquier máquina
-- Mejor documentación de requerimientos técnicos
-
-**Ventajas de usar `image` (actual):**
-- Más ligero (descarga imagen pre-construida)
-- Más rápido en CI/CD
-
-**Recomendación:** Usa `image` en desarrollo, `build` en producción.
+No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas las necesidades (extensiones vía `init.sql`, config vía variables de entorno).
 
 ## 📊 Tabla Comparativa: `db/init/` vs Alembic
 
