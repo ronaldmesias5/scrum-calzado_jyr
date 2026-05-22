@@ -5,6 +5,7 @@ Admin y Jefe pueden crear, editar, eliminar: Marcas, Estilos, Productos e Invent
 
 import uuid
 import os
+import time
 from pathlib import Path
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
@@ -572,7 +573,7 @@ async def upload_product_image(
 
     # Eliminar imagen anterior si existe y es un archivo local
     if product.image_url and product.image_url.startswith("/uploads/"):
-        old_filename = product.image_url.split("/uploads/")[-1]
+        old_filename = product.image_url.split("/uploads/")[-1].split("?")[0]
         old_path = UPLOADS_DIR / old_filename
         if old_path.exists():
             old_path.unlink()
@@ -583,8 +584,8 @@ async def upload_product_image(
     file_path = UPLOADS_DIR / filename
     file_path.write_bytes(content)
 
-    # Actualizar image_url en BD
-    product.image_url = f"/uploads/{filename}"
+    # Actualizar image_url en BD con versión para forzar refresco de caché del navegador
+    product.image_url = f"/uploads/{filename}?v={int(time.time())}"
     product.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(product)

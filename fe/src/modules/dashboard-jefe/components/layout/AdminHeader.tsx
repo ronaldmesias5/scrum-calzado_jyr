@@ -61,9 +61,9 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         <button
           onClick={onMenuClick}
           className="lg:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          aria-label="Toggle menu"
+          aria-label="Abrir menú lateral"
         >
-          <Menu size={24} />
+          <Menu size={24} aria-hidden="true" />
         </button>
 
         {/* Logo */}
@@ -73,7 +73,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         >
           <img src="/logo.png" alt="CALZADO J&R" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
           <div className="hidden sm:block">
-            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{t('dashboard.header.adminRole')}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{user?.occupation || t('dashboard.header.adminRole')}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{t('dashboard.header.welcome')}, {fullName}</p>
           </div>
         </div>
@@ -99,9 +99,9 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         <button
           onClick={() => setIsPanelOpen(true)}
           className="relative text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors p-1"
-          title={t('dashboard.header.notifications')}
+          aria-label={`Notificaciones${totalBadge > 0 ? ` (${totalBadge} sin leer)` : ''}`}
         >
-          <Bell size={20} />
+          <Bell size={20} aria-hidden="true" />
           {totalBadge > 0 && (
             <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center font-bold leading-none">
               {totalBadge > 99 ? '99+' : totalBadge}
@@ -118,7 +118,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
               {fullName}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboard.header.adminRole')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{user?.occupation || t('dashboard.header.adminRole')}</p>
           </div>
         </div>
 
@@ -127,6 +127,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             onClick={handleLogoutAll}
             disabled={isLoggingOutAll}
             className="text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors disabled:opacity-50"
+            aria-label="Cerrar sesión en todos los dispositivos"
             title={t('dashboard.header.logoutAllTooltip')}
           >
             {isLoggingOutAll ? (
@@ -139,6 +140,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <button
             onClick={handleLogout}
             className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            aria-label="Cerrar sesión"
             title={t('dashboard.header.logoutTooltip')}
           >
             <LogOut size={18} />

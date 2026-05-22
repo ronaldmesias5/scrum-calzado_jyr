@@ -27,11 +27,11 @@ export default function WhyChooseUsSection() {
           {reasons.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="bg-white dark:bg-slate-800 rounded-3xl p-8 flex flex-col sm:flex-row gap-6 border border-gray-100 dark:border-slate-700 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+              className="bg-white dark:bg-slate-800 rounded-3xl p-8 flex flex-col sm:flex-row gap-6 border border-gray-100 dark:border-slate-700 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 stagger-reveal"
             >
               <div className="flex-shrink-0">
                 <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-2xl">
-                  <Icon size={32} className="text-blue-800 dark:text-blue-400" />
+                  <Icon size={32} className="text-primary dark:text-blue-400" />
                 </div>
               </div>
               <div>

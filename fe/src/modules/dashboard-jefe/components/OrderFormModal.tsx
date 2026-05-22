@@ -4,11 +4,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2 } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2, CheckCircle2 } from 'lucide-react';
 import { createOrder, getStyles, getClients, getCategories, getProducts, updateOrderDetails, OrderCreateRequest, OrderDetailItemCreateRequest, type OrderDetail } from '../services/ordersApi';
 import { resolveImageUrl } from '../services/catalogService';
+import { useModalDialog } from '@/hooks/useModalDialog';
 import ImageViewerModal from './ImageViewerModal';
 import SummarySizer from './SummarySizer';
+import Modal from '@/components/ui/Modal';
 
 interface OrderFormModalProps {
   isOpen: boolean;
@@ -45,6 +47,8 @@ interface Product {
 }
 
 interface OrderLineItem {
+  uid: string;
+  line_group: number;
   product_id: string;
   product_name: string;
   style_name: string;
@@ -70,9 +74,16 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   const isSingleProductEdit = isEditMode && !!editProductId;
   /** true = agregar un producto nuevo al pedido existente */
   const isAddProductMode = isEditMode && !editProductId;
+  
+  // Extraer product_id y line_group de la clave compuesta "product_id::line_group"
+  const editProductIdReal = editProductId?.includes('::') ? editProductId.split('::')[0] : editProductId;
+  const editLineGroup = editProductId?.includes('::') ? parseInt(editProductId.split('::')[1] || '0') : undefined;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [hasAddedProducts, setHasAddedProducts] = useState(false);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [clients, setClients] = useState<Client[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -131,15 +142,16 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
         setSelectedClient(editOrder.customer_id);
         const preloaded: OrderLineItem[] = [];
         const seen = new Map<string, number>();
-        editOrder.details.forEach((d) => {
-          const idx = seen.get(d.product_id);
-          if (idx !== undefined) {
-             const existingIdx = preloaded.findIndex(p => p.product_id === d.product_id);
-              if (preloaded[existingIdx] && preloaded[existingIdx].items) {
-                preloaded[existingIdx].items.push({ size: d.size, amount: d.amount });
-              }
+        editOrder.details.forEach((d: any) => {
+          const group = d.line_group ?? 0;
+          const compositeKey = `${d.product_id}_${group}`;
+          const idx = seen.get(compositeKey);
+          if (idx !== undefined && preloaded[idx]) {
+            preloaded[idx].items.push({ size: d.size, amount: d.amount });
           } else {
             preloaded.push({
+              uid: d.id ?? `${d.product_id}_${d.size}_${Math.random().toString(36).substr(2, 9)}`,
+              line_group: group,
               product_id: d.product_id,
               product_name: d.product_name ?? '',
               style_name: d.style_name ?? '',
@@ -147,10 +159,10 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
               category_name: d.category_name ?? '',
               color: d.colour ?? '',
               image_url: d.image_url ?? '',
-              observations: (d as any).observations ?? '',
+              observations: d.observations ?? '',
               items: [{ size: d.size, amount: d.amount }],
             });
-            seen.set(d.product_id, preloaded.length - 1);
+            seen.set(compositeKey, preloaded.length - 1);
           }
         });
         setItems(preloaded);
@@ -204,6 +216,18 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
     }
   }, [selectedStyle]);
 
+  // Resetear selección de producto cuando cambia el cliente
+  useEffect(() => {
+    if (!isEditMode && selectedClient) {
+      setSelectedCategory('');
+      setSelectedBrand('');
+      setSelectedStyle('');
+      setSelectedProduct('');
+      setSizeAmounts({});
+      setActivePreset(null);
+    }
+  }, [selectedClient]);
+
   const applyRelativeCurve = (curve: Record<string, number>, startSize: string, presetId: string) => {
     const newAmounts: Record<string, string> = {};
     const startIndex = availableSizes.indexOf(startSize);
@@ -243,7 +267,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
     setItems(prev => prev.map((it, i) => i === idx ? { ...it, items: newSizes } : it));
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!selectedCategory || !selectedBrand || !selectedStyle || !selectedProduct) { 
       setError('Por favor selecciona categoría, marca, estilo y producto'); 
       return; 
@@ -260,7 +284,12 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
       return; 
     }
     
+    const maxLineGroup = items.reduce((max, it) => Math.max(max, it.line_group), 0);
+    const newLineGroup = maxLineGroup + 1;
+
     const newItem: OrderLineItem = {
+      uid: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      line_group: newLineGroup,
       product_id: product.id,
       product_name: product.name,
       style_name: product.style_name,
@@ -271,12 +300,50 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
       observations: '',
       items: itemsWithAmount.map(([size, amount]) => ({ size, amount: parseInt(amount as string) })),
     };
-    setItems([...items, newItem]);
+
+    const updatedItems = [...items, newItem];
+    const details: OrderDetailItemCreateRequest[] = [];
+    updatedItems.forEach((item) => {
+      item.items.forEach(({ size, amount }) => {
+        if (amount > 0) {
+          details.push({
+            product_id: item.product_id,
+            size,
+            amount,
+            colour: item.color || undefined,
+            observations: item.observations || undefined,
+            line_group: item.line_group,
+          });
+        }
+      });
+    });
+
+    setError(null);
+
+    if (isEditMode && editOrder) {
+      setAddLoading(true);
+      try {
+        await updateOrderDetails(editOrder.id, { details });
+        setItems(updatedItems);
+        setHasAddedProducts(true);
+        setAddSuccess(true);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        setError('Error al añadir producto: ' + msg);
+      } finally {
+        setAddLoading(false);
+      }
+    } else {
+      setItems(updatedItems);
+      setAddSuccess(true);
+    }
+
+    setSelectedCategory('');
     setSelectedBrand('');
     setSelectedStyle('');
     setSelectedProduct('');
     setSizeAmounts({});
-    setError(null);
+    setActivePreset(null);
   };
 
   const handleRemoveItem = (index: number) => { setItems(items.filter((_, i) => i !== index)); };
@@ -331,7 +398,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
               size, 
               amount,
               colour: item.color || undefined,
-              observations: item.observations || undefined
+              observations: item.observations || undefined,
+              line_group: item.line_group,
             }); 
             totalPairs += amount; 
           } 
@@ -349,25 +417,36 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
     } catch (err) { setError('Error ' + (isEditMode ? 'editando' : 'creando') + ' la orden: ' + (err instanceof Error ? err.message : 'Desconocido')); } finally { setLoading(false); }
   };
 
+  const handleClose = () => {
+    if (isAddProductMode && hasAddedProducts) {
+      onSuccess?.();
+    }
+    onClose();
+  };
+
   if (!isOpen) return null;
   const totalPairs = items.reduce((sum, item) => sum + item.items.reduce((s, i) => s + i.amount, 0), 0);
 
+  const modalTitle = isSingleProductEdit ? 'Editar Producto' : isAddProductMode ? 'Agregar Producto al Pedido' : isEditMode ? 'Editar Pedido' : 'Crear Nuevo Pedido Mayorista';
+  const modalSubtitle = isSingleProductEdit ? 'Ajusta las cantidades por talla del producto seleccionado' : isAddProductMode ? 'Selecciona el nuevo producto y sus cantidades' : isEditMode ? 'Modifica productos y cantidades del pedido' : 'Selecciona categoría, estilo, tallas y cantidades';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)' }}>
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 transition-all animate-in fade-in zoom-in duration-200">
-        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-between items-start rounded-t-2xl z-10">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0 mt-0.5"><Clipboard className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors">
-                {isSingleProductEdit ? 'Editar Producto' : isAddProductMode ? 'Agregar Producto al Pedido' : isEditMode ? 'Editar Pedido' : 'Crear Nuevo Pedido Mayorista'}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
-                {isSingleProductEdit ? 'Ajusta las cantidades por talla del producto seleccionado' : isAddProductMode ? 'Selecciona el nuevo producto y sus cantidades' : isEditMode ? 'Modifica productos y cantidades del pedido' : 'Selecciona categoría, estilo, tallas y cantidades'}
-              </p>
-            </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={modalTitle}
+      size="full"
+      className="max-h-[90vh]"
+    >
+      <div className="flex flex-col h-full">
+        {/* Custom Header Subtitle (integrated with base Modal) */}
+        <div className="px-6 py-2 -mt-4 mb-2 flex items-center gap-3">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <Clipboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all flex-shrink-0 ml-4 mt-0.5"><X className="w-6 h-6" /></button>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {modalSubtitle}
+          </p>
         </div>
         <div className="p-6 flex-1 overflow-y-auto bg-white dark:bg-slate-900">
           {success ? (
@@ -404,25 +483,25 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                   </div>
                   <h3 className="font-extrabold text-gray-900 dark:text-white text-lg tracking-tight">Agregar Nuevo Producto</h3>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest">Categoría</label>
-                    <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm transition-all">
+                    <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} disabled={!isEditMode && !selectedClient} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                       <option value="">Categoría</option>
                       {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest">Marca</label>
-                    <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} disabled={!selectedCategory} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm disabled:opacity-50 transition-all">
+                    <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} disabled={!selectedCategory} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                       <option value="">Marca</option>
                       {getAvailableBrands().map((brand) => <option key={brand} value={brand}>{brand}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest">Estilo</label>
-                    <select value={selectedStyle} onChange={(e) => setSelectedStyle(e.target.value)} disabled={!selectedBrand} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm disabled:opacity-50 transition-all">
+                    <select value={selectedStyle} onChange={(e) => setSelectedStyle(e.target.value)} disabled={!selectedBrand} className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                       <option value="">Estilo</option>
                       {getAvailableStyles().map((style) => <option key={style.id} value={style.id}>{style.name}</option>)}
                     </select>
@@ -452,7 +531,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                                  setViewingImage(resolveImageUrl(prod.image_url) ?? null);
                                  setViewingProductName(prod.name);
                                }}
-                               className="absolute top-3 right-3 z-10 p-1.5 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                               className="absolute top-3 right-3 z-10 p-1.5 bg-black/85 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
                              >
                                <Maximize2 className="w-3.5 h-3.5" />
                              </button>
@@ -614,9 +693,9 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                         </div>
                       ))}
                     </div>
-                    <button onClick={handleAddItem} className="w-full px-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all font-black text-base flex items-center justify-center gap-3">
-                      <Plus className="w-6 h-6" /> 
-                      Añadir a la lista del Pedido
+                    <button onClick={handleAddItem} disabled={addLoading} className="w-full px-4 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-2xl shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all font-black text-base flex items-center justify-center gap-3">
+                      {addLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                      {addLoading ? 'Guardando producto...' : 'Añadir a la lista del Pedido'}
                     </button>
                   </div>
                 )}
@@ -635,9 +714,32 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                   </label>
                 </div>
                 
+                {addSuccess && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-2xl p-5 animate-in fade-in slide-in-from-top-2 duration-300 relative">
+                    <button onClick={() => setAddSuccess(false)} className="absolute top-3 right-3 p-1 text-green-400 hover:text-green-600 hover:bg-green-100 dark:hover:bg-green-800/40 rounded-lg transition-all">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="flex items-center gap-3 pr-8">
+                      <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30">
+                        <CheckCircle2 className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-green-800 dark:text-green-200">✓ Producto agregado correctamente</p>
+                        <p className="text-xs font-bold text-green-600 dark:text-green-400 mt-0.5">Puedes seguir agregando más productos al pedido</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {(() => {
                   const itemsToDisplay = isSingleProductEdit
-                    ? items.filter(it => it.product_id === editProductId)
+                    ? items.filter(it => {
+                        // Si tenemos clave compuesta, filtrar por product_id + line_group
+                        if (editLineGroup !== undefined) {
+                          return it.product_id === editProductIdReal && it.line_group === editLineGroup;
+                        }
+                        return it.product_id === editProductIdReal;
+                      })
                     : items;
                   return itemsToDisplay.length === 0 ? (
                     <div className="border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl p-10 text-center transition-colors">
@@ -647,8 +749,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                   ) : (
                     <div className="space-y-4">
                       {itemsToDisplay.map((item) => {
-                        const idx = items.findIndex(it => it.product_id === item.product_id);
-                        return (<div key={item.product_id} className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
+                        const idx = items.findIndex(it => it.uid === item.uid);
+                        return (<div key={item.uid} className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
                         <div className="flex gap-4 p-4 border-b border-gray-50 dark:border-slate-800">
                           <div className="w-14 h-14 rounded-xl bg-gray-50 dark:bg-slate-800 flex-shrink-0 cursor-pointer overflow-hidden border border-gray-100 dark:border-slate-700 group relative" onClick={() => { const url = resolveImageUrl(item.image_url); if (url != null) { setViewingImage(url); setViewingProductName(item.product_name); } }}>
                             {resolveImageUrl(item.image_url) ? (
@@ -709,7 +811,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
             </div>
           )}
         </div>
-        {!success && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={onClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || (!isEditMode && !selectedClient)} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
+        {!success && !isAddProductMode && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={handleClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || (!isEditMode && !selectedClient)} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
       </div>
       
       {/* Modal visor de imagen */}
@@ -719,6 +821,6 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
         productName={viewingProductName}
         onClose={() => setViewingImage(null)}
       />
-    </div>
+    </Modal>
   );
 }

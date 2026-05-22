@@ -59,7 +59,7 @@ export function LoginPage() {
       
       // Si el usuario debe cambiar contraseña en el primer inicio
       if (userData?.must_change_password) {
-        navigate("/auth/change-password", { replace: true });
+        navigate("/change-password", { replace: true });
         return;
       }
       

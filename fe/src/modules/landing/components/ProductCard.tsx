@@ -49,8 +49,11 @@ export default function ProductCard({
         {product.image_url ? (
           <img
             src={resolveImageUrl(product.image_url)}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            alt={`${product.name} — Calzado J&R`}
+            loading="lazy"
+            width="400"
+            height="224"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             onError={(e) => {
               (e.target as any).style.display = 'none';
             }}

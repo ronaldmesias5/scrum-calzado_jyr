@@ -27,6 +27,8 @@ Descripción: Router FastAPI con endpoints administrativos para gestión de usua
                utils/security.py (hash_password)
 """
 
+import secrets
+import string
 import uuid
 from datetime import datetime, timezone
 
@@ -43,6 +45,7 @@ from app.modules.admin.schemas import (
     AdminCreateJefeRequest,
     AdminUpdateUserRequest
 )
+from app.utils.email import send_welcome_email
 from app.utils.security import hash_password
 
 router = APIRouter(
@@ -105,6 +108,23 @@ def _require_admin_or_jefe(current_user: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo administradores o jefes pueden acceder a este endpoint",
         )
+
+
+# ─────────────────────────────────────────
+# Helper: generación de contraseña temporal
+# ─────────────────────────────────────────
+
+def _generate_temporary_password(length: int = 12) -> str:
+    """Genera una contraseña temporal segura que cumple requisitos de seguridad."""
+    uppercase = secrets.choice(string.ascii_uppercase)
+    lowercase = secrets.choice(string.ascii_lowercase)
+    digit = secrets.choice(string.digits)
+    remaining = "".join(
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(length - 3)
+    )
+    chars = list(uppercase + lowercase + digit + remaining)
+    secrets.SystemRandom().shuffle(chars)
+    return "".join(chars)
 
 
 # ─────────────────────────────────────────
@@ -299,7 +319,7 @@ def delete_user(
     status_code=status.HTTP_201_CREATED,
     summary="Crear cuenta de empleado",
 )
-def create_employee(
+async def create_employee(
     data: AdminCreateEmployeeRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -307,6 +327,7 @@ def create_employee(
     """
     Crea una cuenta de empleado activa y validada.
     
+    Si no se envía contraseña, el sistema genera una temporal y la envía por email.
     ⚠️ El empleado deberá cambiar su contraseña en el primer login.
     """
     _require_admin_or_jefe(current_user)
@@ -318,6 +339,8 @@ def create_employee(
     if not employee_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'empleado' no encontrado")
 
+    temp_password = data.password if data.password else _generate_temporary_password()
+
     new_user = User(
         email=data.email,
         name_user=data.name,
@@ -326,7 +349,7 @@ def create_employee(
         identity_document=data.identity_document,
         identity_document_type_id=data.identity_document_type_id,
         occupation=data.occupation,
-        hashed_password=hash_password(data.password),
+        hashed_password=hash_password(temp_password),
         role_id=employee_role.id,
         is_active=True,
         is_validated=True,
@@ -337,7 +360,16 @@ def create_employee(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return _build_user_response(new_user)
+
+    await send_welcome_email(
+        email=data.email,
+        temp_password=temp_password,
+        name=f"{data.name} {data.last_name}",
+    )
+
+    response = _build_user_response(new_user)
+    response.temporary_password = temp_password
+    return response
 
 
 @router.post(
@@ -346,7 +378,7 @@ def create_employee(
     status_code=status.HTTP_201_CREATED,
     summary="Crear cuenta de cliente (por admin o jefe)",
 )
-def create_client(
+async def create_client(
     data: AdminCreateClientRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -354,6 +386,7 @@ def create_client(
     """
     Crea una cuenta de cliente activa y validada de inmediato (por el admin o jefe).
     
+    Si no se envía contraseña, el sistema genera una temporal y la envía por email.
     ⚠️ El cliente deberá cambiar su contraseña en el primer login.
     """
     _require_admin_or_jefe(current_user)
@@ -365,6 +398,8 @@ def create_client(
     if not client_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'cliente' no encontrado")
 
+    temp_password = data.password if data.password else _generate_temporary_password()
+
     new_user = User(
         email=data.email,
         name_user=data.name,
@@ -373,7 +408,7 @@ def create_client(
         identity_document=data.identity_document,
         identity_document_type_id=data.identity_document_type_id,
         business_name=data.business_name,
-        hashed_password=hash_password(data.password),
+        hashed_password=hash_password(temp_password),
         role_id=client_role.id,
         is_active=True,
         is_validated=True,
@@ -384,7 +419,16 @@ def create_client(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return _build_user_response(new_user)
+
+    await send_welcome_email(
+        email=data.email,
+        temp_password=temp_password,
+        name=f"{data.name} {data.last_name}",
+    )
+
+    response = _build_user_response(new_user)
+    response.temporary_password = temp_password
+    return response
 
 
 @router.post(
@@ -393,7 +437,7 @@ def create_client(
     status_code=status.HTTP_201_CREATED,
     summary="Crear cuenta de jefe de fábrica",
 )
-def create_jefe(
+async def create_jefe(
     data: AdminCreateJefeRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -407,6 +451,7 @@ def create_jefe(
     - Clasificar categorías, marcas y estilos
     - Gestionar pedidos y empleados
     
+    Si no se envía contraseña, el sistema genera una temporal y la envía por email.
     ⚠️ El jefe deberá cambiar su contraseña en el primer login.
     """
     _require_admin_or_jefe(current_user)
@@ -418,6 +463,8 @@ def create_jefe(
     if not employee_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'empleado' no encontrado")
 
+    temp_password = data.password if data.password else _generate_temporary_password()
+
     new_user = User(
         email=data.email,
         name_user=data.name,
@@ -425,8 +472,8 @@ def create_jefe(
         phone=data.phone,
         identity_document=data.identity_document,
         identity_document_type_id=data.identity_document_type_id,
-        occupation="jefe",  # 🔑 Ocupación específica para jefe
-        hashed_password=hash_password(data.password),
+        occupation="jefe",
+        hashed_password=hash_password(temp_password),
         role_id=employee_role.id,
         is_active=True,
         is_validated=True,
@@ -437,5 +484,14 @@ def create_jefe(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return _build_user_response(new_user)
+
+    await send_welcome_email(
+        email=data.email,
+        temp_password=temp_password,
+        name=f"{data.name} {data.last_name}",
+    )
+
+    response = _build_user_response(new_user)
+    response.temporary_password = temp_password
+    return response
 

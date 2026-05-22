@@ -23,11 +23,11 @@ export default function LandingHeader() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
         {/* Logo */}
         <Link to="/" className={`flex items-center ${getLogoClasses()}`}>
-          <img src="/logo.png" alt="CALZADO J&R" className="h-16 w-16 object-contain" />
+          <img src="/logo.png" alt="Calzado J&R — Ir al inicio" className="h-16 w-16 object-contain" />
         </Link>
 
         {/* Nav desktop */}
-        <nav className={`hidden md:flex items-center gap-8 ${getNavClasses()}`}>
+        <nav className={`hidden md:flex items-center gap-8 ${getNavClasses()}`} aria-label="Navegación principal">
           {navLinks.map((link) => (
             <a
               key={link.label}
@@ -63,14 +63,17 @@ export default function LandingHeader() {
         <button
           className="md:hidden text-gray-600"
           onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
-          <Menu size={24} />
+          <Menu size={24} aria-hidden="true" />
         </button>
       </div>
 
       {/* Menú mobile */}
       {menuOpen && (
-        <div className="md:hidden bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 px-6 py-6 flex flex-col gap-5 animate-in slide-in-from-top duration-300">
+        <div id="mobile-menu" role="navigation" aria-label="Menú principal" className="md:hidden bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 px-6 py-6 flex flex-col gap-5 animate-in slide-in-from-top duration-300">
           {navLinks.map((link) => (
             <a
               key={link.label}

@@ -34,6 +34,7 @@ class OrderDetailItemResponse(BaseModel):
     state: OrderStatus | None = None
     order_date: datetime | None = None
     observations: str | None = None
+    line_group: int = 0
 
     class Config:
         from_attributes = True
@@ -47,6 +48,7 @@ class OrderDetailItemCreateRequest(BaseModel):
     amount: int = Field(..., gt=0, description="Cantidad de pares")
     state: OrderStatus | None = Field(None, description="Estado de esta línea de pedido")
     observations: str | None = Field(None, max_length=500, description="Observaciones del producto")
+    line_group: int = 0
 
     class Config:
         from_attributes = True
@@ -141,22 +143,25 @@ class TaskStatusUpdateRequest(BaseModel):
 class ProductionTaskCreate(BaseModel):
     """Esquema para crear una tarea de producción vinculada a una orden."""
     product_id: UUID = Field(..., description="ID del producto especifico de este pedido")
-    assigned_to: UUID = Field(..., description="ID del empleado asignado")
+    assigned_to: UUID | None = Field(None, description="ID del empleado asignado (opcional: si es None la tarea se crea como pendiente)")
     type: str = Field(..., description="Etapa (corte, guarnicion, soladura, emplantillado)")
     description: str | None = Field(None, description="Descripción opcional de la tarea")
     priority: str = Field("media", description="Prioridad de la tarea")
     amount: int = Field(..., description="Cantidad de pares")
+    line_group: int = 0
 
 class ProductionTaskResponse(BaseModel):
     id: UUID
     order_id: UUID
     product_id: UUID | None = None
-    assigned_to: UUID
+    line_group: int = 0
+    assigned_to: UUID | None = None
     type: str
     status: str
     vale_number: int | None = None
     amount: int = 0
     description_task: str | None = None
+    observation: str | None = None
     assigned_user_name: str | None = None
     assigned_user_occupation: str | None = None
     created_at: datetime
@@ -172,3 +177,8 @@ class ProductionTaskResponse(BaseModel):
 class ProductionBatchTasksRequest(BaseModel):
     """Request para crear las 4 tareas de una orden de golpe."""
     tasks: List[ProductionTaskCreate]
+
+
+class AssignTaskEmployeeRequest(BaseModel):
+    """Request para asignar un empleado a una tarea pendiente."""
+    assigned_to: UUID = Field(..., description="ID del empleado a asignar")

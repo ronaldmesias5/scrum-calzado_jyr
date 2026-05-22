@@ -25,6 +25,7 @@ from app.modules.orders.router import router as orders_router
 from app.modules.catalog.router import router as catalog_router
 from app.modules.admin.reports_router import router as reports_router
 from app.modules.supplies.router import router as supplies_router
+from app.modules.dashboard_empleado.router import router as dashboard_empleado_router
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -136,6 +137,7 @@ app.include_router(orders_router)
 app.include_router(reports_router)
 app.include_router(catalog_router)
 app.include_router(supplies_router)
+app.include_router(dashboard_empleado_router)
 
 # ────────────────────────────
 # 📍 Endpoint raíz de bienvenida

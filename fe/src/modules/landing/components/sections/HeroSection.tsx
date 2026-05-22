@@ -26,7 +26,7 @@ export default function HeroSection() {
   return (
     <section
       id="inicio"
-      className="relative min-h-[560px] flex items-center justify-center text-white overflow-hidden"
+      className="relative min-h-[560px] flex items-center justify-center text-white overflow-hidden noise-overlay"
     >
       {/* Background with darker shade in dark mode */}
       <div className="absolute inset-0 bg-blue-900 dark:bg-slate-950 transition-colors duration-500" />
@@ -43,23 +43,23 @@ export default function HeroSection() {
 
       {/* Contenido */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight stagger-reveal" style={{ animationDelay: '0.1s' }}>
           {t('landing.hero.title')}<br />
-          <span className="text-blue-300 dark:text-blue-400">{t('landing.hero.subtitle')}</span>
+          <span className="text-amber-300 dark:text-amber-400">{t('landing.hero.subtitle')}</span>
         </h1>
-        <p className="text-gray-200 dark:text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-gray-200 dark:text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed stagger-reveal" style={{ animationDelay: '0.3s' }}>
            {t('landing.hero.description')}
         </p>
-        <div className="flex flex-col sm:flex-row gap-5 justify-center">
+        <div className="flex flex-col sm:flex-row gap-5 justify-center stagger-reveal" style={{ animationDelay: '0.5s' }}>
           <Link
             to="/catalog"
-            className="px-8 py-4 bg-white text-blue-900 dark:bg-blue-600 dark:text-white font-bold rounded-xl shadow-lg hover:scale-105 transform transition duration-200 btn-pulse"
+            className="px-8 py-4 bg-secondary hover:bg-secondary-dark text-white font-bold rounded-xl shadow-lg hover:scale-105 transform transition duration-200 btn-shimmer"
           >
             {t('landing.hero.ctaCatalog')}
           </Link>
           <Link
             to="/auth/login"
-            className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl backdrop-blur-sm transition duration-200 btn-pulse"
+            className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl backdrop-blur-sm transition duration-200"
           >
             {t('landing.hero.ctaLogin')}
           </Link>

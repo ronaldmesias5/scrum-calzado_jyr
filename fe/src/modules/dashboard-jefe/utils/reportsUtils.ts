@@ -1,6 +1,6 @@
 ﻿import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { EmployeeReportResponse, CustomerReportResponse, ProductionGlobalReport } from '../services/reportsApi';
+import { EmployeeReportResponse, CustomerReportResponse, OrderSummary, TaskDetail } from '../services/reportsApi';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -23,17 +23,97 @@ function formatCurrency(value: number): string {
   return `$${value.toLocaleString('es-CO')}`;
 }
 
-function addHeader(doc: jsPDF, title: string, subtitle?: string) {
-  doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, 210, 32, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(title, 14, 16);
-  if (subtitle) {
-    doc.setFontSize(9);
+function formatDateTime(iso?: string): string {
+  return new Date(iso ?? new Date().toISOString()).toLocaleString('es-CO', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+/** Carga el logo desde la carpeta public y lo redimensiona a 35x35px vía Canvas */
+async function loadLogoBase64(): Promise<string | null> {
+  try {
+    const img = new Image();
+    return await new Promise<string | null>((resolve) => {
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 35;
+          canvas.height = 35;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(null); return; }
+          ctx.drawImage(img, 0, 0, 35, 35);
+          resolve(canvas.toDataURL('image/png'));
+        } catch { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = '/logo.png';
+    });
+  } catch { return null; }
+}
+
+function addHeader(doc: jsPDF, title: string, subtitle?: string, logoBase64?: string | null, occupation?: string, generatedAt?: string) {
+  const genStr = `Generado: ${generatedAt ?? formatDateTime()}`;
+  if (logoBase64) {
+    // ── Cabecera corporativa con logo, marca y cargo ──────────────────────
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, 0, 210, 54, 'F');
+    doc.setTextColor(255, 255, 255);
+
+    // Fecha de generación (esquina superior derecha)
+    doc.setFontSize(6);
     doc.setFont('helvetica', 'normal');
-    doc.text(subtitle, 14, 24);
+    doc.text(genStr, 196, 9, { align: 'right' });
+
+    // Logo redimensionado
+    doc.addImage(logoBase64, 'PNG', 14, 4, 18, 18);
+
+    // Marca
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CALZADO J&R', 37, 14);
+
+    // Eslogan
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Fábrica de Calzado', 37, 19);
+
+    // Línea separadora
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.3);
+    doc.line(14, 27, 196, 27);
+
+    // Título del reporte
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, 38);
+
+    // Subtítulo + cargo
+    const parts: string[] = [];
+    if (occupation) parts.push(`Cargo: ${occupation}`);
+    if (subtitle) parts.push(subtitle);
+    if (parts.length > 0) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(parts.join('  │  '), 14, 46);
+    }
+  } else {
+    // ── Cabecera simple (customer / production PDFs) ──────────────────────
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, 0, 210, 32, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, 16);
+    // Fecha de generación
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    doc.text(genStr, 196, 12, { align: 'right' });
+    if (subtitle) {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(subtitle, 14, 24);
+    }
   }
 }
 
@@ -54,7 +134,7 @@ function addFooter(doc: jsPDF) {
 
 // ─── Employee PDF ─────────────────────────────────────────────────────────────
 
-export function exportEmployeePDF(
+export async function exportEmployeePDF(
   data: EmployeeReportResponse,
   title?: string,
   startDate?: string,
@@ -62,78 +142,81 @@ export function exportEmployeePDF(
 ) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const reportTitle = title || `Reporte de Empleado: ${data.name}`;
-  const subtitle = startDate && endDate
-    ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
-    : undefined;
 
-  addHeader(doc, reportTitle, subtitle);
-
-  // Summary section
-  let y = 40;
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Resumen', 14, y);
-  y += 7;
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Tareas completadas: ${data.total_tasks_completed}`, 14, y);
-  y += 5;
-  doc.text(`Pares producidos: ${data.total_pairs_produced}`, 14, y);
-  y += 5;
-  if (data.total_earnings && data.total_earnings > 0) {
-    doc.setTextColor(...COLORS.green);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Ganancias totales: ${formatCurrency(data.total_earnings)}`, 14, y);
-    doc.setTextColor(0, 0, 0);
-    y += 5;
+  // Compute date range from actual task dates (completed_at → earliest → latest)
+  const tasks = data.tasks_list || [];
+  const tasksWithDates = tasks.filter(t => t.completed_at || t.created_at);
+  let dateRangeStr: string | undefined;
+  if (tasksWithDates.length > 0) {
+    const timestamps = tasksWithDates.map(t => new Date(t.completed_at || t.created_at).getTime());
+    dateRangeStr = `Período: ${formatDate(new Date(Math.min(...timestamps)).toISOString())} — ${formatDate(new Date(Math.max(...timestamps)).toISOString())}`;
+  } else if (startDate && endDate) {
+    dateRangeStr = `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`;
   }
 
-  // Breakdown table
-  if (data.tasks_breakdown?.length) {
-    y += 3;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Desglose por Etapa', 14, y);
-    y += 5;
+  const logo = await loadLogoBase64();
+  addHeader(doc, reportTitle, dateRangeStr, logo, data.occupation, formatDateTime());
 
-    autoTable(doc, {
-      startY: y,
-      head: [['Etapa', 'Cantidad']],
-      body: data.tasks_breakdown.map(b => [b.process_name.toUpperCase(), String(b.count)]),
-      theme: 'grid',
-      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8 },
-      margin: { left: 14 },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
+  // ── Resumen ────────────────────────────────────────────────────────────
+  const summaryY = 56;
+  const grandTotal = tasks.reduce((sum, t) => sum + (t.task_total_price || 0), 0);
+
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 16, 2, 2, 'FD');
+
+  function summaryLabel(text: string, x: number, y: number) {
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function summaryValue(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
   }
 
-  // Tasks detail table
-  if (data.tasks_list?.length) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Detalle de Tareas', 14, y);
-    y += 5;
+  summaryLabel('TOTAL TAREAS', 16, summaryY + 5);
+  summaryValue(String(data.total_tasks_completed), 16, summaryY + 13, [60, 60, 60]);
 
+  summaryLabel('TOTAL PARES', 86, summaryY + 5);
+  summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
+
+  summaryLabel('TOTAL DINERO', 146, summaryY + 5);
+  summaryValue(formatCurrency(grandTotal), 146, summaryY + 13, COLORS.accent);
+
+  const tableStartY = summaryY + 21;
+
+  // Single table: each task is one row, sorted by vale_number ascending
+  if (tasks.length > 0) {
+    const sortedTasks = [...tasks].sort((a, b) => (a.vale_number ?? Infinity) - (b.vale_number ?? Infinity));
     autoTable(doc, {
-      startY: y,
-      head: [['Vale #', 'Producto', 'Etapa', 'Pares', 'Precio/Doc', 'Total', 'Estado']],
-      body: data.tasks_list.map(t => [
+      startY: tableStartY,
+      head: [['Nº Vale', 'Producto', 'Color', 'Cant.', 'Estado', 'Fecha Completado', 'Valor x Par', 'Total']],
+      body: sortedTasks.map(t => [
         t.vale_number != null ? `#${t.vale_number}` : '—',
         t.product_name || '—',
-        t.process_name?.toUpperCase() || '—',
+        t.colour || '—',
         String(t.amount),
-        t.price_per_dozen ? formatCurrency(t.price_per_dozen) : '—',
-        t.task_total_price ? formatCurrency(t.task_total_price) : '—',
-        t.status?.toUpperCase() || '—',
+        t.status === 'pagado' ? 'Pagado' : t.status === 'completado' ? 'Completado' : t.status || '—',
+        t.completed_at ? formatDate(t.completed_at) : (t.created_at ? formatDate(t.created_at) : '—'),
+        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
       ]),
+      foot: [['', '', '', '', '', '', 'TOTAL', formatCurrency(grandTotal)]],
       theme: 'grid',
-      headStyles: { fillColor: COLORS.dark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { fontSize: 7 },
-      margin: { left: 14 },
+      margin: { left: 10, right: 10 },
     });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay tareas registradas en este período.', 14, tableStartY);
   }
 
   addFooter(doc);
@@ -142,7 +225,7 @@ export function exportEmployeePDF(
 
 // ─── Customer PDF ─────────────────────────────────────────────────────────────
 
-export function exportCustomerPDF(
+export async function exportCustomerPDF(
   data: CustomerReportResponse,
   title?: string,
   startDate?: string,
@@ -154,84 +237,96 @@ export function exportCustomerPDF(
     ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
     : undefined;
 
-  addHeader(doc, reportTitle, subtitle);
+  const logo = await loadLogoBase64();
+  addHeader(doc, reportTitle, subtitle, logo, undefined, formatDateTime());
 
-  let y = 40;
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Resumen', 14, y);
-  y += 7;
+  // ── Resumen ────────────────────────────────────────────────────────────
+  const summaryY = 56;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 16, 2, 2, 'FD');
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Total de pedidos: ${data.total_orders}`, 14, y);
-  y += 5;
-  doc.text(`Total de pares: ${data.total_pairs}`, 14, y);
-  y += 5;
-  doc.setTextColor(...COLORS.green);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Total gastado: ${formatCurrency(data.total_spent)}`, 14, y);
-  doc.setTextColor(0, 0, 0);
-  y += 8;
-
-  // Orders table
-  if (data.orders?.length) {
-    doc.setFontSize(10);
+  function summaryLabel(text: string, x: number, y: number) {
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text('Historial de Pedidos', 14, y);
-    y += 5;
-
-    autoTable(doc, {
-      startY: y,
-      head: [['Pedido', 'Fecha', 'Pares', 'Total', 'Estado']],
-      body: data.orders.map(o => [
-        o.id?.substring(0, 8) || '—',
-        formatDate(o.created_at),
-        String(o.total_pairs),
-        formatCurrency(o.total_price),
-        o.state?.toUpperCase() || '—',
-      ]),
-      theme: 'grid',
-      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8 },
-      margin: { left: 14 },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function summaryValue(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
   }
 
-  // Products detail per order
-  if (data.orders?.some(o => o.items?.length)) {
-    for (const order of data.orders) {
-      if (!order.items?.length) continue;
-      if (y > 240) { doc.addPage(); y = 20; }
+  summaryLabel('TOTAL PEDIDOS', 16, summaryY + 5);
+  summaryValue(String(data.total_orders), 16, summaryY + 13, [60, 60, 60]);
 
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Pedido #${order.id?.substring(0, 8)} — Productos`, 14, y);
-      y += 5;
+  summaryLabel('TOTAL PARES', 76, summaryY + 5);
+  summaryValue(String(data.total_pairs), 76, summaryY + 13, COLORS.green);
 
-      autoTable(doc, {
-        startY: y,
-        head: [['Producto', 'Cantidad']],
-        body: order.items.map(item => [item.product_name || '—', String(item.amount)]),
-        theme: 'grid',
-        headStyles: { fillColor: COLORS.dark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-        bodyStyles: { fontSize: 7 },
-        margin: { left: 14 },
-      });
-      y = (doc as any).lastAutoTable.finalY + 6;
+  // ── Tabla agrupada por pedido ──────────────────────────────────────────
+  const tableStartY = summaryY + 21;
+
+  if (data.orders?.length) {
+    // Construir filas: ID/Fecha/Estado solo en la primera fila de cada pedido
+    const allRows: (string | number)[][] = [];
+    const rowGroups: number[] = []; // índice del grupo (pedido) al que pertenece cada fila
+
+    for (let g = 0; g < data.orders.length; g++) {
+      const order = data.orders[g];
+      if (!order?.items?.length) continue;
+      for (let i = 0; i < order.items.length; i++) {
+        const item = order.items[i];
+
+        allRows.push([
+          i === 0 ? (order.id?.substring(0, 8) || '—') : '',
+          i === 0 ? formatDate(order.created_at) : '',
+          item!.product_name || '—',
+          item!.category_name || '—',
+          item!.colour || '—',
+          String(item!.amount),
+          i === 0 ? (order.state || '').toUpperCase() : '',
+        ]);
+        rowGroups.push(g);
+      }
     }
+
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [['ID Pedido', 'Fecha', 'Producto', 'Categoría', 'Color', 'Cant.', 'Estado']],
+      body: allRows,
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+      didParseCell(cellData) {
+        if (cellData.section === 'body') {
+          // Alternar color de fondo por grupo de pedido
+          const groupIdx = rowGroups[cellData.row.index];
+          if (groupIdx !== undefined) {
+            cellData.cell.styles.fillColor = groupIdx % 2 === 0 ? [255, 255, 255] : [245, 247, 250];
+          }
+        }
+      },
+    });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay pedidos registrados en este período.', 14, tableStartY);
   }
 
   addFooter(doc);
   doc.save(`${reportTitle.replace(/\s+/g, '_')}.pdf`);
 }
 
-// ─── Production PDF ────────────────────────────────────────────────────────────
+// ─── Orders PDF (Reporte General de Pedidos) ──────────────────────────────────
 
-export function exportProductionPDF(
-  data: ProductionGlobalReport,
+export async function exportOrdersPDF(
+  orders: OrderSummary[],
+  totalOrders: number,
+  totalPairs: number,
   startDate?: string,
   endDate?: string,
 ) {
@@ -240,68 +335,214 @@ export function exportProductionPDF(
     ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
     : undefined;
 
-  addHeader(doc, 'Reporte de Producción Global', subtitle);
+  const logo = await loadLogoBase64();
+  addHeader(doc, 'Reporte General de Pedidos', subtitle, logo, undefined, formatDateTime());
 
-  let y = 40;
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Resumen', 14, y);
-  y += 7;
+  // ── Resumen ────────────────────────────────────────────────────────────
+  const summaryY = 56;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 16, 2, 2, 'FD');
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Tareas completadas: ${data.total_tasks_period || 0}`, 14, y);
-  y += 5;
-  doc.text(`Pares fabricados: ${data.total_pairs_period || 0}`, 14, y);
-  y += 5;
-  doc.text(`Pedidos con producción: ${data.total_orders_period || 0}`, 14, y);
-  y += 8;
-
-  // Weekly metrics
-  if (data.weekly_metrics?.length) {
-    doc.setFontSize(10);
+  function sl(text: string, x: number, y: number) {
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text('Métricas Semanales', 14, y);
-    y += 5;
-
-    autoTable(doc, {
-      startY: y,
-      head: [['Semana', 'Tareas', 'Pares']],
-      body: data.weekly_metrics.map(w => [w.week, String(w.tasks_completed || 0), String(w.pairs_manufactured || 0)]),
-      theme: 'grid',
-      headStyles: { fillColor: COLORS.dark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8 },
-      margin: { left: 14 },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function sv(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
   }
 
-  // Orders detail
-  if (data.orders?.length) {
-    if (y > 220) { doc.addPage(); y = 20; }
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Pedidos con Producción', 14, y);
-    y += 5;
+  sl('TOTAL PEDIDOS', 16, summaryY + 5);
+  sv(String(totalOrders), 16, summaryY + 13, [60, 60, 60]);
+
+  sl('TOTAL PARES', 96, summaryY + 5);
+  sv(String(totalPairs), 96, summaryY + 13, COLORS.green);
+
+  // ── Tabla agrupada por pedido ──────────────────────────────────────────
+  const tableStartY = summaryY + 21;
+
+  if (orders.length) {
+    const allRows: (string | number)[][] = [];
+    const rowGroups: number[] = [];
+
+    for (let g = 0; g < orders.length; g++) {
+      const order = orders[g];
+      if (!order?.items?.length) continue;
+      for (let i = 0; i < order.items.length; i++) {
+        const item = order.items[i];
+        allRows.push([
+          i === 0 ? (order.id?.substring(0, 8) || '—') : '',
+          i === 0 ? formatDate(order.created_at) : '',
+          item!.product_name || '—',
+          item!.category_name || '—',
+          item!.colour || '—',
+          String(item!.amount),
+          i === 0 ? (order.state || '').toUpperCase() : '',
+        ]);
+        rowGroups.push(g);
+      }
+    }
 
     autoTable(doc, {
-      startY: y,
-      head: [['Pedido', 'Fecha', 'Pares', 'Total', 'Estado']],
-      body: data.orders.map(o => [
-        o.id?.substring(0, 8) || '—',
-        formatDate(o.created_at),
-        String(o.total_pairs),
-        formatCurrency(o.total_price),
-        o.state?.toUpperCase() || '—',
-      ]),
+      startY: tableStartY,
+      head: [['ID Pedido', 'Fecha', 'Producto', 'Categoría', 'Color', 'Cant.', 'Estado']],
+      body: allRows,
       theme: 'grid',
-      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8 },
-      margin: { left: 14 },
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+      didParseCell(cellData) {
+        if (cellData.section === 'body') {
+          const groupIdx = rowGroups[cellData.row.index];
+          if (groupIdx !== undefined) {
+            cellData.cell.styles.fillColor = groupIdx % 2 === 0 ? [255, 255, 255] : [245, 247, 250];
+          }
+        }
+      },
     });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay pedidos registrados en este período.', 14, tableStartY);
   }
 
   addFooter(doc);
-  doc.save('Reporte_Produccion_Global.pdf');
+  doc.save('Reporte_General_Pedidos.pdf');
+}
+
+// ─── Tasks PDF (Reporte General de Tareas) ──────────────────────────────────
+
+const PROCESS_DISPLAY: Record<string, string> = {
+  cortador: 'Corte',
+  guarnecedor: 'Guarnición',
+  solador: 'Soladura',
+  emplantillador: 'Emplantillado',
+  // Also accept display-style names (what the API actually returns)
+  corte: 'Corte',
+  guarnicion: 'Guarnición',
+  soladura: 'Soladura',
+  emplantillado: 'Emplantillado',
+  // Capitalized variants
+  Corte: 'Corte',
+  Guarnición: 'Guarnición',
+  Soladura: 'Soladura',
+  Emplantillado: 'Emplantillado',
+};
+
+export async function exportTasksPDF(
+  tasks: TaskDetail[],
+  totalTasks: number,
+  totalPairs: number,
+  startDate?: string,
+  endDate?: string,
+) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const subtitle = startDate && endDate
+    ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
+    : undefined;
+
+  const logo = await loadLogoBase64();
+  addHeader(doc, 'Reporte General de Tareas', subtitle, logo, undefined, formatDateTime());
+
+  // ── Resumen ────────────────────────────────────────────────────────────
+  const summaryY = 56;
+  const grandTotal = tasks.reduce((sum, t) => sum + (t.task_total_price || 0), 0);
+
+  // Compute breakdown by process (tareas + pares + dinero) from actual data values
+  const processStats: Record<string, { tasks: number; pairs: number; total: number }> = {};
+  tasks.forEach(t => {
+    const key = t.process_name || 'otro';
+    if (!processStats[key]) processStats[key] = { tasks: 0, pairs: 0, total: 0 };
+    processStats[key].tasks++;
+    processStats[key].pairs += t.amount || 0;
+    processStats[key].total += t.task_total_price || 0;
+  });
+  const breakdownItems = Object.entries(processStats).map(([key, stats]) => ({
+    displayName: PROCESS_DISPLAY[key] || key.charAt(0).toUpperCase() + key.slice(1),
+    tasks: stats.tasks,
+    pairs: stats.pairs,
+    total: stats.total,
+  }));
+
+  // Bigger summary box to fit breakdown
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 30, 2, 2, 'FD');
+
+  function sl(text: string, x: number, y: number) {
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function sv(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
+  }
+
+  // Row 1: labels
+  sl('TOTAL TAREAS', 16, summaryY + 5);
+  sl('TOTAL PARES', 86, summaryY + 5);
+  sl('TOTAL DINERO', 146, summaryY + 5);
+
+  // Row 2: values
+  sv(String(totalTasks), 16, summaryY + 13, [60, 60, 60]);
+  sv(String(totalPairs), 86, summaryY + 13, COLORS.green);
+  sv(formatCurrency(grandTotal), 146, summaryY + 13, COLORS.accent);
+
+  // Row 3: breakdown by process (tareas + pares por cargo)
+  if (breakdownItems.length > 0) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    let bx = 16;
+    const bgap = 190 / breakdownItems.length;
+    breakdownItems.forEach(item => {
+      doc.text(`${item.displayName}: ${item.tasks}t, ${item.pairs}p, ${formatCurrency(item.total)}`, bx, summaryY + 24);
+      bx += bgap;
+    });
+  }
+
+  // ── Tabla de tareas ────────────────────────────────────────────────────
+  const tableStartY = summaryY + 35;
+  const sortedTasks = [...tasks].sort((a, b) => (a.vale_number ?? Infinity) - (b.vale_number ?? Infinity));
+
+  if (sortedTasks.length > 0) {
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [['N° Vale', 'Tipo', 'Producto', 'Color', 'Cant.', 'Estado', 'Valor x Par', 'Total']],
+      body: sortedTasks.map(t => [
+        t.vale_number != null ? `#${t.vale_number}` : '—',
+        PROCESS_DISPLAY[t.process_name] || t.process_name || '—',
+        t.product_name || '—',
+        t.colour || '—',
+        String(t.amount),
+        t.status === 'pagado' ? 'Pagado' : t.status === 'completado' ? 'Completado' : t.status || '—',
+        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
+      ]),
+      foot: [['', '', '', '', '', '', 'TOTAL', formatCurrency(grandTotal)]],
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay tareas registradas en este período.', 14, tableStartY);
+  }
+
+  addFooter(doc);
+  doc.save('Reporte_General_Tareas.pdf');
 }

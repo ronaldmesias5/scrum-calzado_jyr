@@ -13,9 +13,9 @@ import traceback
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy import func, desc, select, delete as sa_delete, update as sa_update, and_
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.core.dependencies import get_db, get_current_user
+from app.core.dependencies import get_db, get_current_user, _require_jefe
 from app.models.order import Order, OrderStatus, OrderDetail
 from app.models.user import User
 from app.models.product import Product
@@ -33,6 +33,7 @@ from app.modules.orders.schemas import (
     ProductionBatchTasksRequest,
     ProductionTaskResponse,
     TaskStatusUpdateRequest,
+    AssignTaskEmployeeRequest,
 )
 
 def _order_to_response(order: Order) -> OrderResponse:
@@ -81,13 +82,16 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
                 size=d.size,
                 colour=d.colour or (d.product.color if d.product else None),
                 amount=d.amount,
-                stock_available=next(
-                    (float(inv.amount) for inv in d.product.inventory 
-                     if inv.size == d.size and (not inv.colour or inv.colour == (d.colour or (d.product.color if d.product else None)))), 
-                    0.0
+                line_group=d.line_group,
+                stock_available=float(
+                    sum(
+                        inv.amount for inv in d.product.inventory 
+                        if inv.size == d.size
+                    )
                 ) if d.product else 0.0,
                 state=d.state,
                 order_date=d.order_date,
+                observations=d.observations,
             )
             for d in order.details
         ],
@@ -101,7 +105,10 @@ router = APIRouter(
 
 
 @router.get("/tasks/next-number", summary="Obtener el siguiente número de vale")
-def get_next_vale_number(db: Session = Depends(get_db)):
+def get_next_vale_number(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
     try:
         max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
         return {"next_number": int(max_vale) + 1}
@@ -112,7 +119,8 @@ def get_next_vale_number(db: Session = Depends(get_db)):
 
 @router.get("/tasks/all", response_model=list[ProductionTaskResponse])
 def list_all_production_tasks(
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
     status: str | None = Query(None, description="Filtrar por estado"),
     type: str | None = Query(None, description="Filtrar por tipo/cargo"),
     assigned_to: uuid.UUID | None = Query(None, description="Filtrar por empleado"),
@@ -140,6 +148,9 @@ def list_all_production_tasks(
             query = query.where(Task.type == type)
         if assigned_to:
             query = query.where(Task.assigned_to == assigned_to)
+        elif assigned_to is None and False:
+            # Placeholder: no filtrar por assigned_to (dejar pasar todas)
+            pass
         
         query = query.order_by(desc(Task.created_at))
         result = db.execute(query)
@@ -153,11 +164,12 @@ def list_all_production_tasks(
                     order_id=t.order_id,
                     product_id=t.product_id,
                     assigned_to=t.assigned_to,
-                    assigned_user_name=t.assigned_user.name_user + " " + t.assigned_user.last_name if t.assigned_user else "Desconocido",
+                    assigned_user_name=t.assigned_user.name_user + " " + t.assigned_user.last_name if t.assigned_user else "Sin asignar",
                     assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                     type=t.type,
                     status=t.status,
                     vale_number=t.vale_number,
+                    observation=t.observation,
                     created_at=t.created_at,
                     task_prices=t.product.task_prices if t.product else {},
                     total_pairs=t.amount if t.amount > 0 else int(total or 0),
@@ -181,6 +193,7 @@ def list_all_production_tasks(
 
 @router.get("", response_model=OrderListResponse)
 def list_orders(
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     page: int = Query(1, ge=1, description="Página (1-indexed)"),
     page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
@@ -190,6 +203,7 @@ def list_orders(
     """
     Obtiene listado paginado de órdenes.
     """
+    _require_jefe(current_user)
     try:
         query = select(Order)
 
@@ -241,13 +255,23 @@ def list_orders(
 @router.get("/{order_id}", response_model=OrderDetailResponse)
 def get_order_detail(
     order_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> OrderDetailResponse:
     """
     Obtiene detalle completo de una orden.
     """
+    _require_jefe(current_user)
     try:
-        result = db.execute(select(Order).where(Order.id == order_id))
+        result = db.execute(
+            select(Order)
+            .options(
+                selectinload(Order.details)
+                .selectinload(OrderDetail.product)
+                .selectinload(Product.inventory)
+            )
+            .where(Order.id == order_id)
+        )
         order = result.scalar_one_or_none()
 
         if not order:
@@ -308,7 +332,9 @@ def create_order(
                 amount=detail_data.amount,
                 state=OrderStatus.pendiente,
                 order_date=datetime.now(timezone.utc),
-                created_by=current_user.id
+                created_by=current_user.id,
+                line_group=detail_data.line_group,
+                observations=detail_data.observations,
             )
             new_order.details.append(detail)
         
@@ -550,6 +576,7 @@ def update_order_details(
                 amount=detail_data.amount,
                 state=detail_data.state or order.state,
                 observations=detail_data.observations,
+                line_group=detail_data.line_group,
                 order_date=datetime.now(timezone.utc),
                 created_by=current_user.id
             )
@@ -563,9 +590,8 @@ def update_order_details(
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail_data.product_id) &
                     (Inventory.size == detail_data.size) &
-                    (Inventory.colour == detail_data.colour) &
                     (Inventory.deleted_at == None)
-                )
+                ).limit(1)
                 inventory_item = db.execute(stmt).scalar_one_or_none()
                 
                 if inventory_item:
@@ -599,18 +625,17 @@ def update_order_details(
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail_data.product_id) &
                     (Inventory.size == detail_data.size) &
-                    (Inventory.colour == detail_data.colour) &
                     (Inventory.deleted_at == None)
-                )
+                ).limit(1)
                 inventory_item = db.execute(stmt).scalar_one_or_none()
 
                 quantity = Decimal(detail_data.amount)
 
                 if is_from_warehouse:
                     # ─── CASO "COMPLETADO DESDE BODEGA": descontar del stock (amount) ───
-                    # No hubo fabricación, el producto ya existía en bodega.
                     if inventory_item:
                         inventory_item.amount -= quantity
+                        inventory_item.reserved += quantity
                         db.add(inventory_item)
                     else:
                         # Crear registro si no existe (con saldo negativo)
@@ -774,13 +799,14 @@ def create_production_tasks(
         now = datetime.now(timezone.utc)
         
         for t_data in request.tasks:
-            # 1. Verificar si ya existe una tarea ACTIVA de este tipo para este order+product
+            # 1. Verificar si ya existe una tarea ACTIVA de este tipo para este order+product+line_group
             # (Evitar duplicados si el usuario hace clic varias veces)
             # Solo consideramos activas las que NO están canceladas
             existing_task = db.execute(
                 select(Task).where(
                     Task.order_id == order_id,
                     Task.product_id == t_data.product_id,
+                    Task.line_group == t_data.line_group,
                     Task.type == t_data.type,
                     Task.status != 'cancelado',
                     Task.deleted_at == None,
@@ -789,8 +815,8 @@ def create_production_tasks(
             
             if existing_task:
                 # Ya existe una tarea activa: actualizamos el assigned_to si cambió,
-                # pero NO creamos un duplicado
-                if str(existing_task.assigned_to) != str(t_data.assigned_to):
+                # pero NO creamos un duplicado (solo si ambos tienen valor)
+                if t_data.assigned_to is not None and str(existing_task.assigned_to or '') != str(t_data.assigned_to):
                     existing_task.assigned_to = t_data.assigned_to
                     db.add(existing_task)
                 new_tasks.append(existing_task)
@@ -801,6 +827,7 @@ def create_production_tasks(
                 select(func.min(Task.vale_number)).where(
                     Task.order_id == order_id,
                     Task.product_id == t_data.product_id,
+                    Task.line_group == t_data.line_group,
                     Task.vale_number.isnot(None)
                 )
             ).scalar()
@@ -811,6 +838,7 @@ def create_production_tasks(
                 assigned_to=t_data.assigned_to,
                 order_id=order_id,
                 product_id=t_data.product_id,
+                line_group=t_data.line_group,
                 vale_number=task_vale,
                 amount=t_data.amount,
                 type=t_data.type,
@@ -820,6 +848,9 @@ def create_production_tasks(
                 created_by=current_user.id
             )
             db.add(task)
+            # Si se asignó empleado, la tarea arranca en progreso
+            if t_data.assigned_to is not None:
+                task.status = 'en_progreso'
             new_tasks.append(task)
         
         db.commit()
@@ -846,13 +877,15 @@ def create_production_tasks(
                 id=t.id,
                 order_id=t.order_id,
                 product_id=t.product_id,
+                line_group=t.line_group,
                 assigned_to=t.assigned_to,
-                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Desconocido",
+                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Sin asignar",
                 assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                 type=t.type,
                 status=t.status,
                 vale_number=t.vale_number,
                 created_at=t.created_at,
+                observation=t.observation,
                 task_prices=t.product.task_prices if t.product else {},
                 total_pairs=t.amount if t.amount > 0 else int(total or 0),
                 amount=t.amount if t.amount > 0 else int(total or 0),
@@ -860,6 +893,7 @@ def create_production_tasks(
                 product_name=t.product.name_product if t.product else None,
                 product_category=t.product.category.name_category if t.product and t.product.category else None,
                 product_image=t.product.image_url if t.product else None
+
             ))
         
         return results
@@ -870,9 +904,59 @@ def create_production_tasks(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al crear tareas: {str(e)}")
 
+@router.patch("/tasks/{task_id}/assign", response_model=ProductionTaskResponse)
+def assign_task_employee(
+    task_id: uuid.UUID,
+    request: AssignTaskEmployeeRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Asigna un empleado a una tarea pendiente (sin empleado asignado aún)."""
+    if current_user.occupation != "jefe":
+        raise HTTPException(status_code=403, detail="Solo el jefe puede asignar empleados a tareas")
+    
+    # Obtener tarea
+    query = select(Task).options(joinedload(Task.product)).where(Task.id == task_id)
+    task = db.execute(query).unique().scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    
+    # Verificar que el empleado existe
+    employee = db.query(User).filter(User.id == request.assigned_to).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    
+    # Asignar empleado
+    task.assigned_to = request.assigned_to
+    # Si estaba pendiente sin empleado, pasar a en_progreso automáticamente
+    if task.status == 'pendiente':
+        task.status = 'en_progreso'
+    
+    db.commit()
+    
+    user_name = f"{employee.name_user} {employee.last_name}"
+    
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=employee.occupation,
+        type=task.type,
+        status=task.status,
+        description_task=task.description_task,
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {}
+    )
+
+
 @router.get("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
 def get_order_tasks(
     order_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     product_id: uuid.UUID | None = None,
 ) -> list[ProductionTaskResponse]:
@@ -902,13 +986,15 @@ def get_order_tasks(
                 id=t.id,
                 order_id=t.order_id,
                 product_id=t.product_id,
+                line_group=t.line_group,
                 assigned_to=t.assigned_to,
-                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Desconocido",
+                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Sin asignar",
                 assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                 type=t.type,
                 status=t.status,
                 vale_number=t.vale_number,
                 created_at=t.created_at,
+                observation=t.observation,
                 task_prices=t.product.task_prices if t.product else {},
                 total_pairs=t.amount if t.amount > 0 else int(total or 0),
                 amount=t.amount if t.amount > 0 else int(total or 0),
@@ -929,15 +1015,21 @@ def update_task_status(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ProductionTaskResponse:
-    """Actualiza el estado de una tarea de producción."""
-    if current_user.occupation != "jefe":
-        raise HTTPException(status_code=403, detail="Solo el jefe puede modificar tareas")
-    
+    """Actualiza el estado de una tarea de producción.
+    Permite: jefe (cualquier tarea) o el empleado asignado (su propia tarea)."""
     # Obtener tarea con producto cargado
     query = select(Task).options(joinedload(Task.product)).where(Task.id == task_id)
     task = db.execute(query).unique().scalar_one_or_none()
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    # Verificar permiso: jefe o el empleado asignado
+    if current_user.occupation != "jefe" and current_user.id != task.assigned_to:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar esta tarea")
+    
+    # Si la tarea estaba pendiente y se le asigna un employee por este endpoint,
+    # y el request.status sigue siendo pendiente, pasarlo a en_progreso automáticamente
+    # (esto ocurre cuando se asigna employee desde TasksPage)
     
     # Actualizar el status
     task.status = request.status
@@ -948,16 +1040,57 @@ def update_task_status(
     elif request.status in ["por_liquidar", "en_progreso"]:
         task.completed_at = None
     
+    # ─── AUTO-CREAR SIGUIENTE ETAPA ───
+    # Cuando una tarea se completa, crear automáticamente la siguiente etapa como pendiente
+    STAGE_ORDER = ['corte', 'guarnicion', 'soladura', 'emplantillado']
+    if request.status == 'completado':
+        current_index = STAGE_ORDER.index(task.type) if task.type in STAGE_ORDER else -1
+        if current_index >= 0 and current_index < len(STAGE_ORDER) - 1:
+            next_type = STAGE_ORDER[current_index + 1]
+            # Verificar si ya existe una tarea para la siguiente etapa
+            existing_next = db.execute(
+                select(Task).where(
+                    Task.order_id == task.order_id,
+                    Task.product_id == task.product_id,
+                    Task.line_group == task.line_group,
+                    Task.type == next_type,
+                    Task.status != 'cancelado',
+                    Task.deleted_at == None,
+                )
+            ).scalar_one_or_none()
+            
+            if existing_next is None:
+                # Reutilizar el vale_number de la tarea actual
+                now2 = datetime.now(timezone.utc)
+                next_task = Task(
+                    id=uuid.uuid4(),
+                    assigned_to=None,  # pendiente, sin empleado
+                    order_id=task.order_id,
+                    product_id=task.product_id,
+                    line_group=task.line_group,
+                    vale_number=task.vale_number,
+                    amount=task.amount,
+                    type=next_type,
+                    description_task=f"Tarea de {next_type} para la orden {task.order_id} (auto-generada)",
+                    priority=task.priority,
+                    assignment_date=now2,
+                    created_by=current_user.id,
+                    status='pendiente'
+                )
+                db.add(next_task)
+                print(f"🔄 Tarea auto-creada: {next_type} para orden {task.order_id} (pendiente)")
+    
     # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
     if task.type == "emplantillado" and request.status == "completado":
         if task.product_id and task.order_id:
             # Obtener orden para detalles
             order = db.query(Order).filter(Order.id == task.order_id).first()
             if order:
-                # Actualizar OrderDetails
+                # Actualizar OrderDetails — filtrar también por line_group
                 details = db.query(OrderDetail).filter(
                     OrderDetail.order_id == task.order_id,
-                    OrderDetail.product_id == task.product_id
+                    OrderDetail.product_id == task.product_id,
+                    OrderDetail.line_group == task.line_group
                 ).all()
                 
                 for detail in details:
@@ -1020,9 +1153,15 @@ def update_task_status(
     # Commit una sola vez
     db.commit()
     
-    # Obtener usuario
-    user = db.query(User).filter(User.id == task.assigned_to).first()
-    user_name = f"{user.name_user} {user.last_name}" if user else "Desconocido"
+    # Obtener usuario (puede ser None si assigned_to es None)
+    user = None
+    user_name = "Sin asignar"
+    user_occupation = None
+    if task.assigned_to:
+        user = db.query(User).filter(User.id == task.assigned_to).first()
+        if user:
+            user_name = f"{user.name_user} {user.last_name}"
+            user_occupation = user.occupation
     
     return ProductionTaskResponse(
         id=task.id,
@@ -1030,12 +1169,13 @@ def update_task_status(
         product_id=task.product_id,
         assigned_to=task.assigned_to,
         assigned_user_name=user_name,
-        assigned_user_occupation=user.occupation if user else None,
+        assigned_user_occupation=user_occupation,
         type=task.type,
         status=task.status,
         description_task=task.description_task,
         vale_number=task.vale_number,
         created_at=task.created_at,
+        observation=task.observation,
         task_prices=task.product.task_prices if task.product else {}
     )
 

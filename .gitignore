@@ -33,6 +33,13 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Agent/Editor config (opencode)
+.agents/
+.config/
+.opencode/
+opencode.json
+skills-lock.json
+
 # Testing
 .coverage
 htmlcov/

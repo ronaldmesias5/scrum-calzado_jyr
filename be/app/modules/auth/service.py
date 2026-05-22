@@ -190,6 +190,7 @@ def change_password(db: Session, user: User, password_data: ChangePasswordReques
         )
 
     user.hashed_password = hash_password(password_data.new_password)
+    user.must_change_password = False
     db.commit()
     audit_logger.info(f"Cambio de contraseña exitoso: {_redact_email(user.email)}")
 

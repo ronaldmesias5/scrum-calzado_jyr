@@ -29,6 +29,7 @@ import MetricsCards from '../components/home/MetricsCards';
 import RecentOrdersTable from '../components/home/RecentOrdersTable';
 import AlertsPanel from '../components/home/AlertsPanel';
 import QuickActionsSection from '../components/home/QuickActionsSection';
+import AvailableTasksPanel from '../components/home/AvailableTasksPanel';
 import { getMetrics, getRecentOrders, getAlerts } from '../services/dashboardService';
 import type { Metric, RecentOrder, Alert } from '../types/dashboard';
 
@@ -47,9 +48,9 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div>
+      <div className="stagger-reveal">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <Home className="w-8 h-8 text-purple-600" />
+          <Home className="w-8 h-8 text-primary" />
           Inicio
         </h1>
         <p className="text-gray-600 text-sm mt-1">Bienvenido al dashboard de gestión</p>
@@ -66,6 +67,9 @@ export default function DashboardPage() {
         />
         <AlertsPanel alerts={alerts} />
       </div>
+
+      {/* Tareas Disponibles */}
+      <AvailableTasksPanel />
 
       {/* Acciones rápidas */}
       <QuickActionsSection />

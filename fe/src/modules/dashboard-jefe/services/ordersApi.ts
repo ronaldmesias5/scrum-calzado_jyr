@@ -28,6 +28,7 @@ export interface OrderDetailItem {
   state?: OrderStatus;
   order_date?: string;
   observations?: string | null;
+  line_group?: number;
 }
 
 export interface Order {
@@ -64,6 +65,7 @@ export interface OrderDetailItemCreateRequest {
   colour?: string | null;
   amount: number;
   observations?: string;
+  line_group?: number;
 }
 
 export interface OrderCreateRequest {
@@ -213,17 +215,19 @@ export async function getProducts(): Promise<any[]> {
 
 export interface ProductionTaskCreate {
   product_id: string;
-  assigned_to: string;
+  assigned_to?: string | null;
   type: string;
   description?: string;
   priority?: string;
   amount: number;
+  line_group?: number;
 }
 
 export interface ProductionTask {
   id: string;
   order_id: string;
   product_id: string;
+  line_group?: number;
   assigned_to?: string;
   assigned_user_name?: string;
   assigned_user_occupation?: string;
@@ -270,6 +274,12 @@ export async function getNextValeNumber(): Promise<number> {
 /** Cambia el estado de una tarea de producción */
 export async function updateProductionTaskStatus(task_id: string, status: string): Promise<ProductionTask> {
   const response = await axios.patch<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}/status`, { status });
+  return response.data;
+}
+
+/** Asigna un empleado a una tarea pendiente */
+export async function assignTaskEmployee(task_id: string, assigned_to: string): Promise<ProductionTask> {
+  const response = await axios.patch<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}/assign`, { assigned_to });
   return response.data;
 }
 

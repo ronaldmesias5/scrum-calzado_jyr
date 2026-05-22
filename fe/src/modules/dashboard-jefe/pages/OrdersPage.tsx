@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import {
   Scissors, Hammer, Sparkles, PenTool, Maximize2,
   ShoppingCart, Package, Filter, Search, Loader2, AlertCircle, Clock,
   Zap, CheckCircle, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
   ArrowRight, Mail, Phone, User, Plus, ArrowLeft,
-  PlayCircle, Ban, RefreshCw, Trash2, Eraser, Edit2
+  PlayCircle, Ban, RefreshCw, Trash2, Eraser, Edit2, UserPlus
 } from 'lucide-react';
 import {
   getOrders,
@@ -25,6 +26,7 @@ import {
   type OrderStatus,
   createProductionTasks,
   updateProductionTaskStatus,
+  assignTaskEmployee,
   createInventoryMovement
 } from '../services/ordersApi';
 import { getAllUsers } from '../services/adminApi';
@@ -68,7 +70,7 @@ function SummaryCards({ totals }: { totals: Record<OrderStatus, number> }) {
     { status: 'cancelado',   color: 'red',    label: 'Cancelado', icon: <XCircle size={24} /> },
   ];
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 stagger-reveal">
       {items.map(({ status, color, label, icon }) => (
         <StatCard
           key={status}
@@ -97,7 +99,7 @@ function OrdersTable({ orders, onSelect }: { orders: Order[]; onSelect: (o: Orde
     );
   }
   return (
-    <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300">
+    <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300 stagger-reveal">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
@@ -219,9 +221,8 @@ function OrderDetailView({
     if (productionModal) {
       setProductionStep(productionModal.forceProgress ? 2 : 1);
       
-      // FIX: Asegurar que selectedOption sea 'A' al abrir (especialmente en forceProgress)
-      // para que la tabla de numeración muestre los faltantes reales inmediatamente.
-      setSelectedOption('A');
+      // Auto-seleccionar opción: si no hay faltantes, forzar B
+      setSelectedOption((productionModal?.missingCount ?? 0) === 0 ? 'B' : 'A');
 
       // Only clear if not forcing progress to avoid flickering locked states
       if (!productionModal.forceProgress) {
@@ -251,8 +252,9 @@ function OrderDetailView({
               if (t?.type) newAssignments[t.type] = t.assigned_to || '';
             });
             setAssignments(newAssignments);
-            // Si hay tareas existentes, siempre mostrar Opción A (porque es la cantidad real que se guardó)
-            setSelectedOption('A');
+            // Si hay tareas existentes, mostrar la opción que corresponda según datos guardados
+            // (los faltantes se infieren del metadato de la tarea si existe)
+            setSelectedOption((productionModal?.missingCount ?? 0) === 0 ? 'B' : 'A');
             setProductionStep(2);
           } else {
             setCurrentTasks([]);
@@ -301,6 +303,30 @@ function OrderDetailView({
       }
     }
   }, [productionModal, order?.id]);
+
+  // ✅ Bloquear scroll y ocultar footer cuando el modal de producción está abierto
+  // El footer está fuera del scroll container (en AdminLayout), fijo al fondo del <main>,
+  // y el backdrop semi-transparente lo deja ver tenuemente.
+  useEffect(() => {
+    const scrollContainer = document.querySelector('#main-content > div');
+    const footer = document.querySelector('#main-content > footer') || document.querySelector('footer');
+    if (productionModal) {
+      document.body.style.overflow = 'hidden';
+      if (scrollContainer instanceof HTMLElement) scrollContainer.style.overflow = 'hidden';
+      if (footer instanceof HTMLElement) footer.style.display = 'none';
+      // Forzar también que el body oculte cualquier footer como respaldo
+      document.querySelectorAll('footer').forEach(el => (el as HTMLElement).style.display = 'none');
+    } else {
+      document.body.style.overflow = '';
+      if (scrollContainer instanceof HTMLElement) scrollContainer.style.overflow = '';
+      document.querySelectorAll('footer').forEach(el => (el as HTMLElement).style.display = '');
+    }
+    return () => {
+      document.body.style.overflow = '';
+      if (scrollContainer instanceof HTMLElement) scrollContainer.style.overflow = '';
+      document.querySelectorAll('footer').forEach(el => (el as HTMLElement).style.display = '');
+    };
+  }, [productionModal]);
 
   // ✅ SOLUCIÓN DEFINITIVA: useMemo para sincronizar tabla con selectedOption
   // Esta es la fuente de verdad para los detalles mostrados en la tabla
@@ -471,6 +497,138 @@ function OrderDetailView({
     }
   };
 
+  // ─── Iniciar etapa individual desde la card ────────────────
+  const handleIniciarEtapa = async (stageKey: string, stageLabel: string) => {
+    const productId = productionModal?.productId;
+    if (!productId) return;
+
+    const nextIndex = STAGES_LOGIC.findIndex(s => s.key === stageKey);
+    if (nextIndex > 0) {
+      const prevStage = STAGES_LOGIC[nextIndex - 1]!;
+      const prevTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === prevStage?.key) : null;
+      if (!prevTask || prevTask.status !== 'completado') {
+        setSuccessToast(`Completar ${prevStage?.label || 'la etapa anterior'} primero`);
+        setTimeout(() => setSuccessToast(null), 3000);
+        return;
+      }
+    }
+
+    const assignedUser = assignments[stageKey];
+
+    setLoadingTasks(true);
+    try {
+      await onUpdateItemsStatus(productId, 'en_progreso');
+
+      const corteTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === 'corte') : null;
+      const amountForTask = stageKey === 'corte'
+        ? (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0))
+        : (corteTask?.amount || (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0)));
+
+      const productDetailsForMetadata = order.details.filter(d => d.product_id === productId);
+      const breakdownMetadata: Record<string, number> = {};
+      productDetailsForMetadata.forEach(d => {
+        const qty = selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount;
+        if (qty > 0) breakdownMetadata[d.size] = qty;
+      });
+
+      const taskData = {
+        product_id: productionModal?.productId,
+        assigned_to: assignedUser || null,
+        type: stageKey,
+        description: `Iniciando ${stageLabel} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'}) | METADATA: ${JSON.stringify({ breakdown: breakdownMetadata, option: selectedOption })}`,
+        priority: 'media' as const,
+        amount: amountForTask
+      };
+
+      await createProductionTasks(order.id, [taskData]);
+
+      if (stageKey === 'corte') {
+        try {
+          const productDetails = order.details.filter(d => d.product_id === productId);
+          for (const detail of productDetails) {
+            const quantityToDiscount = selectedOption === 'A'
+              ? Math.min(detail.amount, detail.stock_available || 0)
+              : 0;
+            if (quantityToDiscount > 0) {
+              await createInventoryMovement({
+                product_id: detail.product_id,
+                size: detail.size,
+                quantity: quantityToDiscount,
+                movement_type: 'salida',
+                reference_id: order.id,
+                reference_type: 'orden_produccion',
+                notes: `Salida de bodega para producción - Orden ${order.id.substring(0, 8)} - Talla ${detail.size} (${selectedOption === 'A' ? 'Solo faltantes' : 'Lote completo'})`
+              });
+            }
+          }
+        } catch (invError) {
+          console.error('Error al descontar inventario:', invError);
+          setSuccessToast('⚠️ Tarea creada pero hubo error al descontar del inventario');
+          setTimeout(() => setSuccessToast(null), 4000);
+        }
+      }
+
+      if (nextIndex > 0) {
+        const prevStage2 = STAGES_LOGIC[nextIndex - 1]!;
+        const prevTask = currentTasks?.find(t => t?.type === prevStage2?.key);
+        if (prevTask && prevTask.status !== 'completado') {
+          await updateProductionTaskStatus(prevTask.id, 'completado');
+        }
+      }
+
+      if (stageKey === 'corte') {
+        try {
+          const updatedOrder = await getOrderDetail(order.id);
+          if (onOrderUpdate) onOrderUpdate(updatedOrder);
+          const lines = updatedOrder.details.filter(d => d.product_id?.toLowerCase() === productionModal?.productId?.toLowerCase());
+          const newTotalToProduce = lines.reduce((acc, l) => acc + Math.max(0, l.amount - Math.max(0, Math.floor(l.stock_available ?? 0))), 0);
+          const newTotalProductPairs = lines.reduce((s, l) => s + l.amount, 0);
+          setProductionModal(prev => prev ? { ...prev, missingCount: newTotalToProduce, totalCount: newTotalProductPairs } : null);
+        } catch (err) {
+          console.error('Error al recargar orden:', err);
+        }
+      }
+
+      const allTasks = await getOrderTasks(order.id);
+      const updatedList = allTasks.filter(t => t.product_id?.toLowerCase() === productId.toLowerCase());
+      setCurrentTasks(updatedList);
+      const newAssignments: Record<string, string> = {};
+      updatedList.forEach(t => { if (t?.type) newAssignments[t.type] = t.assigned_to || ''; });
+      setAssignments(newAssignments);
+      setProductionStep(2);
+
+      setSuccessToast(`¡Etapa de ${stageLabel.toUpperCase()} iniciada!`);
+      setTimeout(() => setSuccessToast(null), 4000);
+    } catch (e) {
+      console.error(e);
+      setSuccessToast('Error al crear la tarea de producción');
+      setTimeout(() => setSuccessToast(null), 4000);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+  const handleAssignToTask = async (taskId: string, employeeId: string) => {
+    if (!employeeId) return;
+    setLoadingTasks(true);
+    try {
+      await assignTaskEmployee(taskId, employeeId);
+      const currentProductId = productionModal?.productId;
+      if (currentProductId) {
+        const allTasks = await getOrderTasks(order.id);
+        setCurrentTasks(allTasks.filter(t => t.product_id?.toLowerCase() === currentProductId.toLowerCase()));
+      }
+      setSuccessToast('✅ Empleado asignado a la tarea');
+      setTimeout(() => setSuccessToast(null), 4000);
+    } catch (e) {
+      console.error('Error al asignar empleado:', e);
+      setSuccessToast('Error al asignar empleado');
+      setTimeout(() => setSuccessToast(null), 4000);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
   const canStartProduction = order.state === 'pendiente';
   const canCancel          = order.state === 'pendiente';
   const canDelete          = order.state === 'cancelado';
@@ -526,7 +684,7 @@ function OrderDetailView({
         </div>
       )}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 stagger-reveal">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -563,7 +721,7 @@ function OrderDetailView({
         <div className="lg:col-span-2 space-y-6">
 
           {/* Resumen */}
-          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 transition-all duration-300 stagger-reveal">
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">Información del Pedido</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
@@ -634,7 +792,7 @@ function OrderDetailView({
                     const taskForProduct = Array.isArray(currentTasks) ? currentTasks.find(t => t.product_id?.toLowerCase() === productId.toLowerCase()) : null;
 
                     return (
-                      <div key={productId} className={`bg-white dark:bg-slate-900/50 border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${allAvailable ? 'border-green-200 dark:border-green-900/50' : 'border-gray-200 dark:border-slate-800'}`}>
+                      <div key={productId} className={`bg-white dark:bg-slate-900/50 border rounded-xl overflow-hidden shadow-sm transition-all duration-300 stagger-reveal ${allAvailable ? 'border-green-200 dark:border-green-900/50' : 'border-gray-200 dark:border-slate-800'}`}>
                          <div className={`${productState === 'completado' ? 'bg-green-50/50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30' : productState === 'en_progreso' ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-800'} border-b px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
                           <div className="flex items-center justify-between w-full sm:w-auto gap-4">
                             <div className="flex items-center gap-4 min-w-0">
@@ -708,15 +866,15 @@ function OrderDetailView({
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 flex-wrap w-full sm:w-auto">
                             <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
                               {totalProductPairs} pares pedidos
                             </span>
 
                             {/* Acciones de Producción por Producto */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {productState === 'pendiente' && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <button 
                                     onClick={() => setProductionModal({ productId, productName, missingCount: totalToProduce, totalCount: totalProductPairs })}
                                     className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
@@ -789,9 +947,9 @@ function OrderDetailView({
                               )}
                             </div>
                             
-                           {/* Botones de editar y eliminar producto — solo cuando está pendiente */}
+                            {/* Botones de editar y eliminar producto — solo cuando está pendiente */}
                             {productState === 'pendiente' && (
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-wrap">
                                 <button
                                   onClick={() => setIsEditModalOpen(productId)}
                                   className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-2 text-xs font-bold flex-1"
@@ -967,7 +1125,7 @@ function OrderDetailView({
         </div>
 
         {/* Modal Inicio Producción: Hoja de Producción Pro */}
-        {productionModal && (
+        {productionModal && createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
             <div className={`bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 transition-all duration-500 flex flex-col ${productionStep === 1 ? 'max-w-xl w-full' : 'max-w-4xl w-full max-h-[90vh]'}`}>
               
@@ -1062,7 +1220,8 @@ function OrderDetailView({
                       </div>
                     ) : (
                     <div className="grid grid-cols-1 gap-6">
-                      {/* Opción A: Faltantes */}
+                      {/* Opción A: Solo Faltantes (oculta si no hay faltantes) */}
+                      {(productionModal?.missingCount ?? 0) > 0 && (
                       <div className={`relative group p-6 rounded-[2rem] border-2 transition-all cursor-pointer ${selectedOption === 'A' ? 'border-blue-500 bg-blue-50/30 ring-4 ring-blue-500/10' : 'border-gray-100 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'}`}
                            onClick={() => setSelectedOption('A')}>
                         <div className="flex items-center justify-between mb-4">
@@ -1107,6 +1266,7 @@ function OrderDetailView({
                           </table>
                         </div>
                       </div>
+                      )}
 
                       {/* Opción B: Lote Completo */}
                       <div className={`relative group p-6 rounded-[2rem] border-2 transition-all cursor-pointer ${selectedOption === 'B' ? 'border-orange-500 bg-orange-50/30 ring-4 ring-orange-500/10' : 'border-gray-100 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'}`}
@@ -1349,6 +1509,7 @@ function OrderDetailView({
 
                               <div className="space-y-4">
                                 {currentTask ? (
+                                  currentTask.assigned_to ? (
                                     <div className="flex flex-col gap-3 p-3 bg-white/60 dark:bg-slate-900/60 rounded-xl border border-black/5">
                                       <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700 flex items-center justify-center shadow-md shadow-blue-500/20">
@@ -1362,10 +1523,12 @@ function OrderDetailView({
                                         </div>
                                         <div className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 ${
                                           currentTask.status === 'completado' 
-                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' 
+                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
+                                            : currentTask.status === 'pendiente'
+                                            ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400'
                                             : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                                         }`}>
-                                          {currentTask.status === 'completado' ? 'Hecho' : 'Activo'}
+                                          {currentTask.status === 'completado' ? 'Hecho' : currentTask.status === 'pendiente' ? 'Pendiente' : 'Activo'}
                                         </div>
                                       </div>
                                       
@@ -1406,14 +1569,45 @@ function OrderDetailView({
                                               disabled={loadingTasks}
                                               className="w-full text-[10px] font-black uppercase bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg py-1.5 px-2 outline-none cursor-pointer disabled:opacity-50 transition-colors"
                                             >
-                                              <option value="en_progreso">En Progreso</option>
-                                              <option value="completado">Completado</option>
-                                              <option value="cancelado">Cancelado</option>
-                                            </select>
+                                             <option value="pendiente">Pendiente</option>
+                                               <option value="en_progreso">En Progreso</option>
+                                               <option value="completado">Completado</option>
+                                               <option value="cancelado">Cancelado</option>
+                                             </select>
                                           );
                                         })()}
                                       </div>
                                     </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-3 p-3 bg-white/60 dark:bg-slate-900/60 rounded-xl border border-amber-200 dark:border-amber-900/30">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                          <UserPlus size={16} className="text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-0.5">Sin Asignar</p>
+                                          <p className="text-sm font-black text-amber-600 dark:text-amber-400 uppercase tracking-tight leading-none">
+                                            Pendiente
+                                          </p>
+                                        </div>
+                                        <span className="px-2 py-0.5 text-[8px] font-black rounded uppercase bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">
+                                          Pendiente
+                                        </span>
+                                      </div>
+                                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800 space-y-2">
+                                        <select
+                                          onChange={(e) => handleAssignToTask(currentTask.id, e.target.value)}
+                                          disabled={loadingTasks}
+                                          className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-xs font-bold outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer disabled:opacity-50"
+                                        >
+                                          <option value="">Asignar Empleado...</option>
+                                          {employees.filter(e => e.occupation === stage.occupation).map(emp => (
+                                            <option key={emp.id} value={emp.id}>{emp.name} {emp.last_name}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+                                  )
                                 ) : (
                                   <select 
                                     value={assignments[stage.key] || ''}
@@ -1425,6 +1619,17 @@ function OrderDetailView({
                                       <option key={emp.id} value={emp.id}>{emp.name} {emp.last_name}</option>
                                     ))}
                                   </select>
+                                )}
+
+                                {/* Botón Iniciar dentro de la card, solo si la etapa no está bloqueada ni iniciada */}
+                                {!currentTask && !isUnreachable && (
+                                  <button
+                                    onClick={() => handleIniciarEtapa(stage.key, stage.label)}
+                                    disabled={loadingTasks}
+                                    className="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                                  >
+                                    <PlayCircle size={16} /> Iniciar {stage.label}
+                                  </button>
                                 )}
 
                                 {/* Materiales en esta etapa */}
@@ -1477,214 +1682,7 @@ function OrderDetailView({
                          </button>
                        )}
 
-                       {(() => {
-                         const next = Array.isArray(currentTasks) ? STAGES_LOGIC.find(s => !currentTasks.some(t => t?.type === s.key)) : null;
-                         // Ocultar el botón si no hay siguiente etapa (producción completada)
-                         if (!next) return null;
-                         
-                         return (
-                       <button 
-                        onClick={async () => {
-                          const nextPendingStage = STAGES_LOGIC.find(s => 
-                            Array.isArray(currentTasks) && !currentTasks.some(t => t?.type === s.key)
-                          );
-                          
-                          if (!nextPendingStage) return;
-                          
-                          // Verificar si la etapa anterior está completada
-                          const nextIndex = STAGES_LOGIC.findIndex(s => s.key === nextPendingStage.key);
-                          if (nextIndex > 0) {
-                            const prevStage = STAGES_LOGIC[nextIndex - 1]!;
-                            const prevTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === prevStage?.key) : null;
-                            if (!prevTask || prevTask.status !== 'completado') {
-                              setSuccessToast(`Completar ${prevStage?.label || 'la etapa anterior'} primero`);
-                              setTimeout(() => setSuccessToast(null), 3000);
-                              return;
-                            }
-                          }
-                          
-                          // Si ya hay una asignación manual en curso para esta etapa pero aún no se ha creado la tarea en DB
-                          const assignedUser = assignments[nextPendingStage.key];
-                          if (!assignedUser && !currentTasks.some(t => t.type === nextPendingStage.key)) {
-                            setSuccessToast(`Por favor selecciona un empleado para ${nextPendingStage.label}`);
-                            setTimeout(() => setSuccessToast(null), 3000);
-                            return;
-                          }
 
-                          setLoadingTasks(true);
-                          try {
-                            await onUpdateItemsStatus(productionModal?.productId, 'en_progreso');
-                            
-                            // Para corte (primera etapa) usar la opción seleccionada por el usuario.
-                            // Para etapas siguientes, usar el amount que ya tiene la tarea de corte
-                            // (no puede cambiar entre etapas: si se fabricaron 20 pares en corte, en guarnición también son 20).
-                            const corteTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === 'corte') : null;
-                            const amountForTask = nextPendingStage.key === 'corte'
-                              ? (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0))
-                              : (corteTask?.amount || (selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0)));
-
-                            // Calcular el desglose de tallas para persistirlo en la descripción
-                            const productDetailsForMetadata = order.details.filter(d => d.product_id === productionModal?.productId);
-                            const breakdownMetadata: Record<string, number> = {};
-                            productDetailsForMetadata.forEach(d => {
-                              const qty = selectedOption === 'A' ? Math.max(0, d.amount - (d.stock_available || 0)) : d.amount;
-                              if (qty > 0) breakdownMetadata[d.size] = qty;
-                            });
-
-                            const taskData = {
-                              product_id: productionModal?.productId,
-                              assigned_to: assignedUser || '',
-                              type: nextPendingStage.key,
-                              description: `Iniciando ${nextPendingStage.label} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'}) | METADATA: ${JSON.stringify({ breakdown: breakdownMetadata, option: selectedOption })}`,
-                              priority: 'media',
-                              amount: amountForTask
-                            };
-
-                            await createProductionTasks(order.id, [taskData]);
-                            
-                            // Descontar del inventario de bodega si es la PRIMERA etapa (corte)
-                            if (nextPendingStage.key === 'corte') {
-                              try {
-                                // Obtener detalles del pedido para este producto
-                                const productDetails = order.details.filter(d => d.product_id === productionModal?.productId);
-                                
-                                // Crear movimientos de salida para cada talla según la opción seleccionada
-                                for (const detail of productDetails) {
-                                  // Calcular cantidad a descontar de bodega (los pares que YA existían y se usarán para este pedido)
-                                  const quantityToDiscount = selectedOption === 'A' 
-                                    ? Math.min(detail.amount, detail.stock_available || 0)  // Se toman de bodega los que hay (hasta el límite del pedido)
-                                    : 0;  // Lote completo: no se toma nada de bodega, se fabrica todo nuevo
-                                  
-                                  if (quantityToDiscount > 0) {
-                                    await createInventoryMovement({
-                                      product_id: detail.product_id,
-                                      size: detail.size,
-                                      quantity: quantityToDiscount,
-                                      movement_type: 'salida',
-                                      reference_id: order.id,
-                                      reference_type: 'orden_produccion',
-                                      notes: `Salida de bodega para producción - Orden ${order.id.substring(0, 8)} - Talla ${detail.size} (${selectedOption === 'A' ? 'Solo faltantes' : 'Lote completo'})`
-                                    });
-                                  }
-                                }
-                              } catch (invError) {
-                                console.error('Error al descontar inventario:', invError);
-                                setSuccessToast('⚠️ Tarea creada pero hubo error al descontar del inventario');
-                                setTimeout(() => setSuccessToast(null), 4000);
-                              }
-                            }
-                            
-                            // Auto-marcar la tarea anterior como completada al iniciar la siguiente
-                            const nextIndex2 = STAGES_LOGIC.findIndex(s => s.key === nextPendingStage.key);
-                            if (nextIndex2 > 0) {
-                              const prevStage2 = STAGES_LOGIC[nextIndex2 - 1]!;
-                              const prevTask = currentTasks.find(t => t?.type === prevStage2?.key);
-                              if (prevTask && prevTask.status !== 'completado') {
-                                await updateProductionTaskStatus(prevTask.id, 'completado');
-                              }
-                            }
-                            
-                            setSuccessToast(`¡Etapa de ${nextPendingStage.label.toUpperCase()} iniciada!`);
-                            setTimeout(() => setSuccessToast(null), 4000);
-                            
-                            // Si fue CORTE (primera etapa), recargar orden para actualizar stock_available y recalcular missingCount
-                            if (nextPendingStage.key === 'corte') {
-                              try {
-                                const updatedOrder = await getOrderDetail(order.id);
-                                // Actualizar el estado con la orden recargada (tiene stock_available actualizado)
-                                if (onOrderUpdate) onOrderUpdate(updatedOrder);
-                                
-                                // Recalcular missingCount y totalCount con los valores actualizados
-                                const lines = updatedOrder.details.filter(d => d.product_id?.toLowerCase() === productionModal?.productId?.toLowerCase());
-                                const newTotalToProduce = lines.reduce((acc, l) => acc + Math.max(0, l.amount - Math.max(0, Math.floor(l.stock_available ?? 0))), 0);
-                                const newTotalProductPairs = lines.reduce((s, l) => s + l.amount, 0);
-                                
-                                // Actualizar el modal con los nuevos valores
-                                setProductionModal(prev => prev ? {
-                                  ...prev,
-                                  missingCount: newTotalToProduce,
-                                  totalCount: newTotalProductPairs
-                                } : null);
-                              } catch (err) {
-                                console.error('Error al recargar orden:', err);
-                              }
-                            }
-                            
-                            // Refresh tasks usando la instancia configurada (con baseURL y auth)
-                            const currentProductId = productionModal?.productId;
-                            const allTasks = await getOrderTasks(order.id);
-                            const updatedList = allTasks.filter(
-                              (t) => t.product_id?.toLowerCase() === currentProductId?.toLowerCase()
-                            );
-                            setCurrentTasks(updatedList);
-                            // Actualizar assignments para reflejar las tareas recién creadas
-                            const newAssignments: Record<string, string> = {};
-                            updatedList.forEach((t) => {
-                              if (t?.type) newAssignments[t.type] = t.assigned_to || '';
-                            });
-                            setAssignments(newAssignments);
-                            setProductionStep(2);
-                          } catch (e) {
-                            console.error(e);
-                            setSuccessToast('Error al crear la tarea de producción');
-                            setTimeout(() => setSuccessToast(null), 4000);
-                          } finally {
-                            setLoadingTasks(false);
-                          }
-                        }}
-                        disabled={(() => {
-                          const next = Array.isArray(currentTasks) ? STAGES_LOGIC.find(s => !currentTasks.some(t => t?.type === s.key)) : null;
-                          if (!next) return false;
-                          
-                          // Checkear si hay empleado seleccionado
-                          const hasAssignedEmployee = !!assignments[next.key];
-                          
-                          const nextIndex3 = STAGES_LOGIC.findIndex(s => s.key === next.key);
-                          if (nextIndex3 > 0) {
-                            const prevStage3 = STAGES_LOGIC[nextIndex3 - 1]!;
-                            const prevTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === prevStage3?.key) : null;
-                            // Deshabilitar si no hay empleado O si la tarea anterior no está completada
-                            return !hasAssignedEmployee || !prevTask || prevTask.status !== 'completado';
-                          }
-                          return !hasAssignedEmployee;
-                        })() || loadingTasks}
-                        className={`px-10 py-5 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${
-                          (() => {
-                            const next = Array.isArray(currentTasks) ? STAGES_LOGIC.find(s => !currentTasks.some(t => t?.type === s.key)) : null;
-                            if (!next) return 'bg-green-600 hover:bg-green-700 shadow-green-600/20';
-                            
-                            // Checkear si hay empleado seleccionado
-                            const hasAssignedEmployee = !!assignments[next.key];
-                            
-                            const nextIndex4 = STAGES_LOGIC.findIndex(s => s.key === next.key);
-                            if (nextIndex4 > 0) {
-                              const prevStage4 = STAGES_LOGIC[nextIndex4 - 1]!;
-                              const prevTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === prevStage4?.key) : null;
-                              
-                              // Si no hay empleado seleccionado, gris
-                              if (!hasAssignedEmployee) {
-                                return 'bg-gray-400 cursor-not-allowed opacity-60';
-                              }
-                              
-                              // Si la tarea anterior no está completada, gris
-                              if (!prevTask || prevTask.status !== 'completado') {
-                                return 'bg-gray-400 cursor-not-allowed opacity-60';
-                              }
-                            }
-                            return 'bg-green-600 hover:bg-green-700 shadow-green-600/20';
-                          })()
-                        }`}
-                      >
-                        {(() => {
-                           if (loadingTasks) return 'PROCESANDO...';
-                           if (!Array.isArray(currentTasks)) return 'INICIALIZANDO...';
-                           const next = STAGES_LOGIC.find(s => !currentTasks.some(t => t?.type === s.key));
-                           return next ? `CONFIRMAR E INICIAR ${next.label}` : 'PRODUCCIÓN COMPLETADA';
-                         })()}
-                         <PlayCircle className="w-5 h-5" />
-                      </button>
-                         );
-                       })()}
                     </div>
 
                   </div>
@@ -1702,14 +1700,14 @@ function OrderDetailView({
                 </div>
               )}
             </div>
-          </div>
-        )}
+          </div>, document.body)
+        }
 
         {/* Columna derecha: info cliente + acciones */}
         <div className="space-y-4">
 
           {/* Card del cliente */}
-          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300 stagger-reveal">
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Información del Cliente
@@ -1746,7 +1744,7 @@ function OrderDetailView({
           </div>
 
           {/* Acciones */}
-          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300 stagger-reveal">
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Acciones</h2>
 
             <div className="space-y-2.5">
@@ -2223,7 +2221,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <ShoppingCart className="w-8 h-8 text-red-600 dark:text-red-500" />
@@ -2252,7 +2250,7 @@ export default function OrdersPage() {
       <SummaryCards totals={totalByStatus} />
 
       {/* Filtros */}
-      <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row gap-4 items-stretch md:items-end shadow-sm transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row gap-4 items-stretch md:items-end shadow-sm transition-all duration-300 stagger-reveal">
         <div className="flex-1">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
             <Search className="w-4 h-4 inline mr-1 text-blue-500" />
@@ -2308,7 +2306,7 @@ export default function OrdersPage() {
           <p className="text-gray-600 font-medium">Cargando pedidos...</p>
         </div>
       ) : orders.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-20 text-center shadow-sm flex flex-col items-center gap-4 transition-all">
+        <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-20 text-center shadow-sm flex flex-col items-center gap-4 transition-all stagger-reveal">
           <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
             <Package size={28} className="text-gray-300 dark:text-gray-600" />
           </div>
@@ -2327,7 +2325,7 @@ export default function OrdersPage() {
         <>
           <OrdersTable orders={orders} onSelect={handleSelectOrder} />
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between mt-4 stagger-reveal">
               <p className="text-sm text-gray-600">
                 Página <strong>{page}</strong> de <strong>{totalPages}</strong>
               </p>

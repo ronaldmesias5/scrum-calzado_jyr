@@ -211,6 +211,7 @@ class UserResponse(BaseModel):
     terms_accepted_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+    temporary_password: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

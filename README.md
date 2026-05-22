@@ -11,7 +11,7 @@ Sistema integral para la gestión y producción de calzado, diseñado con una ar
 - **Dashboard Empleados**: (En desarrollo)
 - **Dashboard Clientes**: (En desarrollo)
 
-**Estado actual:** Sprints 1-5 completados. Sprint 6-7 en progreso.
+**Estado actual:** Sprints 1-5 completados. Sprint 6-7 completados. Funcionalidad completa de dashboard jefe operativa.
 
 ---
 
@@ -22,36 +22,54 @@ scrum/
 ├── be/                          # 🐍 Backend - FastAPI + Python (uv)
 │   ├── app/
 │   │   ├── core/                # Configuración, BD, dependencias y seguridad
-│   │   ├── models/              # Modelos SQLAlchemy (entidades)
-│   │   ├── modules/             # 📦 Módulos de lógica de negocio (feature-based)
-│   │   │   ├── auth/            # Registro, login, logout global, consentimientos
-│   │   │   ├── admin/           # Gestión de usuarios y validaciones
-│   │   │   └── ...              # Catálogo, Pedidos, Producción
-│   │   ├── utils/               # Sanitizado, emails, seguridad
+│   │   ├── init_db.py           # Auto-migraciones + seed data al arrancar
+│   │   ├── models/              # Modelos SQLAlchemy (22 tablas)
+│   │   ├── modules/             # 📦 8 módulos feature-based
+│   │   │   ├── admin/           # Catálogo admin, reportes, usuarios
+│   │   │   ├── auth/            # Login, registro, JWT, logout global
+│   │   │   ├── catalog/         # Catálogo público
+│   │   │   ├── dashboard_jefe/  # Métricas y dashboard principal
+│   │   │   ├── orders/          # Pedidos + producción + vales
+│   │   │   ├── supplies/        # Insumos y movimientos
+│   │   │   ├── type_document/   # Tipos de documento
+│   │   │   └── users/           # CRUD usuarios
+│   │   ├── utils/               # Email SMTP, sanitizado, seguridad
 │   │   └── main.py              # Punto de entrada
-│   ├── pyproject.toml           # Gestión de dependencias (uv)
-│   └── .env.example             # Plantilla de variables de entorno
+│   ├── alembic/versions/        # 23 migraciones versionadas
+│   ├── scripts/                 # create_admin.py, heal_line_groups.py
+│   └── pyproject.toml           # Dependencias (uv)
 │
-├── fe/                          # ⚛️ Frontend - React + TypeScript (Vite + pnpm)
+├── fe/                          # ⚛️ Frontend - React 19 + TypeScript (Vite + pnpm)
 │   ├── src/
+│   │   ├── components/          # Componentes UI reutilizables
+│   │   │   └── ui/              # Modal, PageTransition, Breadcrumbs, etc.
 │   │   ├── modules/             # 📦 Módulos funcionales
-│   │   │   ├── auth/            # Login, Registro (con términos), Password
-│   │   │   ├── dashboard-jefe/  # Gestión total (incluye borrar usuarios)
-│   │   │   └── ...              # Landing, Clientes, Empleados
-│   │   ├── shared/              # Componentes UI, hooks, servicios API
-│   │   ├── context/             # AuthContext (estado Global)
+│   │   │   ├── auth/            # Login, Register, Password (5 páginas)
+│   │   │   ├── dashboard-jefe/  # Panel admin completo (12 páginas)
+│   │   │   └── landing/         # Landing page + catálogo público
+│   │   ├── hooks/               # useAuth, useHeaderAnimation, useModalDialog
+│   │   ├── context/             # AuthContext, BadgeCounts, ThemeProvider
 │   │   └── types/               # Tipado estricto (espejo del backend)
-│   └── package.json             # Dependencias Node.js
+│   ├── package.json             # pnpm (nunca npm/yarn)
+│   └── vite.config.ts           # Proxy API, polling, aliases
 │
 ├── db/                          # 🗄️ Base de Datos
-│   └── init/                    # Scripts DDL y Semillas (SQL)
+│   └── init/                    # init.sql — solo extensiones (no esquema)
 │
-├── docs/                        # 📚 Documentación Scrum
-│   ├── project-documentation/   # Historias, MER, Arquitectura
-│   └── sprints/                 # Backlogs y Estados
+├── docs/                        # 📚 Documentación
+│   ├── project-documentation/   # Arquitectura, diccionario datos, requisitos
+│   ├── sprints/                 # Backlogs y plan de trabajo
+│   ├── GUIA_DISENO.md           # Guía visual — OBLIGATORIA para UI
+│   └── delete_data_queries.md   # Consultas SQL para limpieza
 │
-├── docker-compose.yml           # Orquestación de contenedores
-└── .env.example                 # Variables globales de ejemplo
+├── .opencode/                   # Configuración opencode
+│   └── skills/                  # Skills personalizadas
+│       └── doc-sync/            # Sincronización automática de docs
+│
+├── .agents/skills/              # 8 skills externas (accessibility, seo, etc.)
+├── docker-compose.yml           # db + be + fe + mailpit
+├── opencode.json                # Configuración agente AI
+└── .env.example                 # Variables de entorno
 ```
 
 ---
@@ -75,7 +93,8 @@ scrum/
 ### 🗄️ Infraestructura y Base de Datos
 
 - **PostgreSQL 17+**: Base de datos relacional robusta.
-- **Docker / Docker Compose**: Despliegue consistente en cualquier entorno.
+- **Docker / Docker Compose**: Despliegue consistente en cualquier entorno (db + be + fe + mailpit).
+- **Mailpit**: Captura de correos en desarrollo en http://localhost:8025
 
 ---
 
@@ -103,6 +122,22 @@ uv run uvicorn app.main:app --reload
 ```
 *API Docs:* `http://localhost:8000/docs`
 
+### Mailpit (Correos en desarrollo)
+
+Los correos no se envían realmente en desarrollo. Captúralos en:
+- **Web UI**: http://localhost:8025
+
+### Gmail SMTP (Correos reales)
+
+Configurar en `.env`:
+```env
+MAIL_USERNAME=jyrcalzado@gmail.com
+MAIL_PASSWORD=tu_app_password_16_caracteres
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+```
+Generar App Password en: https://myaccount.google.com/apppasswords
+
 ### 4. Frontend (Vía pnpm)
 
 ```bash
@@ -117,8 +152,10 @@ pnpm run dev
 ## 🔐 Credenciales de Prueba (Default)
 
 Al iniciar por primera vez, el sistema autosemilla un usuario administrador:
-- **Email**: `admin@calzadojyr.com`
-- **Contraseña**: `AdminSegura123!`
+
+**Jefe/Admin (acceso completo al dashboard):**
+- **Email**: `ronald.jefe@gmail.com`
+- **Contraseña**: `Test123456!`
 
 ---
 

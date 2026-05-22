@@ -21,7 +21,7 @@ export interface CreateEmployeeRequest {
   identity_document?: string;
   identity_document_type_id?: string;
   occupation: "cortador" | "guarnecedor" | "solador" | "emplantillador" | "jefe";
-  password: string;
+  password?: string;
 }
 
 export interface CreateClientRequest {
@@ -32,7 +32,7 @@ export interface CreateClientRequest {
   identity_document?: string;
   identity_document_type_id?: string;
   business_name?: string;
-  password: string;
+  password?: string;
 }
 
 export interface UpdateUserRequest {

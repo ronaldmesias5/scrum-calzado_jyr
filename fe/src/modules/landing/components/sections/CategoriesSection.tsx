@@ -86,12 +86,15 @@ export default function CategoriesSection() {
           {staticCategories.map((cat) => (
             <div
               key={cat.id}
-              className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
+              className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group stagger-reveal"
             >
               <div className="relative overflow-hidden h-64">
                 <img
                   src={cat.image}
                   alt={cat.name}
+                  loading="lazy"
+                  width="400"
+                  height="256"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

@@ -39,6 +39,33 @@ router = APIRouter(
 )
 
 
+def _build_order_items(details: list) -> list:
+    """Agrupa OrderDetails por (product_id, colour) para incluir categoría y color"""
+    from app.models.category import Category
+    items_map = {}
+    for detail in details:
+        key = (detail.product_id, detail.colour or "")
+        if key not in items_map:
+            p_name = "Producto Desconocido"
+            p_img = None
+            cat_name = None
+            if detail.product:
+                p_name = getattr(detail.product, 'name_product', "Producto Desconocido")
+                p_img = getattr(detail.product, 'image_url', None)
+                if detail.product.category:
+                    cat_name = getattr(detail.product.category, 'name_category', None)
+            items_map[key] = OrderItemSummary(
+                product_id=detail.product_id,
+                product_name=p_name,
+                image_url=p_img,
+                amount=0,
+                category_name=cat_name,
+                colour=detail.colour or None,
+            )
+        items_map[key].amount += (detail.amount or 0)
+    return list(items_map.values())
+
+
 @router.get("/dashboard", response_model=DashboardReportResponse)
 def get_dashboard_reports(
     db: Session = Depends(get_db),
@@ -247,15 +274,33 @@ def get_employee_report(
         .subquery()
     )
 
+    # Subconsulta para obtener colour único por (order, product, line_group) — evita duplicados por talla
+    colour_sub = (
+        select(
+            OrderDetail.order_id,
+            OrderDetail.product_id,
+            OrderDetail.line_group,
+            func.min(OrderDetail.colour).label("colour")
+        )
+        .where(OrderDetail.deleted_at == None)
+        .group_by(OrderDetail.order_id, OrderDetail.product_id, OrderDetail.line_group)
+        .subquery()
+    )
+
     tasks_detail_query = (
         select(
             Task.id, Task.type, Task.description_task, Task.completed_at, Task.created_at, Task.status, 
             Task.amount.label("task_amount"), order_pairs_sub.c.total_pairs, Product.name_product, Product.task_prices, Task.order_id,
-            Task.product_id, Category.name_category, Product.image_url, Task.vale_number
+            Task.product_id, Category.name_category, Product.image_url, Task.vale_number,
+            colour_sub.c.colour, Task.line_group
         )
         .outerjoin(order_pairs_sub, (Task.order_id == order_pairs_sub.c.order_id) & (Task.product_id == order_pairs_sub.c.product_id))
         .join(Product, Task.product_id == Product.id)
         .outerjoin(Category, Product.category_id == Category.id)
+        .outerjoin(colour_sub,
+            (Task.order_id == colour_sub.c.order_id) &
+            (Task.product_id == colour_sub.c.product_id) &
+            (Task.line_group == colour_sub.c.line_group))
         .where(Task.assigned_to == user_id, Task.status.in_(['completado', 'pagado']), Task.deleted_at == None)
     )
     
@@ -318,8 +363,10 @@ def get_employee_report(
                 process_name=task_type,
                 amount=pairs,
                 status=status_str,
+                colour=row['colour'],
                 vale_number=row['vale_number'],
-                created_at=row['completed_at'] or row['created_at'],
+                created_at=row['created_at'],
+                completed_at=row['completed_at'],
                 price_per_dozen=price_per_dozen,
                 task_total_price=task_price,
                 product_details=product_details,
@@ -331,12 +378,14 @@ def get_employee_report(
     return EmployeeReportResponse(
         user_id=employee.id,
         name=f"{employee.name_user} {employee.last_name}",
+        occupation=employee.occupation or "",
         total_tasks_completed=len(tasks_list),
         total_pairs_produced=sum(t.amount for t in tasks_list),
         total_earnings=round(total_earnings, 2),
         tasks_breakdown=tasks_breakdown,
         tasks_list=tasks_list
     )
+
 
 @router.get("/role/{role_name}", response_model=EmployeeReportResponse)
 def get_role_report(
@@ -421,16 +470,34 @@ def get_role_report(
         .subquery()
     )
 
+    # Subconsulta para colour único por (order, product, line_group) — evita duplicados por talla
+    colour_sub = (
+        select(
+            OrderDetail.order_id,
+            OrderDetail.product_id,
+            OrderDetail.line_group,
+            func.min(OrderDetail.colour).label("colour")
+        )
+        .where(OrderDetail.deleted_at == None)
+        .group_by(OrderDetail.order_id, OrderDetail.product_id, OrderDetail.line_group)
+        .subquery()
+    )
+
     task_detail_query = (
         select(
             Task, Order.id, Product.name_product, pairs_sub.c.total,
             Category.name_category, Product.image_url, Product.task_prices,
-            Task.amount.label("task_amount")
+            Task.amount.label("task_amount"),
+            colour_sub.c.colour
         )
         .outerjoin(Order, Task.order_id == Order.id)
         .outerjoin(Product, Task.product_id == Product.id)
         .outerjoin(Category, Product.category_id == Category.id)
         .outerjoin(pairs_sub, (Task.order_id == pairs_sub.c.order_id) & (Task.product_id == pairs_sub.c.product_id))
+        .outerjoin(colour_sub,
+            (Task.order_id == colour_sub.c.order_id) &
+            (Task.product_id == colour_sub.c.product_id) &
+            (Task.line_group == colour_sub.c.line_group))
         .where(Task.assigned_to.in_(user_ids))
     )
     if start_date:
@@ -467,8 +534,10 @@ def get_role_report(
                 process_name=task_type_str,
                 amount=pairs,
                 status=str(task_obj.status.value) if hasattr(task_obj.status, 'value') else str(task_obj.status),
+                colour=row['colour'],
                 vale_number=task_obj.vale_number,
                 created_at=task_obj.created_at,
+                completed_at=task_obj.completed_at,
                 price_per_dozen=price_per_dozen,
                 task_total_price=task_total_price,
                 product_category=row['name_category'],
@@ -525,31 +594,13 @@ def get_all_customers_report(
     
     orders_list = []
     for o in orders:
-        # Agrupar items por product_id para evitar duplicados en la vista (por tallas/colores)
-        product_map = {}
-        for item in (o.details or []):
-            pid = item.product_id
-            if pid not in product_map:
-                p_name = "Producto Desconocido"
-                p_img = None
-                if item.product:
-                    p_name = getattr(item.product, 'name_product', "Producto Desconocido")
-                    p_img = getattr(item.product, 'image_url', None)
-                product_map[pid] = OrderItemSummary(
-                    product_id=pid,
-                    product_name=p_name,
-                    image_url=p_img,
-                    amount=0
-                )
-            product_map[pid].amount += (item.amount or 0)
-        
         orders_list.append(OrderSummary(
             id=o.id,
             total_pairs=o.total_pairs or 0,
             total_price=float(o.total_price) if hasattr(o, 'total_price') else 0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
-            items=list(product_map.values())
+            items=_build_order_items(o.details or [])
         ))
     
     return CustomerReportResponse(
@@ -626,33 +677,13 @@ def get_customer_report(
     
     orders_metric = []
     for o in orders:
-        # Agrupar items por product_id
-        product_map = {}
-        order_details = o.details if o.details else []
-        for detail in order_details:
-            pid = detail.product_id
-            if pid not in product_map:
-                p_name = "Producto Desconocido"
-                p_img = None
-                if detail.product:
-                    p_name = getattr(detail.product, 'name_product', "Producto Desconocido")
-                    p_img = getattr(detail.product, 'image_url', None)
-                
-                product_map[pid] = OrderItemSummary(
-                    product_id=pid,
-                    product_name=p_name,
-                    image_url=p_img,
-                    amount=0
-                )
-            product_map[pid].amount += (detail.amount or 0)
-            
         orders_metric.append(OrderSummary(
             id=o.id,
             total_pairs=o.total_pairs or 0,
             total_price=float(o.total_price) if hasattr(o, 'total_price') else 0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
-            items=list(product_map.values())
+            items=_build_order_items(o.details or [])
         ))
         
     return CustomerReportResponse(
@@ -745,31 +776,13 @@ def get_global_production(
     # 3. Listado de Pedidos Detallado
     orders_data = []
     for o in orders:
-        # Agrupar items por product_id
-        product_map = {}
-        for item in (o.details or []):
-            pid = item.product_id
-            if pid not in product_map:
-                p_name = "Producto Desconocido"
-                p_img = None
-                if item.product:
-                    p_name = getattr(item.product, 'name_product', "Producto Desconocido")
-                    p_img = getattr(item.product, 'image_url', None)
-                product_map[pid] = OrderItemSummary(
-                    product_id=pid,
-                    product_name=p_name,
-                    image_url=p_img,
-                    amount=0
-                )
-            product_map[pid].amount += (item.amount or 0)
-
         orders_data.append(OrderSummary(
             id=o.id,
             total_pairs=o.total_pairs or 0,
             total_price=float(o.total_price) if hasattr(o, 'total_price') else 0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
-            items=list(product_map.values())
+            items=_build_order_items(o.details or [])
         ))
 
     metrics = [

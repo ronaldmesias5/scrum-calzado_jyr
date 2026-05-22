@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Upload, Plus, DollarSign } from 'lucide-react';
 import { listBrands, listCategories, listStyles, Brand, Category, Style } from '../services/catalogService';
 import { listSupplies, Supply } from '../services/suppliesService';
+import Modal from '@/components/ui/Modal';
 
 interface TaskPrices {
   corte: number;
@@ -222,20 +223,17 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col animate-in fade-in zoom-in duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex-shrink-0 transition-colors">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Crear Producto</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Agrega un nuevo producto al catálogo</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all"
-          >
-            <X size={20} />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Crear Producto"
+      size="xl"
+      className="max-h-[90vh]"
+    >
+      <div className="flex flex-col h-full">
+        {/* Header subtitle (since base Modal has its own title) */}
+        <div className="px-8 py-2 -mt-4 mb-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Agrega un nuevo producto al catálogo</p>
         </div>
 
         {/* Body */}
@@ -587,6 +585,6 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

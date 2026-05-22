@@ -3,7 +3,8 @@
  * Opciones de contacto con el cliente (email, teléfono, copiar datos)
  */
 
-import { Mail, Phone, Copy, X, ExternalLink } from 'lucide-react';
+import { Mail, Phone, MessageCircle, X, ExternalLink, User, Building2, MapPin, Copy } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
 import { useState } from 'react';
 
 interface ContactClientModalProps {
@@ -48,32 +49,20 @@ export default function ContactClientModal({
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md transition-all duration-300"
-        onClick={onClose}
-      />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Contactar Cliente"
+      size="md"
+    >
+      <div className="flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-2">
+            <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{clientName}</p>
+        </div>
 
-      {/* Modal Container */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden transition-all duration-300 animate-in fade-in zoom-in duration-200">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-slate-800 transition-colors">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">Contacto Cliente</h2>
-              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">{clientName}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="px-6 py-6 space-y-4 bg-white dark:bg-slate-900">
+        {/* Content */}
+        <div className="px-6 py-6 space-y-4 bg-white dark:bg-slate-900">
             {/* Email */}
             {clientEmail ? (
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 transition-all group">
@@ -151,26 +140,25 @@ export default function ContactClientModal({
                 </div>
               </div>
             )}
-          </div>
+        </div>
 
-          {/* Footer */}
-          <div className="px-6 py-5 border-t border-gray-100 dark:border-slate-800 flex justify-end bg-gray-50/50 dark:bg-slate-800/20 transition-colors">
+        {/* Footer */}
+        <div className="px-6 py-5 border-t border-gray-100 dark:border-slate-800 flex justify-end bg-gray-50/50 dark:bg-slate-800/20 transition-colors">
             <button
               onClick={onClose}
               className="px-6 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all active:scale-[0.98] border border-gray-200 dark:border-slate-700"
             >
               Cerrar Diálogo
             </button>
-          </div>
+        </div>
 
-          {/* Feedback de copiar */}
-          {copied && (
+        {/* Feedback de copiar */}
+        {copied && (
             <div className="absolute left-1/2 -translate-x-1/2 bottom-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg whitespace-nowrap">
               {copied === 'email' ? '✓ Email copiado' : '✓ Teléfono copiado'}
             </div>
-          )}
-        </div>
+        )}
       </div>
-    </>
+    </Modal>
   );
 }

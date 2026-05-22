@@ -205,6 +205,13 @@ class OrderDetail(Base):
         comment="Observaciones específicas del producto",
     )
 
+    line_group: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="Agrupa filas que pertenecen a una misma adición de producto al pedido",
+    )
+
     # Estado
     state: Mapped[str] = mapped_column(
         SQLEnum(OrderStatus, name='order_status', create_type=False),

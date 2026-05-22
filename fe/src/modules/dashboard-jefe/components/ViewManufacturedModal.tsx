@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Product } from '../services/catalogService';
 import api from '@/api/axios';
+import Modal from '@/components/ui/Modal';
 
 interface InventoryItem {
   size: number;
@@ -69,20 +70,17 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
   const sizeMap = Object.fromEntries(inventory.map(item => [item.size, item.reserved]));
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col animate-in fade-in zoom-in duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0 transition-colors">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pares Fabricados por Talla</h2>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name} • {product.color || 'Sin color'}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >
-            <X size={20} />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Pares Fabricados por Talla"
+      size="full"
+      className="max-h-[90vh]"
+    >
+      <div className="flex flex-col h-full">
+        {/* Header decoration */}
+        <div className="px-6 py-2 -mt-4 mb-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name} • {product.color || 'Sin color'}</p>
         </div>
 
         {/* Body */}
@@ -176,6 +174,6 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

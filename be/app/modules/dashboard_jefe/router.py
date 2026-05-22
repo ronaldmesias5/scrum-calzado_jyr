@@ -24,7 +24,8 @@ Descripción: Router FastAPI con endpoints del panel de administración del jefe
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_db, get_current_user, _require_jefe
+from app.models.user import User
 from app.modules.dashboard_jefe.schemas import (
     AlertSchema,
     AlertsResponse,
@@ -45,8 +46,12 @@ router = APIRouter(
     response_model=DashboardMetricsResponse,
     summary="Métricas del dashboard del jefe",
 )
-def get_metrics(db: Session = Depends(get_db)) -> DashboardMetricsResponse:
+def get_metrics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DashboardMetricsResponse:
     """Retorna los KPIs principales desde la BD (0 si sin datos)."""
+    _require_jefe(current_user)
     from app.models.order import Order, OrderStatus
     from app.models.inventory import Inventory
     from sqlalchemy import func
@@ -80,8 +85,12 @@ def get_metrics(db: Session = Depends(get_db)) -> DashboardMetricsResponse:
     response_model=RecentOrdersResponse,
     summary="Pedidos recientes para el dashboard",
 )
-def get_recent_orders(db: Session = Depends(get_db)) -> RecentOrdersResponse:
+def get_recent_orders(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RecentOrdersResponse:
     """Retorna los últimos 5 pedidos registrados desde la BD (vacío si no hay datos)."""
+    _require_jefe(current_user)
     from app.models.order import Order
     from sqlalchemy import desc
     
@@ -110,8 +119,12 @@ def get_recent_orders(db: Session = Depends(get_db)) -> RecentOrdersResponse:
     response_model=AlertsResponse,
     summary="Alertas activas del sistema",
 )
-def get_alerts(db: Session = Depends(get_db)) -> AlertsResponse:
+def get_alerts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AlertsResponse:
     """Retorna las alertas basadas en incidencias abiertas."""
+    _require_jefe(current_user)
     from app.models.incidence import Incidence, IncidenceStatus
     from app.models.tasks import Task
     from app.models.user import User

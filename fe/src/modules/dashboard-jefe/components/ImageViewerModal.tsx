@@ -1,5 +1,5 @@
-import React from 'react';
 import { X } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
 
 interface ImageViewerModalProps {
   isOpen: boolean;
@@ -17,24 +17,14 @@ export default function ImageViewerModal({
   if (!isOpen || !imageUrl) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 sm:p-8 transition-all duration-300"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={productName}
+      size="full"
+      className="max-h-[90vh]"
     >
-      <div
-        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-slate-800 transition-all pointer-events-auto"
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{productName}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+      <div className="flex flex-col h-full">
 
         {/* Imagen */}
         <div className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-10 bg-gray-50/50 dark:bg-black/20 custom-scrollbar">
@@ -55,6 +45,6 @@ export default function ImageViewerModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

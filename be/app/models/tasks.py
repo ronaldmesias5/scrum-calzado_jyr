@@ -57,10 +57,10 @@ class Task(Base):
         default=uuid.uuid4,
     )
 
-    assigned_to: Mapped[uuid.UUID] = mapped_column(
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT", onupdate="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
 
     vale_number: Mapped[int | None] = mapped_column(
@@ -88,9 +88,22 @@ class Task(Base):
         nullable=True,
     )
 
+    line_group: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="Grupo de numeración dentro del mismo producto en el pedido"
+    )
+
     description_task: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+    )
+
+    observation: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Observación del empleado sobre esta tarea (ej. faltó un par de piezas)"
     )
 
     priority: Mapped[str] = mapped_column(

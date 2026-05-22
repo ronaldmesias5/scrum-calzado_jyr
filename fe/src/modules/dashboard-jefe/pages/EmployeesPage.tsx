@@ -12,6 +12,7 @@ import { getAllUsers, updateUser, type UpdateUserRequest } from '../services/adm
 import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
 import CreateUserForm from '../components/CreateUserForm';
+import Modal from '@/components/ui/Modal';
 import StatusConfirmModal from '../components/StatusConfirmModal';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -122,7 +123,7 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -143,7 +144,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 transition-all duration-300 stagger-reveal">
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -184,7 +185,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-all duration-300 stagger-reveal">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
@@ -271,16 +272,14 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {/* Modal de Edición */}
       {isEditModalOpen && selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between transition-colors">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Actualizar Empleado</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all">
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
+        <Modal
+          isOpen={true}
+          onClose={() => setIsEditModalOpen(false)}
+          title="Actualizar Empleado"
+          size="lg"
+        >
+          <div className="flex flex-col">
             
             <form onSubmit={handleUpdate} className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -374,21 +373,16 @@ export default function EmployeesPage() {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
-      {/* Modal de Creación */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between transition-colors">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Registrar Nuevo Empleado</h3>
-              <button 
-                onClick={() => setIsCreateModalOpen(false)} 
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
+        <Modal
+          isOpen={true}
+          onClose={() => setIsCreateModalOpen(false)}
+          title="Registrar Nuevo Empleado"
+          size="lg"
+        >
+          <div className="flex flex-col">
             <div className="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar bg-white dark:bg-slate-900 transition-colors">
               <CreateUserForm 
                 userType="employee" 
@@ -401,7 +395,7 @@ export default function EmployeesPage() {
               />
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Modal de Confirmación de Estado */}

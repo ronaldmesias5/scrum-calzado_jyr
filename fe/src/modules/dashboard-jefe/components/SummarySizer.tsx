@@ -22,10 +22,11 @@ export default function SummarySizer({ categoryName, initialItems, onChange }: S
     availableSizes = Array.from({ length: 11 }, (_, i) => String(33 + i));
   }
 
-  // Convertir items a mapa de amounts
+  // Convertir items a mapa de amounts, sumando si hay tallas duplicadas
   const sizeAmounts = availableSizes.reduce((acc, size) => {
-    const found = initialItems.find(i => i.size === size);
-    acc[size] = found ? String(found.amount) : '0';
+    const found = initialItems.filter(i => i.size === size);
+    const total = found.reduce((sum, i) => sum + i.amount, 0);
+    acc[size] = total > 0 ? String(total) : '0';
     return acc;
   }, {} as Record<string, string>);
 

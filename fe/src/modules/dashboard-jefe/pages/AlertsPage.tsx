@@ -47,7 +47,7 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Bell className="w-8 h-8 text-orange-600" />
@@ -81,7 +81,7 @@ export default function AlertsPage() {
           <p className="text-gray-500 font-medium tracking-tight">Cargando alertas del sistema...</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-reveal">
           {alerts.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-12 text-center">
               <div className="w-16 h-16 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">

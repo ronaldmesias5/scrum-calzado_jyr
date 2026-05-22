@@ -38,8 +38,10 @@ class TaskDetail(BaseModel):
     process_name: str
     amount: int
     status: str
+    colour: Optional[str] = None
     vale_number: Optional[int] = None
     created_at: datetime
+    completed_at: Optional[datetime] = None
     price_per_dozen: float = 0.0
     task_total_price: float = 0.0
     product_category: Optional[str] = None
@@ -53,6 +55,7 @@ class TaskBreakdown(BaseModel):
 class EmployeeReportResponse(BaseModel):
     user_id: UUID
     name: str
+    occupation: str = ""
     total_tasks_completed: int
     total_pairs_produced: int
     total_earnings: float = 0.0
@@ -64,6 +67,8 @@ class OrderItemSummary(BaseModel):
     product_name: str
     image_url: Optional[str] = None
     amount: int
+    category_name: Optional[str] = None
+    colour: Optional[str] = None
 
 class OrderSummary(BaseModel):
     id: UUID

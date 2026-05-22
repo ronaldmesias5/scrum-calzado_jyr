@@ -19,9 +19,9 @@ export default function QuickActionsSection() {
           <button
             key={label}
             onClick={() => navigate(path)}
-            className={`flex flex-col items-center justify-center gap-2 py-5 rounded-xl font-bold text-sm transition-all duration-200 ${color} active:scale-95`}
+            className={`flex flex-col items-center justify-center gap-2 py-5 rounded-xl font-bold text-sm transition-all duration-200 stagger-reveal ${color} active:scale-95 hover:scale-[1.03]`}
           >
-            <Icon size={22} />
+            <Icon size={22} className="group-hover:scale-110 transition-transform" />
             {label}
           </button>
         ))}

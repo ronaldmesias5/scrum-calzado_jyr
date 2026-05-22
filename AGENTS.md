@@ -85,7 +85,7 @@ cd fe && pnpm build               # ejecuta tsc -b && vite build
 - Las migraciones de Alembic se ejecutan **automáticamente al iniciar el backend** (`be/app/init_db.py`), tanto en Docker como local.
 - Los datos semilla también se insertan automáticamente (roles, tipos de documento, catálogo con 65 productos, usuarios de prueba).
 - **Nunca ejecutes `alembic upgrade head` manualmente** a menos que estés depurando algo muy específico.
-- Hay 19 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
+- Hay 23 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
 
 ### Usuario admin de prueba
 ```
@@ -157,6 +157,27 @@ fe/src/modules/
 9. **No hay CI/CD**: El proyecto no tiene GitHub Actions ni pre-commit hooks.
 
 10. **Script standalone**: `be/scripts/create_admin.py` — crea un admin por fuera de la API. Útil si la BD se corrompe o se pierde el seed.
+11. **Script heal**: `be/scripts/heal_line_groups.py` — repara `line_group` duplicados en `order_details`.
+
+## Patrones de frontend implementados
+
+### Modal base (`fe/src/components/ui/Modal.tsx`)
+- Usa `createPortal`, `role="dialog"`, `aria-modal="true"`, focus trap, Escape handler
+- Variantes de tamaño: `sm`, `md`, `lg`, `xl`, `full`
+- Variantes de color: `default`, `danger`
+- **NUNCA** crear un modal manualmente — usar `<Modal>` + `useModalDialog` hook
+
+### PageTransition (`fe/src/components/ui/PageTransition.tsx`)
+- Envuelve `<Outlet />` en `AdminLayout.tsx`
+- Aplica `animate-in fade-in slide-in-from-top-4 duration-500` en cada navegación
+- Usa `key={location.pathname}` para re-triggerear animación
+- **TODAS** las páginas del dashboard heredan esta animación automáticamente
+
+### useModalDialog hook
+```typescript
+const { isOpen, open, close } = useModalDialog();
+// Usar con <Modal isOpen={isOpen} onClose={close}>...</Modal>
+```
 
 ---
 

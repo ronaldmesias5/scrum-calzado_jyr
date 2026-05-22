@@ -3,6 +3,7 @@ import { ChevronRight, Home } from 'lucide-react';
 
 const ROUTE_NAMES: Record<string, string> = {
   admin: 'Escritorio',
+  employee: 'Mi Dashboard',
   orders: 'Pedidos',
   catalog: 'Catálogo',
   inventory: 'Inventario',
@@ -12,6 +13,7 @@ const ROUTE_NAMES: Record<string, string> = {
   usuarios: 'Usuarios',
   reports: 'Reportes',
   settings: 'Configuración',
+  incidences: 'Incidencias',
   auth: 'Autenticación',
   login: 'Iniciar Sesión',
   register: 'Crear Cuenta',
@@ -29,8 +31,10 @@ export function Breadcrumbs() {
   if (pathnames.length === 0) return null;
 
   const isDashboard = pathnames.includes('dashboard');
-  const homeLink = isDashboard ? '/dashboard/admin' : '/';
-  const homeLabel = isDashboard ? 'Escritorio' : 'Inicio';
+  // If the path contains 'employee', link to employee dashboard, otherwise admin
+  const isEmployee = pathnames.includes('employee');
+  const homeLink = isDashboard ? (isEmployee ? '/dashboard/employee' : '/dashboard/admin') : '/';
+  const homeLabel = isDashboard ? (isEmployee ? 'Mi Dashboard' : 'Escritorio') : 'Inicio';
 
   return (
     <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6" aria-label="Breadcrumb">

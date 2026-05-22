@@ -49,7 +49,9 @@ export interface TaskDetail {
   process_name: string;
   amount: number;
   status: string;
+  colour?: string;
   created_at: string;
+  completed_at?: string;
   price_per_dozen?: number;
   task_total_price?: number;
   vale_number?: number;
@@ -63,6 +65,7 @@ export interface TaskBreakdown {
 export interface EmployeeReportResponse {
   user_id: string;
   name: string;
+  occupation?: string;
   total_tasks_completed: number;
   total_pairs_produced: number;
   total_earnings?: number;
@@ -75,6 +78,8 @@ export interface OrderItemSummary {
   product_name: string;
   image_url?: string | null;
   amount: number;
+  category_name?: string;
+  colour?: string;
 }
 
 export interface OrderSummary {

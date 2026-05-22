@@ -18,6 +18,7 @@ import {
 import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
 import CreateUserForm from '../components/CreateUserForm';
+import Modal from '@/components/ui/Modal';
 
 // ────────────────────────────────────────────────
 // Tipos locales
@@ -190,45 +191,44 @@ function PendingUsersTab() {
         </div>
       )}
 
-      {/* Modal de Confirmación de Rechazo */}
       {showConfirmDelete && userToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-            <div className="p-6">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
-                <XCircle size={32} />
-              </div>
-              <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2 tracking-tight">
-                ¿Rechazar solicitud?
-              </h3>
-              <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
-                Estás a punto de rechazar y eliminar la cuenta de <br />
-                <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
-                Esta acción no se puede deshacer.
-              </p>
-              
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowConfirmDelete(false)}
-                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleReject(userToDelete.id.toString())}
-                  disabled={deletingId !== null}
-                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
-                >
-                  {deletingId ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    'Sí, Rechazar'
-                  )}
-                </button>
-              </div>
+        <Modal
+          isOpen={true}
+          onClose={() => setShowConfirmDelete(false)}
+          title="¿Rechazar solicitud?"
+          size="sm"
+        >
+          <div className="text-center p-4">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
+              <XCircle size={32} />
+            </div>
+            <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+              Estás a punto de rechazar y eliminar la cuenta de <br />
+              <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
+              Esta acción no se puede deshacer.
+            </p>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleReject(userToDelete.id.toString())}
+                disabled={deletingId !== null}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
+              >
+                {deletingId ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  'Sí, Rechazar'
+                )}
+              </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
@@ -351,45 +351,44 @@ function ManageUsersTab() {
         </div>
       )}
 
-      {/* Modal de Confirmación de Eliminación */}
       {showConfirmDelete && userToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-            <div className="p-6">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
-                <Trash2 size={32} />
-              </div>
-              <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2 tracking-tight">
-                ¿Eliminar cuenta?
-              </h3>
-              <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
-                Estás a punto de eliminar a <br />
-                <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
-                Esta acción es irreversible y se perderá todo acceso.
-              </p>
-              
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowConfirmDelete(false)}
-                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleDelete(userToDelete.id.toString())}
-                  disabled={deletingId !== null}
-                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
-                >
-                  {deletingId ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    'Eliminar ahora'
-                  )}
-                </button>
-              </div>
+        <Modal
+          isOpen={true}
+          onClose={() => setShowConfirmDelete(false)}
+          title="¿Eliminar cuenta?"
+          size="sm"
+        >
+          <div className="text-center p-4">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
+              <Trash2 size={32} />
+            </div>
+            <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+              Estás a punto de eliminar a <br />
+              <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
+              Esta acción es irreversible y se perderá todo acceso.
+            </p>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(userToDelete.id.toString())}
+                disabled={deletingId !== null}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
+              >
+                {deletingId ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  'Eliminar ahora'
+                )}
+              </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
@@ -419,7 +418,7 @@ export default function UsersManagementPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="stagger-reveal">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
           <ShieldCheck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           Gestión de Usuarios
@@ -427,7 +426,7 @@ export default function UsersManagementPage() {
       </div>
 
       {/* Tabs */}
-      <div className="overflow-x-auto pb-2 -mx-2 px-2 custom-scrollbar">
+      <div className="overflow-x-auto pb-2 -mx-2 px-2 custom-scrollbar stagger-reveal">
         <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-2 w-max min-w-full shadow-inner transition-colors">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
@@ -447,7 +446,7 @@ export default function UsersManagementPage() {
       </div>
 
       {/* Contenido del tab */}
-      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 p-8 shadow-sm transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 p-8 shadow-sm transition-all duration-300 stagger-reveal">
         {activeTab === 'pending' && <PendingUsersTab />}
         {activeTab === 'manage' && <ManageUsersTab />}
         {activeTab === 'create-employee' && (

@@ -60,6 +60,13 @@ import AdminLayout from "@/modules/dashboard-jefe/components/layout/AdminLayout"
 import AdminDashboardPage from "@/modules/dashboard-jefe/pages/DashboardPage";
 import UsersManagementPage from "@/modules/dashboard-jefe/pages/UsersManagementPage";
 
+// Sprint 8 - Dashboard Empleado
+import EmployeeLayout from "@/modules/dashboard-empleado/components/layout/EmployeeLayout";
+import EmployeeDashboardPage from "@/modules/dashboard-empleado/pages/DashboardPage";
+import EmployeeTasksPage from "@/modules/dashboard-empleado/pages/TasksPage";
+import AvailableTasksPage from "@/modules/dashboard-empleado/pages/AvailableTasksPage";
+import EmployeeIncidencesPage from "@/modules/dashboard-empleado/pages/IncidencesPage";
+
 // Sprint 4 - Orders Management
 import OrdersPage from "@/modules/dashboard-jefe/pages/OrdersPage";
 
@@ -99,6 +106,7 @@ function App() {
           }}
           onShowPolicy={() => setShowCookiePolicy(true)}
         />
+        <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
         <Routes>
           {/* ════════════════════════════════════════ */}
           {/* 🌐 Landing Page pública */}
@@ -119,6 +127,8 @@ function App() {
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
           <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
           <Route path="/reset-password" element={<Navigate to="/auth/reset-password" replace />} />
+          <Route path="/auth/change-password" element={<Navigate to="/change-password" replace />} />
+          <Route path="/dashboard/client" element={<Navigate to="/" replace />} />
 
           {/* ════════════════════════════════════════ */}
           {/* 🔒 Dashboard Jefe (protegido) */}
@@ -146,6 +156,26 @@ function App() {
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* ════════════════════════════════════════ */}
+          {/* 🔒 Dashboard Empleado (protegido) */}
+          {/* ════════════════════════════════════════ */}
+          <Route
+            path="/dashboard/employee"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={["admin", "employee"]}
+                allowedOccupations={["cortador", "guarnecedor", "solador", "emplantillador"]}
+              >
+                <EmployeeLayout />
+              </RoleProtectedRoute>
+            }
+          >
+            <Route index element={<EmployeeDashboardPage />} />
+            <Route path="tasks" element={<EmployeeTasksPage />} />
+            <Route path="available-tasks" element={<AvailableTasksPage />} />
+            <Route path="incidences" element={<EmployeeIncidencesPage />} />
           </Route>
 
           {/* ════════════════════════════════════════ */}

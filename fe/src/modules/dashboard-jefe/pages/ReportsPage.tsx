@@ -11,20 +11,27 @@ import {
   getGlobalProduction, markTasksAsPaid,
   getRoleReport, getAllCustomersReport,
   DashboardReportResponse, EmployeeReportResponse, CustomerReportResponse,
-  ProductionGlobalReport
+  ProductionGlobalReport, TaskDetail
 } from '../services/reportsApi';
-import { exportEmployeePDF, exportCustomerPDF, exportProductionPDF } from '../utils/reportsUtils';
+import { exportEmployeePDF, exportCustomerPDF, exportOrdersPDF, exportTasksPDF } from '../utils/reportsUtils';
 import { TaskCard } from '../components/TaskCard';
 import axios from '@/api/axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const PROCESS_DISPLAY: Record<string, string> = {
+  cortador: 'Corte',
+  guarnecedor: 'Guarnición',
+  solador: 'Soladura',
+  emplantillador: 'Emplantillado',
+};
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'generator'>('dashboard');
   
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <BarChart className="w-8 h-8 text-orange-600" />
@@ -37,7 +44,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800/50 p-1 rounded-xl w-fit">
+      <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800/50 p-1 rounded-xl w-fit stagger-reveal">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
@@ -204,6 +211,13 @@ function ReportGeneratorTab() {
   const [isRoleReport, setIsRoleReport] = useState(false);
   const [isAllCustomers, setIsAllCustomers] = useState(false);
 
+  // Production tasks tab state
+  const [productionTab, setProductionTab] = useState<'orders' | 'tasks'>('orders');
+  const [prodTaskProcess, setProdTaskProcess] = useState<string>('all');
+  const [prodTaskStatusFilter, setProdTaskStatusFilter] = useState<'all' | 'completado' | 'pagado'>('all');
+  const [productionTasks, setProductionTasks] = useState<TaskDetail[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+
   // Load basic lists when mounting or changing type
   useEffect(() => {
     async function loadLists() {
@@ -273,6 +287,41 @@ function ReportGeneratorTab() {
     generate();
   }
   }, [reportType, selectedUserId, globalDays, dateMode, customStart, customEnd, isRoleReport, isAllCustomers, taskStatusFilter, orderStatusFilter]);
+
+  // Fetch tasks when production tasks tab is active
+  useEffect(() => {
+    if (reportType !== 'production' || productionTab !== 'tasks') return;
+    async function loadTasks() {
+      setTasksLoading(true);
+      try {
+        let startDate: string | undefined;
+        let endDate: string | undefined;
+        if (dateMode === 'custom' && customStart && customEnd) {
+          startDate = new Date(customStart).toISOString();
+          endDate = new Date(customEnd + 'T23:59:59').toISOString();
+        } else {
+          endDate = new Date().toISOString();
+          startDate = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+        }
+        const roleNames = ['cortador', 'guarnecedor', 'solador', 'emplantillador'];
+        if (prodTaskProcess === 'all') {
+          const results = await Promise.all(
+            roleNames.map(r => getRoleReport(r, startDate, endDate, prodTaskStatusFilter).catch(() => null))
+          );
+          const allTasks = results.flatMap(r => r?.tasks_list ?? []);
+          setProductionTasks(allTasks);
+        } else {
+          const res = await getRoleReport(prodTaskProcess, startDate, endDate, prodTaskStatusFilter);
+          setProductionTasks(res?.tasks_list ?? []);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setTasksLoading(false);
+      }
+    }
+    loadTasks();
+  }, [reportType, productionTab, prodTaskProcess, prodTaskStatusFilter, globalDays, dateMode, customStart, customEnd]);
 
   const resetAll = () => {
     setSelectedRole(null);
@@ -544,7 +593,13 @@ function ReportGeneratorTab() {
                     endDate = new Date().toISOString();
                     startDate = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
                   }
-                  employeeReport && exportEmployeePDF(employeeReport, isRoleReport ? `Reporte de Cargo: ${selectedRole?.toUpperCase()}` : `Reporte de Empleado: ${employeeReport.name}`, startDate, endDate);
+                  if (employeeReport) {
+                    const tasksToExport = taskStatusFilter !== 'all'
+                      ? employeeReport.tasks_list.filter(t => t.status === taskStatusFilter)
+                      : employeeReport.tasks_list;
+                    const filteredData = { ...employeeReport, tasks_list: tasksToExport };
+                    exportEmployeePDF(filteredData, isRoleReport ? `Reporte de Cargo: ${selectedRole?.toUpperCase()}` : `Reporte de Empleado: ${employeeReport.name}`, startDate, endDate);
+                  }
                 }}
                 className="text-sm font-bold py-2"
               >
@@ -841,40 +896,107 @@ function ReportGeneratorTab() {
 
       {productionReport && !loadingReport && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-gray-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-gray-100 dark:border-slate-700">
-          <div className="flex justify-between items-center mb-6 pb-4">
+          {/* Tabs */}
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
             <div>
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Producción y Ventas Globales</h2>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Producción y Ventas</h2>
               <p className="text-sm font-bold text-purple-600">Rendimiento y Volumen de Pedidos</p>
+            </div>
+            <div className="flex gap-1 bg-gray-100 dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-700">
+              <button
+                onClick={() => setProductionTab('orders')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${productionTab === 'orders' ? 'bg-white dark:bg-slate-800 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                Pedidos
+              </button>
+              <button
+                onClick={() => setProductionTab('tasks')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${productionTab === 'tasks' ? 'bg-white dark:bg-slate-800 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              >
+                <Activity className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                Tareas
+              </button>
             </div>
           </div>
 
+          {/* Filters + Export */}
           <div className="flex flex-wrap items-center justify-between gap-6 mb-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
-            <div className="flex flex-col gap-3 w-full lg:w-auto">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Filtrar por Estado de Pedido</label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: 'Todos', value: 'all' },
-                  { label: 'Pendientes', value: 'pendiente' },
-                  { label: 'En Producción', value: 'en_progreso' },
-                  { label: 'Completados', value: 'completado' },
-                  { label: 'Entregados', value: 'entregado' },
-                  { label: 'Cancelados', value: 'cancelado' }
-                ].map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => setOrderStatusFilter(s.value as any)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${
-                      orderStatusFilter === s.value 
-                        ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none scale-105' 
-                        : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-purple-200'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
+            {productionTab === 'orders' ? (
+              <div className="flex flex-col gap-3 w-full lg:w-auto">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Filtrar por Estado de Pedido</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Todos', value: 'all' },
+                    { label: 'Pendientes', value: 'pendiente' },
+                    { label: 'En Producción', value: 'en_progreso' },
+                    { label: 'Completados', value: 'completado' },
+                    { label: 'Entregados', value: 'entregado' },
+                    { label: 'Cancelados', value: 'cancelado' }
+                  ].map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => setOrderStatusFilter(s.value as any)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${
+                        orderStatusFilter === s.value 
+                          ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none scale-105' 
+                          : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-purple-200'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <Button 
+            ) : (
+              <div className="flex flex-col gap-3 w-full lg:w-auto">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Filtrar por Tipo de Proceso</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Todos', value: 'all' },
+                    { label: 'Corte', value: 'cortador' },
+                    { label: 'Guarnición', value: 'guarnecedor' },
+                    { label: 'Soladura', value: 'solador' },
+                    { label: 'Emplantillado', value: 'emplantillador' },
+                  ].map((p) => (
+                    <button
+                      key={p.value}
+                      onClick={() => setProdTaskProcess(p.value)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${
+                        prodTaskProcess === p.value
+                          ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none scale-105'
+                          : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-purple-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 w-full">Estado de Tarea</label>
+                  <div className="flex gap-2">
+                    {[
+                      { label: 'Todas', value: 'all' },
+                      { label: 'Completadas', value: 'completado' },
+                      { label: 'Pagadas', value: 'pagado' },
+                    ].map((st) => (
+                      <button
+                        key={st.value}
+                        onClick={() => setProdTaskStatusFilter(st.value as any)}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
+                          prodTaskStatusFilter === st.value
+                            ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300'
+                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:border-purple-200'
+                        }`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <Button
               onClick={() => {
                 let sd: string | undefined;
                 let ed: string | undefined;
@@ -885,135 +1007,212 @@ function ReportGeneratorTab() {
                   ed = new Date().toISOString();
                   sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
                 }
-                productionReport && exportProductionPDF(productionReport, sd, ed);
+                if (productionTab === 'orders') {
+                  const filtered = productionReport.orders;
+                  const totalOrders = filtered.length;
+                  const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
+                  exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed);
+                } else {
+                  const totalTasks = productionTasks.length;
+                  const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
+                  exportTasksPDF(productionTasks, totalTasks, totalPairs, sd, ed);
+                }
               }}
               className="text-sm font-bold py-2 w-full lg:w-auto"
             >
               <Download className="w-4 h-4 mr-2" /> Exportar PDF
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-              <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pedidos Creados</p>
-              <p className="text-4xl font-black text-blue-600 dark:text-blue-400">{productionReport.total_orders_created}</p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-              <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares Ordenados</p>
-              <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{productionReport.total_pairs_ordered}</p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-              <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares Fabricados</p>
-              <p className="text-4xl font-black text-green-600 dark:text-green-400">{productionReport.total_pairs_period}</p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-              <p className="text-xs font-bold text-gray-500 uppercase mb-1">Vales Completados</p>
-              <p className="text-4xl font-black text-gray-900 dark:text-white">{productionReport.total_tasks_period}</p>
-            </div>
-          </div>
 
-          <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-purple-500" /> Pedidos en el Periodo
-          </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-            {productionReport.orders && productionReport.orders.length > 0 ? productionReport.orders.map(o => (
-              <div 
-                key={o.id} 
-                onClick={() => navigate(`/dashboard/admin/orders?order=${o.id}`)}
-                className="cursor-pointer bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex items-center justify-between gap-4 group/card"
-              >
-                <div className="flex items-center gap-6 flex-1 min-w-0">
-                  <div className="shrink-0 w-24">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">ID PEDIDO</p>
-                    <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">#{o.id.toString().substring(0, 8)}</h4>
-                    <p className="text-[10px] text-gray-500 font-bold">{new Date(o.created_at).toLocaleDateString()}</p>
+          {productionTab === 'orders' ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pedidos Creados</p>
+                  <p className="text-4xl font-black text-blue-600 dark:text-blue-400">{productionReport.total_orders_created}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares Ordenados</p>
+                  <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{productionReport.total_pairs_ordered}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares Fabricados</p>
+                  <p className="text-4xl font-black text-green-600 dark:text-green-400">{productionReport.total_pairs_period}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Vales Completados</p>
+                  <p className="text-4xl font-black text-gray-900 dark:text-white">{productionReport.total_tasks_period}</p>
+                </div>
+              </div>
+
+              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-purple-500" /> Pedidos en el Periodo
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                {productionReport.orders && productionReport.orders.length > 0 ? productionReport.orders.map(o => (
+                  <div 
+                    key={o.id} 
+                    onClick={() => navigate(`/dashboard/admin/orders?order=${o.id}`)}
+                    className="cursor-pointer bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex items-center justify-between gap-4 group/card"
+                  >
+                    <div className="flex items-center gap-6 flex-1 min-w-0">
+                      <div className="shrink-0 w-24">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">ID PEDIDO</p>
+                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">#{o.id.toString().substring(0, 8)}</h4>
+                        <p className="text-[10px] text-gray-500 font-bold">{new Date(o.created_at).toLocaleDateString()}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                        {o.items && o.items.map(p => {
+                          const productImg = p.image_url && !p.image_url.startsWith('http') ? `${API_URL}${p.image_url}` : (p.image_url || "https://via.placeholder.com/150");
+                          return (
+                            <div key={p.product_id} className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shrink-0">
+                              <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
+                                <img src={productImg} alt={p.product_name} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate max-w-[80px]">{p.product_name}</p>
+                                <p className="text-[9px] text-gray-500">{p.amount} p</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="text-right">
+                        <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg border ${
+                          o.state === 'entregado' ? 'bg-green-100 text-green-700 border-green-200' :
+                          o.state === 'pendiente' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                          o.state === 'en_progreso' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                          'bg-gray-100 text-gray-700 border-gray-200'
+                        }`}>
+                          {o.state === 'en_progreso' ? 'En Producción' : o.state.replace('_', ' ')}
+                        </span>
+                        <p className="text-xs font-black text-blue-600 mt-1">{o.total_pairs} pares</p>
+                      </div>
+                    </div>
                   </div>
+                )) : (
+                  <div className="col-span-full text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
+                    <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                    <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay pedidos registrados en este periodo</p>
+                  </div>
+                )}
+              </div>
 
-                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                    {o.items && o.items.map(p => {
-                      const productImg = p.image_url && !p.image_url.startsWith('http') ? `${API_URL}${p.image_url}` : (p.image_url || "https://via.placeholder.com/150");
-                      return (
-                        <div key={p.product_id} className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shrink-0">
-                          <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
-                            <img src={productImg} alt={p.product_name} className="w-full h-full object-cover" />
+              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-purple-500" /> Rendimiento Semanal
+              </h3>
+              <div className="space-y-3">
+                {productionReport.weekly_metrics.length > 0 ? productionReport.weekly_metrics.map(w => (
+                  <div key={w.week} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400">
+                          {w.week.split('-W')[1]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase">Semana {w.week.split('-W')[1]}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase">{w.week.split('-W')[0]}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:flex items-center gap-6">
+                        <div className="text-center sm:text-right">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pedidos</p>
+                          <p className="text-sm font-black text-blue-600">{w.orders_created}</p>
+                        </div>
+                        <div className="text-center sm:text-right">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pares Ord.</p>
+                          <p className="text-sm font-black text-indigo-600">{w.pairs_ordered}</p>
+                        </div>
+                        <div className="text-center sm:text-right border-l border-gray-100 dark:border-slate-800 pl-4">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pares Fab.</p>
+                          <p className="text-sm font-black text-green-600">{w.pairs_manufactured}</p>
+                        </div>
+                        <div className="text-center sm:text-right">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Tareas</p>
+                          <p className="text-sm font-black text-gray-900 dark:text-white">{w.tasks_completed}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
+                    <Activity className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                    <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay datos en este periodo</p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Tareas en Período</p>
+                  <p className="text-4xl font-black text-purple-600 dark:text-purple-400">{tasksLoading ? '...' : productionTasks.length}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Total Pares</p>
+                  <p className="text-4xl font-black text-green-600 dark:text-green-400">{tasksLoading ? '...' : productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0)}</p>
+                </div>
+              </div>
+
+              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-purple-500" /> Tareas Registradas
+              </h3>
+
+              {tasksLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : productionTasks.length > 0 ? (
+                <div className="space-y-3 mb-8">
+                  {productionTasks.map(t => (
+                    <div key={t.id} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400 text-sm shrink-0">
+                            {t.vale_number || '—'}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate max-w-[80px]">{p.product_name}</p>
-                            <p className="text-[9px] text-gray-500">{p.amount} p</p>
+                            <p className="text-sm font-black text-gray-900 dark:text-white truncate">{t.product_name}</p>
+                            {t.colour && <p className="text-xs text-gray-500">{t.colour}</p>}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
+                                {PROCESS_DISPLAY[t.process_name] || t.process_name}
+                              </span>
+                              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{t.amount} pares</span>
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="text-right shrink-0">
+                          <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-lg border ${
+                            t.status === 'pagado' ? 'bg-green-100 text-green-700 border-green-200' :
+                            t.status === 'completado' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                            'bg-yellow-100 text-yellow-700 border-yellow-200'
+                          }`}>
+                            {t.status}
+                          </span>
+                          {t.task_total_price != null && (
+                            <p className="text-xs font-black text-gray-700 dark:text-gray-300 mt-1">
+                              ${t.task_total_price.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="flex items-center gap-6 shrink-0">
-                  <div className="text-right">
-                    <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg border ${
-                      o.state === 'entregado' ? 'bg-green-100 text-green-700 border-green-200' :
-                      o.state === 'pendiente' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                      o.state === 'en_progreso' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                      'bg-gray-100 text-gray-700 border-gray-200'
-                    }`}>
-                      {o.state === 'en_progreso' ? 'En Producción' : o.state.replace('_', ' ')}
-                    </span>
-                    <p className="text-xs font-black text-blue-600 mt-1">{o.total_pairs} pares</p>
-                  </div>
+              ) : (
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800 mb-8">
+                  <Activity className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay tareas registradas en este periodo</p>
                 </div>
-              </div>
-            )) : (
-              <div className="col-span-full text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
-                <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay pedidos registrados en este periodo</p>
-              </div>
-            )}
-          </div>
-
-          <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-purple-500" /> Rendimiento Semanal
-          </h3>
-          <div className="space-y-3">
-            {productionReport.weekly_metrics.length > 0 ? productionReport.weekly_metrics.map(w => (
-              <div key={w.week} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400">
-                      {w.week.split('-W')[1]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-gray-900 dark:text-white uppercase">Semana {w.week.split('-W')[1]}</p>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">{w.week.split('-W')[0]}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 sm:flex items-center gap-6">
-                    <div className="text-center sm:text-right">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pedidos</p>
-                      <p className="text-sm font-black text-blue-600">{w.orders_created}</p>
-                    </div>
-                    <div className="text-center sm:text-right">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pares Ord.</p>
-                      <p className="text-sm font-black text-indigo-600">{w.pairs_ordered}</p>
-                    </div>
-                    <div className="text-center sm:text-right border-l border-gray-100 dark:border-slate-800 pl-4">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pares Fab.</p>
-                      <p className="text-sm font-black text-green-600">{w.pairs_manufactured}</p>
-                    </div>
-                    <div className="text-center sm:text-right">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Tareas</p>
-                      <p className="text-sm font-black text-gray-900 dark:text-white">{w.tasks_completed}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
-                <Activity className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay datos en este periodo</p>
-              </div>
-            )}
-  
-
-          </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

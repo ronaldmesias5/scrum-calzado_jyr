@@ -26,7 +26,7 @@ export default function MetricsCards({ metrics }: Props) {
         return (
           <div
             key={m.label}
-            className="bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-all duration-300"
+            className="bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 stagger-reveal"
           >
             <div className="flex items-center justify-between">
               <div className={`p-2.5 rounded-xl ${bgColor}`}>

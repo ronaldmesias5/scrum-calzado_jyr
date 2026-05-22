@@ -1,0 +1,12 @@
+# Calzado J&R — robots.txt
+# https://calzadojyr.com/
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /auth/
+Disallow: /change-password
+
+Sitemap: https://calzadojyr.com/sitemap.xml

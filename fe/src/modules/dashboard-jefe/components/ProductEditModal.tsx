@@ -2,11 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Upload, DollarSign } from 'lucide-react';
 import { Product, listBrands, listCategories, listStyles, Brand, Category, Style } from '../services/catalogService';
 import { listSupplies, Supply, checkProductSupplies } from '../services/suppliesService';
+import Modal from '@/components/ui/Modal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const resolveImg = (url?: string | null) => {
   if (!url) return null;
-  if (url.startsWith('/uploads/')) return `${API_BASE}${url}`;
+  if (url.startsWith('/uploads/')) {
+    const filename = url.replace('/uploads/', '');
+    return `${API_BASE}/api/v1/uploads/${filename}`;
+  }
   return url;
 };
 
@@ -221,20 +225,16 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
   if (!isOpen || !product) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col animate-in fade-in zoom-in duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Editar Producto</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Modifica la información del producto</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors"
-          >
-            <X size={20} className="text-gray-600 dark:text-gray-400" />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Editar Producto"
+      size="xl"
+      className="max-h-[90vh]"
+    >
+      <div className="flex flex-col h-full">
+        <div className="px-6 py-2 -mt-4 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Modifica la información del producto</p>
         </div>
 
         {/* Body */}
@@ -545,6 +545,6 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,5 +1,6 @@
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { Product } from '../services/catalogService';
+import Modal from '@/components/ui/Modal';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -19,17 +20,16 @@ export default function DeleteConfirmModal({
   if (!isOpen || !product) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-        {/* Header with Icon */}
-        <div className="bg-red-50 dark:bg-red-900/20 px-6 py-5 flex items-center gap-3 border-b border-red-100 dark:border-red-900/30 transition-all">
-          <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl shadow-inner">
-            <AlertTriangle className="text-red-600 dark:text-red-400" size={28} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Eliminar Producto</h2>
-            <p className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-widest">Acción irreversible</p>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title="Eliminar Producto"
+      size="md"
+    >
+      <div className="flex flex-col">
+        {/* Header decoration (since title is in base Modal) */}
+        <div className="bg-red-50 dark:bg-red-900/10 px-6 py-2 -mt-4 mb-4 border-b border-red-100 dark:border-red-900/20">
+          <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest">Acción irreversible</p>
         </div>
 
         {/* Body with Product Details */}
@@ -86,6 +86,6 @@ export default function DeleteConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

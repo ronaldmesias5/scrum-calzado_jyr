@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -113,20 +114,16 @@ export default function EditProductModal({
   const total = getTotalAmount();
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800/50 dark:to-slate-800/30 transition-colors">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Editar Cantidades</h2>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">{productName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-full transition-all text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X size={24} />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Editar Cantidades"
+      size="xl"
+      className="max-h-[90vh]"
+    >
+      <div className="flex flex-col h-full">
+        <div className="px-6 py-2 -mt-4 mb-2">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{productName}</p>
         </div>
 
         {/* Body */}
@@ -263,6 +260,6 @@ export default function EditProductModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

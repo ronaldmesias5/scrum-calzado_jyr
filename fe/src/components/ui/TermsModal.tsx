@@ -5,45 +5,21 @@
  */
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import Modal from "@/components/ui/Modal";
 
 interface TermsModalProps {
   onClose: () => void;
 }
 
 export function TermsModal({ onClose }: TermsModalProps) {
-  // Cerrar con Escape
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Términos y Condiciones de Uso"
+      size="md"
     >
-      <div
-        className="relative w-full max-w-lg rounded-xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Encabezado */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h3 className="text-base font-bold text-gray-900">
-            Términos y Condiciones de Uso
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Cerrar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+      <div className="flex flex-col">
 
         {/* Contenido con scroll */}
         <div className="max-h-[60vh] overflow-y-auto px-6 py-4 text-sm text-gray-600 space-y-4">
@@ -145,6 +121,6 @@ export function TermsModal({ onClose }: TermsModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

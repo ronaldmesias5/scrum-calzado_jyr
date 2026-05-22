@@ -217,7 +217,7 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Package className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -244,7 +244,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 stagger-reveal">
         <StatCard
           label="Stock Total"
           value={totalStock}
@@ -272,7 +272,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Búsqueda y Filtros */}
-      <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300 stagger-reveal">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 items-end">
           {/* Categoría */}
           <div>
@@ -387,7 +387,7 @@ export default function InventoryPage() {
 
 
       {/* Tabla de Productos */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors stagger-reveal">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />

@@ -13,6 +13,7 @@ import {
   Style,
   Category,
 } from '../../services/catalogService';
+import Modal from '@/components/ui/Modal';
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -120,26 +121,15 @@ export default function ProductFormModal({
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-all duration-300" onClick={onClose} />
-      
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-slate-800 transition-all duration-300">
-          {/* Header */}
-          <div className="sticky top-0 bg-white dark:bg-slate-900 z-10 flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-slate-800 transition-colors">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {product ? 'Editar Producto' : 'Nuevo Producto'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Contenido */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white dark:bg-slate-900">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={product ? 'Editar Producto' : 'Nuevo Producto'}
+      size="md"
+    >
+      <div className="flex flex-col">
+        {/* Contenido */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white dark:bg-slate-900">
             {error && (
               <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse">
                 <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -251,8 +241,7 @@ export default function ProductFormModal({
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </>
+          </div>
+    </Modal>
   );
 }

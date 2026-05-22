@@ -109,6 +109,9 @@ services:
       # El frontend necesita coincidir: CORS solo permitirá esta URL.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
 
+      # Entorno: development (imprime emails en consola) | production (envía SMTP real)
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+
     ports:
       - "${BE_PORT:-8000}:8000"
 

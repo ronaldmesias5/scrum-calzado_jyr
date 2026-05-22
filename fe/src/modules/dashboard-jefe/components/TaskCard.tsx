@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   User, Calendar, Package, Scissors, Hammer, LayoutPanelLeft, 
-  ExternalLink 
+  ExternalLink, Loader2, UserPlus, CheckCircle
 } from 'lucide-react';
 import { ProductionTask } from '../services/ordersApi';
 
@@ -40,6 +40,11 @@ const BORDER_COLORS: Record<string, string> = {
   emplantillado: 'border-emerald-200 dark:border-emerald-900/50',
 };
 
+interface EmployeeOption {
+  id: string;
+  name: string;
+}
+
 interface TaskCardProps {
   task: ProductionTask;
   isEditable?: boolean;
@@ -52,6 +57,20 @@ interface TaskCardProps {
   onSelect?: (taskId: string) => void;
   showProductInfo?: boolean;
   compact?: boolean;
+  /** Para tareas pendientes sin empleado: permite asignar desde la card */
+  onAssignEmployee?: (taskId: string, employeeId: string) => void;
+  /** Lista de empleados disponibles para asignar */
+  employees?: EmployeeOption[];
+  /** Muestra botón "Reclamar" en lugar de dropdown de asignación (modo empleado) */
+  claimable?: boolean;
+  /** Callback cuando el empleado reclama una tarea disponible */
+  onClaim?: (taskId: string) => void;
+  /** Muestra botón "Completar" en lugar de dropdown de estado (modo empleado) */
+  completable?: boolean;
+  /** Callback cuando el empleado completa su tarea */
+  onCompleteTask?: (taskId: string) => void;
+  /** ID de tarea en proceso de acción (para spinner) */
+  actionLoadingId?: string | null;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -65,7 +84,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   selected,
   onSelect,
   showProductInfo = true,
-  compact = false
+  compact = false,
+  onAssignEmployee,
+  employees = [],
+  claimable,
+  onClaim,
+  completable,
+  onCompleteTask,
+  actionLoadingId,
 }) => {
   const StageIcon = STAGE_ICONS[task.type] || Package;
   const stageColor = STAGE_COLORS[task.type] || 'bg-gray-50';
@@ -75,20 +101,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const isCompleted = task.status === 'completado';
   const isPaid = task.status === 'pagado';
   const isCancelled = task.status === 'cancelado';
-  const isPending = task.status === 'pendiente' || task.status === 'por_liquidar';
+  const isPorLiquidar = task.status === 'por_liquidar';
+  const isPendienteSinAsignar = task.status === 'pendiente' && !task.assigned_to;
   const isInProgress = task.status === 'en_progreso';
+  const isPendienteConAsignado = task.status === 'pendiente' && !!task.assigned_to;
 
   const pricePerDozen = task.task_prices?.[task.type] ?? 0;
   const totalPairs = task.amount || task.total_pairs || 0;
   const totalCost = Math.round((totalPairs / 12) * pricePerDozen);
 
+  /**
+   * Determina si el control principal debe ser el dropdown de asignar empleado
+   * (cuando la tarea está pendiente, sin empleado, y hay callback disponible)
+   */
+  const showEmployeeAssign = isPendienteSinAsignar && !!onAssignEmployee && employees.length > 0;
+
   return (
     <div 
       onClick={() => selectable && onSelect && onSelect(task.id)}
-      className={`group relative border-2 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col bg-white dark:bg-slate-800 ${borderColor} ${selectable ? 'cursor-pointer' : ''} ${selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+      className={`group relative border-2 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col bg-white dark:bg-slate-800 ${borderColor} ${selectable ? 'cursor-pointer' : ''} ${selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
     >
       {/* Header Card */}
-      <div className={`${compact ? 'p-3' : 'p-4'} border-b ${headerColor}`}>
+      <div className={`${compact ? 'p-3' : 'p-4'} border-b ${headerColor} bg-gradient-to-br from-white/10 to-transparent`}>
         <div className={`flex items-center justify-between gap-3 ${compact ? 'mb-2' : 'mb-3'}`}>
           <div className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider ${stageColor}`}>
             <StageIcon size={14} />
@@ -140,8 +174,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <User size={16} className="text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-black text-white truncate uppercase tracking-tight drop-shadow-sm">{task.assigned_user_name || 'Sin asignar'}</p>
-            <p className="text-[9px] text-white font-bold uppercase tracking-widest drop-shadow-sm opacity-80">{task.assigned_user_occupation || 'Operario'}</p>
+            <p className="text-[11px] font-black text-white truncate uppercase tracking-tight drop-shadow-sm">
+              {showEmployeeAssign ? 'Sin asignar' : (task.assigned_user_name || 'Sin asignar')}
+            </p>
+            <p className="text-[9px] text-white font-bold uppercase tracking-widest drop-shadow-sm opacity-80">
+              {showEmployeeAssign ? 'Pendiente de asignación' : (task.assigned_user_occupation || 'Operario')}
+            </p>
           </div>
         </div>
       </div>
@@ -152,13 +190,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Estado</p>
           <div className={`px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-wider whitespace-nowrap shadow-sm ${
               isPaid ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' :
-              isCompleted ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
-              isInProgress ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
-              isPending ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800' :
+              isCompleted ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800' :
+              isPendienteConAsignado || isInProgress ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+              isPendienteSinAsignar ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800' :
+              isPorLiquidar ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800' :
               isCancelled ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
               'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800'
             }`}>
-              {isPaid ? '✅ Pagado' : isCompleted ? '✅ Completado' : isInProgress ? '🔄 En Progreso' : isPending ? '⏳ Por Liquidar' : isCancelled ? '❌ Cancelado' : 'Desconocido'}
+              {isPaid ? '✅ Pagado' : isCompleted ? '⏳ Por Liquidar' : isPendienteConAsignado || isInProgress ? '🔄 En Progreso' : isPendienteSinAsignar ? '⏳ Pendiente' : isPorLiquidar ? '⏳ Por Liquidar' : isCancelled ? '❌ Cancelado' : 'Desconocido'}
             </div>
         </div>
         
@@ -182,17 +221,64 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Controles */}
         <div className="flex flex-col gap-3 mt-auto pt-2">
-          {isEditable ? (
+          {claimable && onClaim && isPendienteSinAsignar ? (
+            /* BOTÓN RECLAMAR (modo empleado, tarea disponible) */
+            <button
+              onClick={() => onClaim(task.id)}
+              disabled={actionLoadingId === task.id}
+              className={`w-full text-[10px] font-black uppercase tracking-wider text-white bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 border-none ${compact ? 'py-2.5' : 'py-3.5'} rounded-xl shadow-lg shadow-green-600/20 hover:shadow-green-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]`}
+            >
+              {actionLoadingId === task.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserPlus size={14} />
+              )}
+              Reclamar
+            </button>
+          ) : completable && onCompleteTask && (isInProgress || isPendienteConAsignado) ? (
+            /* BOTÓN COMPLETAR (modo empleado, tarea asignada) */
+            <button
+              onClick={() => onCompleteTask(task.id)}
+              disabled={actionLoadingId === task.id}
+              className={`w-full text-[10px] font-black uppercase tracking-wider text-white bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 border-none ${compact ? 'py-2.5' : 'py-3.5'} rounded-xl shadow-lg shadow-green-600/20 hover:shadow-green-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]`}
+            >
+              {actionLoadingId === task.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle size={14} />
+              )}
+              Completar
+            </button>
+          ) : showEmployeeAssign ? (
+            /* TAREA PENDIENTE SIN EMPLEADO: dropdown de asignación */
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] font-black text-purple-700 dark:text-purple-300 uppercase tracking-widest">
+                👤 Asignar empleado
+              </p>
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onAssignEmployee(task.id, e.target.value);
+                  }
+                }}
+                className={`w-full text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-900/60 border-2 border-purple-300 dark:border-purple-700 rounded-xl ${compact ? 'px-3 py-2' : 'px-4 py-3'} cursor-pointer outline-none hover:border-purple-400 dark:hover:border-purple-600 transition-colors focus:ring-2 focus:ring-purple-500/20`}
+              >
+                <option value="">Seleccionar empleado...</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : isEditable ? (
             <select
               value={task.status}
               onChange={(e) => onUpdateStatus && onUpdateStatus(task.id, e.target.value)}
               disabled={updatingTaskId === task.id}
               className={`w-full text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-900/60 border-2 border-gray-200 dark:border-slate-700 rounded-xl ${compact ? 'px-3 py-2' : 'px-4 py-3'} cursor-pointer disabled:opacity-50 outline-none hover:border-gray-300 dark:hover:border-slate-600 transition-colors focus:ring-2 focus:ring-blue-500/20`}
             >
-              <option value="por_liquidar">⏳ Por Liquidar</option>
               <option value="en_progreso">🔄 En Progreso</option>
               <option value="completado">✅ Completado</option>
-              <option value="pagado">✅ Pagado</option>
               <option value="cancelado">❌ Cancelado</option>
             </select>
           ) : isBlocked ? (
@@ -204,8 +290,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               ✅ TAREA PAGADA
             </div>
           ) : isCompleted ? (
-            <div className={`w-full text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl ${compact ? 'px-3 py-2' : 'px-4 py-3'} text-center font-black`}>
-              ✅ POR LIQUIDAR
+            <div className={`w-full text-[10px] font-black uppercase tracking-wider text-fuchsia-700 dark:text-fuchsia-300 bg-fuchsia-50 dark:bg-fuchsia-900/20 border-2 border-fuchsia-200 dark:border-fuchsia-700 rounded-xl ${compact ? 'px-3 py-2' : 'px-4 py-3'} text-center font-black`}>
+              ⏳ POR LIQUIDAR
             </div>
           ) : (
             <div className={`w-full text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-2 border-gray-200 dark:border-gray-700 rounded-xl ${compact ? 'px-3 py-2' : 'px-4 py-3'} text-center`}>

@@ -66,27 +66,26 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
    
 3. Scripts de /docker-entrypoint-initdb.d/ se ejecutan
    └─> db/init/init.sql se ejecuta
-   └─> CREATE EXTENSION uuid-ossp
-   └─> CREATE EXTENSION pg_trgm
-   └─> ALTER DATABASE SET timezone TO 'UTC'
+   └─> CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
    └─> PostgreSQL lista ✅
    
 4. Backend (FastAPI) arranca
    └─> be/app/main.py inicia
    └─> lifespan() ejecuta: run_migrations()
    └─> Ejecuta: alembic upgrade head
-   └─> Crea tablas desde migraciones (001 → 004)
-   └─> Inserta datos iniciales (roles, tipos de doc, usuarios)
+   └─> Crea tablas desde migraciones (001 → 023)
+   └─> Inserta datos iniciales (roles, tipos de doc, usuarios, 65 productos)
    └─> Backend listo ✅
    
 5. Frontend (React) arranca
    └─> FE listo ✅
 
 6. Sistema completo operacional ✅
-   ├─ BD con 17 tablas versionadas
+   ├─ BD con 22 tablas versionadas
    ├─ 65 productos en catálogo
    ├─ 3 roles (admin, employee, client)
-   ├─ 3 usuarios de prueba
+   ├─ Usuarios de prueba (jefe, cortador, cliente)
+   ├─ Integración Mailpit para captura de correos
    └─ Ready para desarrollo / demostración
 ```
 
@@ -172,4 +171,4 @@ docker compose logs db -f
 
 ---
 
-**Última actualización:** 2026-03-25
+**Última actualización:** 2026-05-15

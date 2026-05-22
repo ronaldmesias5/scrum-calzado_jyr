@@ -53,11 +53,13 @@ class AdminCreateEmployeeRequest(BaseModel):
     identity_document: str | None = None
     identity_document_type_id: uuid.UUID | None = None
     occupation: OccupationType
-    password: str
+    password: str | None = None
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, v: str) -> str:
+    def validate_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         return _validate_password_strength(v)
 
     @field_validator("name")
@@ -86,11 +88,13 @@ class AdminCreateClientRequest(BaseModel):
     identity_document: str | None = None
     identity_document_type_id: uuid.UUID | None = None
     business_name: str | None = None
-    password: str
+    password: str | None = None
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, v: str) -> str:
+    def validate_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         return _validate_password_strength(v)
 
     @field_validator("name")
@@ -118,11 +122,13 @@ class AdminCreateJefeRequest(BaseModel):
     phone: str | None = None
     identity_document: str | None = None
     identity_document_type_id: uuid.UUID | None = None
-    password: str
+    password: str | None = None
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, v: str) -> str:
+    def validate_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         return _validate_password_strength(v)
 
     @field_validator("name")

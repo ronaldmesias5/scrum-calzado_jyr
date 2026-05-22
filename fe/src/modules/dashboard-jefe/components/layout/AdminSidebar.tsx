@@ -76,7 +76,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               onClick={() => { if (window.innerWidth < 1024) onClose(); }}
               end={path === '/dashboard/admin'}
               className={({ isActive }) =>
-                `flex items-center justify-between px-5 py-3 text-sm font-semibold transition-all duration-200 rounded-none
+                `flex items-center justify-between px-5 py-3 text-sm font-semibold transition-all duration-200 rounded-none hover:scale-[1.02] hover:translate-x-0.5
                 ${isActive
                   ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'

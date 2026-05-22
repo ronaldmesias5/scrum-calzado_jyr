@@ -1,5 +1,6 @@
 import { ShieldAlert, ShieldCheck, Loader2 } from 'lucide-react';
 import type { UserResponse } from '@/types/auth';
+import Modal from '@/components/ui/Modal';
 
 interface StatusConfirmModalProps {
   isOpen: boolean;
@@ -21,25 +22,18 @@ export default function StatusConfirmModal({
   const isActivating = !employee.is_active;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 transition-all duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-slate-800 transition-all">
-        {/* Header with Icon */}
-        <div className={`${isActivating ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'} px-6 py-5 flex items-center gap-4 border-b ${isActivating ? 'border-green-100 dark:border-green-900/30' : 'border-red-100 dark:border-red-900/30'} transition-all`}>
-          <div className={`p-3 ${isActivating ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} rounded-xl`}>
-            {isActivating ? (
-              <ShieldCheck className="text-green-600" size={28} />
-            ) : (
-              <ShieldAlert className="text-red-600" size={28} />
-            )}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors">
-              {isActivating ? 'Activar Empleado' : 'Desactivar Empleado'}
-            </h2>
-            <p className={`text-[10px] font-black uppercase tracking-widest ${isActivating ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              Confirmación de seguridad
-            </p>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={isActivating ? 'Activar Empleado' : 'Desactivar Empleado'}
+      size="md"
+    >
+      <div className="flex flex-col">
+        {/* Header decoration */}
+        <div className={`${isActivating ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'} px-6 py-2 -mt-4 mb-4 border-b ${isActivating ? 'border-green-100 dark:border-green-900/20' : 'border-red-100 dark:border-red-900/20'}`}>
+          <p className={`text-[10px] font-black uppercase tracking-widest ${isActivating ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            Confirmación de seguridad
+          </p>
         </div>
 
         {/* Body */}
@@ -94,6 +88,6 @@ export default function StatusConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

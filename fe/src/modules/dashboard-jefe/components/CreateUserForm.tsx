@@ -1,19 +1,18 @@
 /**
  * Componente: CreateUserForm.tsx
  * Descripción: Formulario compartido para crear empleados o clientes.
+ * La contraseña la genera automáticamente el sistema y se envía al email del usuario.
  */
 
 import { useState } from 'react';
-import { 
-  UserPlus, CheckCircle, XCircle, Loader2, Eye, EyeOff 
-} from 'lucide-react';
-import { 
-  createEmployee, 
-  createClient, 
-  type CreateEmployeeRequest, 
-  type CreateClientRequest 
+import { UserPlus, CheckCircle, XCircle, Loader2, Copy, KeyRound, Mail, Eye } from 'lucide-react';
+import {
+  createEmployee,
+  createClient,
+  type CreateEmployeeRequest,
+  type CreateClientRequest,
 } from '../services/adminApi';
-import type { TypeDocument } from '@/types/auth';
+import type { TypeDocument, UserResponse } from '@/types/auth';
 
 type UserType = 'employee' | 'client';
 
@@ -35,18 +34,32 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
     identity_document_type_id: '',
     occupation: '',
     business_name: '',
-    password: '',
-    confirm_password: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{
+    user: UserResponse;
+    email: string;
+    tempPassword: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError(null);
-    setSuccess(null);
+  };
+
+  const handleCopyPassword = async () => {
+    if (!success?.tempPassword) return;
+    try {
+      await navigator.clipboard.writeText(success.tempPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback para navegadores sin clipboard API
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,34 +67,27 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
     setError(null);
     setSuccess(null);
 
-    if (form.password !== form.confirm_password) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
-
     setLoading(true);
     try {
+      let result: UserResponse;
       if (isEmployee) {
         const payload: CreateEmployeeRequest = {
           email: form.email,
           name: form.name,
           last_name: form.last_name,
           occupation: form.occupation as CreateEmployeeRequest['occupation'],
-          password: form.password,
           ...(form.phone && { phone: form.phone }),
           ...(form.identity_document && { identity_document: form.identity_document }),
           ...(form.identity_document_type_id && {
             identity_document_type_id: form.identity_document_type_id,
           }),
         };
-        await createEmployee(payload);
-        setSuccess(`Empleado ${form.name} ${form.last_name} creado correctamente.`);
+        result = await createEmployee(payload);
       } else {
         const payload: CreateClientRequest = {
           email: form.email,
           name: form.name,
           last_name: form.last_name,
-          password: form.password,
           ...(form.phone && { phone: form.phone }),
           ...(form.identity_document && { identity_document: form.identity_document }),
           ...(form.identity_document_type_id && {
@@ -89,19 +95,23 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
           }),
           ...(form.business_name && { business_name: form.business_name }),
         };
-        await createClient(payload);
-        setSuccess(`Cliente ${form.name} ${form.last_name} creado correctamente.`);
+        result = await createClient(payload);
       }
 
-      // Limpiar formulario tras éxito
+      setSuccess({
+        user: result,
+        email: form.email,
+        tempPassword: result.temporary_password || 'No disponible',
+      });
+
       setForm({
         email: '', name: '', last_name: '', phone: '',
         identity_document: '', identity_document_type_id: '',
-        occupation: '', business_name: '', password: '', confirm_password: '',
+        occupation: '', business_name: '',
       });
-      
+
       if (onSuccess) onSuccess();
-      
+
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -112,18 +122,78 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
     }
   };
 
+  if (success) {
+    const label = isEmployee ? 'empleado' : 'cliente';
+    const occupationLabels: Record<string, string> = {
+      cortador: 'Cortador', guarnecedor: 'Guarnecedor',
+      solador: 'Solador', emplantillador: 'Emplantillador', jefe: 'Jefe',
+    };
+
+    return (
+      <div className="w-full bg-white dark:bg-slate-900 transition-colors">
+        <h3 className="text-xl font-bold text-green-700 dark:text-green-400 mb-4 tracking-tight flex items-center gap-2">
+          <CheckCircle size={22} />
+          {isEmployee ? 'Empleado' : 'Cliente'} creado correctamente
+        </h3>
+
+        <div className="mb-5 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+          <p className="text-sm font-bold text-green-800 dark:text-green-300 mb-3 flex items-center gap-2">
+            <Mail size={16} /> Credenciales enviadas a <strong>{success.email}</strong>
+          </p>
+          {isEmployee && success.user.occupation && (
+            <p className="text-xs text-green-700 dark:text-green-400 mb-2">
+              Ocupación: {occupationLabels[success.user.occupation] || success.user.occupation}
+            </p>
+          )}
+
+          <div className="mt-3 p-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                Contraseña temporal
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyPassword}
+                className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors"
+              >
+                {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+                {copied ? 'Copiado' : 'Copiar'}
+              </button>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg">
+              <KeyRound size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="text-base font-mono font-bold text-amber-800 dark:text-amber-300 tracking-wider select-all">
+                {success.tempPassword}
+              </span>
+              <Eye size={16} className="text-amber-500 shrink-0 ml-auto" />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">
+            ⚠️ Esta contraseña se muestra solo una vez. El {label} deberá cambiarla al iniciar sesión por primera vez.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSuccess(null)}
+          className="mt-6 flex items-center justify-center gap-2 px-8 py-3.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-black text-sm rounded-2xl transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-[0.98] w-full sm:w-auto"
+        >
+          <UserPlus size={20} />
+          CREAR OTRO {isEmployee ? 'EMPLEADO' : 'CLIENTE'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="w-full bg-white dark:bg-slate-900 transition-colors">
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
         {isEmployee ? 'Datos del nuevo empleado' : 'Datos del nuevo cliente'}
       </h3>
 
-      {success && (
-        <div className="mb-5 flex items-start gap-2 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-          <CheckCircle size={16} className="mt-0.5 shrink-0" />
-          {success}
-        </div>
-      )}
       {error && (
         <div className="mb-5 flex items-start gap-2 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           <XCircle size={16} className="mt-0.5 shrink-0" />
@@ -250,47 +320,10 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
             />
           </div>
         )}
-
-        {/* Contraseña */}
-        <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Contraseña *</label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              placeholder="Mín. 8 caracteres"
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Confirmar contraseña */}
-        <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Confirmar contraseña *</label>
-          <input
-            type={showPassword ? 'text' : 'password'}
-            name="confirm_password"
-            value={form.confirm_password}
-            onChange={handleChange}
-            required
-            placeholder="Repite la contraseña"
-            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
-          />
-        </div>
       </div>
 
-      <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 px-4 py-3 rounded-xl transition-all">
-        ⚠️ El {isEmployee ? 'empleado' : 'cliente'} deberá cambiar su contraseña al iniciar sesión por primera vez.
+      <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 px-4 py-3 rounded-xl transition-all">
+        📧 El sistema generará una contraseña automáticamente y la enviará al correo del {isEmployee ? 'empleado' : 'cliente'}.
       </p>
 
       <button
