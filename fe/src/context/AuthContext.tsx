@@ -22,7 +22,7 @@
  *                App.tsx (wrap con <AuthProvider>), hooks/useAuth.ts
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import * as authApi from "@/modules/auth/services/api";
 import { AuthContext } from "@/context/authContextDef";
@@ -36,6 +36,9 @@ import type {
   UserResponse,
 } from "@/types/auth";
 
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
+const INACTIVITY_CHECK_INTERVAL = 30_000; // cada 30s
+
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -48,8 +51,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Consideramos al usuario autenticado verdaderamente si el API nos valida quien es
   const isAuthenticated = !!user && !!accessToken;
+
+  const lastActivityRef = useRef(Date.now());
 
   const saveTokens = useCallback((access: string, refresh: string) => {
     setAccessToken(access);
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
   }, []);
 
+  // ─── Verificar sesión al montar ──────────────────────────────
   useEffect(() => {
     const verifySession = async () => {
       const token = sessionStorage.getItem("access_token");
@@ -78,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setIsLoading(false);
         return;
       }
-      
+
       try {
         const userData = await authApi.getMe();
         setUser(userData);
@@ -91,6 +96,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     verifySession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Inactivity timer ────────────────────────────────────────
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    const checkInactivity = () => {
+      const elapsed = Date.now() - lastActivityRef.current;
+      if (elapsed >= INACTIVITY_LIMIT) {
+        clearAuth();
+      }
+    };
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, updateActivity));
+
+    const interval = setInterval(checkInactivity, INACTIVITY_CHECK_INTERVAL);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, updateActivity));
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, clearAuth]);
+
+  // ─── Sincronizar con eventos del interceptor axios ──────────
+  useEffect(() => {
+    const handleTokenRefreshed = () => {
+      const token = sessionStorage.getItem("access_token");
+      if (token) setAccessToken(token);
+    };
+
+    const handleForceLogout = () => {
+      clearAuth();
+    };
+
+    window.addEventListener("auth:token-refreshed", handleTokenRefreshed);
+    window.addEventListener("auth:logout", handleForceLogout);
+
+    return () => {
+      window.removeEventListener("auth:token-refreshed", handleTokenRefreshed);
+      window.removeEventListener("auth:logout", handleForceLogout);
+    };
   }, [clearAuth]);
 
   const login = useCallback(
@@ -101,15 +153,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData);
       return userData;
     },
-    [saveTokens]
+    [saveTokens],
   );
 
-  const register = useCallback(
-    async (data: RegisterRequest) => {
-      await authApi.registerUser(data);
-    },
-    []
-  );
+  const register = useCallback(async (data: RegisterRequest) => {
+    await authApi.registerUser(data);
+  }, []);
 
   const logout = useCallback(async () => {
     await clearAuth();

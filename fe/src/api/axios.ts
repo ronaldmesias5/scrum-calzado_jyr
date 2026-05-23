@@ -1,41 +1,54 @@
-/**
- * Archivo: fe/src/api/axios.ts
- * Descripción: Instancia configurada de Axios con interceptores para toda la aplicación.
- * 
- * ¿Qué?
- *   Configura cliente HTTP con:
- *   - baseURL: VITE_API_URL (localhost:8000 por defecto)
- *   - Interceptor request: Añade Authorization: Bearer <token> automáticamente
- *   - Interceptor response: Maneja errores 422 (validación), 401, errores de red
- *   - Timeout: 10 segundos (previene esperas infinitas)
- * 
- * ¿Para qué?
- *   - Centralizar configuración HTTP (DRY, no repetir en cada archivo)
- *   - Automatizar inyección de JWT token (no pasar manualmente en cada request)
- *   - Estandarizar manejo de errores (mismo formato en toda la app)
- *   - Facilitar cambio de API URL (solo cambiar .env)
- * 
- * ¿Impacto?
- *   CRÍTICO — TODA comunicación con backend pasa por aquí.
- *   Modificar interceptors rompe: manejo de errores en TODOS los módulos.
- *   Cambiar baseURL sin actualizar VITE_API_URL rompe: conexión con backend.
- *   Dependencias: modules/auth/services/api.ts (importa esta instancia),
- *                modules/dashboard-jefe/services/*, sessionStorage (tokens)
- */
-
 import axios from "axios";
 import { API_CONFIG } from "../config/api";
 
 const api = axios.create({
   baseURL: API_CONFIG.baseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
   timeout: API_CONFIG.timeout,
   withCredentials: true,
 });
 
-// Interceptor de request — inyecta el token en cada petición (RT-004)
+// ─── Estado para refresh token ─────────────────────────────────
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null = null) {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+}
+
+function forceLogout() {
+  if (!sessionStorage.getItem("access_token")) return;
+  sessionStorage.removeItem("access_token");
+  sessionStorage.removeItem("refresh_token");
+  window.dispatchEvent(new CustomEvent("auth:logout"));
+}
+
+function handleHttpError(error: unknown) {
+  const err = error as { response?: { status: number; data: { detail: unknown } }; request?: unknown; message?: string };
+  if (err.response) {
+    const data = err.response.data;
+    if (err.response.status === 422 && Array.isArray(data.detail)) {
+      err.message = data.detail.map((e: { msg: string }) => e.msg).join(". ");
+    } else if (typeof data.detail === "string") {
+      err.message = data.detail;
+    }
+  } else if (err.request) {
+    err.message = "No se pudo conectar con el servidor";
+  }
+  return Promise.reject(error);
+}
+
+// ─── Request: inyecta token ────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
     const token = sessionStorage.getItem("access_token");
@@ -44,29 +57,67 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// Interceptor de response — maneja errores HTTP de forma centralizada
+// ─── Response: refresh automático en 401 ──────────────────────
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response) {
-      const data = error.response.data;
+  async (error) => {
+    const originalRequest = error.config;
 
-      if (error.response.status === 422 && Array.isArray(data.detail)) {
-        const messages = data.detail.map(
-          (err: { msg: string }) => err.msg
-        );
-        error.message = messages.join(". ");
-      } else if (typeof data.detail === "string") {
-        error.message = data.detail;
-      }
-    } else if (error.request) {
-      error.message = "No se pudo conectar con el servidor";
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return handleHttpError(error);
     }
-    return Promise.reject(error);
-  }
+
+    // No reintentar si falló el propio refresh
+    if (typeof originalRequest.url === "string" && originalRequest.url.includes("/auth/refresh")) {
+      forceLogout();
+      return Promise.reject(error);
+    }
+
+    // Si ya hay un refresh en curso, encolar
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then((newToken) => {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      });
+    }
+
+    // Iniciar refresh
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    const storedRefreshToken = sessionStorage.getItem("refresh_token");
+    if (!storedRefreshToken) {
+      isRefreshing = false;
+      return handleHttpError(error);
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_CONFIG.baseURL}/api/v1/auth/refresh`,
+        { refresh_token: storedRefreshToken },
+      );
+
+      const { access_token, refresh_token } = response.data;
+      sessionStorage.setItem("access_token", access_token);
+      sessionStorage.setItem("refresh_token", refresh_token);
+      window.dispatchEvent(new CustomEvent("auth:token-refreshed"));
+
+      processQueue(null, access_token);
+      originalRequest.headers.Authorization = `Bearer ${access_token}`;
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      forceLogout();
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  },
 );
 
 export default api;

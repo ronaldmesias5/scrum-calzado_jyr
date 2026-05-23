@@ -26,10 +26,6 @@ const PRODUCTION_STAGES = [
 ];
 
 
-// Mapa de colores: nombre del color -> clases Tailwind
-
-
-
 const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 // ─── Subcomponente: Modal Crear/Editar ──────────────────────
@@ -219,34 +215,34 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, categories, 
             <div>
               <div className="flex items-center justify-between mb-3">
                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Stock Inicial (Por Talla)</label>
-                 <span className="text-xs font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">Total: {form.stock_quantity} pares</span>
-              </div>
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 max-h-56 overflow-y-auto">
-                 {Array.from({ length: 23 }, (_, i) => String(i + 21)).map(talla => {
-                    const qty = form.sizes?.[talla] || 0;
-                    return (
-                      <div key={talla} className={`p-2 rounded-xl border text-center transition-all ${qty > 0 ? 'bg-blue-500 border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700'}`}>
-                        <label className={`block text-[10px] font-bold mb-1 ${qty > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>#{talla}</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={qty || ''}
-                          onChange={e => {
-                            const val = parseInt(e.target.value) || 0;
-                            setForm(p => {
-                               const dict = { ...(p.sizes || {}) };
-                               if (val > 0) dict[talla] = val;
-                               else delete dict[talla];
-                               return { ...p, sizes: dict, stock_quantity: Object.values(dict).reduce((acc, v) => acc + v, 0) };
-                            });
-                          }}
-                          className={`w-full bg-transparent text-center font-bold text-sm outline-none ${qty > 0 ? 'text-white placeholder-blue-300' : 'text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-slate-600'}`}
-                          placeholder="0"
-                        />
-                      </div>
-                    );
-                 })}
-              </div>
+                  <span className="text-sm font-black bg-blue-600 text-white px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20">{Object.keys(form.sizes || {}).length} tallas · {form.stock_quantity} pares</span>
+               </div>
+               <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                  {Array.from({ length: 23 }, (_, i) => String(i + 21)).map(talla => {
+                     const qty = form.sizes?.[talla] || 0;
+                     return (
+                       <div key={talla} className={`p-3 rounded-xl border-2 text-center transition-all ${qty > 0 ? 'bg-blue-500 border-blue-600 shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-700'}`}>
+                         <span className={`block text-xl font-black mb-1 ${qty > 0 ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>{talla}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={qty || ''}
+                           onChange={e => {
+                             const val = parseInt(e.target.value) || 0;
+                             setForm(p => {
+                                const dict = { ...(p.sizes || {}) };
+                                if (val > 0) dict[talla] = val;
+                                else delete dict[talla];
+                                return { ...p, sizes: dict, stock_quantity: Object.values(dict).reduce((acc, v) => acc + v, 0) };
+                             });
+                           }}
+                           className={`w-full bg-transparent text-center font-black text-base outline-none py-0.5 ${qty > 0 ? 'text-white placeholder-blue-200' : 'text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500'}`}
+                           placeholder="0"
+                         />
+                       </div>
+                     );
+                  })}
+               </div>
             </div>
           ) : (
             <div>

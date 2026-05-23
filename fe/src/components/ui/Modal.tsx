@@ -16,10 +16,10 @@ interface ModalProps {
 }
 
 const SIZE_CLASSES: Record<string, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
+  sm: 'max-w-sm max-h-[85vh]',
+  md: 'max-w-md max-h-[85vh]',
+  lg: 'max-w-lg max-h-[85vh]',
+  xl: 'max-w-xl max-h-[85vh]',
   full: 'max-w-4xl max-h-[90vh]',
 };
 

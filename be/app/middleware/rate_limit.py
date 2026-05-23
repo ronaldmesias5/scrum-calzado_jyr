@@ -45,10 +45,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Reglas: {path: (max_requests, time_window_seconds)}
         self.limits = {
-            "/api/v1/auth/login": (5, 900),      # 5 requests en 15 minutos
-            "/api/v1/auth/register": (3, 3600),  # 3 requests en 1 hora
-            "/api/v1/auth/forgot-password": (3, 3600),  # 3 requests en 1 hora
-            "/api/v1/auth/reset-password": (5, 1800),   # 5 requests en 30 min
+            "/api/v1/auth/login": (50, 900),      # 50 requests en 15 minutos (antes 5)
+            "/api/v1/auth/register": (20, 3600),  # 20 requests en 1 hora (antes 3)
+            "/api/v1/auth/forgot-password": (20, 3600),  # 20 requests en 1 hora (antes 3)
+            "/api/v1/auth/reset-password": (20, 1800),   # 20 requests en 30 min (antes 5)
         }
     
     async def dispatch(self, request: Request, call_next) -> JSONResponse:
