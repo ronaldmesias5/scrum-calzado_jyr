@@ -28,8 +28,8 @@ export default function AdminLayout() {
               <PageTransition>
                 <Outlet />
               </PageTransition>
+              <DashboardFooter />
             </div>
-            <DashboardFooter />
           </main>
         </div>
       </div>

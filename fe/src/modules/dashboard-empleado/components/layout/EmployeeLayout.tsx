@@ -21,13 +21,13 @@ export default function EmployeeLayout() {
       <div className="flex h-[calc(100vh-4rem)] overflow-hidden relative">
         <EmployeeSidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         <main id="main-content" className="flex-1 flex flex-col min-h-full">
-          <div className="flex-1 overflow-y-auto px-4 sm:px-8 pt-3 pb-8">
-            <Breadcrumbs />
-            <PageTransition>
-              <Outlet />
-            </PageTransition>
-          </div>
-          <DashboardFooter />
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 pt-3 pb-8">
+              <Breadcrumbs />
+              <PageTransition>
+                <Outlet />
+              </PageTransition>
+              <DashboardFooter />
+            </div>
         </main>
       </div>
     </div>
