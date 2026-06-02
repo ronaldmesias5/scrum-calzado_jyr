@@ -6,10 +6,10 @@ Cada endpoint filtra datos según el usuario autenticado (current_user).
 
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, desc, select
+from sqlalchemy import func, desc, select, cast, String as SA_String
 from sqlalchemy.orm import Session
 
 from fastapi import HTTPException
@@ -34,7 +34,15 @@ from app.modules.dashboard_empleado.schemas import (
     ValeResponse,
     ValeTaskInfo,
     ValeDetailItem,
+    MyPerformanceResponse,
+    MyPerformanceTaskBreakdown,
+    MyTaskDetail,
+    MyTasksReportResponse,
+    SharedReportListResponse,
+    SharedReportItem,
+    SharedReportDetailResponse,
 )
+from app.models.report_share import ReportShare
 
 router = APIRouter(
     prefix="/api/v1/dashboard/employee",
@@ -180,6 +188,7 @@ def get_my_tasks(
                 assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                 type=t.type,
                 status=t.status,
+                priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
                 vale_number=t.vale_number,
                 amount=t.amount,
                 description=t.description_task,
@@ -300,6 +309,7 @@ def get_available_tasks(
                 line_group=t.line_group,
                 type=t.type,
                 status=t.status,
+                priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
                 vale_number=t.vale_number,
                 amount=t.amount,
                 description=t.description_task,
@@ -497,4 +507,325 @@ def get_task_vale(
         total_pairs=total_pairs,
         details=details,
         tasks=vale_tasks,
+    )
+
+
+# ─────────────────────────────────────────────
+#  Reportes del empleado
+# ─────────────────────────────────────────────
+
+
+@router.get(
+    "/report/my-performance",
+    response_model=MyPerformanceResponse,
+    summary="Rendimiento propio del empleado",
+)
+def get_my_performance(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+):
+    """Retorna KPIs de rendimiento del empleado autenticado."""
+    user_id = current_user.id
+
+    query = db.query(Task).filter(
+        Task.assigned_to == user_id,
+        Task.status.in_(["completado", "pagado"]),
+        Task.deleted_at == None,
+    )
+    if start_date:
+        query = query.filter(func.coalesce(Task.completed_at, Task.created_at) >= start_date)
+    if end_date:
+        query = query.filter(func.coalesce(Task.completed_at, Task.created_at) <= end_date)
+
+    tasks = query.all()
+
+    total_tasks = len(tasks)
+    total_pairs = sum(t.amount or 0 for t in tasks)
+
+    total_earnings = 0.0
+    for t in tasks:
+        if t.product and t.product.task_prices:
+            prices = t.product.task_prices
+            task_type = str(t.type.value) if hasattr(t.type, "value") else str(t.type)
+            price_per_dozen = float(prices.get(task_type, 0) or 0)
+            total_earnings += round((t.amount / 12) * price_per_dozen, 2) if t.amount else 0
+
+    type_counts = {}
+    for t in tasks:
+        pname = str(t.type.value) if hasattr(t.type, "value") else str(t.type)
+        type_counts[pname] = type_counts.get(pname, 0) + 1
+
+    breakdown = [
+        MyPerformanceTaskBreakdown(process_name=pname, count=count)
+        for pname, count in sorted(type_counts.items())
+    ]
+
+    return MyPerformanceResponse(
+        total_tasks_completed=total_tasks,
+        total_pairs_produced=total_pairs,
+        total_earnings=round(total_earnings, 2),
+        tasks_breakdown=breakdown,
+        name=f"{current_user.name_user} {current_user.last_name}",
+    )
+
+
+@router.get(
+    "/report/my-tasks",
+    response_model=MyTasksReportResponse,
+    summary="Reporte detallado de tareas del empleado con valores calculados",
+)
+def get_my_tasks_report(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+):
+    """Retorna detalle de tareas completadas/pagadas del empleado autenticado,
+    con valores calculados por tarea y desglose por proceso."""
+    user_id = current_user.id
+
+    # Subconsulta para total_pairs por (order_id, product_id)
+    order_pairs_sub = (
+        select(
+            OrderDetail.order_id,
+            OrderDetail.product_id,
+            func.sum(OrderDetail.amount).label("total_pairs"),
+        )
+        .where(OrderDetail.deleted_at == None)
+        .group_by(OrderDetail.order_id, OrderDetail.product_id)
+        .subquery()
+    )
+
+    # Subconsulta para colour único por (order, product, line_group)
+    colour_sub = (
+        select(
+            OrderDetail.order_id,
+            OrderDetail.product_id,
+            OrderDetail.line_group,
+            func.min(OrderDetail.colour).label("colour"),
+        )
+        .where(OrderDetail.deleted_at == None)
+        .group_by(OrderDetail.order_id, OrderDetail.product_id, OrderDetail.line_group)
+        .subquery()
+    )
+
+    tasks_detail_query = (
+        select(
+            Task.id,
+            Task.type,
+            Task.completed_at,
+            Task.created_at,
+            Task.status,
+            Task.amount.label("task_amount"),
+            order_pairs_sub.c.total_pairs,
+            Product.name_product,
+            Product.task_prices,
+            Task.order_id,
+            Task.product_id,
+            Task.vale_number,
+            Task.line_group,
+            colour_sub.c.colour,
+        )
+        .outerjoin(
+            order_pairs_sub,
+            (Task.order_id == order_pairs_sub.c.order_id)
+            & (Task.product_id == order_pairs_sub.c.product_id),
+        )
+        .join(Product, Task.product_id == Product.id)
+        .outerjoin(
+            colour_sub,
+            (Task.order_id == colour_sub.c.order_id)
+            & (Task.product_id == colour_sub.c.product_id)
+            & (Task.line_group == colour_sub.c.line_group),
+        )
+        .where(
+            Task.assigned_to == user_id,
+            Task.status.in_(["completado", "pagado"]),
+            Task.deleted_at == None,
+        )
+    )
+
+    if start_date:
+        tasks_detail_query = tasks_detail_query.where(
+            func.coalesce(Task.completed_at, Task.created_at) >= start_date
+        )
+    if end_date:
+        tasks_detail_query = tasks_detail_query.where(
+            func.coalesce(Task.completed_at, Task.created_at) <= end_date
+        )
+
+    task_detail_rows = db.execute(tasks_detail_query).all()
+
+    # Desglose por tipo de tarea
+    breakdown_query = (
+        select(Task.type, func.count(Task.id).label("count"))
+        .where(
+            Task.assigned_to == user_id,
+            Task.status.in_(["completado", "pagado"]),
+            Task.deleted_at == None,
+        )
+        .group_by(Task.type)
+    )
+    if start_date:
+        breakdown_query = breakdown_query.where(
+            func.coalesce(Task.completed_at, Task.created_at) >= start_date
+        )
+    if end_date:
+        breakdown_query = breakdown_query.where(
+            func.coalesce(Task.completed_at, Task.created_at) <= end_date
+        )
+
+    breakdown_results = db.execute(breakdown_query).all()
+    tasks_breakdown = [
+        MyPerformanceTaskBreakdown(
+            process_name=(
+                str(row._mapping["type"].value)
+                if hasattr(row._mapping["type"], "value")
+                else str(row._mapping["type"])
+            ),
+            count=row._mapping["count"],
+        )
+        for row in breakdown_results
+    ]
+
+    total_earnings = 0.0
+    tasks_list = []
+    for row_obj in task_detail_rows:
+        row = row_obj._mapping
+        pairs = int(
+            row["task_amount"]
+            if (row["task_amount"] and row["task_amount"] > 0)
+            else (row["total_pairs"] or 0)
+        )
+        prices = row["task_prices"] or {}
+        task_type = (
+            str(row["type"].value)
+            if hasattr(row["type"], "value")
+            else str(row["type"])
+        )
+        price_per_dozen = float(prices.get(task_type, 0) or 0)
+        task_price = round((pairs / 12) * price_per_dozen, 2) if pairs > 0 else 0.0
+        total_earnings += task_price
+
+        status_str = (
+            str(row["status"].value)
+            if hasattr(row["status"], "value")
+            else str(row["status"])
+        )
+
+        tasks_list.append(
+            MyTaskDetail(
+                id=str(row["id"]),
+                order_id=str(row["order_id"]) if row["order_id"] else None,
+                product_name=row["name_product"] or "—",
+                process_name=task_type,
+                amount=pairs,
+                status=status_str,
+                colour=row["colour"],
+                vale_number=row["vale_number"],
+                created_at=(
+                    row["created_at"].isoformat() if row["created_at"] else ""
+                ),
+                completed_at=(
+                    row["completed_at"].isoformat()
+                    if row["completed_at"]
+                    else None
+                ),
+                price_per_dozen=price_per_dozen,
+                task_total_price=task_price,
+            )
+        )
+
+    return MyTasksReportResponse(
+        total_tasks_completed=len(tasks_list),
+        total_pairs_produced=sum(t.amount for t in tasks_list),
+        total_earnings=round(total_earnings, 2),
+        tasks_breakdown=tasks_breakdown,
+        tasks_list=tasks_list,
+        name=f"{current_user.name_user} {current_user.last_name}",
+    )
+
+
+@router.get(
+    "/reports/shared",
+    response_model=SharedReportListResponse,
+    summary="Reportes compartidos con el empleado",
+)
+def get_shared_reports(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lista los reportes compartidos con el empleado autenticado."""
+    shares = (
+        db.query(ReportShare)
+        .filter(
+            ReportShare.target_user_id == current_user.id,
+            ReportShare.deleted_at == None,
+        )
+        .order_by(desc(ReportShare.created_at))
+        .all()
+    )
+
+    items = []
+    for s in shares:
+        shared_by_name = ""
+        if s.shared_by:
+            shared_by_name = f"{s.shared_by.name_user} {s.shared_by.last_name}"
+
+        items.append(SharedReportItem(
+            id=str(s.id),
+            report_type=s.report_type,
+            report_title=s.report_title,
+            shared_by_name=shared_by_name,
+            message=s.message,
+            is_read=s.is_read,
+            created_at=s.created_at,
+        ))
+
+    return SharedReportListResponse(reports=items, total=len(items))
+
+
+@router.get(
+    "/reports/shared/{share_id}",
+    response_model=SharedReportDetailResponse,
+    summary="Detalle de un reporte compartido",
+)
+def get_shared_report_detail(
+    share_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    share = (
+        db.query(ReportShare)
+        .filter(
+            ReportShare.id == share_id,
+            ReportShare.target_user_id == current_user.id,
+            ReportShare.deleted_at == None,
+        )
+        .first()
+    )
+    if not share:
+        raise HTTPException(status_code=404, detail="Reporte no encontrado")
+
+    # Marcar como leído
+    if not share.is_read:
+        share.is_read = True
+        share.read_at = datetime.now(timezone.utc)
+        db.commit()
+
+    shared_by_name = ""
+    if share.shared_by:
+        shared_by_name = f"{share.shared_by.name_user} {share.shared_by.last_name}"
+
+    return SharedReportDetailResponse(
+        id=str(share.id),
+        report_type=share.report_type,
+        report_title=share.report_title,
+        shared_by_name=shared_by_name,
+        message=share.message,
+        is_read=share.is_read,
+        created_at=share.created_at,
+        parameters=share.parameters or {},
     )

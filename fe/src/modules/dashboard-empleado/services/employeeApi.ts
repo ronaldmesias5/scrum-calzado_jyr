@@ -81,3 +81,95 @@ export const getTaskVale = async (taskId: string): Promise<ValeResponse> => {
   const res = await api.get(`/api/v1/dashboard/employee/tasks/${taskId}/vale`);
   return res.data;
 };
+
+
+// ─── Reportes del empleado ─────────────────────────────────────────────────────
+
+
+export interface MyPerformanceResponse {
+  total_tasks_completed: number;
+  total_pairs_produced: number;
+  total_earnings: number;
+  tasks_breakdown: { process_name: string; count: number }[];
+  name: string;
+}
+
+export interface SharedReportItem {
+  id: string;
+  report_type: string;
+  report_title: string;
+  shared_by_name: string;
+  message: string | null;
+  is_read: boolean;
+  created_at: string | null;
+}
+
+export interface SharedReportListResponse {
+  reports: SharedReportItem[];
+  total: number;
+}
+
+export interface SharedReportDetailResponse {
+  id: string;
+  report_type: string;
+  report_title: string;
+  shared_by_name: string;
+  message: string | null;
+  is_read: boolean;
+  created_at: string | null;
+  parameters: Record<string, unknown>;
+}
+
+export const getMyPerformance = async (params?: {
+  start_date?: string;
+  end_date?: string;
+}): Promise<MyPerformanceResponse> => {
+  const res = await api.get('/api/v1/dashboard/employee/report/my-performance', { params });
+  return res.data;
+};
+
+export const getSharedReports = async (): Promise<SharedReportListResponse> => {
+  const res = await api.get('/api/v1/dashboard/employee/reports/shared');
+  return res.data;
+};
+
+export const getSharedReportDetail = async (shareId: string): Promise<SharedReportDetailResponse> => {
+  const res = await api.get(`/api/v1/dashboard/employee/reports/shared/${shareId}`);
+  return res.data;
+};
+
+
+// ─── Reporte detallado de tareas del empleado ──────────────────────────────────
+
+
+export interface MyTaskDetail {
+  id: string;
+  order_id: string | null;
+  product_name: string;
+  process_name: string;
+  amount: number;
+  status: string;
+  colour: string | null;
+  vale_number: number | null;
+  created_at: string;
+  completed_at: string | null;
+  price_per_dozen: number;
+  task_total_price: number;
+}
+
+export interface MyTasksReportResponse {
+  total_tasks_completed: number;
+  total_pairs_produced: number;
+  total_earnings: number;
+  tasks_breakdown: { process_name: string; count: number }[];
+  tasks_list: MyTaskDetail[];
+  name: string;
+}
+
+export const getMyTasksReport = async (params?: {
+  start_date?: string;
+  end_date?: string;
+}): Promise<MyTasksReportResponse> => {
+  const res = await api.get('/api/v1/dashboard/employee/report/my-tasks', { params });
+  return res.data;
+};

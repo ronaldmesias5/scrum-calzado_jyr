@@ -31,6 +31,7 @@ class EmployeeTaskSchema(BaseModel):
     assigned_user_occupation: str | None = None
     type: str
     status: str
+    priority: str = "media"
     vale_number: int | None = None
     amount: int = 0
     description: str | None = None
@@ -71,6 +72,7 @@ class AvailableTaskSchema(BaseModel):
     line_group: int = 0
     type: str
     status: str
+    priority: str = "media"
     vale_number: int | None = None
     amount: int = 0
     description: str | None = None
@@ -129,3 +131,78 @@ class ValeResponse(BaseModel):
     total_pairs: int = 0
     details: list[ValeDetailItem] = []
     tasks: list[ValeTaskInfo] = []
+
+
+# ────────────────────────────────────────────────
+#  Schemas para reportes del empleado
+# ────────────────────────────────────────────────
+
+
+class MyPerformanceTaskBreakdown(BaseModel):
+    process_name: str
+    count: int
+
+
+class MyPerformanceResponse(BaseModel):
+    total_tasks_completed: int
+    total_pairs_produced: int
+    total_earnings: float = 0.0
+    tasks_breakdown: list[MyPerformanceTaskBreakdown] = []
+    name: str = ""
+
+
+class SharedReportItem(BaseModel):
+    id: str
+    report_type: str
+    report_title: str
+    shared_by_name: str = ""
+    message: str | None = None
+    is_read: bool = False
+    created_at: datetime | None = None
+
+
+class SharedReportListResponse(BaseModel):
+    reports: list[SharedReportItem]
+    total: int = 0
+
+
+class SharedReportDetailResponse(BaseModel):
+    id: str
+    report_type: str
+    report_title: str
+    shared_by_name: str
+    message: str | None = None
+    is_read: bool
+    created_at: datetime | None = None
+    parameters: dict = {}
+
+
+# ────────────────────────────────────────────────
+#  Schemas para reporte detallado de tareas
+# ────────────────────────────────────────────────
+
+
+class MyTaskDetail(BaseModel):
+    """Tarea individual con valor calculado, para reporte detallado (empleado)."""
+    id: str
+    order_id: str | None = None
+    product_name: str
+    process_name: str
+    amount: int
+    status: str
+    colour: str | None = None
+    vale_number: int | None = None
+    created_at: str
+    completed_at: str | None = None
+    price_per_dozen: float = 0.0
+    task_total_price: float = 0.0
+
+
+class MyTasksReportResponse(BaseModel):
+    """Reporte detallado de tareas del empleado autenticado."""
+    total_tasks_completed: int
+    total_pairs_produced: int
+    total_earnings: float = 0.0
+    tasks_breakdown: list[MyPerformanceTaskBreakdown] = []
+    tasks_list: list[MyTaskDetail] = []
+    name: str = ""
