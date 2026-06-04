@@ -131,3 +131,20 @@ class SalesGlobalReport(BaseModel):
     total_pairs_period: int
     weekly_metrics: List[SalesWeeklyMetric]
 
+
+class SendReportEmailRequest(BaseModel):
+    to_email: str
+    to_name: str
+    subject: str
+    body_html: str
+    pdf_base64: str
+    pdf_filename: str
+
+
+class ShareInternalRequest(BaseModel):
+    target_user_id: str
+    report_type: str
+    report_title: str
+    message: str = ""
+    parameters: dict = {}
+

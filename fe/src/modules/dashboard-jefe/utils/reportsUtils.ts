@@ -139,7 +139,8 @@ export async function exportEmployeePDF(
   title?: string,
   startDate?: string,
   endDate?: string,
-) {
+  returnBase64?: boolean,
+): Promise<string | void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const reportTitle = title || `Reporte de Empleado: ${data.name}`;
 
@@ -220,6 +221,9 @@ export async function exportEmployeePDF(
   }
 
   addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
   doc.save(`${reportTitle.replace(/\s+/g, '_')}.pdf`);
 }
 
@@ -230,7 +234,8 @@ export async function exportCustomerPDF(
   title?: string,
   startDate?: string,
   endDate?: string,
-) {
+  returnBase64?: boolean,
+): Promise<string | void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const reportTitle = title || `Reporte de Cliente: ${data.name}`;
   const subtitle = startDate && endDate
@@ -318,6 +323,9 @@ export async function exportCustomerPDF(
   }
 
   addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
   doc.save(`${reportTitle.replace(/\s+/g, '_')}.pdf`);
 }
 
@@ -329,7 +337,8 @@ export async function exportOrdersPDF(
   totalPairs: number,
   startDate?: string,
   endDate?: string,
-) {
+  returnBase64?: boolean,
+): Promise<string | void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const subtitle = startDate && endDate
     ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
@@ -413,27 +422,13 @@ export async function exportOrdersPDF(
   }
 
   addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
   doc.save('Reporte_General_Pedidos.pdf');
 }
 
-// ─── Tasks PDF (Reporte General de Tareas) ──────────────────────────────────
-
-const PROCESS_DISPLAY: Record<string, string> = {
-  cortador: 'Corte',
-  guarnecedor: 'Guarnición',
-  solador: 'Soladura',
-  emplantillador: 'Emplantillado',
-  // Also accept display-style names (what the API actually returns)
-  corte: 'Corte',
-  guarnicion: 'Guarnición',
-  soladura: 'Soladura',
-  emplantillado: 'Emplantillado',
-  // Capitalized variants
-  Corte: 'Corte',
-  Guarnición: 'Guarnición',
-  Soladura: 'Soladura',
-  Emplantillado: 'Emplantillado',
-};
+// ─── Tasks PDF (Reporte General de Tareas) ────────────────────────────────────
 
 export async function exportTasksPDF(
   tasks: TaskDetail[],
@@ -441,7 +436,8 @@ export async function exportTasksPDF(
   totalPairs: number,
   startDate?: string,
   endDate?: string,
-) {
+  returnBase64?: boolean,
+): Promise<string | void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const subtitle = startDate && endDate
     ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
@@ -544,5 +540,8 @@ export async function exportTasksPDF(
   }
 
   addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
   doc.save('Reporte_General_Tareas.pdf');
 }

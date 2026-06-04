@@ -23,6 +23,7 @@ export interface EmployeeTask {
   assigned_user_occupation?: string | null;
   type: string;
   status: string;
+  priority?: string;
   vale_number?: number | null;
   amount: number;
   description?: string | null;
@@ -62,6 +63,7 @@ export interface AvailableTask {
   line_group?: number;
   type: string;
   status: string;
+  priority?: string;
   vale_number?: number | null;
   amount: number;
   description?: string | null;

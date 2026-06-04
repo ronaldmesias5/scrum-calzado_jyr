@@ -236,6 +236,7 @@ export interface ProductionTask {
   description_task?: string;
   status: string;
   type: string;
+  priority?: string;
   created_at: string;
   task_prices?: {
     corte?: number;

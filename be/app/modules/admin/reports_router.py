@@ -13,25 +13,32 @@ from app.models.tasks import Task, TaskStatus
 from app.models.product import Product
 from app.models.category import Category
 from typing import List as TypingList
+from uuid import UUID, uuid4
+from datetime import datetime, timezone, timedelta
+
 from app.modules.admin.reports_schemas import (
-    DashboardReportResponse,
-    KPIResponse,
     CategorySalesResponse,
-    TopProductResponse,
-    EmployeeReportResponse,
-    TaskBreakdown,
-    TaskDetail,
-    TaskPriceDetail,
     CustomerReportResponse,
-    OrderSummary,
+    DashboardReportResponse,
+    EmployeeReportResponse,
+    KPIResponse,
     OrderItemSummary,
-    TopCustomerResponse,
-    TopEmployeeResponse,
+    OrderSummary,
     ProductionGlobalReport,
     ProductionWeeklyMetric,
     SalesGlobalReport,
     SalesWeeklyMetric,
+    SendReportEmailRequest,
+    ShareInternalRequest,
+    TaskBreakdown,
+    TaskDetail,
+    TaskPriceDetail,
+    TopCustomerResponse,
+    TopEmployeeResponse,
+    TopProductResponse,
 )
+from app.utils.email import send_report_email
+from app.models.report_share import ReportShare
 
 router = APIRouter(
     prefix="/api/v1/admin/reports",
@@ -850,4 +857,52 @@ def get_global_sales(
         total_pairs_period=total_pairs_period,
         weekly_metrics=weekly_metrics
     )
+
+
+@router.post("/send-email")
+async def send_report_email_endpoint(
+    body: SendReportEmailRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Envía un reporte PDF por correo electrónico."""
+    _require_admin_or_jefe(current_user)
+
+    await send_report_email(
+        to_email=body.to_email,
+        to_name=body.to_name,
+        subject=body.subject,
+        body_html=body.body_html,
+        pdf_base64=body.pdf_base64,
+        pdf_filename=body.pdf_filename,
+    )
+
+    return {"success": True, "message": "Reporte enviado exitosamente"}
+
+
+@router.post("/share-internal")
+def share_report_internal(
+    body: ShareInternalRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Comparte un reporte internamente a un empleado (aparece en su dashboard)."""
+    _require_admin_or_jefe(current_user)
+
+    target_user = db.query(User).filter(User.id == body.target_user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario destino no encontrado")
+
+    share = ReportShare(
+        shared_by_id=current_user.id,
+        target_user_id=body.target_user_id,
+        report_type=body.report_type,
+        report_title=body.report_title,
+        parameters=body.parameters or {},
+        message=body.message or None,
+    )
+    db.add(share)
+    db.commit()
+    db.refresh(share)
+
+    return {"success": True, "message": "Reporte compartido internamente", "share_id": str(share.id)}
 

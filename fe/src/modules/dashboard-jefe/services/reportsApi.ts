@@ -193,3 +193,17 @@ export async function markTasksAsPaid(taskIds: string[]): Promise<{ message: str
   const response = await axios.patch('/api/v1/admin/reports/tasks/mark-paid', { task_ids: taskIds });
   return response.data;
 }
+
+export interface SendReportEmailPayload {
+  to_email: string;
+  to_name: string;
+  subject: string;
+  body_html: string;
+  pdf_base64: string;
+  pdf_filename: string;
+}
+
+export async function sendReportEmail(payload: SendReportEmailPayload): Promise<{ success: boolean; message: string }> {
+  const response = await axios.post('/api/v1/admin/reports/send-email', payload);
+  return response.data;
+}

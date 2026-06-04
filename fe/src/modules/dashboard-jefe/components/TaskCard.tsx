@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   User, Calendar, Package, Scissors, Hammer, LayoutPanelLeft, 
-  ExternalLink, Loader2, UserPlus, CheckCircle
+  ExternalLink, Loader2, UserPlus, CheckCircle, AlertTriangle
 } from 'lucide-react';
 import { ProductionTask } from '../services/ordersApi';
 
@@ -131,6 +131,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {task.vale_number && (
             <span className="text-[11px] font-black text-red-600 bg-white px-2.5 py-1 rounded-md border border-transparent whitespace-nowrap shadow-sm shadow-black/10">
               VALE #{task.vale_number}
+            </span>
+          )}
+          {task.priority === 'alta' && (
+            <span className="text-[11px] font-black text-red-700 bg-red-50 px-2.5 py-1 rounded-md border border-red-200 whitespace-nowrap flex items-center gap-1 shadow-sm">
+              <AlertTriangle size={12} />
+              ALTA
             </span>
           )}
           {selectable && (

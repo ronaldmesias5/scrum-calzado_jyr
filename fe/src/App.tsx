@@ -66,6 +66,7 @@ import EmployeeDashboardPage from "@/modules/dashboard-empleado/pages/DashboardP
 import EmployeeTasksPage from "@/modules/dashboard-empleado/pages/TasksPage";
 import AvailableTasksPage from "@/modules/dashboard-empleado/pages/AvailableTasksPage";
 import EmployeeIncidencesPage from "@/modules/dashboard-empleado/pages/IncidencesPage";
+import EmployeeReportsPage from "@/modules/dashboard-empleado/pages/EmployeeReportsPage";
 
 // Sprint 4 - Orders Management
 import OrdersPage from "@/modules/dashboard-jefe/pages/OrdersPage";
@@ -176,6 +177,7 @@ function App() {
             <Route path="tasks" element={<EmployeeTasksPage />} />
             <Route path="available-tasks" element={<AvailableTasksPage />} />
             <Route path="incidences" element={<EmployeeIncidencesPage />} />
+            <Route path="reports" element={<EmployeeReportsPage />} />
           </Route>
 
           {/* ════════════════════════════════════════ */}

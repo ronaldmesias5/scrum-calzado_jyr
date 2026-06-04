@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import { 
   BarChart, TrendingUp, Package, ShoppingBag, 
   Calendar, Users, Briefcase, Download, CheckCircle,
-  Award, Star, Activity, ExternalLink
+  Award, Star, Activity, ExternalLink, Share2, Send, Loader2,
+  X, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import { 
   getDashboardReports, getEmployeeReport, getCustomerReport, 
   getGlobalProduction, markTasksAsPaid,
-  getRoleReport, getAllCustomersReport,
+  getRoleReport, getAllCustomersReport, sendReportEmail,
   DashboardReportResponse, EmployeeReportResponse, CustomerReportResponse,
   ProductionGlobalReport, TaskDetail
 } from '../services/reportsApi';
@@ -218,6 +220,16 @@ function ReportGeneratorTab() {
   const [productionTasks, setProductionTasks] = useState<TaskDetail[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
 
+  // Share report modal
+  const [shareModal, setShareModal] = useState<{
+    type: 'employee' | 'customer' | 'production';
+    to_email: string;
+    to_name: string;
+  } | null>(null);
+  const [sendingShare, setSendingShare] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
   // Load basic lists when mounting or changing type
   useEffect(() => {
     async function loadLists() {
@@ -339,6 +351,73 @@ function ReportGeneratorTab() {
   const handleTypeChange = (type: any) => {
     setReportType(type);
     resetAll();
+  };
+
+  const handleShareReport = async () => {
+    if (!shareModal || !shareModal.to_email) return;
+    setSendingShare(true);
+    try {
+      let pdfBase64 = '';
+      let pdfFilename = '';
+
+      if (shareModal.type === 'employee' && employeeReport) {
+        const pdf = await exportEmployeePDF(employeeReport, employeeReport.name, '', '', true);
+        if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
+        pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+        pdfFilename = `reporte-empleado-${employeeReport.name}.pdf`;
+      } else if (shareModal.type === 'customer' && customerReport) {
+        const pdf = await exportCustomerPDF(customerReport, isAllCustomers ? 'Reporte General de Cartera' : `Reporte de Cliente: ${customerReport.name}`, '', '', true);
+        if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
+        pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+        pdfFilename = `reporte-cliente-${customerReport.name}.pdf`;
+      } else if (shareModal.type === 'production' && productionReport) {
+        let sd: string | undefined;
+        let ed: string | undefined;
+        if (dateMode === 'custom' && customStart && customEnd) {
+          sd = new Date(customStart).toISOString();
+          ed = new Date(customEnd + 'T23:59:59').toISOString();
+        } else {
+          ed = new Date().toISOString();
+          sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+        }
+        if (productionTab === 'orders') {
+          const filtered = productionReport.orders;
+          const totalOrders = filtered.length;
+          const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
+          const pdf = await exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed, true);
+          if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
+          pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+          pdfFilename = 'reporte-pedidos.pdf';
+        } else {
+          const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
+          const pdf = await exportTasksPDF(productionTasks, productionTasks.length, totalPairs, sd, ed, true);
+          if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
+          pdfFilename = 'reporte-tareas.pdf';
+        }
+      }
+
+      if (!pdfBase64) {
+        setToast({ message: 'No se pudo generar el PDF', type: 'error' });
+        return;
+      }
+
+      await sendReportEmail({
+        to_email: shareModal.to_email,
+        to_name: shareModal.to_name || 'Usuario',
+        subject: `Reporte: ${shareModal.type === 'employee' ? 'Empleado' : shareModal.type === 'customer' ? 'Cliente' : 'Producción'}`,
+        body_html: shareMessage || `Adjuntamos el reporte de ${shareModal.type === 'employee' ? 'empleado' : shareModal.type === 'customer' ? 'cliente' : 'producción'}.`,
+        pdf_base64: pdfBase64,
+        pdf_filename: pdfFilename,
+      });
+
+      setToast({ message: 'Reporte enviado por correo exitosamente', type: 'success' });
+      setShareModal(null);
+      setShareMessage('');
+    } catch (err) {
+      setToast({ message: 'Error al enviar el reporte', type: 'error' });
+    } finally {
+      setSendingShare(false);
+    }
   };
 
   return (
@@ -605,6 +684,22 @@ function ReportGeneratorTab() {
               >
                 <Download className="w-4 h-4 mr-2" /> Exportar PDF
               </Button>
+              <Button
+                onClick={() => {
+                  if (!employeeReport) return;
+                  const emp = employees.find(e => e.id === employeeReport.user_id);
+                  setShareMessage('');
+                  setShareModal({
+                    type: 'employee',
+                    to_email: emp?.email || '',
+                    to_name: employeeReport.name,
+                  });
+                }}
+                variant="secondary"
+                className="text-sm font-bold py-2"
+              >
+                <Share2 className="w-4 h-4 mr-2" /> Compartir
+              </Button>
             </div>
           </div>
 
@@ -798,6 +893,22 @@ function ReportGeneratorTab() {
                 className="text-sm font-bold py-2"
               >
                 <Download className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!customerReport) return;
+                  const cust = customers.find(c => c.id === customerReport.user_id);
+                  setShareMessage('');
+                  setShareModal({
+                    type: 'customer',
+                    to_email: cust?.email || '',
+                    to_name: customerReport.name,
+                  });
+                }}
+                variant="secondary"
+                className="text-sm font-bold py-2"
+              >
+                <Share2 className="w-4 h-4 mr-2" /> Compartir
               </Button>
             </div>
           </div>
@@ -996,32 +1107,48 @@ function ReportGeneratorTab() {
                 </div>
               </div>
             )}
-            <Button
-              onClick={() => {
-                let sd: string | undefined;
-                let ed: string | undefined;
-                if (dateMode === 'custom' && customStart && customEnd) {
-                  sd = new Date(customStart).toISOString();
-                  ed = new Date(customEnd + 'T23:59:59').toISOString();
-                } else {
-                  ed = new Date().toISOString();
-                  sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
-                }
-                if (productionTab === 'orders') {
-                  const filtered = productionReport.orders;
-                  const totalOrders = filtered.length;
-                  const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
-                  exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed);
-                } else {
-                  const totalTasks = productionTasks.length;
-                  const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
-                  exportTasksPDF(productionTasks, totalTasks, totalPairs, sd, ed);
-                }
-              }}
-              className="text-sm font-bold py-2 w-full lg:w-auto"
-            >
-              <Download className="w-4 h-4 mr-2" /> Exportar PDF
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => {
+                  let sd: string | undefined;
+                  let ed: string | undefined;
+                  if (dateMode === 'custom' && customStart && customEnd) {
+                    sd = new Date(customStart).toISOString();
+                    ed = new Date(customEnd + 'T23:59:59').toISOString();
+                  } else {
+                    ed = new Date().toISOString();
+                    sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+                  }
+                  if (productionTab === 'orders') {
+                    const filtered = productionReport.orders;
+                    const totalOrders = filtered.length;
+                    const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
+                    exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed);
+                  } else {
+                    const totalTasks = productionTasks.length;
+                    const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
+                    exportTasksPDF(productionTasks, totalTasks, totalPairs, sd, ed);
+                  }
+                }}
+                className="text-sm font-bold py-2 w-full lg:w-auto"
+              >
+                <Download className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
+              <Button
+                onClick={() => {
+                  setShareMessage('');
+                  setShareModal({
+                    type: 'production',
+                    to_email: '',
+                    to_name: '',
+                  });
+                }}
+                variant="secondary"
+                className="text-sm font-bold py-2 w-full lg:w-auto"
+              >
+                <Share2 className="w-4 h-4 mr-2" /> Compartir
+              </Button>
+            </div>
           </div>
 
           {productionTab === 'orders' ? (
@@ -1215,6 +1342,78 @@ function ReportGeneratorTab() {
           )}
         </div>
       )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[200]">
+          <div className={`bg-white dark:bg-slate-900 border-2 ${toast.type === 'success' ? 'border-green-500' : 'border-red-500'} rounded-full px-6 py-4 shadow-2xl flex items-center gap-4 border-b-4`}>
+            <div className={`w-10 h-10 ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center flex-shrink-0`}>
+              {toast.type === 'success' ? <CheckCircle className="w-6 h-6 text-white" /> : <AlertCircle className="w-6 h-6 text-white" />}
+            </div>
+            <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{toast.message}</p>
+            <button onClick={() => setToast(null)} className="ml-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Share modal */}
+      <Modal isOpen={!!shareModal} onClose={() => { setShareModal(null); setShareMessage(''); }} title="Compartir Reporte" size="md">
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Correo del destinatario</label>
+            <input
+              type="email"
+              value={shareModal?.to_email || ''}
+              onChange={(e) => setShareModal(prev => prev ? { ...prev, to_email: e.target.value } : null)}
+              placeholder="correo@ejemplo.com"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
+              disabled={sendingShare}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Nombre del destinatario</label>
+            <input
+              type="text"
+              value={shareModal?.to_name || ''}
+              onChange={(e) => setShareModal(prev => prev ? { ...prev, to_name: e.target.value } : null)}
+              placeholder="Nombre"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
+              disabled={sendingShare}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Mensaje (opcional)</label>
+            <textarea
+              value={shareMessage}
+              onChange={(e) => setShareMessage(e.target.value)}
+              placeholder="Escribe un mensaje..."
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500 resize-none"
+              disabled={sendingShare}
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="secondary"
+              className="flex-1 font-bold py-2.5"
+              onClick={() => { setShareModal(null); setShareMessage(''); }}
+              disabled={sendingShare}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 font-bold py-2.5"
+              onClick={handleShareReport}
+              disabled={sendingShare || !shareModal?.to_email}
+            >
+              {sendingShare ? <Loader2 className="w-4 h-4 mr-2 animate-spin inline" /> : <Send className="w-4 h-4 mr-2 inline" />}
+              {sendingShare ? 'Enviando...' : 'Enviar'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

@@ -417,12 +417,12 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
     } catch (err) { setError('Error ' + (isEditMode ? 'editando' : 'creando') + ' la orden: ' + (err instanceof Error ? err.message : 'Desconocido')); } finally { setLoading(false); }
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isAddProductMode && hasAddedProducts) {
       onSuccess?.();
     }
     onClose();
-  };
+  }, [isAddProductMode, hasAddedProducts, onSuccess, onClose]);
 
   if (!isOpen) return null;
   const totalPairs = items.reduce((sum, item) => sum + item.items.reduce((s, i) => s + i.amount, 0), 0);

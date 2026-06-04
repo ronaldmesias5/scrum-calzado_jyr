@@ -40,6 +40,9 @@ from app.models.tasks import Task
 # Incidencias (depende de Task)
 from app.models.incidence import Incidence
 
+# Reportes compartidos
+from app.models.report_share import ReportShare
+
 __all__ = [
     "Base",
     "Brand",
@@ -61,4 +64,5 @@ __all__ = [
     "Vale",
     "Task",
     "Incidence",
+    "ReportShare",
 ]

@@ -43,11 +43,13 @@ export default function Modal({
 }: ModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === 'Tab' && containerRef.current) {
@@ -70,7 +72,7 @@ export default function Modal({
         }
       }
     },
-    [onClose]
+    []
   );
 
   useEffect(() => {
@@ -94,12 +96,12 @@ export default function Modal({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, handleKeyDown, initialFocus]);
+  }, [isOpen, initialFocus]);
 
   const handleClose = useCallback(() => {
-    onClose();
+    onCloseRef.current();
     requestAnimationFrame(() => previousActiveElement.current?.focus());
-  }, [onClose]);
+  }, []);
 
   if (!isOpen) return null;
 

@@ -16,6 +16,7 @@ const toProductionTask = (task: EmployeeTask, extra?: Partial<ProductionTask>): 
   amount: task.amount,
   status: task.status,
   type: task.type,
+  priority: task.priority || 'media',
   created_at: task.created_at || new Date().toISOString(),
   vale_number: task.vale_number ?? undefined,
   product_name: task.product_name || undefined,
