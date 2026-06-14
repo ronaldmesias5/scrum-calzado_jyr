@@ -1,13 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { MyTasksReportResponse, MyTaskDetail } from '../services/employeeApi';
-
-const PROCESS_DISPLAY: Record<string, string> = {
-  corte: 'Corte',
-  guarnicion: 'Guarnición',
-  soladura: 'Soladura',
-  emplantillado: 'Emplantillado',
-};
+import type { MyTasksReportResponse, MyTaskDetail, MyPerformanceResponse } from '../services/employeeApi';
 
 const COLORS = {
   primary: [30, 64, 175] as [number, number, number],
@@ -16,6 +9,14 @@ const COLORS = {
   gray: [107, 114, 128] as [number, number, number],
   lightGray: [243, 244, 246] as [number, number, number],
 };
+
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .trim();
+}
 
 function formatDate(iso?: string | null): string {
   if (!iso) return '—';
@@ -178,19 +179,18 @@ export async function exportMyTasksPDF(
     const sortedTasks = [...tasks].sort((a, b) => (a.vale_number ?? Infinity) - (b.vale_number ?? Infinity));
     autoTable(doc, {
       startY: tableStartY,
-      head: [['Nº Vale', 'Proceso', 'Producto', 'Color', 'Cant.', 'Estado', 'Fecha', 'Valor x Par', 'Total']],
+      head: [['Nº Vale', 'Producto', 'Color', 'Cant.', 'Estado', 'Fecha Completado', 'Valor x Par', 'Total']],
       body: sortedTasks.map(t => [
         t.vale_number != null ? `#${t.vale_number}` : '—',
-        PROCESS_DISPLAY[t.process_name] || t.process_name || '—',
         t.product_name || '—',
         t.colour || '—',
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : 'Completado',
-        t.completed_at ? formatDate(t.completed_at) : '—',
+        t.completed_at ? formatDate(t.completed_at) : (t.created_at ? formatDate(t.created_at) : '—'),
         t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
         t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
       ]),
-      foot: [['', '', '', '', '', '', '', 'TOTAL', formatCurrency(data.total_earnings)]],
+      foot: [['', '', '', '', '', 'TOTAL', formatCurrency(data.total_earnings)]],
       theme: 'grid',
       headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
@@ -205,5 +205,77 @@ export async function exportMyTasksPDF(
   }
 
   addFooter(doc);
-  doc.save(`${reportTitle.replace(/\s+/g, '_')}.pdf`);
+  doc.save(`${sanitizeFilename(reportTitle)}.pdf`);
+}
+
+// ─── Performance PDF ───────────────────────────────────────────────────────────
+
+export async function exportPerformancePDF(
+  data: MyPerformanceResponse,
+  returnBase64?: boolean,
+): Promise<string | void> {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const reportTitle = `Mi Rendimiento: ${data.name}`;
+
+  const logo = await loadLogoBase64();
+  addHeader(doc, reportTitle, undefined, logo, formatDateTime());
+
+  // ── Resumen ────────────────────────────────────────────────────────────
+  const summaryY = 56;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 16, 2, 2, 'FD');
+
+  function summaryLabel(text: string, x: number, y: number) {
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function summaryValue(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
+  }
+
+  summaryLabel('TOTAL TAREAS', 16, summaryY + 5);
+  summaryValue(String(data.total_tasks_completed), 16, summaryY + 13, [60, 60, 60]);
+
+  summaryLabel('TOTAL PARES', 86, summaryY + 5);
+  summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
+
+  summaryLabel('TOTAL DINERO', 146, summaryY + 5);
+  summaryValue(formatCurrency(data.total_earnings), 146, summaryY + 13, COLORS.accent);
+
+  // ── Desglose por Proceso ────────────────────────────────────────────────
+  let y = summaryY + 22;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Desglose por Proceso', 14, y);
+  y += 4;
+
+  if (data.tasks_breakdown.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Proceso', 'Cantidad']],
+      body: data.tasks_breakdown.map(b => [b.process_name, String(b.count)]),
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay datos disponibles.', 14, y);
+  }
+
+  addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
+  doc.save(`${sanitizeFilename(reportTitle)}.pdf`);
 }

@@ -1,6 +1,21 @@
 ﻿import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { EmployeeReportResponse, CustomerReportResponse, OrderSummary, TaskDetail } from '../services/reportsApi';
+import type { EmployeeReportResponse, CustomerReportResponse, OrderSummary, TaskDetail, DashboardReportResponse } from '../services/reportsApi';
+
+const PROCESS_DISPLAY: Record<string, string> = {
+  cortador: 'Corte',
+  guarnecedor: 'Guarnición',
+  solador: 'Soladura',
+  emplantillador: 'Emplantillado',
+};
+
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .trim();
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -224,7 +239,7 @@ export async function exportEmployeePDF(
   if (returnBase64) {
     return doc.output('datauristring');
   }
-  doc.save(`${reportTitle.replace(/\s+/g, '_')}.pdf`);
+  doc.save(`${sanitizeFilename(reportTitle)}.pdf`);
 }
 
 // ─── Customer PDF ─────────────────────────────────────────────────────────────
@@ -326,10 +341,10 @@ export async function exportCustomerPDF(
   if (returnBase64) {
     return doc.output('datauristring');
   }
-  doc.save(`${reportTitle.replace(/\s+/g, '_')}.pdf`);
+  doc.save(`${sanitizeFilename(reportTitle)}.pdf`);
 }
 
-// ─── Orders PDF (Reporte General de Pedidos) ──────────────────────────────────
+// ── Orders PDF (Reporte General de Pedidos) ──────────────────────────────────
 
 export async function exportOrdersPDF(
   orders: OrderSummary[],
@@ -544,4 +559,306 @@ export async function exportTasksPDF(
     return doc.output('datauristring');
   }
   doc.save('Reporte_General_Tareas.pdf');
+}
+
+// ── Dashboard PDF ──────────────────────────────────────────────────────────────
+
+export async function exportDashboardPDF(
+  data: DashboardReportResponse,
+  days: number,
+  returnBase64?: boolean,
+): Promise<string | void> {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const subtitle = `Período: Últimos ${days} días`;
+
+  const logo = await loadLogoBase64();
+  addHeader(doc, 'Dashboard General', subtitle, logo, undefined, formatDateTime());
+
+  // ── KPIs ───────────────────────────────────────────────────────────────
+  const summaryY = 56;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 16, 2, 2, 'FD');
+
+  function sl(text: string, x: number, y: number) {
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function sv(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
+  }
+
+  sl('TOTAL PEDIDOS', 16, summaryY + 5);
+  sv(String(data.kpis.total_orders), 16, summaryY + 13, [60, 60, 60]);
+
+  sl('PARES VENDIDOS', 76, summaryY + 5);
+  sv(String(data.kpis.total_pairs_sold), 76, summaryY + 13, COLORS.green);
+
+  sl('TAREAS COMPLETADAS', 136, summaryY + 5);
+  sv(String(data.kpis.total_tasks_completed), 136, summaryY + 13, COLORS.accent);
+
+  // ── Ventas por Categoría ────────────────────────────────────────────────
+  let y = summaryY + 22;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Ventas por Categoría', 14, y);
+  y += 4;
+
+  if (data.sales_by_category.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Categoría', 'Pares Vendidos', 'Porcentaje']],
+      body: data.sales_by_category.map(c => [
+        c.category_name,
+        String(c.pairs_sold),
+        `${c.percentage.toFixed(1)}%`,
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay datos disponibles.', 14, y);
+    y += 8;
+  }
+
+  // ── Top Productos ───────────────────────────────────────────────────────
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Productos Más Vendidos', 14, y);
+  y += 4;
+
+  if (data.top_products.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Producto', 'Pares Vendidos']],
+      body: data.top_products.map(p => [p.product_name, String(p.sales)]),
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay datos disponibles.', 14, y);
+    y += 8;
+  }
+
+  // ── Top Empleados ───────────────────────────────────────────────────────
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Mejores Empleados por Cargo', 14, y);
+  y += 4;
+
+  if (data.top_employees.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Nombre', 'Cargo', 'Tareas Completadas']],
+      body: data.top_employees.map(e => [e.name, e.occupation, String(e.completed_tasks)]),
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay datos disponibles.', 14, y);
+    y += 8;
+  }
+
+  // ── Top Clientes ────────────────────────────────────────────────────────
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Top Clientes', 14, y);
+  y += 4;
+
+  if (data.top_customers.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Nombre', 'Pedidos', 'Pares']],
+      body: data.top_customers.map(c => [c.name, String(c.total_orders), String(c.total_pairs)]),
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay datos disponibles.', 14, y);
+  }
+
+  addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
+  doc.save('Dashboard_General.pdf');
+}
+
+// ─── Production PDF ────────────────────────────────────────────────────────────
+
+export async function exportProductionPDF(
+  orders: OrderSummary[],
+  tasks: TaskDetail[],
+  startDate?: string,
+  endDate?: string,
+  returnBase64?: boolean,
+): Promise<string | void> {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const subtitle = startDate && endDate
+    ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
+    : undefined;
+
+  const logo = await loadLogoBase64();
+  addHeader(doc, 'Reporte de Producción y Ventas', subtitle, logo, undefined, formatDateTime());
+
+  // ── Resumen Pedidos ─────────────────────────────────────────────────────
+  const totalOrders = orders.length;
+  const totalPairsOrders = orders.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
+  const totalPairsTasks = tasks.reduce((sum, t) => sum + (t.amount || 0), 0);
+  const grandTotal = tasks.reduce((sum, t) => sum + (t.task_total_price || 0), 0);
+
+  const summaryY = 56;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, 190, 16, 2, 2, 'FD');
+
+  function sl(text: string, x: number, y: number) {
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text(text, x, y);
+  }
+  function sv(text: string, x: number, y: number, color: [number, number, number]) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(text, x, y);
+  }
+
+  sl('TOTAL PEDIDOS', 16, summaryY + 5);
+  sv(String(totalOrders), 16, summaryY + 13, [60, 60, 60]);
+
+  sl('PARES PEDIDOS', 76, summaryY + 5);
+  sv(String(totalPairsOrders), 76, summaryY + 13, COLORS.green);
+
+  sl('PARES PRODUCIDOS', 136, summaryY + 5);
+  sv(String(totalPairsTasks), 136, summaryY + 13, COLORS.accent);
+
+  // ── Tabla de Pedidos ────────────────────────────────────────────────────
+  let y = summaryY + 22;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Pedidos', 14, y);
+  y += 4;
+
+  if (orders.length > 0) {
+    const allRows: (string | number)[][] = [];
+    const rowGroups: number[] = [];
+    for (let g = 0; g < orders.length; g++) {
+      const order = orders[g];
+      if (!order?.items?.length) continue;
+      for (let i = 0; i < order.items.length; i++) {
+        const item = order.items[i];
+        allRows.push([
+          i === 0 ? (order.id?.substring(0, 8) || '—') : '',
+          i === 0 ? formatDate(order.created_at) : '',
+          item!.product_name || '—',
+          item!.category_name || '—',
+          item!.colour || '—',
+          String(item!.amount),
+          i === 0 ? (order.state || '').toUpperCase() : '',
+        ]);
+        rowGroups.push(g);
+      }
+    }
+    autoTable(doc, {
+      startY: y,
+      head: [['ID Pedido', 'Fecha', 'Producto', 'Categoría', 'Color', 'Cant.', 'Estado']],
+      body: allRows,
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+      didParseCell(cellData) {
+        if (cellData.section === 'body') {
+          const groupIdx = rowGroups[cellData.row.index];
+          if (groupIdx !== undefined) {
+            cellData.cell.styles.fillColor = groupIdx % 2 === 0 ? [255, 255, 255] : [245, 247, 250];
+          }
+        }
+      },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay pedidos en este período.', 14, y);
+    y += 8;
+  }
+
+  // ── Tabla de Tareas ─────────────────────────────────────────────────────
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Tareas de Producción', 14, y);
+  y += 4;
+
+  if (tasks.length > 0) {
+    const sortedTasks = [...tasks].sort((a, b) => (a.vale_number ?? Infinity) - (b.vale_number ?? Infinity));
+    autoTable(doc, {
+      startY: y,
+      head: [['N° Vale', 'Tipo', 'Producto', 'Color', 'Cant.', 'Estado', 'Valor x Par', 'Total']],
+      body: sortedTasks.map(t => [
+        t.vale_number != null ? `#${t.vale_number}` : '—',
+        PROCESS_DISPLAY[t.process_name] || t.process_name || '—',
+        t.product_name || '—',
+        t.colour || '—',
+        String(t.amount),
+        t.status === 'pagado' ? 'Pagado' : t.status === 'completado' ? 'Completado' : t.status || '—',
+        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
+      ]),
+      foot: [['', '', '', '', '', '', 'TOTAL', formatCurrency(grandTotal)]],
+      theme: 'grid',
+      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7 },
+      margin: { left: 10, right: 10 },
+    });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay tareas en este período.', 14, y);
+  }
+
+  addFooter(doc);
+  if (returnBase64) {
+    return doc.output('datauristring');
+  }
+  doc.save('Reporte_Produccion_Ventas.pdf');
 }

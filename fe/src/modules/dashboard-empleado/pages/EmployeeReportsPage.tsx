@@ -11,9 +11,10 @@ import {
   getMyTasksReport,
   type MyPerformanceResponse,
   type SharedReportItem,
+  type SharedReportListResponse,
   type MyTasksReportResponse,
 } from '../services/employeeApi';
-import { exportMyTasksPDF } from '../utils/reportsUtils';
+import { exportMyTasksPDF, exportPerformancePDF } from '../utils/reportsUtils';
 import Modal from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 
@@ -39,14 +40,16 @@ export default function EmployeeReportsPage() {
   const [performance, setPerformance] = useState<MyPerformanceResponse | null>(null);
   const [shared, setShared] = useState<SharedReportItem[]>([]);
   const [selectedShare, setSelectedShare] = useState<{
+    id: string;
     title: string;
     message: string | null;
     parameters: Record<string, unknown>;
     created_at: string | null;
   } | null>(null);
+  const [sharePdfGenerating, setSharePdfGenerating] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   // Reporte detallado state
-  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'custom'>('month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [tasksReport, setTasksReport] = useState<MyTasksReportResponse | null>(null);
@@ -55,28 +58,15 @@ export default function EmployeeReportsPage() {
 
   const getDateRange = useCallback(() => {
     const now = new Date();
-    let start: Date;
-    switch (period) {
-      case 'today':
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        break;
-      case 'week':
-        start = new Date(now);
-        start.setDate(start.getDate() - 7);
-        break;
-      case 'month':
-        start = new Date(now);
-        start.setMonth(start.getMonth() - 1);
-        break;
-      case 'custom':
-        start = customStart ? new Date(customStart) : new Date(0);
-        break;
+    if (customStart && customEnd) {
+      return {
+        start: new Date(customStart).toISOString(),
+        end: new Date(customEnd + 'T23:59:59').toISOString(),
+      };
     }
-    const end = period === 'custom' && customEnd
-      ? new Date(customEnd + 'T23:59:59')
-      : now;
-    return { start: start!.toISOString(), end: end.toISOString() };
-  }, [period, customStart, customEnd]);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return { start: today.toISOString(), end: now.toISOString() };
+  }, [customStart, customEnd]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -98,6 +88,20 @@ export default function EmployeeReportsPage() {
     load();
   }, []);
 
+  // Polling en tiempo real para reportes compartidos (cada 30s)
+  useEffect(() => {
+    let mounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const shr: SharedReportListResponse = await getSharedReports();
+        if (mounted) setShared(shr.reports);
+      } catch {
+        // silent
+      }
+    }, 30000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
   // Cargar reporte detallado al cambiar período
   useEffect(() => {
     async function loadTasks() {
@@ -115,12 +119,13 @@ export default function EmployeeReportsPage() {
       }
     }
     loadTasks();
-  }, [performance, period, customStart, customEnd, getDateRange]);
+  }, [performance, customStart, customEnd, getDateRange]);
 
   const handleViewShare = async (id: string) => {
     try {
       const detail = await getSharedReportDetail(id);
       setSelectedShare({
+        id: detail.id,
         title: detail.report_title,
         message: detail.message,
         parameters: detail.parameters,
@@ -149,6 +154,49 @@ export default function EmployeeReportsPage() {
       console.error(e);
     } finally {
       setPdfGenerating(false);
+    }
+  };
+
+  const handleDownloadSharePDF = async () => {
+    if (!selectedShare) return;
+    setSharePdfGenerating(true);
+    setShareError(null);
+
+    const params = selectedShare.parameters as Record<string, string | undefined>;
+    const startDate = params?.start_date;
+    const endDate = params?.end_date;
+
+    let report: MyTasksReportResponse;
+    try {
+      report = await getMyTasksReport({
+        start_date: startDate,
+        end_date: endDate,
+      });
+    } catch {
+      setShareError('Error al consultar tus tareas. Verifica tu conexión e intenta de nuevo.');
+      setSharePdfGenerating(false);
+      return;
+    }
+
+    if (report.tasks_list.length === 0) {
+      setShareError('No hay tareas completadas en el período de este reporte compartido.');
+      setSharePdfGenerating(false);
+      return;
+    }
+
+    try {
+      await exportMyTasksPDF(
+        report,
+        report.tasks_list,
+        `Reporte Compartido - ${selectedShare.title}`,
+        startDate,
+        endDate,
+      );
+    } catch (e) {
+      setShareError('Error al generar el PDF. Intenta de nuevo.');
+      console.error(e);
+    } finally {
+      setSharePdfGenerating(false);
     }
   };
 
@@ -181,7 +229,15 @@ export default function EmployeeReportsPage() {
               <TrendingUp className="w-5 h-5 text-green-600" />
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Mi Rendimiento</h2>
             </div>
-            <span className="text-sm font-bold text-gray-500">{performance.name}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-500">{performance.name}</span>
+              <Button
+                onClick={() => exportPerformancePDF(performance)}
+                className="text-sm font-bold py-2"
+              >
+                <Download className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* KPIs */}
@@ -224,50 +280,30 @@ export default function EmployeeReportsPage() {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Reporte Detallado de Tareas</h2>
         </div>
 
-        {/* Filtro de período */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {([
-            { key: 'today' as const, label: 'Hoy' },
-            { key: 'week' as const, label: 'Semana' },
-            { key: 'month' as const, label: 'Mes' },
-            { key: 'custom' as const, label: 'Personalizado' },
-          ]).map(p => (
-            <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
-                period === p.key
-                  ? 'border-purple-500 bg-purple-500 text-white'
-                  : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-purple-300'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {period === 'custom' && (
-          <div className="flex flex-wrap gap-4 mb-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
-            <div>
-              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Desde</label>
-              <input
-                type="date"
-                value={customStart}
-                onChange={e => setCustomStart(e.target.value)}
-                className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hasta</label>
-              <input
-                type="date"
-                value={customEnd}
-                onChange={e => setCustomEnd(e.target.value)}
-                className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
-              />
-            </div>
+        {/* Filtro de fecha */}
+        <div className="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Desde</label>
+            <input
+              type="date"
+              value={customStart}
+              onChange={e => setCustomStart(e.target.value)}
+              className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
+            />
           </div>
-        )}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hasta</label>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={e => setCustomEnd(e.target.value)}
+              className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
+            />
+          </div>
+          <p className="text-xs font-medium text-gray-500 mt-4">
+            {customStart && customEnd ? 'El reporte se actualizará automáticamente.' : 'Deja vacío para usar la fecha de hoy.'}
+          </p>
+        </div>
 
         {tasksLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -429,7 +465,7 @@ export default function EmployeeReportsPage() {
       </div>
 
       {/* Modal detalle reporte compartido */}
-      <Modal isOpen={!!selectedShare} onClose={() => setSelectedShare(null)} title="Reporte Compartido" size="md">
+      <Modal isOpen={!!selectedShare} onClose={() => { setSelectedShare(null); setShareError(null); }} title="Reporte Compartido" size="md">
         {selectedShare && (
           <div className="p-6 space-y-4">
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4 border border-purple-100 dark:border-purple-800/30">
@@ -447,9 +483,29 @@ export default function EmployeeReportsPage() {
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 border border-amber-100 dark:border-amber-800/30">
               <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                Este reporte fue generado y compartido por el jefe. Puedes consultar los detalles en el panel de administración.
+                Este reporte fue generado y compartido por el jefe. Puedes descargar tu reporte de producción con las mismas fechas.
               </p>
             </div>
+            {shareError && (
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 border border-red-200 dark:border-red-800">
+                <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {shareError}
+                </p>
+              </div>
+            )}
+            <Button
+              onClick={handleDownloadSharePDF}
+              disabled={sharePdfGenerating}
+              className="w-full font-bold py-3"
+            >
+              {sharePdfGenerating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+              ) : (
+                <Download className="w-4 h-4 mr-2 inline" />
+              )}
+              {sharePdfGenerating ? 'Generando PDF...' : 'Descargar mi Reporte de Producción'}
+            </Button>
           </div>
         )}
       </Modal>

@@ -11,11 +11,11 @@ import Modal from '@/components/ui/Modal';
 import { 
   getDashboardReports, getEmployeeReport, getCustomerReport, 
   getGlobalProduction, markTasksAsPaid,
-  getRoleReport, getAllCustomersReport, sendReportEmail,
+  getRoleReport, getAllCustomersReport, sendReportEmail, shareInternal,
   DashboardReportResponse, EmployeeReportResponse, CustomerReportResponse,
   ProductionGlobalReport, TaskDetail
 } from '../services/reportsApi';
-import { exportEmployeePDF, exportCustomerPDF, exportOrdersPDF, exportTasksPDF } from '../utils/reportsUtils';
+import { exportEmployeePDF, exportCustomerPDF, exportOrdersPDF, exportTasksPDF, exportDashboardPDF, exportProductionPDF } from '../utils/reportsUtils';
 import { TaskCard } from '../components/TaskCard';
 import axios from '@/api/axios';
 
@@ -113,6 +113,14 @@ function DashboardTab() {
           <option value={30}>Últimos 30 días</option>
           <option value={90}>Últimos 90 días</option>
         </select>
+        <Button
+          onClick={() => {
+            if (data) exportDashboardPDF(data, days);
+          }}
+          className="text-sm font-bold py-2"
+        >
+          <Download className="w-4 h-4 mr-2" /> Exportar PDF
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -200,10 +208,20 @@ function ReportGeneratorTab() {
   const [customerReport, setCustomerReport] = useState<CustomerReportResponse | null>(null);
   const [productionReport, setProductionReport] = useState<ProductionGlobalReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
-  const [globalDays, setGlobalDays] = useState(7);
-  const [dateMode, setDateMode] = useState<'preset' | 'custom'>('preset');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+
+  const getDateRange = () => {
+    const now = new Date();
+    if (customStart && customEnd) {
+      return {
+        startDate: new Date(customStart).toISOString(),
+        endDate: new Date(customEnd + 'T23:59:59').toISOString(),
+      };
+    }
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return { startDate: today.toISOString(), endDate: now.toISOString() };
+  };
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [paidSuccess, setPaidSuccess] = useState<string | null>(null);
@@ -225,6 +243,7 @@ function ReportGeneratorTab() {
     type: 'employee' | 'customer' | 'production';
     to_email: string;
     to_name: string;
+    target_user_id?: string;
   } | null>(null);
   const [sendingShare, setSendingShare] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
@@ -257,16 +276,8 @@ function ReportGeneratorTab() {
       setSelectedTaskIds([]);
       setPaidSuccess(null);
       try {
-        let startDate: string | undefined;
-        let endDate: string | undefined;
+        const { startDate, endDate } = getDateRange();
 
-        if (dateMode === 'custom' && customStart && customEnd) {
-          startDate = new Date(customStart).toISOString();
-          endDate = new Date(customEnd + 'T23:59:59').toISOString();
-        } else {
-          endDate = new Date().toISOString();
-          startDate = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
-        }
         if (reportType === 'employee') {
           if (isRoleReport && selectedRole) {
             const res = await getRoleReport(selectedRole, startDate, endDate, taskStatusFilter);
@@ -284,7 +295,8 @@ function ReportGeneratorTab() {
             setCustomerReport(res);
           }
         } else if (reportType === 'production') {
-          const res = await getGlobalProduction(globalDays, customStart || undefined, customEnd || undefined, orderStatusFilter);
+          const { startDate, endDate } = getDateRange();
+          const res = await getGlobalProduction(0, startDate, endDate, orderStatusFilter);
           setProductionReport(res);
         }
       } catch (e: any) {
@@ -298,7 +310,7 @@ function ReportGeneratorTab() {
   if (reportType === 'production' || reportType === 'sales' || selectedUserId || isRoleReport || isAllCustomers) {
     generate();
   }
-  }, [reportType, selectedUserId, globalDays, dateMode, customStart, customEnd, isRoleReport, isAllCustomers, taskStatusFilter, orderStatusFilter]);
+  }, [reportType, selectedUserId, customStart, customEnd, isRoleReport, isAllCustomers, taskStatusFilter, orderStatusFilter]);
 
   // Fetch tasks when production tasks tab is active
   useEffect(() => {
@@ -306,15 +318,7 @@ function ReportGeneratorTab() {
     async function loadTasks() {
       setTasksLoading(true);
       try {
-        let startDate: string | undefined;
-        let endDate: string | undefined;
-        if (dateMode === 'custom' && customStart && customEnd) {
-          startDate = new Date(customStart).toISOString();
-          endDate = new Date(customEnd + 'T23:59:59').toISOString();
-        } else {
-          endDate = new Date().toISOString();
-          startDate = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
-        }
+        const { startDate, endDate } = getDateRange();
         const roleNames = ['cortador', 'guarnecedor', 'solador', 'emplantillador'];
         if (prodTaskProcess === 'all') {
           const results = await Promise.all(
@@ -333,7 +337,7 @@ function ReportGeneratorTab() {
       }
     }
     loadTasks();
-  }, [reportType, productionTab, prodTaskProcess, prodTaskStatusFilter, globalDays, dateMode, customStart, customEnd]);
+  }, [reportType, productionTab, prodTaskProcess, prodTaskStatusFilter, customStart, customEnd]);
 
   const resetAll = () => {
     setSelectedRole(null);
@@ -354,67 +358,90 @@ function ReportGeneratorTab() {
   };
 
   const handleShareReport = async () => {
-    if (!shareModal || !shareModal.to_email) return;
+    if (!shareModal) return;
     setSendingShare(true);
-    try {
-      let pdfBase64 = '';
-      let pdfFilename = '';
 
+    const computeDates = () => {
+      const { startDate, endDate } = getDateRange();
+      return { sd: startDate, ed: endDate };
+    };
+
+    // Intentar generar PDF para email (no bloquea el envío interno)
+    let pdfBase64 = '';
+    let pdfFilename = '';
+    try {
       if (shareModal.type === 'employee' && employeeReport) {
         const pdf = await exportEmployeePDF(employeeReport, employeeReport.name, '', '', true);
-        if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
-        pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
-        pdfFilename = `reporte-empleado-${employeeReport.name}.pdf`;
+        if (pdf) {
+          pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+          pdfFilename = `reporte-empleado-${employeeReport.name}.pdf`;
+        }
       } else if (shareModal.type === 'customer' && customerReport) {
         const pdf = await exportCustomerPDF(customerReport, isAllCustomers ? 'Reporte General de Cartera' : `Reporte de Cliente: ${customerReport.name}`, '', '', true);
-        if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
-        pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
-        pdfFilename = `reporte-cliente-${customerReport.name}.pdf`;
-      } else if (shareModal.type === 'production' && productionReport) {
-        let sd: string | undefined;
-        let ed: string | undefined;
-        if (dateMode === 'custom' && customStart && customEnd) {
-          sd = new Date(customStart).toISOString();
-          ed = new Date(customEnd + 'T23:59:59').toISOString();
-        } else {
-          ed = new Date().toISOString();
-          sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
+        if (pdf) {
+          pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+          pdfFilename = `reporte-cliente-${customerReport.name}.pdf`;
         }
+      } else if (shareModal.type === 'production' && productionReport) {
+        const { sd, ed } = computeDates();
         if (productionTab === 'orders') {
           const filtered = productionReport.orders;
           const totalOrders = filtered.length;
           const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
           const pdf = await exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed, true);
-          if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
-          pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
-          pdfFilename = 'reporte-pedidos.pdf';
+          if (pdf) {
+            pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+            pdfFilename = 'reporte-pedidos.pdf';
+          }
         } else {
           const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
           const pdf = await exportTasksPDF(productionTasks, productionTasks.length, totalPairs, sd, ed, true);
-          if (!pdf) { setToast({ message: 'No se pudo generar el PDF', type: 'error' }); return; }
-          pdfFilename = 'reporte-tareas.pdf';
+          if (pdf) {
+            pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
+            pdfFilename = 'reporte-tareas.pdf';
+          }
         }
       }
+    } catch {
+      // Si falla el PDF, solo se omite el envío por correo, no bloquea el interno
+      pdfBase64 = '';
+    }
 
-      if (!pdfBase64) {
-        setToast({ message: 'No se pudo generar el PDF', type: 'error' });
-        return;
+    try {
+      // Enviar por correo si hay email y PDF
+      if (shareModal.to_email && pdfBase64) {
+        await sendReportEmail({
+          to_email: shareModal.to_email,
+          to_name: shareModal.to_name || 'Usuario',
+          subject: `Reporte: ${shareModal.type === 'employee' ? 'Empleado' : shareModal.type === 'customer' ? 'Cliente' : 'Producción'}`,
+          body_html: shareMessage || `Adjuntamos el reporte de ${shareModal.type === 'employee' ? 'empleado' : shareModal.type === 'customer' ? 'cliente' : 'producción'}.`,
+          pdf_base64: pdfBase64,
+          pdf_filename: pdfFilename,
+        });
       }
 
-      await sendReportEmail({
-        to_email: shareModal.to_email,
-        to_name: shareModal.to_name || 'Usuario',
-        subject: `Reporte: ${shareModal.type === 'employee' ? 'Empleado' : shareModal.type === 'customer' ? 'Cliente' : 'Producción'}`,
-        body_html: shareMessage || `Adjuntamos el reporte de ${shareModal.type === 'employee' ? 'empleado' : shareModal.type === 'customer' ? 'cliente' : 'producción'}.`,
-        pdf_base64: pdfBase64,
-        pdf_filename: pdfFilename,
-      });
+      // Compartir internamente al dashboard del empleado (automático)
+      if (shareModal.type === 'employee' && shareModal.target_user_id) {
+        const { sd, ed } = computeDates();
+        await shareInternal({
+          target_user_id: shareModal.target_user_id,
+          report_type: shareModal.type,
+          report_title: `Reporte de ${shareModal.type === 'employee' ? 'Empleado' : shareModal.type === 'customer' ? 'Cliente' : 'Producción'}: ${shareModal.to_name}`,
+          message: shareMessage || undefined,
+          parameters: {
+            start_date: sd,
+            end_date: ed,
+            employee_name: shareModal.to_name,
+          },
+        });
+      }
 
-      setToast({ message: 'Reporte enviado por correo exitosamente', type: 'success' });
+      setToast({ message: 'Reporte enviado al dashboard del empleado', type: 'success' });
       setShareModal(null);
       setShareMessage('');
     } catch (err) {
-      setToast({ message: 'Error al enviar el reporte', type: 'error' });
+      setToast({ message: 'Error al compartir el reporte', type: 'error' });
+      console.error(err);
     } finally {
       setSendingShare(false);
     }
@@ -551,69 +578,35 @@ function ReportGeneratorTab() {
         </div>
       )}
 
-      {/* Selector de Periodo Universal para Reportes */}
+      {/* Selector de Fecha para Reportes */}
       {(reportType === 'production' || reportType === 'sales' || ((reportType === 'employee' || reportType === 'customer') && (selectedUserId || isRoleReport || isAllCustomers))) && (
         <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl p-4">
           <label className="block text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" /> Rango de Tiempo
           </label>
-          {/* Toggle modo */}
-          <div className="flex gap-2 mb-3">
-            <button onClick={() => setDateMode('preset')} className={`px-4 py-1.5 rounded-lg text-sm font-bold border-2 transition-all ${dateMode === 'preset' ? 'border-blue-500 bg-blue-500 text-white' : 'border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-900'}`}>
-              Predefinido
-            </button>
-            <button onClick={() => setDateMode('custom')} className={`px-4 py-1.5 rounded-lg text-sm font-bold border-2 transition-all ${dateMode === 'custom' ? 'border-blue-500 bg-blue-500 text-white' : 'border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-900'}`}>
-              Rango Personalizado
-            </button>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-blue-600 uppercase">Desde</label>
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-blue-600 uppercase">Hasta</label>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
+              />
+            </div>
+            <p className="text-xs font-medium text-blue-600 mt-4">
+              {customStart && customEnd ? 'El reporte se actualizará automáticamente.' : 'Deja vacío para usar la fecha de hoy.'}
+            </p>
           </div>
-          {dateMode === 'preset' ? (
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: 'Última semana', days: 7 },
-                { label: 'Últimos 15 días', days: 15 },
-                { label: 'Último mes', days: 30 },
-                { label: 'Últimos 3 meses', days: 90 },
-                { label: 'Últimos 6 meses', days: 180 },
-                { label: 'Último año', days: 365 },
-              ].map(opt => (
-                <button
-                  key={opt.days}
-                  onClick={() => setGlobalDays(opt.days)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
-                    globalDays === opt.days
-                      ? 'border-blue-500 bg-blue-500 text-white'
-                      : 'border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-900 hover:border-blue-400'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-blue-600 uppercase">Desde</label>
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={e => setCustomStart(e.target.value)}
-                  className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-blue-600 uppercase">Hasta</label>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={e => setCustomEnd(e.target.value)}
-                  className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
-                />
-              </div>
-              {customStart && customEnd && (
-                <p className="text-xs font-medium text-blue-600 mt-4">El reporte se actualizará automáticamente.</p>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -627,8 +620,6 @@ function ReportGeneratorTab() {
           <Button onClick={() => {
             setReportError(null);
             setLoadingReport(true);
-            // Esto forzará el useEffect
-            setGlobalDays(prev => prev); 
           }} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6">Reintentar</Button>
         </div>
       )}
@@ -663,15 +654,7 @@ function ReportGeneratorTab() {
               <Button variant="secondary" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Empleado</Button>
               <Button 
                 onClick={() => {
-                  let startDate: string | undefined;
-                  let endDate: string | undefined;
-                  if (dateMode === 'custom' && customStart && customEnd) {
-                    startDate = new Date(customStart).toISOString();
-                    endDate = new Date(customEnd + 'T23:59:59').toISOString();
-                  } else {
-                    endDate = new Date().toISOString();
-                    startDate = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
-                  }
+                  const { startDate, endDate } = getDateRange();
                   if (employeeReport) {
                     const tasksToExport = taskStatusFilter !== 'all'
                       ? employeeReport.tasks_list.filter(t => t.status === taskStatusFilter)
@@ -693,6 +676,7 @@ function ReportGeneratorTab() {
                     type: 'employee',
                     to_email: emp?.email || '',
                     to_name: employeeReport.name,
+                    target_user_id: employeeReport.user_id,
                   });
                 }}
                 variant="secondary"
@@ -786,8 +770,7 @@ function ReportGeneratorTab() {
                                 setPaidSuccess(`✅ ${res.updated_count} tarea(s) marcadas como pagadas`);
                                 setSelectedTaskIds([]);
                                 // Refrescar el reporte
-                                const endDate = dateMode === 'custom' && customEnd ? new Date(customEnd + 'T23:59:59').toISOString() : new Date().toISOString();
-                                const startDate = dateMode === 'custom' && customStart ? new Date(customStart).toISOString() : new Date(Date.now() - globalDays * 86400000).toISOString();
+                                const { startDate, endDate } = getDateRange();
                                 const fresh = await getEmployeeReport(selectedUserId!, startDate, endDate);
                                 setEmployeeReport(fresh);
                               } catch(e) {
@@ -877,18 +860,10 @@ function ReportGeneratorTab() {
             </div>
             <div className="flex gap-2">
               <Button variant="secondary" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Cliente</Button>
-              <Button 
+              <Button
                 onClick={() => {
-                  let sd: string | undefined;
-                  let ed: string | undefined;
-                  if (dateMode === 'custom' && customStart && customEnd) {
-                    sd = new Date(customStart).toISOString();
-                    ed = new Date(customEnd + 'T23:59:59').toISOString();
-                  } else {
-                    ed = new Date().toISOString();
-                    sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
-                  }
-                  customerReport && exportCustomerPDF(customerReport, isAllCustomers ? "Reporte General de Cartera" : `Reporte de Cliente: ${customerReport.name}`, sd, ed);
+                  const { startDate, endDate } = getDateRange();
+                  customerReport && exportCustomerPDF(customerReport, isAllCustomers ? "Reporte General de Cartera" : `Reporte de Cliente: ${customerReport.name}`, startDate, endDate);
                 }}
                 className="text-sm font-bold py-2"
               >
@@ -1110,29 +1085,31 @@ function ReportGeneratorTab() {
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => {
-                  let sd: string | undefined;
-                  let ed: string | undefined;
-                  if (dateMode === 'custom' && customStart && customEnd) {
-                    sd = new Date(customStart).toISOString();
-                    ed = new Date(customEnd + 'T23:59:59').toISOString();
-                  } else {
-                    ed = new Date().toISOString();
-                    sd = new Date(Date.now() - globalDays * 24 * 60 * 60 * 1000).toISOString();
-                  }
+                  const { startDate, endDate } = getDateRange();
+                  exportProductionPDF(productionReport.orders, productionTasks, startDate, endDate);
+                }}
+                className="text-sm font-bold py-2 w-full lg:w-auto"
+              >
+                <Download className="w-4 h-4 mr-2" /> Exportar PDF Completo
+              </Button>
+              <Button
+                onClick={() => {
+                  const { startDate, endDate } = getDateRange();
                   if (productionTab === 'orders') {
                     const filtered = productionReport.orders;
                     const totalOrders = filtered.length;
                     const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
-                    exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed);
+                    exportOrdersPDF(filtered, totalOrders, totalPairs, startDate, endDate);
                   } else {
                     const totalTasks = productionTasks.length;
                     const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
-                    exportTasksPDF(productionTasks, totalTasks, totalPairs, sd, ed);
+                    exportTasksPDF(productionTasks, totalTasks, totalPairs, startDate, endDate);
                   }
                 }}
+                variant="secondary"
                 className="text-sm font-bold py-2 w-full lg:w-auto"
               >
-                <Download className="w-4 h-4 mr-2" /> Exportar PDF
+                <Download className="w-4 h-4 mr-2" /> Solo {productionTab === 'orders' ? 'Pedidos' : 'Tareas'}
               </Button>
               <Button
                 onClick={() => {
@@ -1383,6 +1360,12 @@ function ReportGeneratorTab() {
               disabled={sendingShare}
             />
           </div>
+          {shareModal?.type === 'employee' && shareModal?.target_user_id && (
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+              <p className="text-sm font-bold text-purple-700 dark:text-purple-300">Se enviará automáticamente al dashboard del empleado</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5">El empleado verá este reporte en tiempo real en su panel</p>
+            </div>
+          )}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Mensaje (opcional)</label>
             <textarea
@@ -1406,10 +1389,10 @@ function ReportGeneratorTab() {
             <Button
               className="flex-1 font-bold py-2.5"
               onClick={handleShareReport}
-              disabled={sendingShare || !shareModal?.to_email}
+              disabled={sendingShare}
             >
               {sendingShare ? <Loader2 className="w-4 h-4 mr-2 animate-spin inline" /> : <Send className="w-4 h-4 mr-2 inline" />}
-              {sendingShare ? 'Enviando...' : 'Enviar'}
+              {sendingShare ? 'Enviando...' : 'Compartir'}
             </Button>
           </div>
         </div>
