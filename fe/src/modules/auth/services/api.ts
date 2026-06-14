@@ -85,3 +85,17 @@ export async function getMe(): Promise<UserResponse> {
   const response = await api.get<UserResponse>(`${USERS_PREFIX}/me`);
   return response.data;
 }
+
+export async function uploadAvatar(file: File): Promise<{ avatar_url: string; message: string }> {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post(`${USERS_PREFIX}/me/avatar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+}
+
+export async function deleteAvatar(): Promise<{ avatar_url: null; message: string }> {
+  const response = await api.delete(`${USERS_PREFIX}/me/avatar`);
+  return response.data;
+}

@@ -148,6 +148,11 @@ class User(Base):
         nullable=True,
     )
 
+    avatar_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
     # ────────────────────────────
     # ✅ Validación por admin
     # ────────────────────────────

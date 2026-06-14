@@ -152,6 +152,71 @@
       "notifications": "Notificaciones"
     }
   },
+  "employeeSettings": {
+    "title": "Configuración",
+    "tabs": {
+      "profile": "Mi Perfil",
+      "notifications": "Notificaciones",
+      "language": "Idioma y Región",
+      "security": "Seguridad",
+      "appearance": "Apariencia"
+    },
+    "profile": {
+      "avatar": "Foto de Perfil",
+      "upload": "Subir foto",
+      "delete": "Eliminar",
+      "change": "Cambiar foto",
+      "maxSize": "Máximo 5 MB, formato JPG/PNG",
+      "userInfo": "Información del Usuario",
+      "name": "Nombre",
+      "email": "Correo",
+      "role": "Rol",
+      "occupation": "Ocupación",
+      "phone": "Teléfono",
+      "document": "Documento de identidad"
+    },
+    "notifications": {
+      "taskAssigned": "Tarea asignada",
+      "taskAssignedDesc": "Notificar cuando te asignen una nueva tarea.",
+      "deadlineReminder": "Recordatorio de plazo",
+      "deadlineReminderDesc": "Recordatorio cuando una tarea esté próxima a vencer.",
+      "sharedReport": "Nuevo reporte compartido",
+      "sharedReportDesc": "Notificar cuando el jefe comparta un reporte contigo."
+    },
+    "language": {
+      "interfaceLanguage": "Idioma de la Interfaz",
+      "timezone": "Zona Horaria",
+      "dateFormat": "Formato de Fecha",
+      "currency": "Moneda",
+      "langNote": "Los cambios de idioma se aplican al hacer clic en Guardar Cambios."
+    },
+    "security": {
+      "changePassword": "Cambiar Contraseña",
+      "currentPassword": "Contraseña Actual",
+      "newPassword": "Nueva Contraseña",
+      "confirmPassword": "Confirmar Nueva Contraseña",
+      "update": "Actualizar Contraseña",
+      "updating": "Actualizando...",
+      "session": "Sesión",
+      "sessionTimeout": "Tiempo de Inactividad para Cerrar Sesión",
+      "sessionInfo": "Información de Sesión",
+      "activeSession": "Sesión activa como"
+    },
+    "appearance": {
+      "title": "Apariencia del Sistema",
+      "darkMode": "Modo Oscuro",
+      "compactView": "Vista Compacta",
+      "compactViewDesc": "Reduce el espaciado para mostrar más información en pantalla.",
+      "fontSize": "Tamaño de Fuente",
+      "small": "Pequeña",
+      "normal": "Normal",
+      "large": "Grande",
+      "preview": "Vista Previa"
+    },
+    "save": "Guardar Cambios",
+    "saved": "Cambios guardados",
+    "saveError": "No se pudieron guardar los cambios."
+  },
   "roles": {
     "admin": "Administrador",
     "employee": "Empleado",

@@ -90,6 +90,7 @@ export interface UserResponse {
   role_name: string | null;
   business_name: string | null;
   occupation: string | null;
+  avatar_url: string | null;
   accepted_terms: boolean;
   terms_accepted_at: string | null;
   created_at: string;
@@ -123,6 +124,7 @@ export interface AuthContextType extends AuthState {
   login: (data: LoginRequest) => Promise<UserResponse>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   logoutAllDevices: () => Promise<void>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<void>;

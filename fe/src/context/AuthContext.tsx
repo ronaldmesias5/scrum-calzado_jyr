@@ -181,6 +181,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await authApi.changePassword(data);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const userData = await authApi.getMe();
+      setUser(userData);
+    } catch (error) {
+      console.error("Error refreshing user data", error);
+    }
+  }, []);
+
   const forgotPassword = useCallback(async (data: ForgotPasswordRequest) => {
     await authApi.forgotPassword(data);
   }, []);
@@ -203,6 +212,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       changePassword,
       forgotPassword,
       resetPassword: resetPasswordAction,
+      refreshUser,
     }),
     [
       user,
@@ -217,6 +227,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       changePassword,
       forgotPassword,
       resetPasswordAction,
+      refreshUser,
     ]
   );
 

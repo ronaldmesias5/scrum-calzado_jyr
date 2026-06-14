@@ -152,6 +152,71 @@
       "notifications": "Notifications"
     }
   },
+  "employeeSettings": {
+    "title": "Settings",
+    "tabs": {
+      "profile": "My Profile",
+      "notifications": "Notifications",
+      "language": "Language & Region",
+      "security": "Security",
+      "appearance": "Appearance"
+    },
+    "profile": {
+      "avatar": "Profile Picture",
+      "upload": "Upload photo",
+      "delete": "Delete",
+      "change": "Change photo",
+      "maxSize": "Max 5 MB, JPG/PNG format",
+      "userInfo": "User Information",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "occupation": "Occupation",
+      "phone": "Phone",
+      "document": "ID Document"
+    },
+    "notifications": {
+      "taskAssigned": "Task assigned",
+      "taskAssignedDesc": "Notify when a new task is assigned to you.",
+      "deadlineReminder": "Deadline reminder",
+      "deadlineReminderDesc": "Reminder when a task is approaching its deadline.",
+      "sharedReport": "New shared report",
+      "sharedReportDesc": "Notify when the boss shares a report with you."
+    },
+    "language": {
+      "interfaceLanguage": "Interface Language",
+      "timezone": "Timezone",
+      "dateFormat": "Date Format",
+      "currency": "Currency",
+      "langNote": "Language changes take effect when you click Save Changes."
+    },
+    "security": {
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "update": "Update Password",
+      "updating": "Updating...",
+      "session": "Session",
+      "sessionTimeout": "Inactivity Timeout",
+      "sessionInfo": "Session Info",
+      "activeSession": "Active session as"
+    },
+    "appearance": {
+      "title": "System Appearance",
+      "darkMode": "Dark Mode",
+      "compactView": "Compact View",
+      "compactViewDesc": "Reduce spacing to show more information on screen.",
+      "fontSize": "Font Size",
+      "small": "Small",
+      "normal": "Normal",
+      "large": "Large",
+      "preview": "Preview"
+    },
+    "save": "Save Changes",
+    "saved": "Changes saved",
+    "saveError": "Could not save changes."
+  },
   "roles": {
     "admin": "Administrator",
     "employee": "Employee",

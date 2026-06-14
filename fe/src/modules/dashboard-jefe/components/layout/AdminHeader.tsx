@@ -111,9 +111,17 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
         {/* Avatar */}
         <div className="flex items-center gap-2 pl-1 border-l border-gray-100 dark:border-slate-800 sm:border-0 sm:pl-0">
-          <div className="w-8 h-8 lg:w-9 lg:h-9 bg-blue-800 dark:bg-blue-600 text-white rounded-full flex items-center justify-center text-xs lg:text-sm font-bold shadow-lg">
-            {initials}
-          </div>
+          {user?.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt={fullName}
+              className="w-8 h-8 lg:w-9 lg:h-9 rounded-full object-cover shadow-lg"
+            />
+          ) : (
+            <div className="w-8 h-8 lg:w-9 lg:h-9 bg-blue-800 dark:bg-blue-600 text-white rounded-full flex items-center justify-center text-xs lg:text-sm font-bold shadow-lg">
+              {initials}
+            </div>
+          )}
           <div className="hidden lg:block">
             <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
               {fullName}

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, CheckSquare, Package, AlertTriangle, BarChart, X, LogOut } from 'lucide-react';
+import { Home, CheckSquare, Package, AlertTriangle, BarChart, Settings, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface EmployeeSidebarProps {
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { label: 'Tareas Disponibles', icon: Package,      path: '/dashboard/employee/available-tasks' },
   { label: 'Incidencias',        icon: AlertTriangle, path: '/dashboard/employee/incidences' },
   { label: 'Reportes',           icon: BarChart,      path: '/dashboard/employee/reports' },
+  { label: 'Configuración',      icon: Settings,      path: '/dashboard/employee/settings' },
 ] as const;
 
 export default function EmployeeSidebar({ isOpen, onClose }: EmployeeSidebarProps) {
