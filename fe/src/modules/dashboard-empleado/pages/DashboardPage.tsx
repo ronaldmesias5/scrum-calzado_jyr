@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Home, CheckSquare, Clock, CheckCircle2, AlertTriangle, Package,
+  Share2, FileText, ChevronRight,
 } from 'lucide-react';
-import { getEmployeeMetrics, getEmployeeTasks } from '../services/employeeApi';
+import { getEmployeeMetrics, getEmployeeTasks, getSharedReports } from '../services/employeeApi';
 import type { EmployeeMetric, EmployeeTask } from '../types/employee';
+import type { SharedReportItem, SharedReportListResponse } from '../services/employeeApi';
 
 const CARD_CONFIG: Record<string, {
   icon: typeof CheckSquare;
@@ -30,18 +33,36 @@ const VALUE_COLORS: Record<string, string> = {
 const DEFAULT_VALUE_COLOR = 'text-blue-600 dark:text-blue-400';
 
 export default function EmployeeDashboardPage() {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState<EmployeeMetric[]>([]);
   const [recentTasks, setRecentTasks] = useState<EmployeeTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sharedReports, setSharedReports] = useState<SharedReportItem[]>([]);
 
   useEffect(() => {
     Promise.all([
       getEmployeeMetrics(),
       getEmployeeTasks(),
-    ]).then(([metricsRes, tasksRes]) => {
+      getSharedReports(),
+    ]).then(([metricsRes, tasksRes, shr]) => {
       setMetrics(metricsRes.metrics);
       setRecentTasks(tasksRes.tasks.slice(0, 8));
+      setSharedReports(shr.reports);
     }).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  // Polling para reportes compartidos (cada 30s)
+  useEffect(() => {
+    let mounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const shr: SharedReportListResponse = await getSharedReports();
+        if (mounted) setSharedReports(shr.reports);
+      } catch {
+        // silent
+      }
+    }, 30000);
+    return () => { mounted = false; clearInterval(interval); };
   }, []);
 
   return (
@@ -172,6 +193,59 @@ export default function EmployeeDashboardPage() {
           )}
         </div>
       </div>
+      {/* REPORTES COMPARTIDOS */}
+      {sharedReports.length > 0 && (
+        <div className="stagger-reveal">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              Reportes Compartidos
+              {sharedReports.some(r => !r.is_read) && (
+                <span className="text-xs font-bold bg-purple-600 text-white px-2 py-0.5 rounded-full">
+                  {sharedReports.filter(r => !r.is_read).length} nuevo{sharedReports.filter(r => !r.is_read).length > 1 ? 's' : ''}
+                </span>
+              )}
+            </h2>
+            <button
+              onClick={() => navigate('/dashboard/employee/reports')}
+              className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1 transition-colors"
+            >
+              Ver todos <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {sharedReports.slice(0, 4).map((r) => (
+              <button
+                key={r.id}
+                onClick={() => navigate('/dashboard/employee/reports')}
+                className="text-left flex items-center gap-3 p-4 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-purple-200 dark:hover:border-purple-700 hover:shadow-sm transition-all bg-white dark:bg-slate-900/50"
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${r.is_read ? 'bg-gray-100 dark:bg-slate-800' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                  {r.is_read ? (
+                    <FileText className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <div className="relative">
+                      <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-purple-600 rounded-full" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm truncate ${r.is_read ? 'font-medium text-gray-600 dark:text-gray-400' : 'font-bold text-gray-900 dark:text-white'}`}>
+                    {r.report_title}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {r.shared_by_name && `por ${r.shared_by_name} · `}
+                    {r.created_at && new Date(r.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

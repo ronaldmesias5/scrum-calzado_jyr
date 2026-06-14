@@ -2,8 +2,8 @@
 
 **Proyecto:** Sistema de Gestión y Producción de Calzado - CALZADO J&R  
 **Equipo:** Ronald (Arquitecto) | Andrés (Scrum Master) | Santiago (Bases de Datos)  
-**Última Actualización:** 19 de Marzo de 2026  
-**Estado:** En Desarrollo - Sprint 6 Activo
+**Última Actualización:** 13 de Junio de 2026  
+**Estado:** En Desarrollo - Sprint 8 Activo
 
 ## 20 Historias de Usuario - Plan de Trabajo
 
@@ -20,8 +20,8 @@ Estructura: **2 historias cada 15 días** = 10 sprints de 15 días cada uno
 | Sprint 3 | Días 31-45 | ✅ **COMPLETADO** | HU-006, HU-009 |
 | Sprint 4 | Días 46-60 | ✅ **COMPLETADO** | HU-010, HU-011 |
 | Sprint 5 | Días 61-75 | ✅ **COMPLETADO** | HU-012, HU-014 |
-| Sprint 6 | Días 76-90 | 🔄 **EN PROGRESO** | HU-015, HU-016 |
-| Sprint 7 | Días 91-105 | ⏳ Pendiente | HU-022, HU-024 |
+| Sprint 6 | Días 76-90 | ✅ **COMPLETADO** | HU-015, HU-016 |
+| Sprint 7 | Días 91-105 | ✅ **COMPLETADO** | HU-022, HU-024 |
 | Sprint 8 | Días 106-120 | ⏳ Pendiente | HU-029, HU-030 |
 | Sprint 9 | Días 121-135 | ⏳ Pendiente | HU-025, HU-026 |
 | Sprint 10 | Días 136-150 | ⏳ Pendiente | HU-031, HU-033 |
@@ -48,13 +48,14 @@ Estructura: **2 historias cada 15 días** = 10 sprints de 15 días cada uno
 - **HU-012** - Realización de Pedidos ✅
 - **HU-014** - Consulta de Estado de Pedidos ✅
 
-## **Sprint 6 (Días 76-90): Producción e Inventario** 🔄 EN PROGRESO
-- **HU-015** - Actualización de Estado de Producción 🔄
-- **HU-016** - Gestión de Inventario 🔄
+## **Sprint 6 (Días 76-90): Producción e Inventario** ✅ COMPLETADO
+- **HU-015** - Actualización de Estado de Producción ✅
+- **HU-016** - Gestión de Inventario ✅
 
-## **Sprint 7 (Días 91-105): Asignación de Tareas** ⏳ PENDIENTE
-- **HU-022** - Asignación de Tareas de Producción
-- **HU-024** - Reporte de Avances
+## **Sprint 7 (Días 91-105): Asignación de Tareas y Dashboard Empleado** ✅ COMPLETADO
+- **HU-022** - Asignación de Tareas de Producción ✅
+- **HU-024** - Reporte de Avances ✅
+- **Features adicionales:** Dashboard empleado (6 páginas), avatar de perfil, exportación PDF en reportes, configuración de perfil, dashboard cliente
 
 ## **Sprint 8 (Días 106-120): Notificaciones** ⏳ PENDIENTE
 - **HU-029** - Módulo de Notificaciones

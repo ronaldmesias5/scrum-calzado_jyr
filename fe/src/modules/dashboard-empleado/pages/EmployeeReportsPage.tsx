@@ -50,6 +50,7 @@ export default function EmployeeReportsPage() {
   const [shareError, setShareError] = useState<string | null>(null);
 
   // Reporte detallado state
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'custom'>('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [tasksReport, setTasksReport] = useState<MyTasksReportResponse | null>(null);
@@ -58,15 +59,33 @@ export default function EmployeeReportsPage() {
 
   const getDateRange = useCallback(() => {
     const now = new Date();
-    if (customStart && customEnd) {
+    if (period === 'custom' && customStart && customEnd) {
       return {
         start: new Date(customStart).toISOString(),
         end: new Date(customEnd + 'T23:59:59').toISOString(),
       };
     }
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return { start: today.toISOString(), end: now.toISOString() };
-  }, [customStart, customEnd]);
+    let start: Date;
+    switch (period) {
+      case 'today':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week': {
+        const dayOfWeek = now.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        start = new Date(now);
+        start.setDate(now.getDate() - diff);
+        start.setHours(0, 0, 0, 0);
+        break;
+      }
+      case 'month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+    return { start: start.toISOString(), end: now.toISOString() };
+  }, [period, customStart, customEnd]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -119,7 +138,7 @@ export default function EmployeeReportsPage() {
       }
     }
     loadTasks();
-  }, [performance, customStart, customEnd, getDateRange]);
+  }, [performance, period, customStart, customEnd, getDateRange]);
 
   const handleViewShare = async (id: string) => {
     try {
@@ -281,28 +300,50 @@ export default function EmployeeReportsPage() {
         </div>
 
         {/* Filtro de fecha */}
-        <div className="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Desde</label>
-            <input
-              type="date"
-              value={customStart}
-              onChange={e => setCustomStart(e.target.value)}
-              className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
-            />
+        <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              { key: 'today' as const, label: 'Hoy' },
+              { key: 'week' as const, label: 'Semana' },
+              { key: 'month' as const, label: 'Mes' },
+              { key: 'custom' as const, label: 'Personalizado' },
+            ].map(p => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                  period === p.key
+                    ? 'border-purple-500 bg-purple-500 text-white'
+                    : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-purple-300'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hasta</label>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={e => setCustomEnd(e.target.value)}
-              className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
-            />
-          </div>
-          <p className="text-xs font-medium text-gray-500 mt-4">
-            {customStart && customEnd ? 'El reporte se actualizará automáticamente.' : 'Deja vacío para usar la fecha de hoy.'}
-          </p>
+          {period === 'custom' && (
+            <div className="flex flex-wrap items-center gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Desde</label>
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={e => setCustomStart(e.target.value)}
+                  className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hasta</label>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={e => setCustomEnd(e.target.value)}
+                  className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-purple-500"
+                />
+              </div>
+              <p className="text-xs font-medium text-gray-500 mt-4">El reporte se actualizará automáticamente.</p>
+            </div>
+          )}
         </div>
 
         {tasksLoading ? (

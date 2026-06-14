@@ -52,9 +52,17 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             
             # Registrar detalles COMPLETOS en servidor (NUNCA en response)
             full_traceback = traceback.format_exc()
-            error_logger.error(
-                f"Unhandled exception on {request.url.path} from {client_ip}\n{full_traceback}"
-            )
+            
+            # Print de EMERGENCIA para Docker logs
+            print(f"!!! CRITICAL ERROR !!! {request.method} {request.url.path} from {client_ip}")
+            print(full_traceback)
+
+            try:
+                error_logger.error(
+                    f"Unhandled exception on {request.url.path} from {client_ip}\n{full_traceback}"
+                )
+            except Exception as log_err:
+                print(f"!!! LOGGER FAILED !!! {str(log_err)}")
             
             # Determinar código HTTP basado en tipo de excepción
             status_code = self._get_status_code(exc)
@@ -64,7 +72,6 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 status_code=status_code,
                 content={
                     "detail": self._get_user_message(status_code),
-                    # NO incluir: exception type, stack trace, database details, etc.
                 }
             )
     

@@ -1,8 +1,8 @@
 # Arquitectura del Proyecto - Sistema de Gestión y Producción de Calzado - CALZADO J&R
 
 **Arquitecto:** Ronald Guerrero
-**Última Actualización:** 15 de Mayo de 2026
-**Estado:** ✅ MVP Fase 1 (Sprints 1-5) | 🔄 En desarrollo (Sprints 6-7)
+**Última Actualización:** 13 de Junio de 2026
+**Estado:** ✅ MVP Fase 1 (Sprints 1-7) | Dashboard Jefe, Empleado y Cliente operativos
 
 ---
 
@@ -36,7 +36,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Python** | 3.12-slim | Runtime principal del servidor |
 | **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
 | **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
-| **Alembic** | 1.14.0 | Sistema de migraciones de BD (23 migraciones) |
+| **Alembic** | 1.14.0 | Sistema de migraciones de BD (27 migraciones) |
 | **Pydantic** | 2.0+ | Validación y serialización de datos |
 | **PyJWT (python-jose)** | 3.3+ | Creación y validación de JWT tokens |
 | **bcrypt / passlib** | 4.0+ | Hash criptográfico de contraseñas |
@@ -148,7 +148,7 @@ scrum/
 │   │   ├── init_db.py          # Auto-migraciones + seed al arrancar
 │   │   └── main.py             # Punto de entrada FastAPI
 │   │
-│   ├── alembic/versions/       # 23 migraciones progresivas
+│   ├── alembic/versions/       # 27 migraciones progresivas
 │   ├── scripts/                # Utilidades standalone
 │   │   ├── create_admin.py     # Crear admin fuera de API
 │   │   └── heal_line_groups.py # Reparar line_group duplicados
@@ -174,7 +174,7 @@ scrum/
 │   │   │       ├── AuthLayout.tsx
 │   │   │       └── DashboardFooter.tsx
 │   │   │
-│   │   ├── modules/            # 3 módulos feature-based
+│   │   ├── modules/            # 5 módulos feature-based
 │   │   │   ├── auth/           # 5 páginas + servicios
 │   │   │   │   ├── pages/LoginPage.tsx, RegisterPage.tsx
 │   │   │   │   │       ForgotPasswordPage.tsx, ResetPasswordPage.tsx
@@ -203,6 +203,20 @@ scrum/
 │   │   │   │   ├── services/         # ordersApi, catalogService, adminApi, etc.
 │   │   │   │   ├── context/          # BadgeCountsContext
 │   │   │   │   └── types/           # dashboard.ts
+│   │   │   │
+│   │   │   ├── dashboard-empleado/  # 6 páginas + utils
+│   │   │   │   ├── pages/DashboardPage.tsx, TasksPage.tsx
+│   │   │   │   │       AvailableTasksPage.tsx, IncidencesPage.tsx
+│   │   │   │   │       EmployeeReportsPage.tsx, EmployeeSettingsPage.tsx
+│   │   │   │   ├── components/layout/  # EmployeeLayout, EmployeeSidebar
+│   │   │   │   ├── services/      # employeeApi
+│   │   │   │   ├── types/         # employee.ts
+│   │   │   │   └── utils/         # reportsUtils.ts (export PDF rendimiento)
+│   │   │   │
+│   │   │   ├── dashboard-cliente/ # 2 páginas
+│   │   │   │   ├── pages/DashboardPage.tsx, OrdersPage.tsx
+│   │   │   │   ├── components/layout/  # ClientLayout, ClientSidebar
+│   │   │   │   └── services/      # clientApi
 │   │   │   │
 │   │   │   └── landing/         # Landing page + catálogo público
 │   │   │       ├── pages/LandingPage.tsx, CatalogPage.tsx
@@ -292,12 +306,14 @@ A diferencia de la estructura documentada inicialmente, los módulos actuales **
 
 ### Frontend (Feature-Based Modules)
 
-El frontend tiene **3 módulos**:
+El frontend tiene **5 módulos**:
 
 | Módulo | Propósito |
 |--------|----------|
 | **auth** | Login, registro, recuperación de contraseña (5 páginas) |
 | **dashboard-jefe** | Panel administrativo completo (12 páginas + ~20 componentes) |
+| **dashboard-empleado** | Panel empleado (6 páginas: tareas, incidencias, reportes con PDF, configuración con avatar) |
+| **dashboard-cliente** | Panel cliente (2 páginas: dashboard y pedidos) |
 | **landing** | Landing page pública + catálogo público visible |
 
 ---
@@ -364,7 +380,7 @@ Tailwind v4 se configura mediante la directiva `@theme` directamente en `index.c
 ### 7. Auto-migraciones + seed al arrancar
 
 El backend ejecuta automáticamente en `init_db.py`:
-1. Migraciones Alembic pendientes (`alembic upgrade head`)
+1. Migraciones Alembic pendientes (`alembic upgrade head`) — 27 migraciones
 2. Datos semilla (roles, tipos documento, catálogo 65 productos, usuarios de prueba)
 
 **No ejecutar `alembic upgrade head` manualmente** a menos que se esté depurando.

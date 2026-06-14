@@ -85,6 +85,7 @@
 | **created_by** | UUID | FK → `users(id)` | Usuario que creó el registro. |
 | **updated_by** | UUID | FK → `users(id)` | Usuario que editó el registro. |
 | **deleted_by** | UUID | FK → `users(id)` | Usuario que eliminó el registro. |
+| **avatar_url** | VARCHAR(500) | | URL de la foto de perfil del usuario. |
 | **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
 | **updated_at** | TIMESTAMPTZ | DEFAULT NOW(), ON UPDATE NOW() | Última actualización. |
 | **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
@@ -437,6 +438,21 @@
 
 ---
 
+### 22. REPORT_SHARES
+
+**Propósito:** Almacena los reportes compartidos por un jefe/admin a un empleado para que aparezcan en su dashboard.
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **shared_by** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Jefe/admin que comparte. |
+| **shared_with** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Empleado destinatario. |
+| **report_type** | VARCHAR(50) | NOT NULL | Tipo de reporte (performance, produccion, etc.). |
+| **report_data** | JSONB | NOT NULL | Datos del reporte en formato JSON. |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+
+---
+
 ## 🗺️ Mapa de Relaciones (FK Completo)
 
 | FK | Columna Origen | Tabla Destino | Comportamiento |
@@ -482,6 +498,8 @@
 | **FK39** | `detail_vale.vale_id` | `vale(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
 | **FK40** | `incidence.task_id` | `tasks(id)` | ON DELETE RESTRICT, ON UPDATE CASCADE |
 | **FK41** | `notifications.user_id` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
+| **FK42** | `report_shares.shared_by` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
+| **FK43** | `report_shares.shared_with` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
 
 ---
 
@@ -501,4 +519,4 @@ CREATE TYPE notification_type AS ENUM ('info', 'advertencia', 'error', 'exito');
 
 ---
 
-*Documento generado a partir de los modelos ORM SQLAlchemy — Mayo 2026*
+*Documento generado a partir de los modelos ORM SQLAlchemy — Junio 2026*

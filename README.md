@@ -7,11 +7,11 @@
 Sistema integral para la gestión y producción de calzado, diseñado con una arquitectura modular para escalar eficientemente.
 
 **Dashboards implementados:**
-- **Dashboard Jefe**: Supervisión total, validación de clientes, gestión de empleados, catálogo, pedidos, inventario, insumos, tareas de producción.
-- **Dashboard Empleados**: (En desarrollo)
-- **Dashboard Clientes**: (En desarrollo)
+- **Dashboard Jefe**: Supervisión total, validación de clientes, gestión de empleados, catálogo, pedidos, inventario, insumos, tareas de producción, reportes con PDF export.
+- **Dashboard Empleados**: Operativo (6 páginas) — tareas disponibles, mis tareas, incidencias, reportes de rendimiento con PDF export, configuración de perfil con avatar.
+- **Dashboard Clientes**: Operativo (2 páginas) — dashboard y consulta de pedidos.
 
-**Estado actual:** Sprints 1-5 completados. Sprint 6-7 completados. Funcionalidad completa de dashboard jefe operativa.
+**Estado actual:** Sprints 1-7 completados. Funcionalidad completa de dashboard jefe, dashboard empleado y dashboard cliente operativas.
 
 ---
 
@@ -35,7 +35,7 @@ scrum/
 │   │   │   └── users/           # CRUD usuarios
 │   │   ├── utils/               # Email SMTP, sanitizado, seguridad
 │   │   └── main.py              # Punto de entrada
-│   ├── alembic/versions/        # 23 migraciones versionadas
+│   ├── alembic/versions/        # 27 migraciones versionadas
 │   ├── scripts/                 # create_admin.py, heal_line_groups.py
 │   └── pyproject.toml           # Dependencias (uv)
 │
@@ -46,6 +46,8 @@ scrum/
 │   │   ├── modules/             # 📦 Módulos funcionales
 │   │   │   ├── auth/            # Login, Register, Password (5 páginas)
 │   │   │   ├── dashboard-jefe/  # Panel admin completo (12 páginas)
+│   │   │   ├── dashboard-empleado/  # Panel empleado (6 páginas + utils)
+│   │   │   ├── dashboard-cliente/   # Panel cliente (2 páginas)
 │   │   │   └── landing/         # Landing page + catálogo público
 │   │   ├── hooks/               # useAuth, useHeaderAnimation, useModalDialog
 │   │   ├── context/             # AuthContext, BadgeCounts, ThemeProvider

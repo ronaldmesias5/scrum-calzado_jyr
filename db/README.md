@@ -14,10 +14,11 @@ db/init/init.sql              ← Bootstrap técnico (extensiones, configuracion
                                   Se ejecuta UNA VEZ al inicializar PostgreSQL en Docker
 
 be/alembic/versions/          ← Esquema y datos de NEGOCIO (versionado en git)
-  ├── 001_create_initial_schema.py     (tablas: users, roles, products, etc.)
-  ├── 002_seed_initial_data.py         (datos iniciales: roles, tipos de documento)
-  ├── 003_seed_catalog_data.py         (catálogo: marcas, categorías, productos)
-  └── 004_seed_test_users.py           (usuarios de prueba: admin, cortador, cliente)
+  ├── 001_create_initial_schema.py         (tablas: users, roles, products, etc.)
+  ├── 002_seed_initial_data.py             (datos iniciales: roles, tipos de documento)
+  ├── 003_seed_catalog_data.py             (catálogo: marcas, categorías, productos)
+  ├── 004_seed_test_users.py               (usuarios de prueba: admin, cortador, cliente)
+  └── ... hasta 027_add_avatar_url_to_users (avatar_url en users)
 ```
 
 ## ✅ ¿Qué va en `db/init/init.sql`?
@@ -73,7 +74,7 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
    └─> be/app/main.py inicia
    └─> lifespan() ejecuta: run_migrations()
    └─> Ejecuta: alembic upgrade head
-   └─> Crea tablas desde migraciones (001 → 023)
+   └─> Crea tablas desde migraciones (001 → 027)
    └─> Inserta datos iniciales (roles, tipos de doc, usuarios, 65 productos)
    └─> Backend listo ✅
    
@@ -171,4 +172,4 @@ docker compose logs db -f
 
 ---
 
-**Última actualización:** 2026-05-15
+**Última actualización:** 2026-06-13

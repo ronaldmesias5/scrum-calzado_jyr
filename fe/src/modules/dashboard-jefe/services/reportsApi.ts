@@ -207,3 +207,16 @@ export async function sendReportEmail(payload: SendReportEmailPayload): Promise<
   const response = await axios.post('/api/v1/admin/reports/send-email', payload);
   return response.data;
 }
+
+export interface ShareInternalPayload {
+  target_user_id: string;
+  report_type: string;
+  report_title: string;
+  message?: string;
+  parameters?: Record<string, unknown>;
+}
+
+export async function shareInternal(payload: ShareInternalPayload): Promise<{ success: boolean; message: string; share_id: string }> {
+  const response = await axios.post('/api/v1/admin/reports/share-internal', payload);
+  return response.data;
+}

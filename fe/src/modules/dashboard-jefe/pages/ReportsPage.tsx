@@ -208,19 +208,31 @@ function ReportGeneratorTab() {
   const [customerReport, setCustomerReport] = useState<CustomerReportResponse | null>(null);
   const [productionReport, setProductionReport] = useState<ProductionGlobalReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
+  const [datePreset, setDatePreset] = useState<'hoy' | 'semana' | 'mes' | 'custom'>('hoy');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
   const getDateRange = () => {
     const now = new Date();
-    if (customStart && customEnd) {
+    if (datePreset === 'custom' && customStart && customEnd) {
       return {
         startDate: new Date(customStart).toISOString(),
         endDate: new Date(customEnd + 'T23:59:59').toISOString(),
       };
     }
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return { startDate: today.toISOString(), endDate: now.toISOString() };
+    let start: Date;
+    if (datePreset === 'hoy') {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (datePreset === 'semana') {
+      const dayOfWeek = now.getDay();
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      start = new Date(now);
+      start.setDate(now.getDate() - diff);
+      start.setHours(0, 0, 0, 0);
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    return { startDate: start.toISOString(), endDate: now.toISOString() };
   };
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [markingPaid, setMarkingPaid] = useState(false);
@@ -310,7 +322,7 @@ function ReportGeneratorTab() {
   if (reportType === 'production' || reportType === 'sales' || selectedUserId || isRoleReport || isAllCustomers) {
     generate();
   }
-  }, [reportType, selectedUserId, customStart, customEnd, isRoleReport, isAllCustomers, taskStatusFilter, orderStatusFilter]);
+  }, [reportType, selectedUserId, datePreset, customStart, customEnd, isRoleReport, isAllCustomers, taskStatusFilter, orderStatusFilter]);
 
   // Fetch tasks when production tasks tab is active
   useEffect(() => {
@@ -337,7 +349,7 @@ function ReportGeneratorTab() {
       }
     }
     loadTasks();
-  }, [reportType, productionTab, prodTaskProcess, prodTaskStatusFilter, customStart, customEnd]);
+  }, [reportType, productionTab, prodTaskProcess, prodTaskStatusFilter, datePreset, customStart, customEnd]);
 
   const resetAll = () => {
     setSelectedRole(null);
@@ -584,29 +596,51 @@ function ReportGeneratorTab() {
           <label className="block text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" /> Rango de Tiempo
           </label>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-blue-600 uppercase">Desde</label>
-              <input
-                type="date"
-                value={customStart}
-                onChange={e => setCustomStart(e.target.value)}
-                className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-blue-600 uppercase">Hasta</label>
-              <input
-                type="date"
-                value={customEnd}
-                onChange={e => setCustomEnd(e.target.value)}
-                className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
-              />
-            </div>
-            <p className="text-xs font-medium text-blue-600 mt-4">
-              {customStart && customEnd ? 'El reporte se actualizará automáticamente.' : 'Deja vacío para usar la fecha de hoy.'}
-            </p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              { key: 'hoy', label: 'Hoy' },
+              { key: 'semana', label: 'Esta Semana' },
+              { key: 'mes', label: 'Este Mes' },
+              { key: 'custom', label: 'Personalizado' },
+            ].map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setDatePreset(opt.key as typeof datePreset)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-bold border-2 transition-all ${
+                  datePreset === opt.key
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : 'border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-900 hover:border-blue-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
+          {datePreset === 'custom' && (
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-blue-600 uppercase">Desde</label>
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={e => setCustomStart(e.target.value)}
+                  className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-blue-600 uppercase">Hasta</label>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={e => setCustomEnd(e.target.value)}
+                  className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
+                />
+              </div>
+              {customStart && customEnd && (
+                <p className="text-xs font-medium text-blue-600 mt-4">El reporte se actualizará automáticamente.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

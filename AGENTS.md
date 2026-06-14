@@ -85,7 +85,7 @@ cd fe && pnpm build               # ejecuta tsc -b && vite build
 - Las migraciones de Alembic se ejecutan **automáticamente al iniciar el backend** (`be/app/init_db.py`), tanto en Docker como local.
 - Los datos semilla también se insertan automáticamente (roles, tipos de documento, catálogo con 65 productos, usuarios de prueba).
 - **Nunca ejecutes `alembic upgrade head` manualmente** a menos que estés depurando algo muy específico.
-- Hay 23 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
+- Hay 27 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
 
 ### Usuario admin de prueba
 ```
@@ -109,7 +109,7 @@ Un solo `.env` en la raíz. Copiar de `.env.example`. Los `.env` individuales en
 ```
 be/app/modules/
 ├── auth/            # Autenticación (JWT + Bcrypt)
-├── users/           # CRUD usuarios
+├── users/           # CRUD usuarios + avatar upload (POST/DELETE /me/avatar)
 ├── admin/           # Rutas admin + catálogo admin + reportes
 ├── dashboard_jefe/  # Dashboard del jefe
 ├── orders/          # Pedidos
@@ -129,9 +129,20 @@ Usar **siempre** `@/` para imports internos, nunca rutas relativas largas.
 ### Frontend — módulos
 ```
 fe/src/modules/
-├── auth/            # Login, Register, Password Reset
-├── dashboard-jefe/  # Panel admin completo
-└── landing/         # Landing page pública + catálogo
+├── auth/                 # Login, Register, Password Reset
+├── dashboard-jefe/       # Panel admin completo (12 páginas)
+├── dashboard-empleado/   # Panel empleado (6 páginas + utils)
+│   ├── pages/            # DashboardPage, TasksPage, AvailableTasksPage,
+│   │                     # IncidencesPage, EmployeeReportsPage, EmployeeSettingsPage
+│   ├── components/layout/ # EmployeeLayout, EmployeeSidebar
+│   ├── services/         # employeeApi.ts
+│   ├── types/            # employee.ts
+│   └── utils/            # reportsUtils.ts (exportPerformancePDF)
+├── dashboard-cliente/    # Panel cliente (2 páginas)
+│   ├── pages/            # DashboardPage, OrdersPage
+│   ├── components/layout/ # ClientLayout, ClientSidebar
+│   └── services/         # clientApi.ts
+└── landing/              # Landing page pública + catálogo
 ```
 
 ---
@@ -158,6 +169,14 @@ fe/src/modules/
 
 10. **Script standalone**: `be/scripts/create_admin.py` — crea un admin por fuera de la API. Útil si la BD se corrompe o se pierde el seed.
 11. **Script heal**: `be/scripts/heal_line_groups.py` — repara `line_group` duplicados en `order_details`.
+
+12. **Avatar upload**: Los avatares se almacenan en `/uploads/` (misma infraestructura que imágenes de producto). El backend sirve estos archivos estáticamente. La URL incluye `?v=timestamp` para cache-busting. Formato de archivo: `avatar_{user_id}.ext`.
+
+13. **Dashboard Empleado**: Módulo `fe/src/modules/dashboard-empleado/` con 6 páginas. Las preferencias del empleado se almacenan en localStorage con prefijo `emp_` para evitar colisiones con las del admin.
+
+14. **Dashboard Cliente**: Módulo `fe/src/modules/dashboard-cliente/` con 2 páginas (DashboardPage, OrdersPage).
+
+15. **PDF export**: Usa `jspdf` + `jspdf-autotable`. La función `sanitizeFilename()` elimina caracteres prohibidos por Windows (`<>:"/\|?*`) de los nombres de archivo. Hay implementaciones separadas en `reportsUtils.ts` de cada dashboard.
 
 ## Patrones de frontend implementados
 

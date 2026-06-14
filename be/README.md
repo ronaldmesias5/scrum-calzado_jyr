@@ -6,7 +6,7 @@ Backend FastAPI para el sistema de gestión de calzado.
 
 - Python 3.12+
 - FastAPI 0.115+
-- SQLAlchemy 2.0 + Alembic (23 migraciones)
+- SQLAlchemy 2.0 + Alembic (27 migraciones)
 - PostgreSQL 17
 - JWT (python-jose) + Bcrypt
 - uv (gestor de dependencias)
@@ -26,7 +26,7 @@ be/app/
 │   ├── orders/    # Pedidos, producción, vales
 │   ├── supplies/  # Insumos y movimientos
 │   ├── type_document/  # Tipos de documento
-│   └── users/     # CRUD usuarios
+│   └── users/     # CRUD usuarios + avatar upload (POST/DELETE /me/avatar)
 ├── utils/         # Email SMTP, sanitizado, seguridad
 └── main.py        # Punto de entrada
 ```
@@ -65,5 +65,5 @@ http://localhost:8000/docs
 ## Seed automático
 
 Al arrancar el backend, `init_db.py` ejecuta:
-1. `alembic upgrade head` — 23 migraciones
+1. `alembic upgrade head` — 27 migraciones
 2. Datos semilla: roles (3), tipos de documento, 65 productos, usuarios de prueba
