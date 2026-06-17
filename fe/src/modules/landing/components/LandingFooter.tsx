@@ -19,13 +19,14 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 export default function LandingFooter() {
   const { t } = useTranslation();
 
   const links = [
     { label: t('landing.nav.home'), href: '#inicio' },
-    { label: t('landing.nav.catalog'), href: '#' },
+    { label: t('landing.nav.catalog'), href: '/catalog' },
     { label: t('landing.nav.about'), href: '#nosotros' },
     { label: t('landing.nav.contact'), href: '#contacto' },
   ];
@@ -53,9 +54,15 @@ export default function LandingFooter() {
           <ul className="space-y-3 text-base font-medium">
             {links.map((item) => (
               <li key={item.label}>
-                <a href={item.href} className="hover:text-white transition-colors">
-                  {item.label}
-                </a>
+                {item.href && item.href.startsWith('/') ? (
+                  <Link to={item.href} className="hover:text-white transition-colors">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a href={item.href} className="hover:text-white transition-colors">
+                    {item.label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

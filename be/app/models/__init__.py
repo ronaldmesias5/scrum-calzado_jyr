@@ -43,6 +43,12 @@ from app.models.incidence import Incidence
 # Reportes compartidos
 from app.models.report_share import ReportShare
 
+# Modelos de scrap (pérdidas por defecto)
+from app.models.scrap import DefectCode, LossRecord, ScrapStock
+
+# Incidencias pendientes de aprobación (depende de User, Task, Product, DefectCode, LossRecord)
+from app.models.pending_incidence import PendingProductIncidence
+
 __all__ = [
     "Base",
     "Brand",
@@ -65,4 +71,8 @@ __all__ = [
     "Task",
     "Incidence",
     "ReportShare",
+    "DefectCode",
+    "LossRecord",
+    "ScrapStock",
+    "PendingProductIncidence",
 ]

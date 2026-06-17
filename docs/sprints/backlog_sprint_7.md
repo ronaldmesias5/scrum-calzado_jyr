@@ -1,165 +1,132 @@
-# Sprint 7 - Backlog Scrum
-## Asignación de Tareas, Dashboard Empleado y Dashboard Cliente
+# Backlog Sprint 7 — Motor de Pedidos
 
-**Scrum Master:** Andrés Gil  
-**Sprint:** 7  
-**Duración:** 15 días  
-**Equipo:** Ronald (Arquitecto), Santiago (Bases de Datos), Andrés (Scrum Master)  
-**Estado:** ✅ **COMPLETADO**  
-**Fecha Cierre:** 13 de Junio de 2026
+**Sprint:** 7
+**Duración:** 2 semanas
+**SP Total:** 21
+**Fecha:** Junio 2026
+**Estado:** ✅ COMPLETADO
 
----
+## Historias de Usuario
 
-## 📊 Estado de las Historias - Sprint 7
+| HU | Nombre | SP | Estado |
+|----|--------|----|--------|
+| HU-013 | Notificación de Nuevos Pedidos | 8 | ✅ COMPLETADO |
+| HU-015 | Actualización de Estados | 13 | ✅ COMPLETADO |
 
-| Historia Completada |
-|:---|
-| ✅ HU-022 - Asignación de Tareas de Producción |
-| ✅ HU-024 - Reporte de Avances |
+## HU-013: Notificación de Nuevos Pedidos
 
-| Historia Pendiente | Historia en Desarrollo | Historia Terminada |
-|:---|:---|:---|
-| HU-029 - Módulo de Notificaciones | | HU-022 - Asignación de Tareas de Producción |
-| HU-030 - Alertas al Jefe | | HU-024 - Reporte de Avances |
-| HU-025 - Confirmación de Finalización de Tareas | | |
-| HU-026 - Notificación al Jefe de Tareas Completadas | | |
-| HU-031 - Reportes de Pedidos | | |
-| HU-033 - Suma de Producción | | |
+**Descripción:** Como jefe, quiero recibir notificaciones cuando se crea un nuevo pedido para gestionarlo oportunamente.
 
----
+### Criterios de Aceptación
 
-## 📋 Historias de Usuario - Sprint 7
+1. **Notificación en BD**: Al crear un pedido, se crean registros de notificación en la base de datos para todos los usuarios con rol jefe.
+2. **WebSocket en tiempo real**: Los jefes conectados via WebSocket reciben la notificación inmediatamente.
+3. **Email al jefe**: Se envía correo electrónico al jefe con detalles del nuevo pedido (cliente, pares, fecha).
+4. **Email de confirmación al cliente**: El cliente recibe un correo confirmando la recepción de su pedido.
+5. **Fire-and-forget**: Las notificaciones asíncronas (WebSocket + emails) se ejecutan en un hilo separado para no bloquear la respuesta HTTP.
+6. **Enlace directo**: La notificación incluye un enlace a la página de pedidos del dashboard.
 
-### HU-022: Asignación de Tareas de Producción
-**Prioridad:** Alta | **Story Points:** 13 | **Estado:** ✅ COMPLETADO
+### Detalle de Implementación
 
-Como jefe de producción,
-Quiero asignar tareas de producción a los empleados,
-Para distribuir el trabajo según su ocupación y disponibilidad.
+**Función `_trigger_notifications()`** en `be/app/modules/orders/router.py` (líneas 284-385):
 
-**Criterios de Aceptación:**
-- [x] Puedo ver listado de empleados disponibles con su ocupación
-- [x] Puedo crear tareas asignadas a un empleado específico
-- [x] Puedo definir tipo de tarea (corte, guarnición, soladura, emplantillado)
-- [x] Las tareas asignadas aparecen en el dashboard del empleado
-- [x] El empleado puede ver sus tareas pendientes y en progreso
-- [x] Se registra quién asignó cada tarea y cuándo
+```
+Fase 1 (síncrona, misma transacción):
+  → Obtener todos los jefes activos (get_jefes())
+  → Crear notificación en BD para cada jefe
+  → Preparar datos para fase asíncrona
 
-**Tareas Completadas:**
-- [x] Backend: Endpoints CRUD de tareas con asignación a empleados
-- [x] Backend: Filtro de tareas por empleado, estado y tipo
-- [x] Backend: Migración 026 (report_shares) para reportes compartidos
-- [x] Frontend: EmployeeSidebar con navegación
-- [x] Frontend: EmployeeLayout con header y avatar
-- [x] Frontend: EmployeeTasksPage para ver tareas asignadas
-- [x] Frontend: AvailableTasksPage para tareas disponibles
-- [x] Frontend: IncidencesPage para reportar problemas
+Fase 2 (fire-and-forget en thread separado, líneas 343-385):
+  → WebSocket broadcast a cada jefe via ws_manager.broadcast_to_user()
+  → Email al jefe via send_order_notification_email()
+  → Email al cliente via send_order_confirmation_email()
+  → await asyncio.gather() para ejecución paralela
+```
 
----
+**Activación**: Llamada desde `create_order()` (línea 448) después de crear la orden exitosamente:
+```python
+_trigger_notifications(
+    db=db,
+    new_order=new_order,
+    customer_check=customer_check,
+    settings=settings,
+)
+```
 
-### HU-024: Reporte de Avances
-**Prioridad:** Alta | **Story Points:** 8 | **Estado:** ✅ COMPLETADO
+### Archivos Clave Modificados
 
-Como jefe,
-Quiero ver reportes de avance de producción y rendimiento de empleados,
-Para tomar decisiones informadas sobre la planificación.
+- `be/app/modules/orders/router.py` — `_trigger_notifications()` (líneas 284-385), llamado desde `create_order()` (línea 448)
+- `be/app/modules/notifications/service.py` — `create_notification()`, `get_jefes()`
+- `be/app/modules/notifications/ws_manager.py` — `ws_manager.broadcast_to_user()`
+- `be/app/models/notifications.py` — Modelo `Notification` con tipos (`NotificationType`)
+- `be/app/utils/email.py` — `send_order_notification_email()`, `send_order_confirmation_email()`
 
-**Criterios de Aceptación:**
-- [x] Puedo ver reporte general del dashboard con métricas clave
-- [x] Puedo ver reporte de producción con filtros por fechas
-- [x] Puedo ver reporte de rendimiento individual de empleados
-- [x] Los reportes se pueden exportar a PDF
-- [x] Los reportes tienen selectores de fecha predefinidos (Hoy, Semana, Mes)
-- [x] Los nombres de archivos PDF son legibles (sin caracteres prohibidos en Windows)
+## HU-015: Actualización de Estados
 
-**Tareas Completadas:**
-- [x] Frontend: ReportsPage con Dashboard General y Producción (jefe)
-- [x] Frontend: EmployeeReportsPage con Mi Rendimiento (empleado)
-- [x] Frontend: exportDashboardPDF, exportProductionPDF (jefe reportsUtils)
-- [x] Frontend: exportPerformancePDF (empleado reportsUtils)
-- [x] Frontend: sanitizeFilename() para compatibilidad Windows
-- [x] Frontend: Selectores de fecha (Hoy/Semana/Mes/Personalizado)
-- [x] Backend: Endpoints de métricas del dashboard_jefe
+**Descripción:** Como jefe, quiero actualizar el estado de los pedidos para gestionar el flujo de producción y entrega.
 
----
+### Criterios de Aceptación
 
-## 🧩 Features Adicionales Implementadas en Sprint 7
+1. **Máquina de estados**: Los pedidos siguen el flujo `pendiente → en_progreso → completado → entregado → cancelado`.
+2. **Completado → Sumar a reserved**: Al marcar un pedido como completado, los pares se agregan a `inventory.reserved`.
+3. **Entregado → Restar de reserved**: Al marcar como entregado, los pares se descuentan de `inventory.reserved`.
+4. **Reversión desde completado**: Si un pedido vuelve atrás desde completado, los pares se devuelven a reserved.
+5. **Registro de movimientos**: Cada cambio de estado que afecta inventario genera un `InventoryMovement`.
+6. **Actualización masiva de detalles**: Al entregar, todos los `OrderDetail` se actualizan a estado `entregado`.
+7. **Botones de estado en UI**: Interfaz en `OrdersPage.tsx` con botones para avanzar/retroceder estados.
 
-### Dashboard Empleado (Nuevo Módulo)
-- ✅ EmployeeLayout con sidebar y header (hereda animaciones PageTransition)
-- ✅ EmployeeTasksPage: tareas asignadas con filtros por estado
-- ✅ AvailableTasksPage: tareas disponibles para tomar
-- ✅ IncidencesPage: reporte de problemas en producción
-- ✅ EmployeeReportsPage: reporte de rendimiento con exportación PDF
-- ✅ EmployeeSettingsPage: configuración de perfil con 5 tabs
-- ✅ Ruta /dashboard/employee/settings en App.tsx
+### Endpoints Creados/Modificados
 
-### Avatar de Perfil
-- ✅ Migración 027: columna `avatar_url` en tabla users
-- ✅ POST /api/v1/users/me/avatar (subir foto de perfil)
-- ✅ DELETE /api/v1/users/me/avatar (eliminar foto)
-- ✅ Avatar en AdminHeader y EmployeeHeader (img con fallback de iniciales)
-- ✅ refreshUser() en AuthContext para sincronizar avatar
-- ✅ uploadAvatar/deleteAvatar en auth services API
+| Método | Ruta | Líneas | Descripción |
+|--------|------|--------|-------------|
+| PATCH | `/api/v1/orders/{order_id}/status` | 462-620 | Actualizar estado de una orden con lógica de inventario |
 
-### Dashboard Cliente (Nuevo Módulo)
-- ✅ ClientLayout con sidebar y header
-- ✅ ClientDashboardPage con resumen de pedidos
-- ✅ ClientOrdersPage con consulta de estados
-- ✅ Ruta /dashboard/client en App.tsx
+### Máquina de Estados y Lógica de Inventario
 
----
+```
+pendiente ──→ en_progreso ──→ completado ──→ entregado
+                                    │              │
+                                    │  ┌───────────┘
+                                    ↓  ↓
+                                 cancelado
 
-## 🔧 Cambios Técnicos Realizados en Sprint 7
+Transiciones:
+- pendiente → en_progreso: Sin cambios en inventario
+- en_progreso → completado: SUMAR cantidad a inventory.reserved (líneas 492-532)
+- completado → entregado: RESTAR cantidad de inventory.reserved (líneas 535-564)
+- completado → cancelado: Devolver a reserved (reversión, líneas 568-596)
+- Cualquier estado → completado: Crear InventoryMovement de tipo entrada
+- entregado: Actualizar todos los OrderDetail.state a 'entregado' (líneas 602-607)
+```
 
-### Backend
-- ✅ Migración 026: tabla `report_shares` (reportes compartidos jefe→empleado)
-- ✅ Migración 027: columna `avatar_url` en users
-- ✅ Endpoint POST /api/v1/users/me/avatar (subida de imagen)
-- ✅ Endpoint DELETE /api/v1/users/me/avatar (eliminación)
-- ✅ Fix en /me endpoint (cambio .name → .name_type_document)
-- ✅ Las imágenes de avatar se almacenan en /uploads/ (misma infraestructura que productos)
+### Archivos Clave Modificados
 
-### Frontend (Nuevos Módulos)
-- ✅ `fe/src/modules/dashboard-empleado/` — 6 páginas + layout + utils
-- ✅ `fe/src/modules/dashboard-cliente/` — 2 páginas + layout
-- ✅ EmployeeSettingsPage con 5 tabs (Mi Perfil, Notificaciones, Idioma y Región, Seguridad, Apariencia)
-- ✅ Persistencia de preferencias en localStorage con prefijo `emp_`
-- ✅ AdminHeader actualizado para mostrar avatar con iniciales fallback
-- ✅ "Configuración" nav item en EmployeeSidebar
+- `be/app/modules/orders/router.py` — `update_order_status()` (líneas 462-620)
+- `be/app/modules/orders/schemas.py` — `OrderUpdateStatusRequest`
+- `be/app/models/order.py` — `OrderStatus` enum con valores: `pendiente`, `en_progreso`, `completado`, `entregado`, `cancelado`
+- `be/app/models/inventory.py` — Campo `reserved` en modelo Inventory
+- `be/app/models/inventory_movement.py` — `InventoryMovementType` enum (`entrada`, `salida`)
+- `fe/src/modules/dashboard-jefe/pages/OrdersPage.tsx` — Botones de estado en la interfaz
 
-### PDF Export
-- ✅ exportDashboardPDF() en jefe reportsUtils
-- ✅ exportProductionPDF() en jefe reportsUtils
-- ✅ exportPerformancePDF() en empleado reportsUtils
-- ✅ sanitizeFilename() en ambos utils (elimina `<>:"/\|?*` para Windows)
-- ✅ Selectores de fecha predefinidos en ambos dashboards
-- ✅ Date pickers condicionales (solo visibles con "Personalizado")
+### ⚠️ Nota Técnica: Filtro de Colour en Búsquedas de Inventario
 
----
+Las consultas de inventario en `update_order_status()` filtran por `Inventory.colour == detail.colour` (líneas 497, 540, 572). Debido a que inventory almacena colour como cadena vacía mientras order details usa nombres completos, estas búsquedas pueden fallar. Workaround implementado en otros endpoints eliminando el filtro de colour.
 
-## 🎯 Logros del Sprint 7
+## Cambios Técnicos
 
-✅ Dashboard Empleado completo con 6 páginas funcionales  
-✅ Dashboard Cliente operativo con consulta de pedidos  
-✅ Avatar de perfil con subida/eliminación y sincronización en tiempo real  
-✅ Exportación PDF en todas las secciones de reportes  
-✅ Nombres de archivos PDF compatibles con Windows  
-✅ Configuración de perfil con tabs (idioma, apariencia, seguridad)  
-✅ Cache-busting de avatar con query param `?v=timestamp`  
-✅ Selectores de fecha predefinidos en reportes  
+- Notificaciones con arquitectura híbrida: síncrona (BD) + asíncrona fire-and-forget (WebSocket + email)
+- Hilo separado con su propio event loop para operaciones asíncronas
+- La máquina de estados valida transiciones permitidas y bloquea cambios inválidos
+- Cada transacción de estado que afecta stock es atómica (commit único)
+- Los movimientos de inventario proporcionan trazabilidad completa
 
----
+## Logros
 
-## 📊 Resumen de Sprint 7
+- Sistema de notificaciones multicanal: BD + WebSocket + Email
+- Motor de estados funcional con 5 estados y lógica de inventario
+- Trazabilidad completa de cambios de estado y movimientos de stock
+- Notificaciones en tiempo real sin bloquear la creación de pedidos
 
-- [x] HU-022: Asignación de tareas completada
-- [x] HU-024: Reporte de avances funcional
-- [x] Dashboard Empleado operativo
-- [x] Dashboard Cliente operativo
-- [x] Avatar de perfil implementado
-- [x] Exportación PDF en reportes
-- [x] Total de Story Points: 21/21 ✅
+## Resumen
 
-**Creado por:** Andrés Gil (Scrum Master)  
-**Última Actualización:** 13 de Junio de 2026
+Sprint 7 implementó el motor de pedidos completo: desde la notificación multicanal al crear un pedido (HU-013) hasta la máquina de estados con lógica de inventario (HU-015). El sistema ahora gestiona todo el ciclo de vida del pedido: creación → notificación → producción → completado → entrega, con registro de movimientos en cada paso.

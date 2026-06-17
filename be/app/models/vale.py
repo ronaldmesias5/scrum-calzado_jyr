@@ -15,7 +15,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.orders import Order
+    from app.models.order import Order
 
 
 class Vale(Base):

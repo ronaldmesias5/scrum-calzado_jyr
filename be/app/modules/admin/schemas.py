@@ -25,8 +25,9 @@ Descripción: Schemas Pydantic para validación en endpoints administrativos.
 
 import re
 import uuid
+from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 from app.modules.auth.schemas import OccupationType
 
@@ -146,6 +147,54 @@ class AdminCreateJefeRequest(BaseModel):
         if len(v) < 2:
             raise ValueError("El apellido debe tener al menos 2 caracteres")
         return v
+
+
+class RejectUserRequest(BaseModel):
+    """Schema para rechazar una cuenta de usuario con motivo."""
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError("El motivo debe tener al menos 5 caracteres")
+        if len(v) > 500:
+            raise ValueError("El motivo no puede exceder 500 caracteres")
+        return v
+
+
+class ProcessReactivationRequest(BaseModel):
+    """Schema para aprobar o rechazar un ticket de reactivación."""
+    comment: str
+
+    @field_validator("comment")
+    @classmethod
+    def validate_comment(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError("El comentario debe tener al menos 5 caracteres")
+        if len(v) > 500:
+            raise ValueError("El comentario no puede exceder 500 caracteres")
+        return v
+
+
+class ReactivationTicketResponse(BaseModel):
+    """Schema de respuesta con los datos de un ticket de reactivación."""
+    id: str
+    user_id: str
+    email: str
+    reason: str
+    phone: str
+    identity_document: str
+    evidence_url: str | None = None
+    status: str
+    admin_comment: str | None = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminUpdateUserRequest(BaseModel):

@@ -31,6 +31,7 @@ from app.modules.dashboard_empleado.schemas import (
     AvailableTaskSchema,
     AvailableTaskListResponse,
     TaskObservationUpdate,
+    EmployeeTaskStatusUpdate,
     ValeResponse,
     ValeTaskInfo,
     ValeDetailItem,
@@ -41,8 +42,15 @@ from app.modules.dashboard_empleado.schemas import (
     SharedReportListResponse,
     SharedReportItem,
     SharedReportDetailResponse,
+    GeneralIncidenceCreateRequest,
+    GeneralIncidenceResponse,
+    GeneralIncidenceListResponse,
+    ProductIncidenceCreateRequest,
+    ProductIncidenceResponse,
+    ProductIncidenceListResponse,
 )
 from app.models.report_share import ReportShare
+from app.models.scrap import LossRecord
 
 router = APIRouter(
     prefix="/api/v1/dashboard/employee",
@@ -255,7 +263,10 @@ def get_my_incidences(
         )
     except Exception as e:
         print(f"Error en get_my_incidences: {e}")
-        return EmployeeIncidenceListResponse(incidences=[], total=0)
+        raise HTTPException(
+            status_code=500,
+            detail="Error al obtener incidencias. Intente nuevamente.",
+        )
 
 
 # ────────────────────────────────────────────────
@@ -394,6 +405,76 @@ def update_task_observation(
         "success": True,
         "message": "Observación actualizada",
     }
+
+
+@router.patch(
+    "/tasks/{task_id}/status",
+    summary="Actualizar estado y observación de una tarea (empleado)",
+)
+def update_employee_task_status(
+    task_id: str,
+    data: EmployeeTaskStatusUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
+    """Actualiza el estado y la observación de una tarea (solo el empleado asignado)."""
+    task = db.execute(
+        select(Task).where(Task.id == task_id, Task.deleted_at == None)
+    ).scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    if task.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="Solo el empleado asignado puede modificar esta tarea")
+
+    task.status = data.status
+    if data.status == "completado" and not task.completed_at:
+        task.completed_at = datetime.now(timezone.utc)
+    if data.observation is not None:
+        task.observation = data.observation
+
+    # ─── AUTO-CREAR SIGUIENTE ETAPA ───
+    # Cuando el empleado completa una tarea, crear automáticamente la siguiente
+    # etapa como pendiente (sin asignar) para que otro empleado pueda reclamarla.
+    STAGE_ORDER = ['corte', 'guarnicion', 'soladura', 'emplantillado']
+    if data.status == 'completado' and task.type in STAGE_ORDER:
+        current_index = STAGE_ORDER.index(task.type)
+        if current_index < len(STAGE_ORDER) - 1:
+            next_type = STAGE_ORDER[current_index + 1]
+            existing_next = db.execute(
+                select(Task).where(
+                    Task.order_id == task.order_id,
+                    Task.product_id == task.product_id,
+                    Task.line_group == task.line_group,
+                    Task.type == next_type,
+                    Task.status != 'cancelado',
+                    Task.deleted_at == None,
+                )
+            ).scalar_one_or_none()
+
+            if existing_next is None:
+                now2 = datetime.now(timezone.utc)
+                next_task = Task(
+                    id=uuid.uuid4(),
+                    assigned_to=None,
+                    order_id=task.order_id,
+                    product_id=task.product_id,
+                    line_group=task.line_group,
+                    vale_number=task.vale_number,
+                    amount=task.amount,
+                    type=next_type,
+                    description_task=f"Tarea de {next_type} para la orden {task.order_id} (auto-generada)",
+                    priority=task.priority,
+                    assignment_date=now2,
+                    created_by=current_user.id,
+                    status='pendiente',
+                )
+                db.add(next_task)
+
+    db.commit()
+
+    return {"success": True, "message": "Tarea actualizada"}
 
 
 @router.get(
@@ -829,3 +910,207 @@ def get_shared_report_detail(
         created_at=share.created_at,
         parameters=share.parameters or {},
     )
+
+
+# ─────────────────────────────────────────────
+#  Incidencias generales (maquinaria/insumo)
+# ─────────────────────────────────────────────
+
+
+@router.post(
+    "/general-incidences",
+    response_model=GeneralIncidenceResponse,
+    summary="Crear incidencia general (maquinaria/insumo)",
+)
+def create_general_incidence(
+    data: GeneralIncidenceCreateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> GeneralIncidenceResponse:
+    """Crea una incidencia general (maquinaria o insumo) desde el dashboard del empleado."""
+    from app.modules.scrap.service import register_incident
+    from decimal import Decimal
+
+    if data.incidence_category not in ("maquinaria", "insumo"):
+        raise HTTPException(
+            status_code=400,
+            detail="Solo se pueden crear incidencias de maquinaria o insumo desde este endpoint",
+        )
+
+    try:
+        loss_record = register_incident(
+            db=db,
+            user_id=current_user.id,
+            incidence_category=data.incidence_category,
+            machinery_name=data.machinery_name,
+            supply_id=uuid.UUID(data.supply_id) if data.supply_id else None,
+            custom_supply_name=data.custom_supply_name,
+            observations=data.observations,
+            incident_type="perdida",
+            quantity=Decimal("1"),
+        )
+
+        supply_name = None
+        if loss_record.supply:
+            supply_name = loss_record.supply.name_supplies
+
+        return GeneralIncidenceResponse(
+            id=str(loss_record.id),
+            incidence_category=loss_record.incidence_category,
+            machinery_name=loss_record.machinery_name,
+            supply_id=str(loss_record.supply_id) if loss_record.supply_id else None,
+            supply_name=supply_name,
+            custom_supply_name=loss_record.custom_supply_name,
+            observations=loss_record.observations,
+            incident_type=loss_record.incident_type,
+            registered_by_name=f"{current_user.name_user} {current_user.last_name}".strip(),
+            created_at=loss_record.created_at,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/general-incidences",
+    response_model=GeneralIncidenceListResponse,
+    summary="Listar incidencias generales del empleado",
+)
+def get_general_incidences(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> GeneralIncidenceListResponse:
+    """Lista las incidencias generales (maquinaria/insumo) registradas por el empleado."""
+    from app.models.supplies import Supplies
+
+    stmt = (
+        select(LossRecord)
+        .where(
+            LossRecord.registered_by_id == current_user.id,
+            LossRecord.incidence_category.in_(["maquinaria", "insumo"]),
+            LossRecord.deleted_at == None,
+        )
+        .order_by(desc(LossRecord.created_at))
+    )
+    records = list(db.execute(stmt).scalars().all())
+
+    items = []
+    for rec in records:
+        supply_name = None
+        if rec.supply:
+            supply_name = rec.supply.name_supplies
+
+        items.append(GeneralIncidenceResponse(
+            id=str(rec.id),
+            incidence_category=rec.incidence_category,
+            machinery_name=rec.machinery_name,
+            supply_id=str(rec.supply_id) if rec.supply_id else None,
+            supply_name=supply_name,
+            custom_supply_name=rec.custom_supply_name,
+            observations=rec.observations,
+            incident_type=rec.incident_type,
+            registered_by_name=f"{current_user.name_user} {current_user.last_name}".strip(),
+            created_at=rec.created_at,
+        ))
+
+    return GeneralIncidenceListResponse(incidences=items, total=len(items))
+
+
+# ─────────────────────────────────────────────
+#  Incidencias de producto (pendientes de aprobación)
+# ─────────────────────────────────────────────
+
+
+@router.post(
+    "/product-incidences",
+    response_model=ProductIncidenceResponse,
+    summary="Crear incidencia de producto vinculada a tarea",
+)
+def create_product_incidence(
+    data: ProductIncidenceCreateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductIncidenceResponse:
+    """Crea una incidencia de producto pendiente de aprobación del jefe."""
+    from app.modules.dashboard_empleado.pending_service import create_pending_incidence
+
+    try:
+        pending = create_pending_incidence(
+            db=db,
+            employee_id=current_user.id,
+            task_id=uuid.UUID(data.task_id),
+            size=data.size,
+            colour=data.colour,
+            defect_code_id=uuid.UUID(data.defect_code_id) if data.defect_code_id else None,
+            description=data.description,
+            quantity=data.quantity,
+            observations=data.observations,
+        )
+
+        return ProductIncidenceResponse(
+            id=str(pending.id),
+            task_id=str(pending.task_id),
+            task_type=pending.task.type if pending.task else None,
+            product_id=str(pending.product_id),
+            product_name=pending.product.name_product if pending.product else None,
+            size=pending.size,
+            colour=pending.colour,
+            defect_code_id=str(pending.defect_code_id) if pending.defect_code_id else None,
+            defect_code=pending.defect_code.code if pending.defect_code else None,
+            defect_name=pending.defect_code.name if pending.defect_code else None,
+            description=pending.description,
+            quantity=int(pending.quantity),
+            observations=pending.observations,
+            status=pending.status,
+            approved_type=pending.approved_type,
+            employee_name=f"{current_user.name_user} {current_user.last_name}".strip(),
+            reviewed_by_name=None,
+            reviewed_at=None,
+            created_at=pending.created_at.isoformat() if pending.created_at else None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/product-incidences",
+    response_model=ProductIncidenceListResponse,
+    summary="Listar incidencias de producto del empleado",
+)
+def get_my_product_incidences(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductIncidenceListResponse:
+    """Lista las incidencias de producto creadas por el empleado."""
+    from app.modules.dashboard_empleado.pending_service import get_employee_pending_incidences
+
+    pendings = get_employee_pending_incidences(db, current_user.id)
+
+    items = []
+    for p in pendings:
+        reviewed_by_name = None
+        if p.reviewed_by:
+            reviewed_by_name = f"{p.reviewed_by.name_user} {p.reviewed_by.last_name}".strip()
+
+        items.append(ProductIncidenceResponse(
+            id=str(p.id),
+            task_id=str(p.task_id),
+            task_type=p.task.type if p.task else None,
+            product_id=str(p.product_id),
+            product_name=p.product.name_product if p.product else None,
+            size=p.size,
+            colour=p.colour,
+            defect_code_id=str(p.defect_code_id) if p.defect_code_id else None,
+            defect_code=p.defect_code.code if p.defect_code else None,
+            defect_name=p.defect_code.name if p.defect_code else None,
+            description=p.description,
+            quantity=int(p.quantity),
+            observations=p.observations,
+            status=p.status,
+            approved_type=p.approved_type,
+            employee_name=f"{current_user.name_user} {current_user.last_name}".strip(),
+            reviewed_by_name=reviewed_by_name,
+            reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
+            created_at=p.created_at.isoformat() if p.created_at else None,
+        ))
+
+    return ProductIncidenceListResponse(incidences=items, total=len(items))

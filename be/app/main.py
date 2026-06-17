@@ -26,6 +26,9 @@ from app.modules.catalog.router import router as catalog_router
 from app.modules.admin.reports_router import router as reports_router
 from app.modules.supplies.router import router as supplies_router
 from app.modules.dashboard_empleado.router import router as dashboard_empleado_router
+from app.modules.client.router import router as client_router
+from app.modules.notifications.router import router as notifications_router
+from app.modules.scrap.router import router as scrap_router
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -33,7 +36,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
 # Importar modelos para que SQLAlchemy los registre en Base.metadata
-from app.models import role, user, password_reset_token, type_document, order, category, brand, style, product, supplies, product_supplies  # noqa: F401
+from app.models import role, user, password_reset_token, type_document, order, category, brand, style, product, supplies, product_supplies, scrap  # noqa: F401
 
 
 @asynccontextmanager
@@ -138,6 +141,9 @@ app.include_router(reports_router)
 app.include_router(catalog_router)
 app.include_router(supplies_router)
 app.include_router(dashboard_empleado_router)
+app.include_router(client_router)
+app.include_router(notifications_router)
+app.include_router(scrap_router, prefix="/api/v1/scrap", tags=["Scrap / Incidencias"])
 
 # ────────────────────────────
 # 📍 Endpoint raíz de bienvenida

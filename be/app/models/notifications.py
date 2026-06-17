@@ -16,6 +16,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.order import Order
 
 
 class NotificationType(str, Enum):
@@ -66,6 +67,39 @@ class Notification(Base):
     )
 
     # ────────────────────────────
+    #  Referencias y auditoría
+    # ────────────────────────────
+
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    link_url: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+    )
+
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    deleted_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    # ────────────────────────────
     #  Timestamps
     # ────────────────────────────
 
@@ -91,7 +125,8 @@ class Notification(Base):
     # 🔗 Relaciones
     # ────────────────────────────
 
-    user = relationship("User", lazy="selectin")
+    user = relationship("User", foreign_keys=[user_id], lazy="selectin")
+    order = relationship("Order", foreign_keys=[order_id], lazy="selectin")
 
     def __repr__(self) -> str:
         return f"Notification(id={self.id}, user_id={self.user_id}, is_read={self.is_read})"

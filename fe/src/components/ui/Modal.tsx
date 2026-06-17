@@ -109,18 +109,19 @@ export default function Modal({
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 
   return createPortal(
-    <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${overlay} transition-all duration-300`}
-      onClick={handleClose}
-      aria-hidden="true"
-    >
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div
+        className={`absolute inset-0 ${overlay} transition-all duration-300`}
+        onClick={handleClose}
+        aria-hidden="true"
+      />
       <div
         ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 ${className}`}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || showClose) && (

@@ -7,11 +7,11 @@
 Sistema integral para la gestión y producción de calzado, diseñado con una arquitectura modular para escalar eficientemente.
 
 **Dashboards implementados:**
-- **Dashboard Jefe**: Supervisión total, validación de clientes, gestión de empleados, catálogo, pedidos, inventario, insumos, tareas de producción, reportes con PDF export.
-- **Dashboard Empleados**: Operativo (6 páginas) — tareas disponibles, mis tareas, incidencias, reportes de rendimiento con PDF export, configuración de perfil con avatar.
+- **Dashboard Jefe**: Supervisión total (14 páginas), validación de clientes, gestión de empleados, catálogo, pedidos, inventario, insumos, tareas de producción, incidencias (scrap, pérdidas, pendientes), reportes con PDF export, alertas.
+- **Dashboard Empleados**: Operativo (6 páginas) — tareas disponibles, mis tareas, incidencias (maquinaria, producto), reportes de rendimiento con PDF export, configuración de perfil con avatar.
 - **Dashboard Clientes**: Operativo (2 páginas) — dashboard y consulta de pedidos.
 
-**Estado actual:** Sprints 1-7 completados. Funcionalidad completa de dashboard jefe, dashboard empleado y dashboard cliente operativas.
+**Estado actual:** Sprints 1-7 completados. Sprints 8-16 con funcionalidad en código. Notificaciones, incidencias, vales de producción, y badges de conteo implementados.
 
 ---
 
@@ -23,19 +23,23 @@ scrum/
 │   ├── app/
 │   │   ├── core/                # Configuración, BD, dependencias y seguridad
 │   │   ├── init_db.py           # Auto-migraciones + seed data al arrancar
-│   │   ├── models/              # Modelos SQLAlchemy (22 tablas)
-│   │   ├── modules/             # 📦 8 módulos feature-based
-│   │   │   ├── admin/           # Catálogo admin, reportes, usuarios
-│   │   │   ├── auth/            # Login, registro, JWT, logout global
+│   │   ├── models/              # Modelos SQLAlchemy (23 tablas)
+│   │   ├── modules/             # 📦 12 módulos feature-based
+│   │   │   ├── admin/           # Catálogo admin, reportes, usuarios, creación sin contraseña
+│   │   │   ├── auth/            # Login, registro, JWT, logout global, cambio de contraseña
 │   │   │   ├── catalog/         # Catálogo público
+│   │   │   ├── client/          # Dashboard cliente y pedidos
+│   │   │   ├── dashboard_empleado/  # Tareas, incidencias, métricas empleado
 │   │   │   ├── dashboard_jefe/  # Métricas y dashboard principal
-│   │   │   ├── orders/          # Pedidos + producción + vales
+│   │   │   ├── notifications/   # Notificaciones en tiempo real (WebSocket)
+│   │   │   ├── orders/          # Pedidos + producción + vales + line_group
+│   │   │   ├── scrap/           # Incidencias (scrap, pérdidas, pendientes)
 │   │   │   ├── supplies/        # Insumos y movimientos
 │   │   │   ├── type_document/   # Tipos de documento
-│   │   │   └── users/           # CRUD usuarios
-│   │   ├── utils/               # Email SMTP, sanitizado, seguridad
+│   │   │   └── users/           # CRUD usuarios + avatar upload
+│   │   ├── utils/               # Email SMTP con aiosmtplib (Gmail + Mailpit)
 │   │   └── main.py              # Punto de entrada
-│   ├── alembic/versions/        # 27 migraciones versionadas
+│   ├── alembic/versions/        # 37 migraciones versionadas
 │   ├── scripts/                 # create_admin.py, heal_line_groups.py
 │   └── pyproject.toml           # Dependencias (uv)
 │
@@ -45,12 +49,14 @@ scrum/
 │   │   │   └── ui/              # Modal, PageTransition, Breadcrumbs, etc.
 │   │   ├── modules/             # 📦 Módulos funcionales
 │   │   │   ├── auth/            # Login, Register, Password (5 páginas)
-│   │   │   ├── dashboard-jefe/  # Panel admin completo (12 páginas)
-│   │   │   ├── dashboard-empleado/  # Panel empleado (6 páginas + utils)
+│   │   │   ├── dashboard-jefe/  # Panel admin completo (14 páginas)
+│   │   │   ├── dashboard-empleado/  # Panel empleado (6 páginas + context + vales)
 │   │   │   ├── dashboard-cliente/   # Panel cliente (2 páginas)
-│   │   │   └── landing/         # Landing page + catálogo público
+│   │   │   └── landing/         # Landing page + catálogo público (2 páginas)
 │   │   ├── hooks/               # useAuth, useHeaderAnimation, useModalDialog
-│   │   ├── context/             # AuthContext, BadgeCounts, ThemeProvider
+│   │   ├── context/             # AuthContext, ThemeProvider, RoleGuard, WebSocketProvider
+│   │   ├── modules/dashboard-jefe/context/      # BadgeCountsContext (pedidos, usuarios, incidencias)
+│   │   ├── modules/dashboard-empleado/context/  # EmployeeBadgeCountsContext (tareas, incidencias)
 │   │   └── types/               # Tipado estricto (espejo del backend)
 │   ├── package.json             # pnpm (nunca npm/yarn)
 │   └── vite.config.ts           # Proxy API, polling, aliases
@@ -59,10 +65,8 @@ scrum/
 │   └── init/                    # init.sql — solo extensiones (no esquema)
 │
 ├── docs/                        # 📚 Documentación
-│   ├── project-documentation/   # Arquitectura, diccionario datos, requisitos
-│   ├── sprints/                 # Backlogs y plan de trabajo
-│   ├── GUIA_DISENO.md           # Guía visual — OBLIGATORIA para UI
-│   └── delete_data_queries.md   # Consultas SQL para limpieza
+│   ├── project-documentation/   # Arquitectura, diccionario datos, requisitos, presentación
+│   └── sprints/                 # Backlogs de 16 sprints y plan de trabajo
 │
 ├── .opencode/                   # Configuración opencode
 │   └── skills/                  # Skills personalizadas
@@ -87,7 +91,7 @@ scrum/
 
 ### ⚛️ Frontend
 
-- **React 19+ (Vite)**: Interfaz reactiva y rápida.
+- **React 19+ (Vite)**: Interfaz reactiva y rápida, con polling para Docker en Windows.
 - **TypeScript**: Seguridad en tiempo de desarrollo.
 - **TailwindCSS 4**: Diseño premium, moderno y responsive.
 - **Lucide Icons**: Iconografía profesional.

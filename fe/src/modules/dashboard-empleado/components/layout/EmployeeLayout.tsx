@@ -5,6 +5,7 @@ import AdminHeader from '../../../dashboard-jefe/components/layout/AdminHeader';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import PageTransition from '@/components/ui/PageTransition';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
+import { EmployeeBadgeCountsProvider } from '../../context/EmployeeBadgeCountsContext';
 
 export default function EmployeeLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -13,6 +14,7 @@ export default function EmployeeLayout() {
   const closeSidebar = () => setIsSidebarOpen(false);
 
   return (
+    <EmployeeBadgeCountsProvider>
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
       {/* Header full-width sticky */}
       <AdminHeader onMenuClick={toggleSidebar} />
@@ -31,5 +33,6 @@ export default function EmployeeLayout() {
         </main>
       </div>
     </div>
+    </EmployeeBadgeCountsProvider>
   );
 }

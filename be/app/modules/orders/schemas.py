@@ -149,6 +149,7 @@ class ProductionTaskCreate(BaseModel):
     priority: str = Field("media", description="Prioridad de la tarea")
     amount: int = Field(..., description="Cantidad de pares")
     line_group: int = 0
+    breakdown: dict[str, float] | None = Field(None, description="Desglose de tallas a producir {talla: pares}")
 
 class ProductionTaskResponse(BaseModel):
     id: UUID

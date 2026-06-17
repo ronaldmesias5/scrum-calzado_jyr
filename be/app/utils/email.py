@@ -159,6 +159,149 @@ async def send_welcome_email(email: str, temp_password: str, name: str) -> None:
     )
 
 
+ACCOUNT_APPROVED_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#1e3a5f;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Cuenta aprobada</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Tu cuenta en el sistema de <strong>Calzado J&R</strong> ha sido <strong style="color:#16a34a">aprobada</strong>.</p>
+      <p style="font-size:15px;color:#333">Ya puedes iniciar sesión y comenzar a realizar pedidos.</p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="{login_url}" style="background:#2563eb;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Iniciar sesión</a>
+      </div>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+ACCOUNT_REJECTED_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#1e3a5f;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Cuenta rechazada</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Lamentamos informarte que tu solicitud de registro en <strong>Calzado J&R</strong> ha sido <strong style="color:#dc2626">rechazada</strong>.</p>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px 20px;margin:20px 0">
+        <p style="font-size:14px;color:#991b1b;margin:0"><strong>Motivo:</strong></p>
+        <p style="font-size:14px;color:#991b1b;margin:8px 0 0">{reason}</p>
+      </div>
+      <p style="font-size:13px;color:#777">Si crees que se trata de un error, por favor contáctanos para más información.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+async def send_account_approved_email(email: str, name: str) -> None:
+    """Envía un email de notificación al usuario cuando su cuenta es aprobada."""
+    login_url = f"{settings.FRONTEND_URL}/auth/login"
+    html = ACCOUNT_APPROVED_HTML.format(name=name, login_url=login_url)
+
+    await _send_email(
+        to_email=email,
+        subject="CALZADO J&R — ¡Tu cuenta ha sido aprobada!",
+        html_body=html,
+    )
+
+
+async def send_account_rejected_email(email: str, name: str, reason: str) -> None:
+    """Envía un email de notificación al usuario cuando su cuenta es rechazada."""
+    html = ACCOUNT_REJECTED_HTML.format(name=name, reason=reason)
+
+    await _send_email(
+        to_email=email,
+        subject="CALZADO J&R — Tu solicitud de registro ha sido rechazada",
+        html_body=html,
+    )
+
+
+REACTIVATION_APPROVED_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#1e3a5f;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Cuenta reactivada</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Tu solicitud de reactivación de cuenta en <strong>Calzado J&R</strong> ha sido <strong style="color:#16a34a">aprobada</strong>.</p>
+      <p style="font-size:15px;color:#333">Tu cuenta ha sido reactivada. Ya puedes iniciar sesión con tus credenciales.</p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="{login_url}" style="background:#2563eb;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Iniciar sesión</a>
+      </div>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+REACTIVATION_REJECTED_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#1e3a5f;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Solicitud de reactivación</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Lamentamos informarte que tu solicitud de reactivación de cuenta en <strong>Calzado J&R</strong> ha sido <strong style="color:#dc2626">rechazada</strong>.</p>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px 20px;margin:20px 0">
+        <p style="font-size:14px;color:#991b1b;margin:0"><strong>Motivo:</strong></p>
+        <p style="font-size:14px;color:#991b1b;margin:8px 0 0">{reason}</p>
+      </div>
+      <p style="font-size:13px;color:#777">Si crees que se trata de un error, por favor contáctanos para más información.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+async def send_reactivation_approved_email(email: str, name: str) -> None:
+    """Envía un email notificando que la solicitud de reactivación fue aprobada."""
+    login_url = f"{settings.FRONTEND_URL}/auth/login"
+    html = REACTIVATION_APPROVED_HTML.format(name=name, login_url=login_url)
+    await _send_email(
+        to_email=email,
+        subject="CALZADO J&R — Tu cuenta ha sido reactivada",
+        html_body=html,
+    )
+
+
+async def send_reactivation_rejected_email(email: str, name: str, reason: str) -> None:
+    """Envía un email notificando que la solicitud de reactivación fue rechazada."""
+    html = REACTIVATION_REJECTED_HTML.format(name=name, reason=reason)
+    await _send_email(
+        to_email=email,
+        subject="CALZADO J&R — Solicitud de reactivación rechazada",
+        html_body=html,
+    )
+
+
 REPORT_HTML_TEMPLATE = """\
 <!DOCTYPE html>
 <html lang="es">
@@ -249,3 +392,119 @@ async def send_report_email(
 
     except Exception as exc:
         logger.error(f"Error al enviar reporte a {to_email}: {exc}")
+
+
+# ══════════════════════════════════════════
+# Emails de notificación de pedidos
+# ══════════════════════════════════════════
+
+ORDER_NOTIFICATION_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#2563eb;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#bfdbfe;margin:4px 0 0;font-size:13px">Nuevo Pedido Recibido</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{jefe_name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Se ha registrado un nuevo pedido en el sistema:</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0">
+        <table style="width:100%;font-size:14px">
+          <tr><td style="color:#64748b;padding:4px 0">Pedido #:</td><td style="font-weight:bold;color:#1e293b">{order_id}</td></tr>
+          <tr><td style="color:#64748b;padding:4px 0">Cliente:</td><td style="font-weight:bold;color:#1e293b">{client_name}</td></tr>
+          <tr><td style="color:#64748b;padding:4px 0">Total pares:</td><td style="font-weight:bold;color:#1e293b">{total_pairs}</td></tr>
+          <tr><td style="color:#64748b;padding:4px 0">Fecha:</td><td style="font-weight:bold;color:#1e293b">{order_date}</td></tr>
+        </table>
+      </div>
+      <div style="text-align:center;margin:28px 0">
+        <a href="{order_url}" style="background:#2563eb;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Ver Pedido</a>
+      </div>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+ORDER_CONFIRMATION_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#16a34a;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#bbf7d0;margin:4px 0 0;font-size:13px">Pedido Confirmado</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{client_name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Tu pedido ha sido registrado exitosamente en <strong>Calzado J&R</strong>:</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0">
+        <table style="width:100%;font-size:14px">
+          <tr><td style="color:#64748b;padding:4px 0">Pedido #:</td><td style="font-weight:bold;color:#1e293b">{order_id}</td></tr>
+          <tr><td style="color:#64748b;padding:4px 0">Total pares:</td><td style="font-weight:bold;color:#1e293b">{total_pairs}</td></tr>
+          <tr><td style="color:#64748b;padding:4px 0">Fecha estimada:</td><td style="font-weight:bold;color:#1e293b">{delivery_date}</td></tr>
+          <tr><td style="color:#64748b;padding:4px 0">Estado:</td><td style="font-weight:bold;color:#16a34a">Pendiente</td></tr>
+        </table>
+      </div>
+      <p style="font-size:15px;color:#333">Te notificaremos cuando tu pedido avance en producción.</p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="{login_url}" style="background:#16a34a;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Ver mis pedidos</a>
+      </div>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+async def send_order_notification_email(
+    jefe_email: str,
+    jefe_name: str,
+    order_id: str,
+    client_name: str,
+    total_pairs: int,
+    order_date: str,
+) -> None:
+    """Envía email al jefe cuando un cliente crea un pedido."""
+    order_url = f"{settings.FRONTEND_URL}/dashboard/admin/orders"
+    html = ORDER_NOTIFICATION_HTML.format(
+        jefe_name=jefe_name,
+        order_id=order_id[:8],
+        client_name=client_name,
+        total_pairs=total_pairs,
+        order_date=order_date,
+        order_url=order_url,
+    )
+    await _send_email(
+        to_email=jefe_email,
+        subject=f"CALZADO J&R — Nuevo pedido de {client_name}",
+        html_body=html,
+    )
+
+
+async def send_order_confirmation_email(
+    client_email: str,
+    client_name: str,
+    order_id: str,
+    total_pairs: int,
+    delivery_date: str,
+) -> None:
+    """Envía email de confirmación al cliente cuando el jefe crea un pedido para él."""
+    login_url = f"{settings.FRONTEND_URL}/auth/login"
+    html = ORDER_CONFIRMATION_HTML.format(
+        client_name=client_name,
+        order_id=order_id[:8],
+        total_pairs=total_pairs,
+        delivery_date=delivery_date,
+        login_url=login_url,
+    )
+    await _send_email(
+        to_email=client_email,
+        subject="CALZADO J&R — Tu pedido ha sido registrado",
+        html_body=html,
+    )

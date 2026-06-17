@@ -169,6 +169,26 @@ class User(Base):
     )
 
     # ────────────────────────────
+    # ❌ Rechazo de cuenta por admin
+    # ────────────────────────────
+
+    rejected_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    rejected_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    rejection_reason: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    # ────────────────────────────
     # 🕐 Auditoría - Quién creó/actualizó/borró
     # ────────────────────────────
 
@@ -238,6 +258,12 @@ class User(Base):
         foreign_keys=[validated_by],
         remote_side=id,
         primaryjoin="User.validated_by == User.id",
+    )
+    rejected_by_user = relationship(
+        "User",
+        foreign_keys=[rejected_by],
+        remote_side=id,
+        primaryjoin="User.rejected_by == User.id",
     )
     created_by_user = relationship(
         "User",

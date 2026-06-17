@@ -15,7 +15,7 @@ Descripción: Router FastAPI con endpoints administrativos para gestión de usua
   
 ¿Para qué?
   - Permitir a admin/jefe crear y gestionar usuarios del sistema
-  - Centralizar validación de permisos (_require_admin, _require_admin_or_jefe)
+  - Validación de permisos delegada a core/dependencies.py (_require_admin_or_jefe)
   - Separar endpoints administrativos de endpoints públicos (seguridad)
   
 ¿Impacto?
@@ -35,17 +35,27 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.role import Role
 from app.models.user import User
+from app.models.reactivation_ticket import ReactivationTicket
 from app.modules.auth.schemas import MessageResponse, UserResponse
 from app.modules.admin.schemas import (
     AdminCreateClientRequest, 
     AdminCreateEmployeeRequest, 
     AdminCreateJefeRequest,
-    AdminUpdateUserRequest
+    AdminUpdateUserRequest,
+    ProcessReactivationRequest,
+    ReactivationTicketResponse,
+    RejectUserRequest,
 )
-from app.utils.email import send_welcome_email
+from app.utils.email import (
+    send_welcome_email,
+    send_account_approved_email,
+    send_account_rejected_email,
+    send_reactivation_approved_email,
+    send_reactivation_rejected_email,
+)
 from app.utils.security import hash_password
 
 router = APIRouter(
@@ -78,36 +88,10 @@ def _build_user_response(user: User) -> UserResponse:
         occupation=user.occupation,
         created_at=user.created_at,
         updated_at=user.updated_at,
+        rejected_by=str(user.rejected_by) if user.rejected_by else None,
+        rejected_at=user.rejected_at,
+        rejection_reason=user.rejection_reason,
     )
-
-
-def _require_admin(current_user: User) -> None:
-    if current_user.role.name_role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo administradores pueden acceder a este endpoint",
-        )
-
-
-def _require_jefe(current_user: User) -> None:
-    """Valida que el usuario sea un jefe (empleado + occupation='jefe')."""
-    if current_user.role.name_role != "employee" or current_user.occupation != "jefe":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo jefes de fábrica pueden acceder a este endpoint",
-        )
-
-
-def _require_admin_or_jefe(current_user: User) -> None:
-    """Valida que sea admin O jefe."""
-    is_admin = current_user.role.name_role == "admin"
-    is_jefe = current_user.role.name_role == "employee" and current_user.occupation == "jefe"
-    
-    if not (is_admin or is_jefe):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo administradores o jefes pueden acceder a este endpoint",
-        )
 
 
 # ─────────────────────────────────────────
@@ -142,7 +126,11 @@ def get_pending_users(
 ) -> list[UserResponse]:
     """Obtiene usuarios pendientes de validación (admin o jefe)."""
     _require_admin_or_jefe(current_user)
-    pending_users = db.query(User).filter(User.is_validated == False).all()  # noqa: E712
+    pending_users = (
+        db.query(User)
+        .filter(User.is_validated == False, User.rejection_reason == None)  # noqa: E712
+        .all()
+    )
     return [_build_user_response(u) for u in pending_users]
 
 
@@ -151,12 +139,12 @@ def get_pending_users(
     response_model=UserResponse,
     summary="Validar usuario",
 )
-def validate_user(
+async def validate_user(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserResponse:
-    """Aprueba y activa la cuenta de un usuario pendiente (admin o jefe)."""
+    """Aprueba y activa la cuenta de un usuario pendiente (admin o jefe). Envía email de notificación."""
     _require_admin_or_jefe(current_user)
 
     user_to_validate = db.query(User).filter(User.id == user_id).first()
@@ -170,7 +158,55 @@ def validate_user(
 
     db.commit()
     db.refresh(user_to_validate)
+
+    await send_account_approved_email(
+        email=user_to_validate.email,
+        name=f"{user_to_validate.name_user} {user_to_validate.last_name}",
+    )
+
     return _build_user_response(user_to_validate)
+
+
+@router.patch(
+    "/users/{user_id}/reject",
+    response_model=UserResponse,
+    summary="Rechazar usuario",
+)
+async def reject_user(
+    user_id: uuid.UUID,
+    data: RejectUserRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """Rechaza una cuenta de usuario pendiente con motivo (admin o jefe)."""
+    _require_admin_or_jefe(current_user)
+
+    user_to_reject = db.query(User).filter(User.id == user_id).first()
+    if not user_to_reject:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    if user_to_reject.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes rechazar tu propia cuenta",
+        )
+
+    user_to_reject.is_validated = False
+    user_to_reject.is_active = False
+    user_to_reject.rejected_by = current_user.id
+    user_to_reject.rejected_at = datetime.now(timezone.utc)
+    user_to_reject.rejection_reason = data.reason
+
+    db.commit()
+    db.refresh(user_to_reject)
+
+    await send_account_rejected_email(
+        email=user_to_reject.email,
+        name=f"{user_to_reject.name_user} {user_to_reject.last_name}",
+        reason=data.reason,
+    )
+
+    return _build_user_response(user_to_reject)
 
 
 @router.patch(
@@ -209,9 +245,9 @@ def get_all_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
-    """Lista todos los usuarios. Filtro opcional por rol (cliente, empleado, administrador). Acceso: admin, jefe o cualquier usuario autenticado."""
-    # Permitir acceso a cualquier usuario autenticado (no requerir admin/jefe específicamente)
-    query = db.query(User)
+    """Lista todos los usuarios. Filtro opcional por rol. Solo admin y jefe."""
+    _require_admin_or_jefe(current_user)
+    query = db.query(User).filter(User.deleted_at == None)
     if role:
         query = query.join(Role, User.role_id == Role.id).filter(Role.name_role == role)
 
@@ -494,4 +530,152 @@ async def create_jefe(
     response = _build_user_response(new_user)
     response.temporary_password = temp_password
     return response
+
+
+# ─────────────────────────────────────────
+# RF-005: Reactivación de cuentas
+# ─────────────────────────────────────────
+
+def _build_ticket_response(ticket: ReactivationTicket) -> ReactivationTicketResponse:
+    return ReactivationTicketResponse(
+        id=str(ticket.id),
+        user_id=str(ticket.user_id),
+        email=ticket.email,
+        reason=ticket.reason,
+        phone=ticket.phone,
+        identity_document=ticket.identity_document,
+        evidence_url=ticket.evidence_url,
+        status=ticket.status,
+        admin_comment=ticket.admin_comment,
+        reviewed_by=str(ticket.reviewed_by) if ticket.reviewed_by else None,
+        reviewed_at=ticket.reviewed_at,
+        created_at=ticket.created_at,
+    )
+
+
+@router.get(
+    "/reactivation-tickets",
+    response_model=list[ReactivationTicketResponse],
+    summary="Listar tickets de reactivación",
+)
+def get_reactivation_tickets(
+    status_filter: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[ReactivationTicketResponse]:
+    """Lista todos los tickets de reactivación. Filtro opcional por status."""
+    _require_admin_or_jefe(current_user)
+
+    query = db.query(ReactivationTicket)
+    if status_filter:
+        query = query.filter(ReactivationTicket.status == status_filter)
+
+    tickets = query.order_by(ReactivationTicket.created_at.desc()).all()
+    return [_build_ticket_response(t) for t in tickets]
+
+
+@router.patch(
+    "/reactivation-tickets/{ticket_id}/approve",
+    response_model=ReactivationTicketResponse,
+    summary="Aprobar solicitud de reactivación",
+)
+async def approve_reactivation(
+    ticket_id: uuid.UUID,
+    data: ProcessReactivationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReactivationTicketResponse:
+    """Aprueba un ticket de reactivación. Reactiva la cuenta y envía email."""
+    _require_admin_or_jefe(current_user)
+
+    ticket = db.query(ReactivationTicket).filter(ReactivationTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
+
+    if ticket.status != "pending":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este ticket ya fue procesado")
+
+    user = db.query(User).filter(User.id == ticket.user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    # Reactivar la cuenta
+    user.is_active = True
+    user.rejection_reason = None
+    user.rejected_by = None
+    user.rejected_at = None
+    db.flush()
+
+    # Actualizar el ticket
+    ticket.status = "approved"
+    ticket.admin_comment = data.comment
+    ticket.reviewed_by = current_user.id
+    ticket.reviewed_at = datetime.now(timezone.utc)
+
+    db.flush()
+
+    try:
+        await send_reactivation_approved_email(
+            email=ticket.email,
+            name=f"{user.name_user} {user.last_name}",
+        )
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al enviar el email de notificación. La reactivación no fue aplicada.",
+        )
+
+    db.commit()
+    db.refresh(ticket)
+    return _build_ticket_response(ticket)
+
+
+@router.patch(
+    "/reactivation-tickets/{ticket_id}/reject",
+    response_model=ReactivationTicketResponse,
+    summary="Rechazar solicitud de reactivación",
+)
+async def reject_reactivation(
+    ticket_id: uuid.UUID,
+    data: ProcessReactivationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReactivationTicketResponse:
+    """Rechaza un ticket de reactivación con comentario obligatorio. Envía email."""
+    _require_admin_or_jefe(current_user)
+
+    ticket = db.query(ReactivationTicket).filter(ReactivationTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
+
+    if ticket.status != "pending":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este ticket ya fue procesado")
+
+    user = db.query(User).filter(User.id == ticket.user_id).first()
+
+    ticket.status = "rejected"
+    ticket.admin_comment = data.comment
+    ticket.reviewed_by = current_user.id
+    ticket.reviewed_at = datetime.now(timezone.utc)
+
+    db.flush()
+
+    if user:
+        try:
+            await send_reactivation_rejected_email(
+                email=ticket.email,
+                name=f"{user.name_user} {user.last_name}",
+                reason=data.comment,
+            )
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al enviar el email de notificación. El rechazo no fue aplicado.",
+            )
+
+    db.commit()
+    db.refresh(ticket)
+    return _build_ticket_response(ticket)
 

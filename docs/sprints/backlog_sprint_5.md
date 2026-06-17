@@ -1,143 +1,99 @@
-# Sprint 5 - Backlog Scrum
-## Gestión de Pedidos Mayoristas
+# Backlog Sprint 5 — Estructura y Visibilidad
 
-**Scrum Master:** Andrés Gil  
-**Sprint:** 5  
-**Duración:** 15 días  
-**Equipo:** Ronald (Arquitecto), Santiago (Bases de Datos), Andrés (Scrum Master)  
-**Estado:** ✅ **COMPLETADO**  
-**Fecha Cierre:** 19 de Marzo de 2026
+**Sprint:** 5
+**Duración:** 2 semanas
+**SP Total:** 21
+**Fecha:** Junio 2026
+**Estado:** ✅ COMPLETADO
 
----
+## Historias de Usuario
 
-## 📊 Estado de las Historias - Sprint 5
+| HU | Nombre | SP | Estado |
+|----|--------|----|--------|
+| HU-008 | Gestión de Marcas y Estilos | 8 | ✅ COMPLETADO |
+| HU-009 | Catálogo Visitante | 13 | ✅ COMPLETADO |
 
-| Historia Completada |
-|:---|
-| ✅ HU-012 - Realización de Pedidos |
-| ✅ HU-014 - Consulta de Estado de Pedidos |
+## HU-008: Gestión de Marcas y Estilos
 
-| Historia Pendiente | Historia en Desarrollo | Historia Terminada |
-|:---|:---|:---|
-| HU-015 - Actualización de Estado de Producción | | HU-012 - Realización de Pedidos |
-| HU-016 - Gestión de Inventario | | HU-014 - Consulta de Estado de Pedidos |
-| HU-022 - Asignación de Tareas de Producción | | |
-| HU-024 - Reporte de Avances | | |
-| HU-029 - Módulo de Notificaciones | | |
-| HU-030 - Alertas al Jefe | | |
-| HU-025 - Confirmación de Finalización de Tareas | | |
-| HU-026 - Notificación al Jefe de Tareas Completadas | | |
-| HU-031 - Reportes de Pedidos | | |
-| HU-033 - Suma de Producción | | |
+**Descripción:** Como administrador/jefe, quiero gestionar marcas y estilos del catálogo para clasificar los productos correctamente.
 
----
+### Criterios de Aceptación
 
-## 📋 Historias de Usuario - Sprint 5
+1. **CRUD completo de marcas**: Crear, listar, actualizar y eliminar marcas desde el panel admin.
+2. **CRUD completo de estilos**: Crear, listar, actualizar y eliminar estilos desde el panel admin.
+3. **Soft-delete**: Las marcas y estilos eliminados no se muestran en listados pero persisten en BD.
+4. **Detección de duplicados**: El sistema rechaza marcas/estilos con nombres duplicados.
+5. **Interfaz visual**: Gestión de marcas y estilos desde `CatalogPage.tsx` en el dashboard del jefe.
 
-### HU-012: Realización de Pedidos
-**Prioridad:** Alta | **Story Points:** 13 | **Estado:** ✅ COMPLETADO
+### Endpoints Creados
 
-Como cliente mayorista, Quiero crear un pedido con múltiples productos y tallas, Para comprar en volumen los productos que necesito.
+| Método | Ruta | Línea | Descripción |
+|--------|------|-------|-------------|
+| GET | `/api/v1/admin/catalog/brands` | 51-74 | Listar todas las marcas |
+| POST | `/api/v1/admin/catalog/brands` | 76-114 | Crear nueva marca |
+| PUT | `/api/v1/admin/catalog/brands/{brand_id}` | 116-174 | Actualizar marca |
+| DELETE | `/api/v1/admin/catalog/brands/{brand_id}` | 176-228 | Eliminar marca (soft-delete) |
+| GET | `/api/v1/admin/catalog/styles` | 230-266 | Listar estilos (con filtro opcional por marca) |
+| POST | `/api/v1/admin/catalog/styles` | 268-332 | Crear nuevo estilo |
+| PUT | `/api/v1/admin/catalog/styles/{style_id}` | 334-411 | Actualizar estilo |
+| DELETE | `/api/v1/admin/catalog/styles/{style_id}` | 413-465 | Eliminar estilo (soft-delete) |
 
-**Criterios de Aceptación:**
-- [x] Puedo agregar productos al carrito con talla y cantidad
-- [x] Puedo modificar la cantidad de cada línea
-- [x] Puedo eliminar productos del carrito
-- [x] Se muestra el total de pares y valor
-- [x] Puedo crear el pedido con fecha de entrega estimada
-- [x] El pedido se registra en estado "Pendiente"
-- [x] Recibo confirmación inmediata del pedido
-- [x] Se valida que hay stock disponible
+### Archivos Clave Modificados
 
-**Tareas Completadas:**
-- [x] Frontend: Crear flujo de carrito/cesta
-- [x] Frontend: Componente ProductSelector con talla y cantidad
-- [x] Frontend: Línea de detalle de pedido con edición
-- [x] Frontend: Formulario de creación de pedido
-- [x] Frontend: Validación de datos before submit
-- [x] Backend: Crear modelo OrderDetail con product_id, size, colour, amount
-- [x] Backend: Crear modelo Order con customer_id, total_pairs, delivery_date
-- [x] Backend: Endpoint POST /api/v1/admin/orders (crear pedido)
-- [x] Backend: Validación de stock antes de crear  
-- [x] Backend: Transacción para garantizar consistencia
-- [x] Frontend: Integrar con API y mostrar errores
-- [x] Testing: Flujo completo de creación de pedido
+- `be/app/modules/admin/catalog_router.py` — Endpoints CRUD de marcas y estilos (líneas 51-465)
+- `be/app/modules/admin/catalog_schemas.py` — Schemas `BrandCreateRequest`, `BrandResponse`, `StyleCreateRequest`, `StyleResponse`
+- `be/app/models/brand.py` — Modelo `Brand` con `deleted_at` para soft-delete
+- `be/app/models/style.py` — Modelo `Style` con `deleted_at` para soft-delete
+- `fe/src/modules/dashboard-jefe/pages/CatalogPage.tsx` — Interfaz de gestión de marcas y estilos
 
----
+## HU-009: Catálogo Visitante
 
-### HU-014: Consulta de Estado de Pedidos
-**Prioridad:** Alta | **Story Points:** 8 | **Estado:** ✅ COMPLETADO
+**Descripción:** Como visitante no autenticado, quiero explorar el catálogo de productos para conocer la oferta disponible antes de registrarme.
 
-Como cliente, Quiero ver el estado de mis pedidos, Para saber cuándo se entregarán.
+### Criterios de Aceptación
 
-**Criterios de Aceptación:**
-- [x] Puedo ver listado paginado de mis pedidos
-- [x] Veo ID, cliente, cantidad de pares, estado, fecha creación, fecha entrega
-- [x] Los estados son: Pendiente, En Producción, Completado, Cancelado
-- [x] Puedo filtrar por estado
-- [x] Puedo ver detalles completos al hacer click (productos, tallas, cantidades)
-- [x] Se muestran imágenes de productos en el detalle
-- [x] Puedo descargar un PDF del pedido
+1. **Sin autenticación**: Todos los endpoints del catálogo público son accesibles sin token JWT.
+2. **Listado de categorías**: Muestra todas las categorías activas con nombre y descripción.
+3. **Listado de estilos**: Muestra todos los estilos disponibles con su marca asociada.
+4. **Inventario por estilo**: Al seleccionar un estilo, muestra tallas disponibles y cantidades.
+5. **Listado de marcas**: Muestra todas las marcas activas.
+6. **Listado de colores**: Muestra colores distintos disponibles en productos activos.
+7. **Listado de productos**: Muestra todos los productos activos con información de estilo, categoría y marca.
+8. **Detalle de producto**: Al seleccionar un producto, muestra información completa incluyendo inventario por talla.
+9. **Página pública**: Interfaz accesible desde la landing page sin necesidad de login.
 
-**Tareas Completadas:**
-- [x] Backend: Endpoint GET /api/v1/admin/orders (listar con paginación)
-- [x] Backend: Endpoint GET /api/v1/admin/orders/{order_id} (detalle)
-- [x] Backend: Endpoint GET /api/v1/admin/orders?state=pendiente (filtrar)
-- [x] Backend: Include imagen_url, brand, category, style en respuesta
-- [x] Backend: Considerar audit fields (created_by, updated_by)
-- [x] Frontend: Crear OrdersPage con tabla de pedidos
-- [x] Frontend: Implementar detalles modal con productos
-- [x] Frontend: Mostrar miniaturas de imágenes
-- [x] Frontend: Badge de estado con colores
-- [x] Frontend: Paginación y filtros
-- [x] Frontend: Link a descarga de PDF
-- [x] Testing: Verificar que imágenes cargan correctamente
+### Endpoints Creados
 
----
+| Método | Ruta | Líneas | Descripción |
+|--------|------|--------|-------------|
+| GET | `/api/v1/catalog/categories` | 30-54 | Obtener todas las categorías |
+| GET | `/api/v1/catalog/styles` | 57-81 | Obtener todos los estilos con marcas |
+| GET | `/api/v1/catalog/styles/{style_id}/inventory` | 84-130 | Obtener tallas y disponibilidad de un estilo |
+| GET | `/api/v1/catalog/brands` | 133-156 | Obtener todas las marcas |
+| GET | `/api/v1/catalog/colors` | 159-178 | Obtener todos los colores disponibles |
+| GET | `/api/v1/catalog/products/{product_id}` | 181-234 | Obtener detalles de un producto por ID |
+| GET | `/api/v1/catalog/products` | 237-293 | Obtener todos los productos (con filtros opcionales) |
 
-## 🔧 Cambios Técnicos Realizados en Sprint 5
+### Archivos Clave Modificados
 
-### Backend
-- ✅ Crear tabla `orders` con uuid PK, customer_id FK, total_pairs, state, delivery_date
-- ✅ Crear tabla `order_details` con uuid PK, order_id FK, product_id FK, size, colour, amount
-- ✅ Agregar audit fields: created_by, updated_by, deleted_by (UUID refs a users)
-- ✅ Establecer relaciones OneToMany Order -> OrderDetail
-- ✅ Implementar soft deletes con `deleted_at`
-- ✅ Eager loading del producto y su información (brand, category, style)
+- `be/app/modules/catalog/router.py` — 7 endpoints públicos del catálogo (294 líneas total)
+- `be/app/modules/catalog/schemas.py` — Schemas de respuesta: `CategoriesListResponse`, `StylesListResponse`, `StyleInventoryResponse`, `BrandsListResponse`, `ProductsListResponse`, `ProductDetailResponse`
+- `fe/src/modules/landing/pages/CatalogPage.tsx` — Página pública del catálogo en el módulo landing
 
-### Frontend
-- ✅ Componente OrdersPage con vista de lista y modal de detalles
-- ✅ Modal muestra imagen de cada producto línea a línea
-- ✅ Estado Pendiente = Amarillo, En Producción = Azul, Completado = Verde
-- ✅ Manejo correcto de CORS para cargar imágenes desde /api/v1/uploads/
-- ✅ Resolver URLs de imagen durante renderizado
+## Cambios Técnicos
 
-### Seguridad de Datos
-- ✅ Solo se puede crear orden siendo cliente registrado
-- ✅ Solo jefe con rol admin puede ver todas las órdenes
-- ✅ Validación de stock antes de crear
-- ✅ Auditoría completa de cambios
+- Se creó el módulo `be/app/modules/catalog/` con router público y schemas
+- Los endpoints admin de marcas/estilos usan `_require_admin_or_jefe` para autorización
+- Soft-delete implementado con columna `deleted_at` en modelos `Brand` y `Style`
+- Los endpoints públicos filtran por `deleted_at == None` y `state == True` (productos)
+- El inventario por estilo suma cantidades de todos los productos del estilo agrupando por talla
 
----
+## Logros
 
-## 🎯 Logros del Sprint 5
+- Catálogo completamente funcional y navegable sin autenticación
+- Separación clara entre rutas admin (protegidas) y rutas públicas
+- Base estable para los sprints siguientes de búsqueda e inventario
 
-✅ Flujo completo de creación de pedidos  
-✅ Gestión de líneas de detalle con múltiples tallas  
-✅ Visualización de estado de pedidos con imágenes  
-✅ Filtrado y paginación de órdenes  
-✅ Audit trail de todos los cambios  
-✅ Validación de datos end-to-end  
+## Resumen
 
----
-
-## 📊 Resumen de Sprint 5
-
-- [x] HU-012: Creación de pedidos completada y probada
-- [x] HU-014: Visualización de estado de pedidos funcional
-- [x] Documentación y pruebas realizadas
-- [x] Total de Story Points: 21/21 ✅
-
-**Creado por:** Andrés Gil (Scrum Master)  
-**Última Actualización:** 19 de Marzo de 2026
-
+Sprint 5 estableció la estructura de clasificación del catálogo (marcas y estilos) y expuso todo el catálogo al público. Con 15 endpoints creados (8 admin + 7 públicos), se sentaron las bases para la navegación de productos y la gestión administrativa del catálogo.

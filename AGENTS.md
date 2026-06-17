@@ -85,7 +85,7 @@ cd fe && pnpm build               # ejecuta tsc -b && vite build
 - Las migraciones de Alembic se ejecutan **automáticamente al iniciar el backend** (`be/app/init_db.py`), tanto en Docker como local.
 - Los datos semilla también se insertan automáticamente (roles, tipos de documento, catálogo con 65 productos, usuarios de prueba).
 - **Nunca ejecutes `alembic upgrade head` manualmente** a menos que estés depurando algo muy específico.
-- Hay 27 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
+- Hay 37 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
 
 ### Usuario admin de prueba
 ```
@@ -110,15 +110,19 @@ Un solo `.env` en la raíz. Copiar de `.env.example`. Los `.env` individuales en
 be/app/modules/
 ├── auth/            # Autenticación (JWT + Bcrypt)
 ├── users/           # CRUD usuarios + avatar upload (POST/DELETE /me/avatar)
-├── admin/           # Rutas admin + catálogo admin + reportes
+├── admin/           # Rutas admin + catálogo admin + reportes + creación sin contraseña
 ├── dashboard_jefe/  # Dashboard del jefe
-├── orders/          # Pedidos
+├── dashboard_empleado/  # Dashboard del empleado (tareas, incidencias, métricas)
+├── orders/          # Pedidos + line_group
 ├── catalog/         # Catálogo público
+├── client/          # Dashboard cliente y pedidos
 ├── supplies/        # Insumos
+├── scrap/           # Incidencias (scrap, pérdidas, pendientes de aprobación)
+├── notifications/   # Notificaciones en tiempo real (WebSocket)
 └── type_document/   # Tipos de documento
 ```
-- Cada módulo tiene `router.py`, `controller.py`, `service.py`, `repository.py`.
-- Modelos centralizados en `be/app/models/` (no dentro de cada módulo).
+- Cada módulo tiene `router.py`, `controller.py`, `service.py`, `repository.py` (patrón documentado; en la práctica algunos módulos fusionan capas).
+- Modelos centralizados en `be/app/models/` (23 modelos) — no dentro de cada módulo.
 
 ### Frontend — import alias `@`
 ```typescript
@@ -129,12 +133,13 @@ Usar **siempre** `@/` para imports internos, nunca rutas relativas largas.
 ### Frontend — módulos
 ```
 fe/src/modules/
-├── auth/                 # Login, Register, Password Reset
-├── dashboard-jefe/       # Panel admin completo (12 páginas)
-├── dashboard-empleado/   # Panel empleado (6 páginas + utils)
+├── auth/                 # Login, Register, Password Reset (7 páginas)
+├── dashboard-jefe/       # Panel admin completo (14 páginas)
+├── dashboard-empleado/   # Panel empleado (6 páginas + utils + context)
 │   ├── pages/            # DashboardPage, TasksPage, AvailableTasksPage,
 │   │                     # IncidencesPage, EmployeeReportsPage, EmployeeSettingsPage
 │   ├── components/layout/ # EmployeeLayout, EmployeeSidebar
+│   ├── context/          # EmployeeBadgeCountsContext (tareas, disponibles, incidencias)
 │   ├── services/         # employeeApi.ts
 │   ├── types/            # employee.ts
 │   └── utils/            # reportsUtils.ts (exportPerformancePDF)

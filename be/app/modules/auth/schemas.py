@@ -213,6 +213,9 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     temporary_password: str | None = None
+    rejected_by: str | None = None
+    rejected_at: datetime | None = None
+    rejection_reason: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -222,6 +225,41 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class ReactivationRequest(BaseModel):
+    """Schema para solicitar reactivación de cuenta (público, sin auth)."""
+    email: EmailStr
+    reason: str
+    phone: str
+    identity_document: str
+    evidence_url: str | None = None
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 10:
+            raise ValueError("El motivo debe tener al menos 10 caracteres")
+        if len(v) > 1000:
+            raise ValueError("El motivo no puede exceder 1000 caracteres")
+        return v
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 7 or len(v) > 20:
+            raise ValueError("El teléfono debe tener entre 7 y 20 caracteres")
+        return v
+
+    @field_validator("identity_document")
+    @classmethod
+    def validate_identity_document(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 8 or len(v) > 20:
+            raise ValueError("El documento de identidad debe tener entre 8 y 20 caracteres")
+        return v
 
 
 class MessageResponse(BaseModel):

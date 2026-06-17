@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   XCircle, Package, Scissors, PenTool, Hammer, Sparkles,
-  User, Loader2, AlertCircle, Save, CheckCircle, CheckCircle2,
+  User, Loader2, AlertCircle, CheckCircle, CheckCircle2,
 } from 'lucide-react';
-import { getTaskVale, updateTaskObservation, updateEmployeeTaskStatus } from '../services/employeeApi';
+import { getTaskVale, updateEmployeeTaskStatus } from '../services/employeeApi';
 import type { ValeResponse } from '../types/employee';
 
 interface Props {
@@ -24,7 +24,6 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [observations, setObservations] = useState<Record<string, string>>({});
-  const [savingObs, setSavingObs] = useState<Record<string, boolean>>({});
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -54,22 +53,11 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
 
   useEffect(() => { loadVale(); }, [loadVale]);
 
-  const handleSaveObservation = async (tId: string) => {
-    setSavingObs((prev) => ({ ...prev, [tId]: true }));
-    try {
-      await updateTaskObservation(tId, observations[tId] || '');
-      showMsg('Observacion guardada', 'success');
-    } catch {
-      showMsg('Error al guardar observacion', 'error');
-    } finally {
-      setSavingObs((prev) => ({ ...prev, [tId]: false }));
-    }
-  };
-
   const handleUpdateStatus = async (tId: string, newStatus: string) => {
     setStatusUpdating(tId);
     try {
-      await updateEmployeeTaskStatus(tId, newStatus);
+      const obs = observations[tId] || '';
+      await updateEmployeeTaskStatus(tId, newStatus, obs);
       showMsg('Estado actualizado', 'success');
       loadVale();
     } catch (e: unknown) {
@@ -82,7 +70,7 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
 
   if (loading) {
     return createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-white" />
           <p className="text-sm text-white font-medium">Cargando vale...</p>
@@ -94,7 +82,7 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
 
   if (error) {
     return createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full">
           <div className="flex items-center gap-3 text-red-600">
             <AlertCircle className="w-6 h-6" />
@@ -114,7 +102,7 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
   const myTask = vale.tasks.find((t) => t.is_mine);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 transition-all duration-500 flex flex-col max-w-4xl w-full max-h-[90vh]">
 
         {/* ── Header ── */}
@@ -347,16 +335,7 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                                   rows={2}
                                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all resize-none placeholder:text-gray-400"
                                 />
-                                {(observations[task.id] || '') !== (task.observation || '') && (
-                                  <button
-                                    onClick={() => handleSaveObservation(task.id)}
-                                    disabled={savingObs[task.id]}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95 disabled:opacity-50"
-                                  >
-                                    {savingObs[task.id] ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                                    Guardar
-                                  </button>
-                                )}
+                                <p className="text-[9px] text-blue-500 font-medium italic">La observación se guarda al cambiar el estado</p>
                               </div>
                             </div>
                           ) : task.observation ? (

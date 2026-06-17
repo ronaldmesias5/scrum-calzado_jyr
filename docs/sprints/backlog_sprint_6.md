@@ -1,126 +1,122 @@
-# Sprint 6 - Backlog Scrum
-## Producción e Inventario
+# Backlog Sprint 6 — Búsqueda e Inventario
 
-**Scrum Master:** Andrés Gil  
-**Sprint:** 6  
-**Duración:** 15 días  
-**Equipo:** Ronald (Arquitecto), Santiago (Bases de Datos), Andrés (Scrum Master)  
-**Estado:** ✅ **COMPLETADO**  
-**Fecha Cierre:** 13 de Junio de 2026
+**Sprint:** 6
+**Duración:** 2 semanas
+**SP Total:** 21
+**Fecha:** Junio 2026
+**Estado:** ✅ COMPLETADO
 
----
+## Historias de Usuario
 
-## 📊 Estado de las Historias - Sprint 6
+| HU | Nombre | SP | Estado |
+|----|--------|----|--------|
+| HU-011 | Búsqueda y Filtrado | 8 | ✅ COMPLETADO |
+| HU-016 | Gestión de Inventario | 13 | ✅ COMPLETADO |
 
-| Historia Completada |
-|:---|
-| ✅ HU-015 - Actualización de Estado de Producción |
-| ✅ HU-016 - Gestión de Inventario |
+## HU-011: Búsqueda y Filtrado
 
-| Historia Pendiente | Historia en Desarrollo | Historia Terminada |
-|:---|:---|:---|
-| HU-022 - Asignación de Tareas de Producción | | HU-015 - Actualización de Estado de Producción |
-| HU-024 - Reporte de Avances | | HU-016 - Gestión de Inventario |
-| HU-029 - Módulo de Notificaciones | | |
-| HU-030 - Alertas al Jefe | | |
-| HU-025 - Confirmación de Finalización de Tareas | | |
-| HU-026 - Notificación al Jefe de Tareas Completadas | | |
-| HU-031 - Reportes de Pedidos | | |
-| HU-033 - Suma de Producción | | |
+**Descripción:** Como visitante, quiero buscar y filtrar productos en el catálogo para encontrar rápidamente lo que necesito.
 
----
+### Criterios de Aceptación
 
-## 📋 Historias de Usuario - Sprint 6
+1. **Filtro por categoría**: Filtrar productos por `category_id`.
+2. **Filtro por marca**: Filtrar productos por `brand_id`.
+3. **Filtro por estilo**: Filtrar productos por `style_id`.
+4. **Filtro por color**: Filtrar productos por `color`.
+5. **Búsqueda por texto**: Búsqueda `ILIKE` sobre nombre del producto, nombre de marca y nombre de estilo.
+6. **Multi-filtro en cascada**: Los filtros se combinan (AND) — aplicar múltiples filtros reduce resultados progresivamente.
+7. **Sin paginación**: Retorna todos los resultados en una sola respuesta.
 
-### HU-015: Actualización de Estado de Producción
-**Prioridad:** Alta | **Story Points:** 13 | **Estado:** ✅ COMPLETADO
+### Endpoints Modificados
 
-Como jefe de producción,
-Quiero actualizar el estado de las órdenes de producción,
-Para hacer seguimiento en tiempo real del avance de fabricación.
+| Método | Ruta | Líneas | Descripción |
+|--------|------|--------|-------------|
+| GET | `/api/v1/catalog/products` | 237-293 | Filtros: `category_id`, `brand_id`, `style_id`, `color`, `search` |
 
-**Criterios de Aceptación:**
-- [x] Puedo ver el listado de órdenes de producción con su estado actual
-- [x] Puedo cambiar el estado individual de cada etapa (Corte, Armado, Empaque, Entregado)
-- [x] El sistema registra quién hizo cada cambio y cuándo
-- [x] Los cambios se reflejan en tiempo real en el dashboard del jefe
-- [x] Se notifica a los empleados asignados cuando su tarea cambia de estado
-- [x] El historial de cambios queda disponible para auditoría
+### Detalle de Implementación (líneas 242-273)
 
-**Tareas Completadas:**
-- [x] Backend: Endpoint PUT /api/v1/admin/tasks/{task_id}/status
-- [x] Backend: Lógica de transición de estados (pendiente → en_progreso → completado)
-- [x] Backend: Validación de permisos (solo jefe puede cambiar estados)
-- [x] Backend: Registro de auditoría (updated_by, updated_at)
-- [x] Backend: Migraciones 024-025 (nullable assigned_to, observation en tasks)
-- [x] Frontend: Componente de tabla de tareas con estados
-- [x] Frontend: Selector de estado con colores por etapa
-- [x] Frontend: Integración con API en tiempo real
-- [x] Testing: Flujo completo de cambio de estado
+```python
+def get_products(
+    category_id: str | None = None,
+    brand_id: str | None = None,
+    style_id: str | None = None,
+    color: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db)
+) -> ProductsListResponse:
+```
 
----
+- Filtros aplicados secuencialmente con `.where()` sobre la consulta base
+- Búsqueda `ILIKE` con joins a `Brand` y `Style` (líneas 268-273):
+  ```python
+  Product.name_product.ilike(f"%{search}%") |
+  Brand.name_brand.ilike(f"%{search}%") |
+  Style.name_style.ilike(f"%{search}%")
+  ```
+- Productos inactivos (`state == False`) excluidos automáticamente
+- Productos eliminados (`deleted_at != None`) excluidos
 
-### HU-016: Gestión de Inventario
-**Prioridad:** Alta | **Story Points:** 8 | **Estado:** ✅ COMPLETADO
+### Archivos Clave Modificados
 
-Como jefe de bodega,
-Quiero gestionar el inventario de productos terminados,
-Para mantener un control preciso del stock disponible.
+- `be/app/modules/catalog/router.py` — Endpoint GET /products con parámetros de filtro (líneas 237-293)
 
-**Criterios de Aceptación:**
-- [x] Puedo ver el inventario completo con producto, talla, color y cantidad
-- [x] Puedo registrar entradas, salidas y ajustes de inventario
-- [x] El sistema valida que no haya salidas negativas sin stock suficiente
-- [x] Veo el nivel de stock reservado para pedidos activos
-- [x] Recibo alertas visuales cuando el stock está por debajo del mínimo
-- [x] Todos los movimientos quedan registrados en el historial de auditoría
+## HU-016: Gestión de Inventario
 
-**Tareas Completadas:**
-- [x] Backend: Endpoint GET /api/v1/admin/inventory (listar inventario)
-- [x] Backend: Endpoint POST /api/v1/admin/inventory/movement (entrada/salida/ajuste)
-- [x] Backend: Validación de stock suficiente antes de salidas
-- [x] Backend: Columna reserved en inventory para pedidos activos
-- [x] Frontend: InventoryPage con tabla de inventario
-- [x] Frontend: Modal de movimiento de inventario
-- [x] Frontend: Badge de alerta para stock bajo
-- [x] Testing: Validación de movimientos de inventario
+**Descripción:** Como administrador/jefe, quiero gestionar el inventario de productos para controlar el stock disponible, las reservas y los movimientos.
 
----
+### Criterios de Aceptación
 
-## 🔧 Cambios Técnicos Realizados en Sprint 6
+1. **Listar inventario**: Ver todo el inventario con filtros opcionales por producto, talla.
+2. **Crear/actualizar inventario**: Agregar o modificar stock de un producto/talla.
+3. **Eliminar inventario**: Eliminar un registro de inventario específico.
+4. **Actualización bulk**: Actualizar múltiples tallas de un producto en una sola solicitud.
+5. **Inventario por talla**: Consultar inventario agrupado por talla para un producto específico.
+6. **Movimientos de inventario**: Registrar movimientos (entrada/salida) con razón y fecha.
+7. **Interfaz visual**: Página `InventoryPage.tsx` en el dashboard del jefe para gestionar stock.
 
-### Backend
-- ✅ Migración 024: `assigned_to` nullable en tasks (permite tareas sin empleado asignado)
-- ✅ Migración 025: Columna `observation` en tasks (observaciones del operario)
-- ✅ Endpoints de actualización de estado de tareas
-- ✅ Endpoints de gestión de inventario con movimientos
-- ✅ Validación de stock antes de movimientos de salida
+### Endpoints Creados
 
-### Frontend
-- ✅ TasksPage con tabla de tareas y selector de estado
-- ✅ InventoryPage con tabla de inventario y modal de movimientos
-- ✅ Alertas visuales de stock mínimo
-- ✅ Integración completa con API
+| Método | Ruta | Líneas | Descripción |
+|--------|------|--------|-------------|
+| GET | `/api/v1/admin/catalog/inventory` | 871-903 | Listar inventario con filtros opcionales |
+| POST | `/api/v1/admin/catalog/inventory` | 905-1009 | Crear o actualizar inventario |
+| DELETE | `/api/v1/admin/catalog/inventory/{inventory_id}` | 1011-1035 | Eliminar inventario |
+| POST | `/api/v1/admin/catalog/inventory/bulk` | 1037-1176 | Actualizar inventario de múltiples tallas |
+| GET | `/api/v1/admin/catalog/products/{product_id}/inventory-by-size` | 1233-1280 | Obtener inventario por talla |
+| POST | `/api/v1/admin/catalog/inventory/movements` | 1282-1347 | Registrar movimiento de inventario |
 
----
+### Archivos Clave Modificados
 
-## 🎯 Logros del Sprint 6
+- `be/app/modules/admin/catalog_router.py` — Endpoints CRUD inventario (líneas 871-1347)
+- `be/app/modules/admin/catalog_schemas.py` — Schemas: `InventoryCreateRequest`, `InventoryResponse`, `BulkInventoryUpdateRequest`, `InventoryMovementCreateRequest`
+- `be/app/models/inventory.py` — Modelo `Inventory` con campos `amount`, `reserved`, `minimum_stock`, `size`, `colour`
+- `be/app/models/inventory_movement.py` — Modelo `InventoryMovement` con `type_of_movement` (entrada/salida)
+- `fe/src/modules/dashboard-jefe/pages/InventoryPage.tsx` — Página de gestión de inventario
 
-✅ Flujo completo de actualización de estado de producción  
-✅ Gestión de inventario con movimientos (entrada, salida, ajuste)  
-✅ Alertas de stock mínimo  
-✅ Tareas pueden crearse sin empleado asignado (pendientes)  
-✅ Observaciones del operario en tareas  
-✅ Validación de stock end-to-end  
+### ⚠️ Nota Técnica: Error de Color en Inventario
 
----
+Existe una inconsistencia conocida entre el almacenamiento de colores en inventario vs. detalles de pedido:
 
-## 📊 Resumen de Sprint 6
+- **Inventory**: almacena `colour = ""` (cadena vacía) para muchos registros
+- **OrderDetail**: almacena colores completos como `"negro x blanco"`, `"rojo"`, etc.
 
-- [x] HU-015: Actualización de estado de producción completada
-- [x] HU-016: Gestión de inventario funcional
-- [x] Documentación y pruebas realizadas
-- [x] Total de Story Points: 21/21 ✅
+Esto causa que las búsquedas de inventario que filtran por `colour` fallen al no encontrar coincidencias con los detalles del pedido. Como workaround, varias búsquedas en `orders/router.py` ya no filtran por colour (eliminaron el filtro en líneas 497, 540, 572, 730, 1212). **Pendiente**: Normalizar los valores de colour en inventario o eliminar el filtro de colour permanentemente.
 
-**Creado por:** Andrés Gil (Scrum Master)  
-**Última Actualización:** 13 de Junio de 2026
+## Cambios Técnicos
+
+- El endpoint `GET /catalog/products` amplió sus parámetros de consulta para soportar todos los filtros
+- Los filtros se aplican como condiciones `AND` sobre la misma consulta base
+- La búsqueda por texto usa `ILIKE` de PostgreSQL (case-insensitive)
+- El inventario bulk permite actualizar múltiples tallas en una transacción
+- Los movimientos de inventario quedan registrados con tipo, cantidad, fecha y usuario responsable
+
+## Logros
+
+- Búsqueda funcional con 5 criterios de filtrado combinables
+- Sistema completo de gestión de inventario con 6 endpoints
+- Trazabilidad de movimientos de stock (entradas y salidas)
+- Interfaz de usuario para administrar stock desde el dashboard
+
+## Resumen
+
+Sprint 6 completó dos funcionalidades clave: la capacidad de buscar y filtrar productos en el catálogo público (HU-011) y la gestión completa del inventario con stock, reservas y movimientos (HU-016). Queda como deuda técnica la normalización del colour en inventario para evitar discrepancias con los pedidos.

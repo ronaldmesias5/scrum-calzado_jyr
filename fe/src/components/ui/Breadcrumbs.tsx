@@ -11,6 +11,7 @@ const ROUTE_NAMES: Record<string, string> = {
   employees: 'Empleados',
   clients: 'Clientes',
   usuarios: 'Usuarios',
+  losses: 'Pérdidas',
   reports: 'Reportes',
   settings: 'Configuración',
   incidences: 'Incidencias',

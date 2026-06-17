@@ -2,7 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Home, ShoppingCart, Layers, Package, CheckSquare,
-  Users, UserCheck, Bell, BarChart, Settings, UserCog, Package2, X, LogOut
+  Users, UserCheck, Bell, BarChart, Settings, UserCog, Package2, X, LogOut,
+  AlertTriangle,
 } from 'lucide-react';
 import { useBadgeCounts } from '../../context/BadgeCountsContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +23,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     { label: t('dashboard.sidebar.orders'),       icon: ShoppingCart, path: '/dashboard/admin/orders',       badgeKey: 'pedidos' },
     { label: t('dashboard.sidebar.catalog'),      icon: Layers,       path: '/dashboard/admin/catalog',      badgeKey: null },
     { label: t('dashboard.sidebar.inventory'),    icon: Package,      path: '/dashboard/admin/inventory',    badgeKey: null },
+    { label: 'Incidencias',                       icon: AlertTriangle, path: '/dashboard/admin/losses',      badgeKey: 'incidencias' },
     { label: 'Insumos',                           icon: Package2,     path: '/dashboard/admin/insumos',      badgeKey: null },
     { label: t('dashboard.sidebar.tasks'),        icon: CheckSquare,  path: '/dashboard/admin/tasks',        badgeKey: null },
     { label: t('dashboard.sidebar.employees'),     icon: Users,        path: '/dashboard/admin/employees',    badgeKey: null },

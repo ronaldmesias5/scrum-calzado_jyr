@@ -1,5 +1,5 @@
 import api from '@/api/axios';
-import type { EmployeeMetricsResponse, EmployeeTaskListResponse, EmployeeIncidenceListResponse, AvailableTaskListResponse, ValeResponse } from '../types/employee';
+import type { EmployeeMetricsResponse, EmployeeTaskListResponse, EmployeeIncidenceListResponse, AvailableTaskListResponse, ValeResponse, GeneralIncidenceListResponse, GeneralIncidenceCreateRequest, ProductIncidenceListResponse, ProductIncidenceCreateRequest } from '../types/employee';
 
 /**
  * Obtener métricas del dashboard del empleado actual.
@@ -61,8 +61,10 @@ export const claimTask = async (taskId: string): Promise<{ success: boolean; mes
  * Actualizar el estado de una tarea (el empleado puede marcar su propia tarea como completada).
  * PATCH /api/v1/orders/tasks/{taskId}/status
  */
-export const updateEmployeeTaskStatus = async (taskId: string, status: string): Promise<void> => {
-  await api.patch(`/api/v1/orders/tasks/${taskId}/status`, { status });
+export const updateEmployeeTaskStatus = async (taskId: string, status: string, observation?: string): Promise<void> => {
+  const body: Record<string, unknown> = { status };
+  if (observation !== undefined && observation !== '') body.observation = observation;
+  await api.patch(`/api/v1/dashboard/employee/tasks/${taskId}/status`, body);
 };
 
 /**
@@ -171,5 +173,31 @@ export const getMyTasksReport = async (params?: {
   end_date?: string;
 }): Promise<MyTasksReportResponse> => {
   const res = await api.get('/api/v1/dashboard/employee/report/my-tasks', { params });
+  return res.data;
+};
+
+
+// ─── Incidencias generales (maquinaria/insumo) ────────────────────────────────
+
+
+export const createGeneralIncidence = async (data: GeneralIncidenceCreateRequest): Promise<void> => {
+  await api.post('/api/v1/dashboard/employee/general-incidences', data);
+};
+
+export const getGeneralIncidences = async (): Promise<GeneralIncidenceListResponse> => {
+  const res = await api.get('/api/v1/dashboard/employee/general-incidences');
+  return res.data;
+};
+
+
+// ─── Incidencias de producto (pendientes de aprobación) ────────────────────────
+
+
+export const createProductIncidence = async (data: ProductIncidenceCreateRequest): Promise<void> => {
+  await api.post('/api/v1/dashboard/employee/product-incidences', data);
+};
+
+export const getProductIncidences = async (): Promise<ProductIncidenceListResponse> => {
+  const res = await api.get('/api/v1/dashboard/employee/product-incidences');
   return res.data;
 };

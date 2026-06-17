@@ -110,7 +110,7 @@ def _require_jefe(user: User) -> None:
 
 def _require_admin_or_jefe(user: User) -> None:
     """Valida que el usuario sea admin O jefe."""
-    if user.role.name_role != "admin" and user.occupation != "jefe":
+    if (user.role is None or user.role.name_role != "admin") and user.occupation != "jefe":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Se requieren permisos de administrador o jefe",

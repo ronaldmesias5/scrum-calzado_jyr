@@ -574,13 +574,13 @@ export default function InsumosPage() {
 
   const handleCreate = async (data: SupplyCreatePayload) => {
     await createSupply(data);
-    await fetchSupplies();
+    await Promise.all([fetchSupplies(), fetchCategories()]);
   };
 
   const handleUpdate = async (data: SupplyCreatePayload) => {
     if (!editTarget) return;
     await updateSupply(editTarget.id, data);
-    await fetchSupplies();
+    await Promise.all([fetchSupplies(), fetchCategories()]);
   };
 
   const handleDelete = async (id: string) => {
@@ -858,7 +858,7 @@ export default function InsumosPage() {
       {/* Modal Formulario Insumo */}
       <SupplyFormModal
         isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditTarget(null); setStartNewCategory(false); }}
+        onClose={() => { setShowForm(false); setEditTarget(null); setStartNewCategory(false); fetchCategories(); fetchSupplies(); }}
         onSave={editTarget ? handleUpdate : handleCreate}
         initial={editTarget || undefined}
         title={editTarget ? 'Editar Insumo' : 'Nuevo Insumo'}

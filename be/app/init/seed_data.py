@@ -489,6 +489,68 @@ def seed_catalog(db: Session) -> bool:
         return False
 
 
+def seed_defect_codes(db: Session) -> bool:
+    """
+    Inserta los códigos de defecto iniciales si no existen.
+    
+    Return:
+        True si se insertaron o ya existían, False si hubo error.
+    """
+    try:
+        from app.models.scrap import DefectCode
+        
+        if db.query(DefectCode).count() > 0:
+            print(f"✅ Códigos de defecto ya existen ({db.query(DefectCode).count()} encontrados)")
+            return True
+        
+        print("🔄 Insertando códigos de defecto...")
+        
+        defect_codes = [
+            DefectCode(
+                code="DEF-FAB",
+                name="Defecto de Fabricación",
+                description="Errores en el proceso de fabricación del calzado",
+            ),
+            DefectCode(
+                code="DEF-ALM",
+                name="Daño por Almacenamiento",
+                description="Daños causados durante el almacenamiento del producto",
+            ),
+            DefectCode(
+                code="DEF-PRO",
+                name="Error de Producción",
+                description="Inconsistencias en talla, color o diseño durante producción",
+            ),
+            DefectCode(
+                code="DEF-DEV",
+                name="Devolución no Recuperable",
+                description="Producto devuelto que no puede ser restaurado ni vendido",
+            ),
+            DefectCode(
+                code="DEV-CLT",
+                name="Devolución de Cliente",
+                description="Producto devuelto por el cliente después de la entrega del pedido",
+            ),
+            DefectCode(
+                code="ENR-REP",
+                name="En Reparación",
+                description="Producto en proceso de reparación por defecto",
+            ),
+        ]
+        
+        for dc in defect_codes:
+            db.merge(dc)
+        
+        db.commit()
+        print("✅ Códigos de defecto insertados exitosamente")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error insertando códigos de defecto: {str(e)}")
+        db.rollback()
+        return False
+
+
 def seed_all(db: Session) -> None:
     """
     Ejecuta todos los seeds de forma idempotente.
@@ -502,6 +564,7 @@ def seed_all(db: Session) -> None:
         success = seed_type_documents(db) and success
         success = seed_jefe(db) and success
         success = seed_catalog(db) and success
+        success = seed_defect_codes(db) and success
         # seed_orders NO se ejecuta — no se insertan pedidos de prueba automáticamente
 
         if success:

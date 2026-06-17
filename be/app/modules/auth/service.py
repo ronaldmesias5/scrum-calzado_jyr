@@ -112,14 +112,10 @@ def register_user(db: Session, user_data: UserCreate) -> User:
 
 def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
     """Autentica un usuario y retorna tokens JWT."""
-    print(f"DEBUG: Intentando login para {login_data.email}")
     try:
         stmt = select(User).where(User.email == login_data.email)
         user = db.execute(stmt).scalar_one_or_none()
-        print(f"DEBUG: Usuario encontrado: {user is not None}")
-
         if not user or not verify_password(login_data.password, user.hashed_password):
-            print(f"DEBUG: Auth fallida para {login_data.email}")
             audit_logger.warning(f"Intento de login fallido: {_redact_email(login_data.email)} (credenciales incorrectas)")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -128,18 +124,15 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
             )
 
         if not user.is_active:
-            print(f"DEBUG: Usuario bloqueado {login_data.email}")
             audit_logger.warning(f"Intento de login bloqueado: {_redact_email(login_data.email)} (cuenta inactiva)")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cuenta pendiente de validación por el administrador.",
             )
 
-        print(f"DEBUG: Generando tokens para {user.email}")
         access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
         refresh_token = create_refresh_token(data={"sub": user.email, "version": user.session_version})
 
-        print(f"DEBUG: Login exitoso para {user.email}")
         audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
 
         return TokenResponse(
@@ -147,7 +140,6 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
             refresh_token=refresh_token,
         )
     except Exception as e:
-        print(f"DEBUG ERROR EN login_user: {str(e)}")
         import traceback
         traceback.print_exc()
         raise e

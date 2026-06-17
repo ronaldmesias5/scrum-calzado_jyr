@@ -1,12 +1,12 @@
 /**
- * BadgeCountsContext — provee conteos reales para badges del sidebar y panel de notificaciones.
- * Hace polling al backend cada 30 segundos.
+ * BadgeCountsContext — conteos para badges del sidebar.
+ * Notificaciones vía REST API + WebSocket (no más polling de pedidos).
  */
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import apiClient from '@/api/axios';
-import { getOrders } from '../services/ordersApi';
-
-// ─────────────────────────── Tipos ───────────────────────────
+import { getUnreadCount } from '../services/notificationApi';
+import { useNotificationWebSocket } from '../hooks/useNotificationWebSocket';
+import { getPendingIncidences } from '../services/lossApi';
 
 export interface PendingUser {
   id: string;
@@ -19,49 +19,61 @@ export interface PendingUser {
 }
 
 export interface BadgeCounts {
-  pedidos: number;   // pedidos con estado "pendiente"
-  usuarios: number;  // usuarios sin validar
+  pedidos: number;
+  usuarios: number;
+  incidencias: number;
 }
 
 interface ContextValue {
   counts: BadgeCounts;
   pendingUsers: PendingUser[];
   refresh: () => void;
+  resetNotificationCount: () => void;
 }
 
-// ─────────────────────────── Contexto ───────────────────────────
-
 const BadgeCountsContext = createContext<ContextValue>({
-  counts: { pedidos: 0, usuarios: 0 },
+  counts: { pedidos: 0, usuarios: 0, incidencias: 0 },
   pendingUsers: [],
   refresh: () => {},
+  resetNotificationCount: () => {},
 });
 
-// ─────────────────────────── Provider ───────────────────────────
-
 export function BadgeCountsProvider({ children }: { children: React.ReactNode }) {
-  const [counts, setCounts] = useState<BadgeCounts>({ pedidos: 0, usuarios: 0 });
+  const [counts, setCounts] = useState<BadgeCounts>({ pedidos: 0, usuarios: 0, incidencias: 0 });
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const { unreadCount, resetUnreadCount } = useNotificationWebSocket();
 
   const refresh = useCallback(async () => {
     try {
-      const [ordersRes, usersRes] = await Promise.allSettled([
-        getOrders(1, 1, 'pendiente'),
-        apiClient.get<PendingUser[]>('/api/v1/admin/users/pending-validation'),
-      ]);
-
-      const pedidos =
-        ordersRes.status === 'fulfilled' ? ordersRes.value.total : 0;
-
-      const users =
-        usersRes.status === 'fulfilled' ? usersRes.value.data : [];
-
-      setCounts({ pedidos, usuarios: users.length });
+      // Usuarios pendientes
+      const usersRes = await apiClient.get<PendingUser[]>('/api/v1/admin/users/pending-validation');
+      const users = usersRes.data;
       setPendingUsers(users);
+
+      // Notificaciones no leídas
+      const notifUnread = await getUnreadCount();
+
+      // Incidencias pendientes de aprobación
+      let pendingIncCount = 0;
+      try {
+        const incRes = await getPendingIncidences('pending');
+        pendingIncCount = incRes.total ?? 0;
+      } catch { /* silently ignore */ }
+
+      setCounts({
+        pedidos: notifUnread,
+        usuarios: users.length,
+        incidencias: pendingIncCount,
+      });
     } catch {
       // silently ignore
     }
   }, []);
+
+  // Sincronizar contador WebSocket con el estado local
+  useEffect(() => {
+    setCounts((prev) => ({ ...prev, pedidos: unreadCount }));
+  }, [unreadCount]);
 
   useEffect(() => {
     refresh();
@@ -69,14 +81,17 @@ export function BadgeCountsProvider({ children }: { children: React.ReactNode })
     return () => clearInterval(id);
   }, [refresh]);
 
+  const resetNotificationCount = useCallback(() => {
+    resetUnreadCount();
+    setCounts((prev) => ({ ...prev, pedidos: 0 }));
+  }, [resetUnreadCount]);
+
   return (
-    <BadgeCountsContext.Provider value={{ counts, pendingUsers, refresh }}>
+    <BadgeCountsContext.Provider value={{ counts, pendingUsers, refresh, resetNotificationCount }}>
       {children}
     </BadgeCountsContext.Provider>
   );
 }
-
-// ─────────────────────────── Hook ───────────────────────────
 
 export function useBadgeCounts() {
   return useContext(BadgeCountsContext);

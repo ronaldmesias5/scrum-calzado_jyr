@@ -13,7 +13,7 @@ export default function LandingHeader() {
 
   const navLinks = [
     { label: t('landing.nav.home'), href: '/' },
-    { label: t('landing.nav.catalog'), href: '#' },
+    { label: t('landing.nav.catalog'), href: '/catalog' },
     { label: t('landing.nav.about'), href: '/#nosotros' },
     { label: t('landing.nav.contact'), href: '/#contacto' },
   ];
@@ -29,13 +29,23 @@ export default function LandingHeader() {
         {/* Nav desktop */}
         <nav className={`hidden md:flex items-center gap-8 ${getNavClasses()}`} aria-label="Navegación principal">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-gray-700 dark:text-gray-200 hover:text-blue-800 dark:hover:text-blue-400 font-semibold transition-colors duration-200"
-            >
-              {link.label}
-            </a>
+            link.href && link.href.startsWith("/") ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-gray-700 dark:text-gray-200 hover:text-blue-800 dark:hover:text-blue-400 font-semibold transition-colors duration-200"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-gray-700 dark:text-gray-200 hover:text-blue-800 dark:hover:text-blue-400 font-semibold transition-colors duration-200"
+              >
+                {link.label}
+              </a>
+            )
           ))}
         </nav>
 
@@ -75,14 +85,25 @@ export default function LandingHeader() {
       {menuOpen && (
         <div id="mobile-menu" role="navigation" aria-label="Menú principal" className="md:hidden bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 px-6 py-6 flex flex-col gap-5 animate-in slide-in-from-top duration-300">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-gray-700 dark:text-gray-200 font-bold text-lg"
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </a>
+            link.href && link.href.startsWith("/") ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-gray-700 dark:text-gray-200 font-bold text-lg"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-gray-700 dark:text-gray-200 font-bold text-lg"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </a>
+            )
           ))}
           <>
             <div className="mt-2 pt-2 border-t border-gray-100" />

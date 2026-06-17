@@ -537,7 +537,8 @@ function OrderDetailView({
         type: stageKey,
         description: `Iniciando ${stageLabel} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'}) | METADATA: ${JSON.stringify({ breakdown: breakdownMetadata, option: selectedOption })}`,
         priority: 'media' as const,
-        amount: amountForTask
+        amount: amountForTask,
+        breakdown: breakdownMetadata,
       };
 
       await createProductionTasks(order.id, [taskData]);
@@ -839,7 +840,7 @@ function OrderDetailView({
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-bold text-gray-900 dark:text-white text-lg transition-colors">{productName}</p>
-                                {allAvailable && (
+                                {productState === 'pendiente' && allAvailable && (
                                   <span className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-green-200 dark:border-green-900/50">
                                     <CheckCircle size={10} />
                                     Todo en Bodega
@@ -1006,12 +1007,14 @@ function OrderDetailView({
                                     <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Talla {line.size}</span>
                                     <span className="text-sm font-bold text-gray-900 dark:text-white transition-colors">{line.amount} pares</span>
                                   </div>
-                                  <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 mt-1 pt-1 font-bold">
-                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">En Bodega:</span>
-                                    <span className={`text-xs font-bold ${stockColor}`}>
-                                      {Math.max(0, Math.floor(line.stock_available ?? 0))}
-                                    </span>
-                                  </div>
+                                  {productState === 'pendiente' && (
+                                    <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 mt-1 pt-1 font-bold">
+                                      <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">En Bodega:</span>
+                                      <span className={`text-xs font-bold ${stockColor}`}>
+                                        {Math.max(0, Math.floor(line.stock_available ?? 0))}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -1043,7 +1046,7 @@ function OrderDetailView({
                           <>
                             {/* Métricas de Insumos para Producción */}
                             {(() => {
-                              if (totalToProduce === 0) return (
+                              if (productState === 'pendiente' && totalToProduce === 0) return (
                                 <div className="px-5 py-3 bg-green-50/50 dark:bg-green-950/10 border-t border-green-100 dark:border-green-900/30 flex items-center gap-2">
                                   <CheckCircle className="w-4 h-4 text-green-600" />
                                   <p className="text-[10px] font-bold text-green-700 dark:text-green-400 uppercase tracking-wider">No se requiere producción: Todo disponible en bodega</p>
@@ -1126,7 +1129,7 @@ function OrderDetailView({
 
         {/* Modal Inicio Producción: Hoja de Producción Pro */}
         {productionModal && createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
             <div className={`bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 transition-all duration-500 flex flex-col ${productionStep === 1 ? 'max-w-xl w-full' : 'max-w-4xl w-full max-h-[90vh]'}`}>
               
               {/* Header Modal */}

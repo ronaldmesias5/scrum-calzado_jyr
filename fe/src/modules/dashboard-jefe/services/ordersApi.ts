@@ -221,6 +221,7 @@ export interface ProductionTaskCreate {
   priority?: string;
   amount: number;
   line_group?: number;
+  breakdown?: Record<string, number>;
 }
 
 export interface ProductionTask {

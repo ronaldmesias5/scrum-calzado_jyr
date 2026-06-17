@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Home, CheckSquare, Package, AlertTriangle, BarChart, Settings, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmployeeBadgeCounts } from '../../context/EmployeeBadgeCountsContext';
 
 interface EmployeeSidebarProps {
   isOpen: boolean;
@@ -8,16 +9,22 @@ interface EmployeeSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Inicio',             icon: Home,         path: '/dashboard/employee' },
-  { label: 'Mis Tareas',         icon: CheckSquare,  path: '/dashboard/employee/tasks' },
-  { label: 'Tareas Disponibles', icon: Package,      path: '/dashboard/employee/available-tasks' },
-  { label: 'Incidencias',        icon: AlertTriangle, path: '/dashboard/employee/incidences' },
-  { label: 'Reportes',           icon: BarChart,      path: '/dashboard/employee/reports' },
-  { label: 'Configuración',      icon: Settings,      path: '/dashboard/employee/settings' },
+  { label: 'Inicio',             icon: Home,         path: '/dashboard/employee', badgeKey: null },
+  { label: 'Mis Tareas',         icon: CheckSquare,  path: '/dashboard/employee/tasks', badgeKey: 'tareasPendientes' as const },
+  { label: 'Tareas Disponibles', icon: Package,      path: '/dashboard/employee/available-tasks', badgeKey: 'tareasDisponibles' as const },
+  { label: 'Incidencias',        icon: AlertTriangle, path: '/dashboard/employee/incidences', badgeKey: 'incidencias' as const },
+  { label: 'Reportes',           icon: BarChart,      path: '/dashboard/employee/reports', badgeKey: null },
+  { label: 'Configuración',      icon: Settings,      path: '/dashboard/employee/settings', badgeKey: null },
 ] as const;
 
 export default function EmployeeSidebar({ isOpen, onClose }: EmployeeSidebarProps) {
   const { logout } = useAuth();
+  const { counts } = useEmployeeBadgeCounts();
+
+  const menuItems = NAV_ITEMS.map((item) => ({
+    ...item,
+    badge: item.badgeKey ? (counts[item.badgeKey] ?? 0) : 0,
+  }));
 
   return (
     <>
@@ -51,7 +58,7 @@ export default function EmployeeSidebar({ isOpen, onClose }: EmployeeSidebarProp
 
         {/* Menú */}
         <nav className="flex-1 py-4 overflow-y-auto">
-          {NAV_ITEMS.map(({ label, icon: Icon, path }) => (
+          {menuItems.map(({ label, icon: Icon, path, badge }) => (
             <NavLink
               key={label}
               to={path}
@@ -69,6 +76,11 @@ export default function EmployeeSidebar({ isOpen, onClose }: EmployeeSidebarProp
                 <Icon size={18} />
                 <span>{label}</span>
               </div>
+              {badge > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-extrabold rounded-full px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center shadow-sm shadow-red-500/50">
+                  {badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

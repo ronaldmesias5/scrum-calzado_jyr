@@ -673,7 +673,7 @@ def create_product(
         style_id=style_uuid,
         category_id=category_uuid,
         state=True,
-        task_prices=req.task_prices.dict() if req.task_prices else {},
+        task_prices=req.task_prices.model_dump() if req.task_prices else {},
     )
     db.add(product)
     db.commit()
@@ -781,7 +781,7 @@ def update_product(
     product.style_id = style_uuid
     product.category_id = category_uuid
     if req.task_prices is not None:
-        product.task_prices = req.task_prices.dict()
+        product.task_prices = req.task_prices.model_dump()
     product.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(product)
@@ -1056,9 +1056,6 @@ def bulk_update_inventory(
         if not product:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         
-        print(f"[DEBUG] Actualizando inventario para producto {product.name_product} ({product_uuid})")
-        print(f"[DEBUG] Cantidades recibidas: {req.quantities}")
-        
         updated_count = 0
         created_count = 0
         results = []
@@ -1071,10 +1068,6 @@ def bulk_update_inventory(
             )
         ).scalars().all()
         
-        print(f"[DEBUG] Inventario actual tiene {len(current_inventory)} registros")
-        for inv in current_inventory:
-            print(f"  - Talla {inv.size}: {inv.amount}")
-        
         # SEGUNDO: Actualizar o crear las tallas en el request
         for size_str, quantity in req.quantities.items():
             size = str(size_str).strip()
@@ -1083,8 +1076,6 @@ def bulk_update_inventory(
             
             # Convertir cantidad a entero
             quantity = int(quantity) if isinstance(quantity, (int, float)) else int(str(quantity))
-            
-            print(f"[DEBUG] Procesando talla {size} = {quantity}")
             
             # Buscar inventario existente (tomar todos para auto-sanar duplicados)
             existing_invs = db.execute(
@@ -1110,8 +1101,6 @@ def bulk_update_inventory(
                     dup.deleted_at = datetime.now(timezone.utc)
                     dup.amount = 0
                     db.add(dup)
-                
-                print(f"[DEBUG]   Actualizado: {old_amount} → {quantity} (diff={diff})")
                 
                 if diff != 0:
                     movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
@@ -1143,8 +1132,6 @@ def bulk_update_inventory(
                     )
                     db.add(inventory)
                     
-                    print(f"[DEBUG]   Creado: {quantity}")
-                    
                     db.add(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=product_uuid,
@@ -1163,19 +1150,15 @@ def bulk_update_inventory(
                         "action": "created"
                     })
                 else:
-                    print(f"[DEBUG]   Skipped (quantity=0)")
+                    pass
         
-        print(f"[DEBUG] Ejecutando commit...")
         db.commit()
-        print(f"[DEBUG] Commit exitoso. Updates: {updated_count}, Creates: {created_count}")
         
         # Calcular stock_total actualizado
         stock_total = db.execute(
             select(func.sum(Inventory.amount).label("total"))
             .where((Inventory.product_id == product_uuid) & (Inventory.deleted_at == None))
         ).scalar() or 0
-        
-        print(f"[DEBUG] Stock total después del commit: {stock_total}")
         
         return {
             "product_id": str(product_uuid),
@@ -1189,7 +1172,6 @@ def bulk_update_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[ERROR] Excepción en bulk_update_inventory: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al actualizar inventario: {str(e)}")
 
@@ -1331,7 +1313,7 @@ def create_inventory_movement(
         if inv.amount < request.quantity:
             # En vez de error bloqueante, permitimos quedar en negativo temporalmente o lo ajustamos a 0
             # para no bloquear el inicio de producción si hay discrepancias menores.
-            print(f"⚠️ Advertencia: Descontando {request.quantity} de un stock de {inv.amount}. Quedará negativo.")
+            pass
         inv.amount -= Decimal(request.quantity)
     elif request.movement_type == 'entrada':
         inv.amount += Decimal(request.quantity)

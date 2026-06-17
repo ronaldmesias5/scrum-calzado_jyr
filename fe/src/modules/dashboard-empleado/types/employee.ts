@@ -113,3 +113,78 @@ export interface ValeResponse {
   details: ValeDetailItem[];
   tasks: ValeTaskInfo[];
 }
+
+// ──────────────────────────────────────
+// Incidencias generales (maquinaria/insumo)
+// ──────────────────────────────────────
+
+export interface GeneralIncidence {
+  id: string;
+  incidence_category: string;
+  machinery_name: string | null;
+  supply_id: string | null;
+  supply_name: string | null;
+  custom_supply_name: string | null;
+  observations: string | null;
+  incident_type: string;
+  registered_by_name: string | null;
+  created_at: string | null;
+}
+
+export interface GeneralIncidenceListResponse {
+  incidences: GeneralIncidence[];
+  total: number;
+}
+
+export interface GeneralIncidenceCreateRequest {
+  incidence_category: string;
+  machinery_name?: string;
+  supply_id?: string;
+  custom_supply_name?: string;
+  observations?: string;
+}
+
+// ──────────────────────────────────────
+// Incidencias de producto (pendientes de aprobación)
+// ──────────────────────────────────────
+
+export interface ProductIncidence {
+  id: string;
+  task_id: string;
+  task_type?: string | null;
+  product_id: string;
+  product_name?: string | null;
+  size: string;
+  colour?: string | null;
+  defect_code_id?: string | null;  // Ahora opcional — puede usar description en su lugar
+  defect_code?: string | null;
+  defect_name?: string | null;
+  description?: string | null;  // Descripción libre del defecto
+  quantity: number;
+  observations?: string | null;
+  status: string; // pending, approved, rejected
+  approved_type?: string | null;
+  employee_name?: string | null;
+  reviewed_by_name?: string | null;
+  reviewed_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface ProductIncidenceListResponse {
+  incidences: ProductIncidence[];
+  total: number;
+}
+
+export interface ProductIncidenceCreateRequest {
+  task_id: string;
+  size: string;
+  colour?: string;
+  defect_code_id?: string;  // Opcional — ahora se usa description como alternativa
+  description?: string;  // Descripción libre del defecto
+  quantity: number;
+  observations?: string;
+}
+
+export interface ApproveProductIncidenceRequest {
+  incident_type: string; // perdida, en_reparacion, devuelto
+}

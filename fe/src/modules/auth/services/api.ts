@@ -99,3 +99,20 @@ export async function deleteAvatar(): Promise<{ avatar_url: null; message: strin
   const response = await api.delete(`${USERS_PREFIX}/me/avatar`);
   return response.data;
 }
+
+// ────────────────────────────────────────────────
+// Reactivación de cuenta (RF-005) — público
+// ────────────────────────────────────────────────
+
+export interface ReactivationRequest {
+  email: string;
+  reason: string;
+  phone: string;
+  identity_document: string;
+  evidence_url?: string;
+}
+
+export async function requestReactivation(data: ReactivationRequest): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/request-reactivation`, data);
+  return response.data;
+}

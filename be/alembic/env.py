@@ -61,11 +61,19 @@ from app.models.supplies_movement import SuppliesMovement  # noqa: F401
 # Vales
 from app.models.vale import Vale, DetailVale  # noqa: F401
 
-# Tareas e Incidencias
-from app.models.incidence import Incidence  # noqa: F401
-
 # Notificaciones
 from app.models.notifications import Notification  # noqa: F401
+
+# Tareas e Incidencias
+from app.models.tasks import Task  # noqa: F401
+from app.models.incidence import Incidence  # noqa: F401
+
+# Suministros
+from app.models.supply_categories import SupplyCategory  # noqa: F401
+from app.models.product_supplies import ProductSupply  # noqa: F401
+
+# Reportes compartidos
+from app.models.report_share import ReportShare  # noqa: F401
 
 config = context.config
 

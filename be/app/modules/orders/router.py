@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy import func, desc, select, delete as sa_delete, update as sa_update, and_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.core.config import settings
 from app.core.dependencies import get_db, get_current_user, _require_jefe
 from app.models.order import Order, OrderStatus, OrderDetail
 from app.models.user import User
@@ -35,6 +36,7 @@ from app.modules.orders.schemas import (
     TaskStatusUpdateRequest,
     AssignTaskEmployeeRequest,
 )
+from app.modules.supplies.service import deduct_supplies_for_production
 
 def _order_to_response(order: Order) -> OrderResponse:
     """Serializa una Order incluyendo datos del cliente."""
@@ -148,9 +150,6 @@ def list_all_production_tasks(
             query = query.where(Task.type == type)
         if assigned_to:
             query = query.where(Task.assigned_to == assigned_to)
-        elif assigned_to is None and False:
-            # Placeholder: no filtrar por assigned_to (dejar pasar todas)
-            pass
         
         query = query.order_by(desc(Task.created_at))
         result = db.execute(query)
@@ -181,7 +180,6 @@ def list_all_production_tasks(
                 ))
             except Exception as e:
                 traceback.print_exc()
-                print(f"⚠️ Error procesando tarea {t.id}: {str(e)}")
                 continue
         
         return tasks_list
@@ -247,7 +245,6 @@ def list_orders(
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"Error en list_orders: {e}")
         # Retornar respuesta vacía en caso de error
         return OrderListResponse(total=0, page=page, page_size=page_size, total_pages=0, items=[])
 
@@ -281,8 +278,111 @@ def get_order_detail(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error en get_order_detail: {e}")
         raise HTTPException(status_code=500, detail="Error al obtener la orden")
+
+
+def _trigger_notifications(*, db: Session, new_order, customer_check, settings) -> None:
+    """
+    Fire-and-forget vía thread para no bloquear la respuesta HTTP.
+    Crea notificaciones en BD (síncrono, hecho en esta misma transacción),
+    y lanza WebSocket + emails en un thread separado con su propio event loop.
+    """
+    import asyncio
+    import threading
+
+    from app.modules.notifications.service import create_notification, get_jefes
+    from app.modules.notifications.ws_manager import ws_manager
+    from app.models.notifications import NotificationType
+    from app.utils.email import send_order_notification_email, send_order_confirmation_email
+
+    client_full = (
+        f"{customer_check.name_user} {customer_check.last_name}".strip()
+        or customer_check.email
+    )
+    order_date_str = (
+        new_order.creation_date.strftime("%d/%m/%Y %H:%M")
+        if new_order.creation_date else ""
+    )
+    delivery_str = (
+        new_order.delivery_date.strftime("%d/%m/%Y")
+        if new_order.delivery_date else "Por definir"
+    )
+
+    # ── Síncrono: crear notificaciones en BD ──
+    jefes = get_jefes(db)
+    link = f"{settings.FRONTEND_URL}/dashboard/admin/orders"
+    notifications_data: list[dict] = []
+    for jefe in jefes:
+        notif = create_notification(
+            db=db,
+            user_id=jefe.id,
+            title="Nuevo Pedido Mayorista",
+            message=f"{client_full} ha realizado un pedido de {new_order.total_pairs} pares",
+            type_=NotificationType.info,
+            order_id=new_order.id,
+            link_url=link,
+            created_by=customer_check.id,
+        )
+        notifications_data.append({
+            "jefe_id": str(jefe.id),
+            "jefe_email": jefe.email,
+            "jefe_name": jefe.name_user or jefe.email,
+            "notif_id": str(notif.id),
+            "notif_title": notif.title_notification,
+            "notif_message": notif.message_notification,
+            "notif_created_at": notif.created_at.isoformat(),
+            "order_id": str(new_order.id),
+            "link_url": link,
+        })
+
+    # ── Async fire-and-forget en thread separado ──
+    client_email = customer_check.email
+    client_name = customer_check.name_user or customer_check.email
+    total_pairs = new_order.total_pairs
+
+    def _run_async_tasks() -> None:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            async def _tasks():
+                tasks = []
+                # WebSocket broadcast a cada jefe
+                for nd in notifications_data:
+                    tasks.append(ws_manager.broadcast_to_user(nd["jefe_id"], {
+                        "type": "new_order",
+                        "notification": {
+                            "id": nd["notif_id"],
+                            "title": nd["notif_title"],
+                            "message": nd["notif_message"],
+                            "order_id": nd["order_id"],
+                            "link_url": nd["link_url"],
+                            "created_at": nd["notif_created_at"],
+                        }
+                    }))
+                    # Email al jefe
+                    tasks.append(send_order_notification_email(
+                        jefe_email=nd["jefe_email"],
+                        jefe_name=nd["jefe_name"],
+                        order_id=nd["order_id"],
+                        client_name=client_full,
+                        total_pairs=total_pairs,
+                        order_date=order_date_str,
+                    ))
+                # Email de confirmación al cliente
+                tasks.append(send_order_confirmation_email(
+                    client_email=client_email,
+                    client_name=client_name,
+                    order_id=notifications_data[0]["order_id"] if notifications_data else "",
+                    total_pairs=total_pairs,
+                    delivery_date=delivery_str,
+                ))
+                await asyncio.gather(*tasks, return_exceptions=True)
+            loop.run_until_complete(_tasks())
+        finally:
+            loop.close()
+
+    t = threading.Thread(target=_run_async_tasks, daemon=True)
+    t.start()
 
 
 @router.post("", response_model=OrderDetailResponse, status_code=status.HTTP_201_CREATED)
@@ -341,14 +441,21 @@ def create_order(
         db.add(new_order)
         db.commit()
         db.refresh(new_order)
-        
+
+        # ─── NOTIFICACIONES: notificar al jefe + email (fire-and-forget vía thread) ───
+        _trigger_notifications(
+            db=db,
+            new_order=new_order,
+            customer_check=customer_check,
+            settings=settings,
+        )
+
         return _order_to_detail_response(new_order)
         
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        print(f"Error en create_order: {e}")
         raise HTTPException(status_code=500, detail=f"Error al crear la orden: {str(e)}")
 
 
@@ -442,9 +549,7 @@ def update_order_status(
                     if inventory_item.reserved >= quantity:
                         inventory_item.reserved -= quantity
                         db.add(inventory_item)
-                    else:
-                        print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail.product_id} talla {detail.size}")
-                    
+
                     # Registrar la salida de pares al cliente
                     db.add(InventoryMovement(
                         id=uuid.uuid4(),
@@ -474,7 +579,7 @@ def update_order_status(
                     quantity = Decimal(detail.amount)
                     
                     # Restaurar a RESERVED si vuelve atrás
-                    inventory_item.reserved += quantity
+                    inventory_item.reserved -= quantity
                     db.add(inventory_item)
                     
                     # Registrar devolución
@@ -512,7 +617,6 @@ def update_order_status(
         raise
     except Exception as e:
         db.rollback()
-        print(f"Error en update_order_status: {e}")
         raise HTTPException(status_code=500, detail="Error al actualizar el estado")
 
 
@@ -601,9 +705,7 @@ def update_order_details(
                     if inventory_item.reserved >= quantity:
                         inventory_item.reserved -= quantity
                         db.add(inventory_item)
-                    else:
-                        print(f"⚠️ Advertencia: Pares fabricados insuficientes para {detail_data.product_id} talla {detail_data.size}")
-                    
+
                     # Registrar la salida de pares al cliente
                     db.add(InventoryMovement(
                         id=uuid.uuid4(),
@@ -726,7 +828,6 @@ def update_order_details(
         raise
     except Exception as e:
         db.rollback()
-        print(f"Error en update_order_details: {e}")
         raise HTTPException(status_code=500, detail=f"Error al actualizar la orden: {str(e)}")
 
 
@@ -765,7 +866,6 @@ def delete_order(
         db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Error al eliminar orden: {e}")
         raise HTTPException(status_code=500, detail="Error al eliminar la orden")
 
 @router.post("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
@@ -831,7 +931,7 @@ def create_production_tasks(
                     Task.vale_number.isnot(None)
                 )
             ).scalar()
-            task_vale = int(existing_vale) if existing_vale else next_vale
+            task_vale = int(existing_vale) if existing_vale is not None else next_vale
 
             task = Task(
                 id=uuid.uuid4(),
@@ -853,6 +953,16 @@ def create_production_tasks(
                 task.status = 'en_progreso'
             new_tasks.append(task)
         
+        # Deducir insumos para tareas de corte (todos los insumos se descuentan al iniciar corte)
+        for t_data in request.tasks:
+            if t_data.type == "corte" and t_data.breakdown:
+                deduct_supplies_for_production(
+                    product_id=t_data.product_id,
+                    breakdown=t_data.breakdown,
+                    current_user_id=current_user.id,
+                    db=db,
+                )
+
         db.commit()
         
         # Recargar tareas con producto para devolver task_prices y total_pairs
@@ -1078,7 +1188,6 @@ def update_task_status(
                     status='pendiente'
                 )
                 db.add(next_task)
-                print(f"🔄 Tarea auto-creada: {next_type} para orden {task.order_id} (pendiente)")
     
     # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
     if task.type == "emplantillado" and request.status == "completado":

@@ -50,6 +50,7 @@ import { DashboardPage } from "@/modules/auth/pages/DashboardPage";
 import { ChangePasswordPage } from "@/modules/auth/pages/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/modules/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/modules/auth/pages/ResetPasswordPage";
+import { ReactivationPage } from "@/modules/auth/pages/ReactivationPage";
 
 // Sprint 3 - Landing Page
 import LandingPage from "@/modules/landing/pages/LandingPage";
@@ -82,6 +83,9 @@ import ClientsPage from "@/modules/dashboard-jefe/pages/ClientsPage";
 
 // Sprint 7 - Supplies module
 import InsumosPage from "@/modules/dashboard-jefe/pages/InsumosPage";
+
+// RF-019 - Losses module
+import LossesPage from "@/modules/dashboard-jefe/pages/LossesPage";
 
 // Additional Dashboard sections
 import ProductionTaskDashboard from "@/modules/dashboard-jefe/pages/TasksPage";
@@ -123,6 +127,7 @@ function App() {
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/reactivation" element={<ReactivationPage />} />
 
           {/* Compatibilidad con rutas antiguas */}
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
@@ -155,6 +160,7 @@ function App() {
             <Route path="clients" element={<ClientsPage />} />
             <Route path="usuarios" element={<UsersManagementPage />} />
             <Route path="insumos" element={<InsumosPage />} />
+            <Route path="losses" element={<LossesPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />

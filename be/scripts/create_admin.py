@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import select
 from datetime import datetime, timezone
 
-from app.database import SessionLocal
+from app.core.database import SessionLocal
 from app.models.role import Role
 from app.models.user import User
 from app.utils.security import hash_password
@@ -74,7 +74,8 @@ def create_admin() -> None:
 
         admin_user = User(
             email=admin_email,
-            full_name="Administrador J&R",
+            name_user="Administrador",
+            last_name="J&R",
             hashed_password=hash_password(admin_password),
             role_id=admin_role.id,
             is_active=True,

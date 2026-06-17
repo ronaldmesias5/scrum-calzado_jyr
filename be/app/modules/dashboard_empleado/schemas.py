@@ -95,6 +95,11 @@ class TaskObservationUpdate(BaseModel):
     """Actualizar observación de una tarea."""
     observation: str | None = None
 
+class EmployeeTaskStatusUpdate(BaseModel):
+    """Actualizar estado y observación de una tarea desde el dashboard del empleado."""
+    status: str
+    observation: str | None = None
+
 
 class ValeTaskInfo(BaseModel):
     """Info de una tarea dentro del vale, vista por empleado."""
@@ -206,3 +211,85 @@ class MyTasksReportResponse(BaseModel):
     tasks_breakdown: list[MyPerformanceTaskBreakdown] = []
     tasks_list: list[MyTaskDetail] = []
     name: str = ""
+
+
+# ────────────────────────────────────────────────
+#  Schemas para incidencias generales (LossRecord)
+# ────────────────────────────────────────────────
+
+
+class GeneralIncidenceCreateRequest(BaseModel):
+    """Crear incidencia general (maquinaria o insumo) desde el dashboard del empleado."""
+    incidence_category: str  # "maquinaria" or "insumo"
+    machinery_name: str | None = None
+    supply_id: str | None = None
+    custom_supply_name: str | None = None
+    observations: str | None = None
+
+
+class GeneralIncidenceResponse(BaseModel):
+    """Respuesta de incidencia general para el empleado."""
+    id: str
+    incidence_category: str
+    machinery_name: str | None = None
+    supply_id: str | None = None
+    supply_name: str | None = None
+    custom_supply_name: str | None = None
+    observations: str | None = None
+    incident_type: str
+    registered_by_name: str | None = None
+    created_at: datetime | None = None
+
+
+class GeneralIncidenceListResponse(BaseModel):
+    incidences: list[GeneralIncidenceResponse]
+    total: int = 0
+
+
+# ────────────────────────────────────────────────
+#  Schemas para incidencias de producto pendientes
+# ────────────────────────────────────────────────
+
+
+class ProductIncidenceCreateRequest(BaseModel):
+    """Crear incidencia de producto vinculada a una tarea del empleado."""
+    task_id: str
+    size: str
+    colour: str | None = None
+    defect_code_id: str | None = None  # Ahora opcional — reemplazado por descripción libre
+    description: str | None = None  # Descripción libre del defecto
+    quantity: int
+    observations: str | None = None
+
+
+class ProductIncidenceResponse(BaseModel):
+    """Respuesta de incidencia de producto para el empleado."""
+    id: str
+    task_id: str
+    task_type: str | None = None
+    product_id: str
+    product_name: str | None = None
+    size: str
+    colour: str | None = None
+    defect_code_id: str | None = None
+    defect_code: str | None = None
+    defect_name: str | None = None
+    description: str | None = None  # Descripción libre del defecto
+    quantity: int
+    observations: str | None = None
+    status: str
+    approved_type: str | None = None
+    employee_name: str | None = None
+    reviewed_by_name: str | None = None
+    reviewed_at: str | None = None
+    created_at: str | None = None
+
+
+class ProductIncidenceListResponse(BaseModel):
+    incidences: list[ProductIncidenceResponse]
+    total: int = 0
+
+
+class ApproveProductIncidenceRequest(BaseModel):
+    """Aprobar incidencia de producto — el jefe elige el tipo."""
+    incident_type: str  # perdida, en_reparacion, devuelto

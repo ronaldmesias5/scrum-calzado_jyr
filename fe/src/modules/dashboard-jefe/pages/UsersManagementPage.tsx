@@ -7,13 +7,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   UserCheck, UserPlus, Clock, CheckCircle, XCircle,
-  Loader2, Users, ShieldCheck, Trash2, RefreshCw
+  Loader2, Users, ShieldCheck, Trash2, RefreshCw, RotateCcw
 } from 'lucide-react';
 import {
   getPendingUsers,
   getAllUsers,
   validateUser,
+  rejectUser,
   deleteUser,
+  getReactivationTickets,
+  approveReactivation,
+  rejectReactivation,
+  type ReactivationTicket,
 } from '../services/adminApi';
 import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
@@ -24,7 +29,7 @@ import Modal from '@/components/ui/Modal';
 // Tipos locales
 // ────────────────────────────────────────────────
 
-type Tab = 'pending' | 'manage' | 'create-employee' | 'create-client';
+type Tab = 'pending' | 'manage' | 'create-employee' | 'create-client' | 'reactivation';
 
 // ────────────────────────────────────────────────
 // Sub-componente: Tab de cuentas pendientes
@@ -34,9 +39,11 @@ function PendingUsersTab() {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<UserResponse | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [userToReject, setUserToReject] = useState<UserResponse | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState<string | null>(null);
   const [successIds, setSuccessIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
@@ -68,23 +75,29 @@ function PendingUsersTab() {
     }
   };
 
-  const handleReject = async (userId: string) => {
-    setDeletingId(userId);
+  const handleReject = async () => {
+    if (!userToReject || !rejectReason.trim()) return;
+    const userId = userToReject.id.toString();
+    setRejectingId(userId);
+    setRejectError(null);
     try {
-      await deleteUser(userId);
+      await rejectUser(userId, rejectReason.trim());
       setUsers((prev) => prev.filter((u) => u.id.toString() !== userId));
-      setShowConfirmDelete(false);
-      setUserToDelete(null);
+      setShowRejectModal(false);
+      setUserToReject(null);
+      setRejectReason('');
     } catch {
-      setError('Error al rechazar la cuenta. Inténtalo de nuevo.');
+      setRejectError('Error al rechazar la cuenta. Inténtalo de nuevo.');
     } finally {
-      setDeletingId(null);
+      setRejectingId(null);
     }
   };
 
-  const openDeleteConfirm = (user: UserResponse) => {
-    setUserToDelete(user);
-    setShowConfirmDelete(true);
+  const openRejectModal = (user: UserResponse) => {
+    setUserToReject(user);
+    setRejectReason('');
+    setRejectError(null);
+    setShowRejectModal(true);
   };
 
   if (loading) {
@@ -161,7 +174,7 @@ function PendingUsersTab() {
                           <>
                             <button
                               onClick={() => handleApprove(user.id.toString())}
-                              disabled={approvingId === id || deletingId === id}
+                              disabled={approvingId === id || rejectingId === id}
                               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                             >
                               {approvingId === id ? (
@@ -172,8 +185,8 @@ function PendingUsersTab() {
                               Aprobar
                             </button>
                             <button
-                              onClick={() => openDeleteConfirm(user)}
-                              disabled={approvingId === id || deletingId === id}
+                              onClick={() => openRejectModal(user)}
+                              disabled={approvingId === id || rejectingId === id}
                               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                             >
                               <XCircle size={14} />
@@ -191,39 +204,53 @@ function PendingUsersTab() {
         </div>
       )}
 
-      {showConfirmDelete && userToDelete && (
+      {showRejectModal && userToReject && (
         <Modal
           isOpen={true}
-          onClose={() => setShowConfirmDelete(false)}
-          title="¿Rechazar solicitud?"
-          size="sm"
+          onClose={() => setShowRejectModal(false)}
+          title="Rechazar solicitud de registro"
+          size="md"
         >
-          <div className="text-center p-4">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
+          <div className="p-4">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4 mx-auto">
               <XCircle size={32} />
             </div>
-            <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
-              Estás a punto de rechazar y eliminar la cuenta de <br />
-              <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
-              Esta acción no se puede deshacer.
+            <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+              Vas a rechazar la cuenta de <br />
+              <strong className="text-gray-900 dark:text-gray-200">{userToReject.email}</strong>.
             </p>
-            
-            <div className="flex gap-4">
+
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Motivo del rechazo <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Explica el motivo por el cual se rechaza esta solicitud..."
+              rows={4}
+              className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500 transition-all resize-none"
+            />
+
+            {rejectError && (
+              <p className="mt-2 text-sm text-red-600">{rejectError}</p>
+            )}
+
+            <div className="flex gap-4 mt-6">
               <button
-                onClick={() => setShowConfirmDelete(false)}
+                onClick={() => setShowRejectModal(false)}
                 className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => handleReject(userToDelete.id.toString())}
-                disabled={deletingId !== null}
+                onClick={handleReject}
+                disabled={rejectingId !== null || !rejectReason.trim()}
                 className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
               >
-                {deletingId ? (
+                {rejectingId ? (
                   <Loader2 size={18} className="animate-spin" />
                 ) : (
-                  'Sí, Rechazar'
+                  'Rechazar cuenta'
                 )}
               </button>
             </div>
@@ -395,12 +422,234 @@ function ManageUsersTab() {
 }
 
 // ────────────────────────────────────────────────
+// Sub-componente: Tab de tickets de reactivación (RF-005)
+// ────────────────────────────────────────────────
+
+function ReactivationTicketsTab() {
+  const [tickets, setTickets] = useState<ReactivationTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<ReactivationTicket | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
+  const [comment, setComment] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getReactivationTickets();
+      setTickets(data);
+    } catch {
+      setError('No se pudieron cargar los tickets.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
+
+  const openAction = (ticket: ReactivationTicket, type: 'approve' | 'reject') => {
+    setSelectedTicket(ticket);
+    setActionType(type);
+    setComment('');
+    setActionError(null);
+    setShowActionModal(true);
+  };
+
+  const handleAction = async () => {
+    if (!selectedTicket || !comment.trim()) return;
+    const ticketId = selectedTicket.id;
+    setProcessingId(ticketId);
+    setActionError(null);
+    try {
+      if (actionType === 'approve') {
+        await approveReactivation(ticketId, comment.trim());
+      } else {
+        await rejectReactivation(ticketId, comment.trim());
+      }
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+      setShowActionModal(false);
+      setSelectedTicket(null);
+      setComment('');
+    } catch {
+      setActionError('Error al procesar el ticket. Inténtalo de nuevo.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-gray-400">
+        <Loader2 size={24} className="animate-spin mr-2" />
+        Cargando tickets...
+      </div>
+    );
+  }
+
+  const pendingTickets = tickets.filter((t) => t.status === 'pending');
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 transition-colors">
+          Solicitudes de reactivación
+        </h3>
+        <button
+          onClick={fetchTickets}
+          className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5"
+        >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          Actualizar
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      {pendingTickets.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <RotateCcw size={40} className="mx-auto mb-3 opacity-40" />
+          <p className="font-medium">No hay solicitudes de reactivación pendientes</p>
+          <p className="text-sm mt-1">Todas las solicitudes han sido revisadas.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800 text-gray-500 dark:text-gray-400 text-left font-bold uppercase tracking-wider text-[10px]">
+                <th className="px-4 py-4">Email</th>
+                <th className="px-4 py-4">Teléfono</th>
+                <th className="px-4 py-4">Documento</th>
+                <th className="px-4 py-4">Motivo</th>
+                <th className="px-4 py-4">Solicitado</th>
+                <th className="px-4 py-4 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingTickets.map((ticket) => (
+                <tr key={ticket.id} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">{ticket.email}</td>
+                  <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{ticket.phone}</td>
+                  <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{ticket.identity_document}</td>
+                  <td className="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-[250px] truncate" title={ticket.reason}>
+                    {ticket.reason}
+                  </td>
+                  <td className="px-4 py-4 text-gray-400 dark:text-gray-500 text-xs font-bold">
+                    {new Date(ticket.created_at).toLocaleDateString('es-CO')}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                      <button
+                        onClick={() => openAction(ticket, 'approve')}
+                        disabled={processingId === ticket.id}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                      >
+                        {processingId === ticket.id && actionType === 'approve' ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <CheckCircle size={14} />
+                        )}
+                        Aprobar
+                      </button>
+                      <button
+                        onClick={() => openAction(ticket, 'reject')}
+                        disabled={processingId === ticket.id}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                      >
+                        <XCircle size={14} />
+                        Rechazar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showActionModal && selectedTicket && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowActionModal(false)}
+          title={actionType === 'approve' ? 'Aprobar reactivación' : 'Rechazar reactivación'}
+          size="md"
+        >
+          <div className="p-4">
+            <div className={`w-16 h-16 ${actionType === 'approve' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'} rounded-full flex items-center justify-center mb-4 mx-auto`}>
+              {actionType === 'approve' ? <CheckCircle size={32} /> : <XCircle size={32} />}
+            </div>
+            <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-2 leading-relaxed">
+              {actionType === 'approve' ? 'Vas a aprobar la reactivación de' : 'Vas a rechazar la reactivación de'}
+            </p>
+            <p className="text-center font-bold text-gray-900 dark:text-gray-200 mb-1">{selectedTicket.email}</p>
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-3 mb-4 text-xs text-gray-500 dark:text-gray-400">
+              <p><strong>Motivo del usuario:</strong></p>
+              <p className="mt-1">{selectedTicket.reason}</p>
+            </div>
+
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Comentario <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={actionType === 'approve' ? 'Ej: Cuenta reactivada tras verificar documentación...' : 'Ej: La solicitud no cumple con los requisitos porque...'}
+              rows={3}
+              className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all resize-none"
+            />
+
+            {actionError && (
+              <p className="mt-2 text-sm text-red-600">{actionError}</p>
+            )}
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => setShowActionModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAction}
+                disabled={processingId !== null || !comment.trim()}
+                className={`flex-1 px-4 py-3 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98] ${
+                  actionType === 'approve'
+                    ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
+                    : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'
+                }`}
+              >
+                {processingId ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : actionType === 'approve' ? (
+                  'Aprobar reactivación'
+                ) : (
+                  'Rechazar reactivación'
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────
 // Página principal
 // ────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'pending', label: 'Soli. Pendientes', icon: Clock },
   { id: 'manage', label: 'Gestionar Usuarios', icon: Users },
+  { id: 'reactivation', label: 'Reactivaciones', icon: RotateCcw },
   { id: 'create-employee', label: 'Crear empleado', icon: UserPlus },
   { id: 'create-client', label: 'Crear cliente', icon: UserPlus },
 ];
@@ -449,6 +698,7 @@ export default function UsersManagementPage() {
       <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 p-8 shadow-sm transition-all duration-300 stagger-reveal">
         {activeTab === 'pending' && <PendingUsersTab />}
         {activeTab === 'manage' && <ManageUsersTab />}
+        {activeTab === 'reactivation' && <ReactivationTicketsTab />}
         {activeTab === 'create-employee' && (
           <div className="max-w-3xl mx-auto">
             <CreateUserForm userType="employee" typeDocuments={typeDocuments} />

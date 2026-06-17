@@ -24,15 +24,17 @@ Descripción: Router FastAPI con endpoints de autenticación y gestión de contr
                dependencies.py (get_db, get_current_user)
 """
 
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
+from app.models.reactivation_ticket import ReactivationTicket
 from app.modules.auth.schemas import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
     MessageResponse,
+    ReactivationRequest,
     RefreshTokenRequest,
     ResetPasswordRequest,
     TokenResponse,
@@ -194,4 +196,73 @@ def reset_password(
     """Restablece la contraseña usando un token de recuperación."""
     auth_service.reset_password(db=db, reset_data=reset_data)
     return MessageResponse(message="Contraseña restablecida exitosamente")
+
+
+@router.post(
+    "/request-reactivation",
+    response_model=MessageResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Solicitar reactivación de cuenta (público)",
+)
+async def request_reactivation(
+    data: ReactivationRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Solicita la reactivación de una cuenta inactiva/suspendida.
+
+    El usuario debe tener una cuenta existente en estado inactivo.
+    Se genera un ticket que el admin revisará en el panel de gestión.
+    """
+    user = db.query(User).filter(User.email == data.email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontró una cuenta con ese email",
+        )
+
+    if user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Esta cuenta ya está activa. Si necesitas ayuda, inicia sesión o recupera tu contraseña.",
+        )
+
+    if user.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Esta cuenta ha sido eliminada y no puede ser reactivada.",
+        )
+
+    # Verificar que no haya un ticket pendiente para este usuario
+    existing = (
+        db.query(ReactivationTicket)
+        .filter(
+            ReactivationTicket.user_id == user.id,
+            ReactivationTicket.status == "pending",
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ya tienes una solicitud de reactivación pendiente. Espera a que sea revisada.",
+        )
+
+    ticket = ReactivationTicket(
+        user_id=user.id,
+        email=data.email,
+        reason=data.reason,
+        phone=data.phone,
+        identity_document=data.identity_document,
+        evidence_url=data.evidence_url,
+        status="pending",
+    )
+
+    db.add(ticket)
+    db.commit()
+
+    return MessageResponse(
+        message="Tu solicitud de reactivación ha sido registrada. Recibirás una respuesta por correo electrónico."
+    )
 

@@ -21,11 +21,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.supplies import Supplies
 from app.models.supply_categories import SupplyCategory
 from app.models.product_supplies import ProductSupply
 from app.models.product import Product
+from app.models.user import User
 from app.modules.supplies.schemas import (
     SupplyCreate,
     SupplyUpdate,
@@ -93,12 +94,20 @@ def _supply_to_out(supply: Supplies) -> SupplyOut:
 # ─────────────────────────────────────────────────────────
 
 @router.get("/supplies/categories", summary="Listar categorias de insumos")
-def list_supply_categories(db: Session = Depends(get_db)):
+def list_supply_categories(
+    db: Session = Depends(get_db),
+    _current_user=Depends(get_current_user),
+):
     cats = db.execute(select(SupplyCategory).order_by(SupplyCategory.name)).scalars().all()
     return [{"id": str(c.id), "name": c.name, "color": c.color, "global_stage": c.global_stage} for c in cats]
 
 @router.post("/supplies/categories", status_code=201, summary="Crear categoria de insumo")
-def create_supply_category(body: InternalSupplyCategoryCreate, db: Session = Depends(get_db)):
+def create_supply_category(
+    body: InternalSupplyCategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_admin_or_jefe(current_user)
     # Asignar un color automático
     color = _get_next_category_color(db)
     cat = SupplyCategory(
@@ -116,7 +125,12 @@ def create_supply_category(body: InternalSupplyCategoryCreate, db: Session = Dep
     return {"id": str(cat.id), "name": cat.name, "color": cat.color, "global_stage": cat.global_stage}
 
 @router.delete("/supplies/categories/{category_id}", status_code=204, summary="Eliminar categoria de insumo")
-def delete_supply_category(category_id: str, db: Session = Depends(get_db)):
+def delete_supply_category(
+    category_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_admin_or_jefe(current_user)
     try:
         uid = uuid.UUID(category_id)
     except ValueError:
@@ -135,6 +149,7 @@ def delete_supply_category(category_id: str, db: Session = Depends(get_db)):
 def list_supplies(
     category: str | None = Query(None, description="Filtrar por categoría"),
     db: Session = Depends(get_db),
+    _current_user=Depends(get_current_user),
 ) -> SuppliesListResponse:
     stmt = select(Supplies).where(Supplies.deleted_at == None)
     if category:
@@ -152,7 +167,12 @@ def list_supplies(
 # ─────────────────────────────────────────────────────────
 
 @router.post("/supplies", response_model=SupplyOut, status_code=201, summary="Crear insumo")
-def create_supply(body: SupplyCreate, db: Session = Depends(get_db)) -> SupplyOut:
+def create_supply(
+    body: SupplyCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> SupplyOut:
+    _require_admin_or_jefe(current_user)
     supply = Supplies(
         name_supplies=body.name,
         description_supplies=body.description,
@@ -173,7 +193,13 @@ def create_supply(body: SupplyCreate, db: Session = Depends(get_db)) -> SupplyOu
 # ─────────────────────────────────────────────────────────
 
 @router.put("/supplies/{supply_id}", response_model=SupplyOut, summary="Editar insumo")
-def update_supply(supply_id: str, body: SupplyUpdate, db: Session = Depends(get_db)) -> SupplyOut:
+def update_supply(
+    supply_id: str,
+    body: SupplyUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> SupplyOut:
+    _require_admin_or_jefe(current_user)
     try:
         uid = uuid.UUID(supply_id)
     except ValueError:
@@ -210,7 +236,12 @@ def update_supply(supply_id: str, body: SupplyUpdate, db: Session = Depends(get_
 # ─────────────────────────────────────────────────────────
 
 @router.delete("/supplies/{supply_id}", status_code=204, summary="Eliminar insumo")
-def delete_supply(supply_id: str, db: Session = Depends(get_db)) -> None:
+def delete_supply(
+    supply_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    _require_admin_or_jefe(current_user)
     try:
         uid = uuid.UUID(supply_id)
     except ValueError:
@@ -231,7 +262,13 @@ def delete_supply(supply_id: str, db: Session = Depends(get_db)) -> None:
 # ─────────────────────────────────────────────────────────
 
 @router.post("/products/{product_id}/supplies", response_model=dict, status_code=201, summary="Vincular insumo a producto")
-def link_supply_to_product(product_id: str, body: LinkSupplyToProduct, db: Session = Depends(get_db)) -> dict:
+def link_supply_to_product(
+    product_id: str,
+    body: LinkSupplyToProduct,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    _require_admin_or_jefe(current_user)
     try:
         pid = uuid.UUID(product_id)
         sid = uuid.UUID(body.supply_id)

@@ -142,6 +142,16 @@ export function LoginPage() {
           {t('common.register')}
         </Link>
       </p>
+
+      <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        ¿Tu cuenta fue suspendida?{" "}
+        <Link
+          to="/auth/reactivation"
+          className="font-bold text-[#1e40af] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline decoration-2 underline-offset-4 transition-colors"
+        >
+          Solicita reactivación aquí
+        </Link>
+      </p>
     </AuthLayout>
   );
 }
