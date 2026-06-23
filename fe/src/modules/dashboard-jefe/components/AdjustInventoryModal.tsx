@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Product, bulkUpdateInventory, listInventory, updateProduct } from '../services/catalogService';
 import Modal from '@/components/ui/Modal';
+import { useToast } from '@/context/ToastContext';
 
 // Tallas según categoría
 const getSizesByCategory = (category: string | undefined): number[] => {
@@ -27,11 +28,11 @@ interface AdjustInventoryModalProps {
 }
 
 export default function AdjustInventoryModal({ isOpen, product, onClose, onSave }: AdjustInventoryModalProps) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [sizeQuantities, setSizeQuantities] = useState<Record<number, number>>({});
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [insufficientThreshold, setInsufficientThreshold] = useState(12);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Cargar inventario existente cuando se abre el modal
   useEffect(() => {
@@ -67,10 +68,9 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
 
   const handleSave = async () => {
     setLoading(true);
-    setSaveMessage(null);
     try {
       if (!product) {
-        setSaveMessage({ type: 'error', text: 'Error: Producto no encontrado' });
+        showToast('Error: Producto no encontrado', 'error');
         return;
       }
       
@@ -122,17 +122,13 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
       // Ejecutar callback opcional para actualizar la lista de productos
       // El callback se encargará de recargar datos desde la BD
       await onSave(sizeQuantities);
-      
-      setSaveMessage({ type: 'success', text: '✅ Inventario guardado correctamente' });
-      setTimeout(() => {
-        setSaveMessage(null);
-        onClose();
-      }, 1500);
+
+      showToast('Inventario guardado correctamente', 'success');
+      onClose();
     } catch (error) {
       console.error('Error saving inventory:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido al guardar el inventario';
-      setSaveMessage({ type: 'error', text: `❌ Error: ${errorMsg}` });
-      setTimeout(() => setSaveMessage(null), 4000);
+      showToast(`Error: ${errorMsg}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -155,21 +151,12 @@ export default function AdjustInventoryModal({ isOpen, product, onClose, onSave 
     >
       <div className="flex flex-col h-full">
         {/* Header decoration */}
-        <div className="px-6 py-2 -mt-4 mb-2">
+        <div className="px-6 py-2 mb-2">
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name} • {product.color}</p>
         </div>
 
         {/* Body */}
         <div className="p-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 custom-scrollbar">
-          {saveMessage && (
-            <div className={`mb-6 p-4 rounded-xl font-bold text-sm transition-all ${
-              saveMessage.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40'
-                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40'
-            }`}>
-              {saveMessage.text}
-            </div>
-          )}
           {loadingInventory ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">

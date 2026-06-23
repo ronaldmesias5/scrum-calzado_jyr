@@ -1,7 +1,10 @@
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-export default function CTAFinalSection() {
+interface CTAFinalSectionProps {
+  onRegisterClick?: () => void;
+}
+
+export default function CTAFinalSection({ onRegisterClick }: CTAFinalSectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -23,12 +26,12 @@ export default function CTAFinalSection() {
           >
             {t('landing.ctaFinal.viewAll')}
           </a>
-          <Link
-            to="/auth/register"
+          <button
+            onClick={onRegisterClick}
             className="w-full sm:w-auto px-10 py-4 bg-white text-blue-900 font-extrabold rounded-2xl shadow-2xl hover:scale-105 transform transition duration-200 btn-pulse"
           >
             {t('landing.ctaFinal.registerNow')}
-          </Link>
+          </button>
         </div>
       </div>
     </section>

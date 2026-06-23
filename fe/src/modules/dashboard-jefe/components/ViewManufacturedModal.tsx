@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 import { Product } from '../services/catalogService';
 import api from '@/api/axios';
 import Modal from '@/components/ui/Modal';
@@ -34,13 +35,12 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [totalReserved, setTotalReserved] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const loadInventory = async () => {
       if (isOpen && product) {
         setLoading(true);
-        setError(null);
         try {
           const response = await api.get(
             `/api/v1/admin/catalog/products/${product.id}/inventory-by-size`
@@ -50,7 +50,8 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
           setTotalReserved(response.data.total_reserved || 0);
         } catch (err) {
           console.error('Error loading inventory by size:', err);
-          setError('Error al cargar los datos');
+          showToast('Error al cargar los datos', 'error');
+          onClose();
           setInventory([]);
           setTotalReserved(0);
         } finally {
@@ -79,7 +80,7 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
     >
       <div className="flex flex-col h-full">
         {/* Header decoration */}
-        <div className="px-6 py-2 -mt-4 mb-2">
+        <div className="px-6 py-2 mb-2">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name} • {product.color || 'Sin color'}</p>
         </div>
 
@@ -90,18 +91,6 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
                 <p className="text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">Cargando pares...</p>
-              </div>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <p className="text-red-600 dark:text-red-400 font-bold mb-4">{error}</p>
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-bold text-sm"
-                >
-                  Cerrar
-                </button>
               </div>
             </div>
           ) : (

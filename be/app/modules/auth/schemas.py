@@ -109,7 +109,7 @@ class UserCreate(BaseModel):
             raise ValueError("El nombre debe tener al menos 2 caracteres")
         if len(v) > 255:
             raise ValueError("El nombre no puede exceder 255 caracteres")
-        return v
+        return v.upper()
 
     @field_validator("last_name")
     @classmethod
@@ -119,7 +119,7 @@ class UserCreate(BaseModel):
             raise ValueError("El apellido debe tener al menos 2 caracteres")
         if len(v) > 255:
             raise ValueError("El apellido no puede exceder 255 caracteres")
-        return v
+        return v.upper()
 
     @field_validator("business_name")
     @classmethod
@@ -137,6 +137,7 @@ class UserLogin(BaseModel):
     """Schema para el login de un usuario."""
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 
 class ChangePasswordRequest(BaseModel):
@@ -204,6 +205,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_validated: bool
     must_change_password: bool
+    invitation_expires_at: datetime | None = None
     role_name: str | None = None
     business_name: str | None = None
     occupation: str | None = None
@@ -260,6 +262,11 @@ class ReactivationRequest(BaseModel):
         if len(v) < 8 or len(v) > 20:
             raise ValueError("El documento de identidad debe tener entre 8 y 20 caracteres")
         return v
+
+
+class RequestNewInvitationRequest(BaseModel):
+    """Schema para solicitar una nueva invitación cuando la anterior expiró."""
+    email: EmailStr
 
 
 class MessageResponse(BaseModel):

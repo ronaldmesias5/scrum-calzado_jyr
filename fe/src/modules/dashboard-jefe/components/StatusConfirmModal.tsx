@@ -30,7 +30,7 @@ export default function StatusConfirmModal({
     >
       <div className="flex flex-col">
         {/* Header decoration */}
-        <div className={`${isActivating ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'} px-6 py-2 -mt-4 mb-4 border-b ${isActivating ? 'border-green-100 dark:border-green-900/20' : 'border-red-100 dark:border-red-900/20'}`}>
+        <div className={`${isActivating ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'} px-6 py-2 mb-4 border-b ${isActivating ? 'border-green-100 dark:border-green-900/20' : 'border-red-100 dark:border-red-900/20'}`}>
           <p className={`text-[10px] font-black uppercase tracking-widest ${isActivating ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             Confirmación de seguridad
           </p>

@@ -69,7 +69,7 @@ class AdminCreateEmployeeRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El nombre debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
     @field_validator("last_name")
     @classmethod
@@ -77,7 +77,7 @@ class AdminCreateEmployeeRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El apellido debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
 
 class AdminCreateClientRequest(BaseModel):
@@ -104,7 +104,7 @@ class AdminCreateClientRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El nombre debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
     @field_validator("last_name")
     @classmethod
@@ -112,7 +112,7 @@ class AdminCreateClientRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El apellido debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
 
 class AdminCreateJefeRequest(BaseModel):
@@ -138,7 +138,7 @@ class AdminCreateJefeRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El nombre debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
     @field_validator("last_name")
     @classmethod
@@ -146,7 +146,7 @@ class AdminCreateJefeRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El apellido debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
 
 class RejectUserRequest(BaseModel):
@@ -216,7 +216,7 @@ class AdminUpdateUserRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El nombre debe tener al menos 2 caracteres")
-        return v
+        return v.upper()
 
     @field_validator("last_name")
     @classmethod
@@ -226,4 +226,4 @@ class AdminUpdateUserRequest(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError("El apellido debe tener al menos 2 caracteres")
-        return v
+        return v.upper()

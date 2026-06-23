@@ -71,4 +71,8 @@ class ProductDetailResponse(ProductResponse):
     
 class ProductsListResponse(BaseModel):
     products: list[ProductResponse]
+    total: int = 0
+    page: int = 1
+    page_size: int = 10
+    total_pages: int = 1
 

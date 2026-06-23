@@ -4,9 +4,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { createBrand, updateBrand, Brand } from '../../services/catalogService';
 import Modal from '@/components/ui/Modal';
+import { useToast } from '@/context/ToastContext';
 
 interface BrandFormModalProps {
   isOpen: boolean;
@@ -21,9 +22,9 @@ export default function BrandFormModal({
   onClose,
   onSave,
 }: BrandFormModalProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (brand) {
@@ -34,13 +35,11 @@ export default function BrandFormModal({
     } else {
       setFormData({ name: '', description: '' });
     }
-    setError(null);
   }, [brand, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       if (brand) {
@@ -50,9 +49,10 @@ export default function BrandFormModal({
       }
       onSave();
       onClose();
+      showToast(brand ? 'Marca actualizada correctamente' : 'Marca creada correctamente', 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al guardar la marca';
-      setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -70,13 +70,6 @@ export default function BrandFormModal({
       <div className="flex flex-col">
         {/* Contenido */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white dark:bg-slate-900">
-            {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800 dark:text-red-200 font-medium">{error}</p>
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Nombre
@@ -103,6 +96,7 @@ export default function BrandFormModal({
                 className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 dark:text-gray-100 transition-all"
                 placeholder="Ej: Marca estadounidense de calzado y ropa deportiva"
               />
+              <span className="text-[10px] text-gray-400 text-right block mt-0.5">{formData.description.length}/500</span>
             </div>
 
             <div className="flex gap-3 pt-4">

@@ -140,9 +140,17 @@ export interface ListProductsParams {
   state?: boolean;
 }
 
-export const listProducts = async (params?: ListProductsParams): Promise<Product[]> => {
+export interface AdminCatalogListResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export const listProducts = async (params?: ListProductsParams & { page?: number; page_size?: number }): Promise<AdminCatalogListResponse> => {
   const res = await axios.get('/api/v1/admin/catalog/products', { params });
-  return res.data.products;
+  return res.data;
 };
 
 export const createProduct = async (

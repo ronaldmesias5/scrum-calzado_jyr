@@ -8,7 +8,7 @@ import os
 import time
 from pathlib import Path
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 from datetime import datetime, timezone
@@ -470,6 +470,8 @@ def list_products(
     style_id: str = None,
     category_id: str = None,
     state: bool = None,
+    page: int = Query(1, ge=1, description="Página (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -477,29 +479,41 @@ def list_products(
     _require_admin_or_jefe(current_user)
     
     query = select(Product).where(Product.deleted_at == None)
+    count_query = select(func.count(Product.id)).where(Product.deleted_at == None)
     
     if brand_id:
         try:
-            query = query.where(Product.brand_id == uuid.UUID(brand_id))
+            brand_uuid = uuid.UUID(brand_id)
+            query = query.where(Product.brand_id == brand_uuid)
+            count_query = count_query.where(Product.brand_id == brand_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de marca es incorrecto")
     
     if style_id:
         try:
-            query = query.where(Product.style_id == uuid.UUID(style_id))
+            style_uuid = uuid.UUID(style_id)
+            query = query.where(Product.style_id == style_uuid)
+            count_query = count_query.where(Product.style_id == style_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de estilo es incorrecto")
     
     if category_id:
         try:
-            query = query.where(Product.category_id == uuid.UUID(category_id))
+            category_uuid = uuid.UUID(category_id)
+            query = query.where(Product.category_id == category_uuid)
+            count_query = count_query.where(Product.category_id == category_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de categoria es incorrecto")
     
     if state is not None:
         query = query.where(Product.state == state)
+        count_query = count_query.where(Product.state == state)
     
-    products = db.execute(query.order_by(Product.name_product)).scalars().all()
+    total = db.execute(count_query).scalar() or 0
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    offset = (page - 1) * page_size
+    
+    products = db.execute(query.order_by(Product.name_product).offset(offset).limit(page_size)).scalars().all()
     
     # Calcular stock total para cada producto
     products_response = []
@@ -535,7 +549,13 @@ def list_products(
             "created_at": prod.created_at.isoformat() if prod.created_at else None,
         })
     
-    return {"products": products_response}
+    return {
+        "products": products_response,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
 
 
 @router.post("/products/{product_id}/image", summary="Subir imagen del producto", response_model=dict)

@@ -33,13 +33,13 @@ export default function ProductCard({
     if (onOrderClick) {
       onOrderClick(product);
     } else {
-      // Default: redirect to login
-      navigate('/auth/login', { state: { returnTo: '/catalog' } });
+      // Default: redirect to landing with login modal trigger
+      navigate('/?login=true');
     }
   };
 
   const handleLoginClick = () => {
-    navigate('/auth/login', { state: { returnTo: '/catalog' } });
+    navigate('/?login=true');
   };
 
   return (

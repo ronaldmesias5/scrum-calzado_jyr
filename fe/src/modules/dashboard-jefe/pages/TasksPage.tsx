@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 // TasksPage - production task dashboard for jefe
 import { 
-  CheckSquare, AlertCircle, CheckCircle2, 
+  CheckSquare,
   Search, X, RefreshCw
 } from 'lucide-react';
 import { getAllProductionTasks, ProductionTask, updateProductionTaskStatus, assignTaskEmployee } from '../services/ordersApi';
 import { getAllUsers } from '../services/adminApi';
 import { TaskCard } from '../components/TaskCard';
 import type { UserResponse } from '@/types/auth';
+import { useToast } from '@/context/ToastContext';
 
 // Los iconos y colores se han movido a TaskCard.tsx para reusabilidad
 
@@ -21,7 +22,7 @@ export default function ProductionTaskDashboard() {
   const [cargoFilter, setCargoFilter] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const { showToast } = useToast();
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [employees, setEmployees] = useState<{id: string; name: string; occupation: string}[]>([]);
 
@@ -63,13 +64,12 @@ export default function ProductionTaskDashboard() {
       setUpdatingTaskId(taskId);
       await updateProductionTaskStatus(taskId, newStatus);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-      setToast({ message: `Tarea actualizada a ${newStatus}`, type: 'success' });
+      showToast(`Tarea actualizada a ${newStatus}`);
     } catch (e) {
       console.error(e);
-      setToast({ message: 'Error al actualizar tarea', type: 'error' });
+      showToast('Error al actualizar tarea', 'error');
     } finally {
       setUpdatingTaskId(null);
-      setTimeout(() => setToast(null), 4000);
     }
   };
 
@@ -78,13 +78,12 @@ export default function ProductionTaskDashboard() {
       setUpdatingTaskId(taskId);
       const updatedTask = await assignTaskEmployee(taskId, employeeId);
       setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
-      setToast({ message: 'Empleado asignado correctamente', type: 'success' });
+      showToast('Empleado asignado correctamente');
     } catch (e) {
       console.error(e);
-      setToast({ message: 'Error al asignar empleado', type: 'error' });
+      showToast('Error al asignar empleado', 'error');
     } finally {
       setUpdatingTaskId(null);
-      setTimeout(() => setToast(null), 4000);
     }
   };
 
@@ -152,17 +151,6 @@ export default function ProductionTaskDashboard() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100]">
-          <div className={`bg-white dark:bg-slate-900 border-2 ${toast.type === 'success' ? 'border-green-500' : 'border-red-500'} rounded-full px-6 py-4 shadow-2xl flex items-center gap-4 border-b-4`}>
-            <div className={`w-10 h-10 ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center flex-shrink-0`}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-6 h-6 text-white" /> : <AlertCircle className="w-6 h-6 text-white" />}
-            </div>
-            <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{toast.message}</p>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">

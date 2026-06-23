@@ -51,6 +51,7 @@ export interface RegisterRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 export interface ChangePasswordRequest {
@@ -87,6 +88,7 @@ export interface UserResponse {
   is_active: boolean;
   is_validated: boolean;
   must_change_password: boolean;
+  invitation_expires_at?: string | null;
   role_name: string | null;
   business_name: string | null;
   occupation: string | null;

@@ -132,6 +132,11 @@ class User(Base):
         nullable=False,
     )
 
+    invitation_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     # ────────────────────────────
     # 📋 Campos específicos por rol
     # ────────────────────────────

@@ -55,11 +55,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const lastActivityRef = useRef(Date.now());
 
-  const saveTokens = useCallback((access: string, refresh: string) => {
+  const STORAGE_KEY_ACCESS = "access_token";
+  const STORAGE_KEY_REFRESH = "refresh_token";
+
+  const saveTokens = useCallback((access: string, refresh: string, persist = false) => {
     setAccessToken(access);
     setRefreshToken(refresh);
-    sessionStorage.setItem("access_token", access);
-    sessionStorage.setItem("refresh_token", refresh);
+    const storage = persist ? localStorage : sessionStorage;
+    storage.setItem(STORAGE_KEY_ACCESS, access);
+    storage.setItem(STORAGE_KEY_REFRESH, refresh);
   }, []);
 
   const clearAuth = useCallback(async () => {
@@ -68,8 +72,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error("Logout error", error);
     }
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
+    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
+    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
+    localStorage.removeItem(STORAGE_KEY_ACCESS);
+    localStorage.removeItem(STORAGE_KEY_REFRESH);
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
@@ -78,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ─── Verificar sesión al montar ──────────────────────────────
   useEffect(() => {
     const verifySession = async () => {
-      const token = sessionStorage.getItem("access_token");
+      const token = sessionStorage.getItem(STORAGE_KEY_ACCESS) || localStorage.getItem(STORAGE_KEY_ACCESS);
       if (!token) {
         setIsLoading(false);
         return;
@@ -128,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ─── Sincronizar con eventos del interceptor axios ──────────
   useEffect(() => {
     const handleTokenRefreshed = () => {
-      const token = sessionStorage.getItem("access_token");
+      const token = sessionStorage.getItem(STORAGE_KEY_ACCESS) || localStorage.getItem(STORAGE_KEY_ACCESS);
       if (token) setAccessToken(token);
     };
 
@@ -147,8 +153,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(
     async (data: LoginRequest) => {
-      const tokens = await authApi.loginUser(data);
-      saveTokens(tokens.access_token, tokens.refresh_token);
+      const tokens = await authApi.loginUser({ ...data, remember_me: data.remember_me ?? false });
+      const persist = data.remember_me ?? false;
+      saveTokens(tokens.access_token, tokens.refresh_token, persist);
       const userData = await authApi.getMe();
       setUser(userData);
       return userData;
@@ -170,8 +177,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error("Logout all error", error);
     }
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
+    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
+    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
+    localStorage.removeItem(STORAGE_KEY_ACCESS);
+    localStorage.removeItem(STORAGE_KEY_REFRESH);
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);

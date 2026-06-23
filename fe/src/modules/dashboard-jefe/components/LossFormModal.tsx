@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   AlertTriangle,
-  XCircle,
   ClipboardList,
   ChevronDown,
   ChevronUp,
@@ -10,6 +9,7 @@ import {
   Wrench,
   Box,
 } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 import Modal from '@/components/ui/Modal';
 import api from '@/api/axios';
 import {
@@ -135,8 +135,6 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   // ── Common ──
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // ── Form fields ──
   const [incidentType, setIncidentType] = useState<IncidentType>('perdida');
@@ -158,6 +156,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   const [customSupplyName, setCustomSupplyName] = useState('');
   const [supplyDropdownOpen, setSupplyDropdownOpen] = useState(false);
   const supplyDropdownRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
 
   // ─────────────────────────────────────────
   // COMPUTED
@@ -265,7 +264,6 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
     setIncidenceCategory(cat);
     resetFormFields();
     resetCategoryFields();
-    setError(null);
   };
 
   // ─────────────────────────────────────────
@@ -276,8 +274,6 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   useEffect(() => {
     if (!isOpen) return;
 
-    setError(null);
-    setSuccess(false);
     setIncidenceCategory('producto');
     setFormMode('linked');
     resetFormFields();
@@ -303,7 +299,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         }
       } catch (err) {
         console.error('Error loading form data:', err);
-        setError('Error al cargar datos del formulario');
+        showToast('Error al cargar datos del formulario', 'error');
       } finally {
         setLoading(false);
       }
@@ -378,7 +374,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         if (selectedCategoryId) params.category_id = selectedCategoryId;
         if (selectedBrandId) params.brand_id = selectedBrandId;
         const prods = await listProducts(params);
-        setIndependentProducts(prods);
+        setIndependentProducts(prods.products);
       } catch (err) {
         console.error('Error loading products:', err);
       } finally {
@@ -442,31 +438,30 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
       if (incidenceCategory === 'producto') {
         // ── Existing validation for producto ──
         if (!productId || !size || !description.trim() || !quantity || quantity <= 0) {
-          setError('Todos los campos obligatorios deben estar diligenciados');
+          showToast('Todos los campos obligatorios deben estar diligenciados', 'error');
           return;
         }
         if (quantity < 1) {
-        setError('La cantidad debe ser al menos 1');
+        showToast('La cantidad debe ser al menos 1', 'error');
         return;
       }
     } else if (incidenceCategory === 'maquinaria') {
       if (!machineryName.trim()) {
-        setError('El nombre de maquinaria es obligatorio');
+        showToast('El nombre de maquinaria es obligatorio', 'error');
         return;
       }
     } else if (incidenceCategory === 'insumo') {
       if (supplyInputMode === 'select' && !selectedSupplyId) {
-        setError('Debe seleccionar un insumo');
+        showToast('Debe seleccionar un insumo', 'error');
         return;
       }
       if (supplyInputMode === 'type' && !customSupplyName.trim()) {
-        setError('Debe escribir el nombre del insumo');
+        showToast('Debe escribir el nombre del insumo', 'error');
         return;
       }
     }
 
     setSubmitting(true);
-    setError(null);
 
     try {
       let payload: IncidentCreateRequest;
@@ -503,16 +498,14 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
       }
 
       await createIncident(payload);
-      setSuccess(true);
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
+      showToast('Incidencia registrada exitosamente', 'success');
+      onSuccess();
+      onClose();
     } catch (err) {
       console.error('Error creating incident:', err);
       const msg =
         err instanceof Error ? err.message : 'Error al registrar la incidencia';
-      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -1011,93 +1004,80 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
 
   const renderCommonSection = () => (
     <div className="space-y-5 border-t border-gray-100 dark:border-slate-800 pt-5">
-      {/* Incident Type */}
-      <div>
-        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-          Tipo de Incidencia <span className="text-red-500">*</span>
-        </label>
-        <div className="flex flex-wrap gap-3">
-          {INCIDENT_TYPE_OPTIONS.map(opt => (
-            <label
-              key={opt.value}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all text-sm font-bold ${
-                incidentType === opt.value
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600'
-              }`}
-            >
-              <input
-                type="radio"
-                name="incident_type"
-                value={opt.value}
-                checked={incidentType === opt.value}
-                onChange={() => setIncidentType(opt.value)}
-                className="sr-only"
-              />
-              <div
-                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Incident Type */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+            Tipo de Incidencia <span className="text-red-500">*</span>
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {INCIDENT_TYPE_OPTIONS.map(opt => (
+              <label
+                key={opt.value}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all text-sm font-bold ${
                   incidentType === opt.value
-                    ? 'border-blue-500'
-                    : 'border-gray-300 dark:border-slate-600'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                    : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600'
                 }`}
               >
-                {incidentType === opt.value && (
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                )}
-              </div>
-              {opt.label}
-            </label>
-          ))}
+                <input
+                  type="radio"
+                  name="incident_type"
+                  value={opt.value}
+                  checked={incidentType === opt.value}
+                  onChange={() => setIncidentType(opt.value)}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    incidentType === opt.value
+                      ? 'border-blue-500'
+                      : 'border-gray-300 dark:border-slate-600'
+                  }`}
+                >
+                  {incidentType === opt.value && (
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  )}
+                </div>
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Description — free-text defect description */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            Descripción del defecto <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="Describe el defecto encontrado (ej: 'despegue de suela', 'costura rota', 'mala terminación')"
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
+            required
+          />
+          <span className="text-[10px] text-gray-400 text-right block mt-0.5">{description.length}/500</span>
         </div>
       </div>
 
-      {/* Description — free-text defect description */}
-      <div>
-        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-          Descripción del defecto <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          rows={3}
-          placeholder="Describe el defecto encontrado (ej: 'despegue de suela', 'costura rota', 'mala terminación')"
-          className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
-          required
-        />
-      </div>
-
-      {/* Reason — visible solo si hay descripción */}
-      {description.trim() && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              Razón
-            </label>
-            <textarea
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              rows={3}
-              placeholder="Motivo de la incidencia..."
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              Observaciones
-            </label>
-            <textarea
-              value={observations}
-              onChange={e => setObservations(e.target.value)}
-              rows={3}
-              placeholder="Observaciones adicionales..."
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
-            />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            Razón
+          </label>
+          <textarea
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="Motivo de la incidencia..."
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
+          />
+          <span className="text-[10px] text-gray-400 text-right block mt-0.5">{reason.length}/500</span>
         </div>
-      )}
-
-      {/* Observaciones — siempre visible aunque no haya descripción */}
-      {!description.trim() && (
         <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
             Observaciones
@@ -1106,11 +1086,13 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
             value={observations}
             onChange={e => setObservations(e.target.value)}
             rows={3}
+            maxLength={500}
             placeholder="Observaciones adicionales..."
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
           />
+          <span className="text-[10px] text-gray-400 text-right block mt-0.5">{observations.length}/500</span>
         </div>
-      )}
+      </div>
     </div>
   );
 
@@ -1141,9 +1123,11 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           value={observations}
           onChange={e => setObservations(e.target.value)}
           rows={3}
+          maxLength={500}
           placeholder="Describa el daño o incidencia..."
           className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm transition-colors resize-none"
         />
+        <span className="text-[10px] text-gray-400 text-right block mt-0.5">{observations.length}/500</span>
       </div>
     </div>
   );
@@ -1239,9 +1223,11 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           value={observations}
           onChange={e => setObservations(e.target.value)}
           rows={3}
+          maxLength={500}
           placeholder="Describa el daño o incidencia..."
           className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm transition-colors resize-none"
         />
+        <span className="text-[10px] text-gray-400 text-right block mt-0.5">{observations.length}/500</span>
       </div>
     </div>
   );
@@ -1253,22 +1239,6 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" title="Registrar Incidencia">
       <div className="p-6 space-y-5">
-        {/* Error banner */}
-        {error && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-xl text-sm text-red-700 dark:text-red-400 font-medium flex items-start gap-2">
-            <XCircle size={18} className="mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Success banner */}
-        {success && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/40 rounded-xl text-sm text-green-700 dark:text-green-400 font-medium flex items-center gap-2">
-            <AlertTriangle size={18} />
-            Incidencia registrada exitosamente
-          </div>
-        )}
-
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -1317,7 +1287,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
               </button>
               <button
                 type="submit"
-                disabled={submitting || success}
+                disabled={submitting}
                 className="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-2 text-sm"
               >
                 {submitting ? (

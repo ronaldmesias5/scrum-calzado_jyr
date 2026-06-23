@@ -12,6 +12,7 @@ import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
 import ProductCard from '../components/ProductCard';
 import CatalogFilters from '../components/CatalogFilters';
+import Pagination from '@/components/ui/Pagination';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import {
   getPublicProducts,
@@ -39,6 +40,10 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Paginación
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   // Filtros
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
@@ -56,6 +61,11 @@ export default function CatalogPage() {
     loadCatalogData();
   }, []);
 
+  // Resetear página cuando cambian los filtros
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, searchTerm]);
+
   // Resetear estilo si cambia la marca y el estilo ya no es válido
   useEffect(() => {
     if (selectedStyle) {
@@ -66,10 +76,10 @@ export default function CatalogPage() {
     }
   }, [selectedBrand, filteredStyles, selectedStyle]);
 
-  // Recargar productos cuando cambian los filtros
+  // Recargar productos cuando cambian los filtros o página
   useEffect(() => {
     loadProducts();
-  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, searchTerm]);
+  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, searchTerm, page]);
 
   const loadCatalogData = async () => {
     try {
@@ -107,8 +117,9 @@ export default function CatalogPage() {
         search: searchTerm || undefined,
       };
 
-      const data = await getPublicProducts(filters);
-      setProducts(data);
+      const data = await getPublicProducts(filters, page);
+      setProducts(data.products);
+      setTotalPages(data.total_pages);
     } catch (err) {
       console.error('Error cargando productos:', err);
       setError('No se pudieron cargar los productos');
@@ -131,8 +142,8 @@ export default function CatalogPage() {
     !!searchTerm;
 
   const handleOrderClick = (_product: Product) => {
-    // Redirigir a login si no está autenticado
-    navigate('/auth/login', { state: { returnTo: '/dashboard/orders' } });
+    // Redirigir a landing con modal de login
+    navigate('/?login=true');
   };
 
   // Función para obtener nombre de marca
@@ -239,6 +250,9 @@ export default function CatalogPage() {
                       />
                     ))}
                   </div>
+
+                  {/* Paginación */}
+                  <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                 </>
               )}
             </>

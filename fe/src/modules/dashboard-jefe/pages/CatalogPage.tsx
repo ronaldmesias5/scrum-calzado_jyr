@@ -6,8 +6,11 @@ import ProductCreateModal from '../components/ProductCreateModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ImageViewerModal from '../components/ImageViewerModal';
 import StatCard from '../components/StatCard';
+import Pagination from '@/components/ui/Pagination';
+import { useToast } from '@/context/ToastContext';
 
 export default function CatalogPage() {
+  const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,13 +30,25 @@ export default function CatalogPage() {
   const [categoryList, setCategoryList] = useState<string[]>([]);
   const [brandList, setBrandList] = useState<string[]>([]);
   const [styleList, setStyleList] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 10;
 
   // Cargar productos
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const data = await listProducts();
-      setProducts(data);
+      const params: any = { page, page_size: pageSize };
+      if (selectedCategory) params.category_id = selectedCategory;
+      if (selectedBrand) params.brand_id = selectedBrand;
+      if (selectedStyle) params.style_id = selectedStyle;
+      if (selectedColor) params.color = selectedColor;
+      if (selectedState) params.state = selectedState === 'active';
+      const data = await listProducts(params);
+      setProducts(data.products);
+      setTotalPages(data.total_pages || 1);
+      setTotal(data.total || 0);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -68,8 +83,8 @@ export default function CatalogPage() {
   const handleEditProduct = async (product: Product) => {
     try {
       // Recargar el producto específico para obtener todos los datos actualizados
-      const allProducts = await listProducts({ category_id: product.category_id });
-      const fullProduct = allProducts.find(p => p.id === product.id);
+      const result = await listProducts({ category_id: product.category_id });
+      const fullProduct = result.products.find(p => p.id === product.id);
       if (fullProduct) {
         setEditingProduct(fullProduct);
       } else {
@@ -86,10 +101,11 @@ export default function CatalogPage() {
   const handleToggleState = async (product: Product) => {
     try {
       await toggleProductState(product.id);
+      showToast('Estado del producto actualizado', 'success');
       await loadProducts();
     } catch (error: any) {
       console.error('Error toggling product state:', error);
-      alert('Error al cambiar el estado del producto');
+      showToast('Error al cambiar el estado del producto', 'error');
     }
   };
 
@@ -173,10 +189,11 @@ export default function CatalogPage() {
       await loadProducts();
       setIsEditModalOpen(false);
       setEditingProduct(null);
+      showToast('Producto guardado correctamente', 'success');
     } catch (error: any) {
       console.error('Error saving product:', error);
       const detail = error?.response?.data?.detail;
-      alert(detail ? `Error: ${detail}` : 'Error al guardar el producto');
+      showToast(detail || 'Error al guardar el producto', 'error');
     }
   };
 
@@ -194,12 +211,12 @@ export default function CatalogPage() {
       const category = categories.find(c => c.name === productData.category_name);
 
       if (!brand) {
-        alert('Error: Marca no encontrada');
+        showToast('Error: Marca no encontrada', 'error');
         return;
       }
 
       if (!category) {
-        alert('Error: Categoría no encontrada');
+        showToast('Error: Categoría no encontrada', 'error');
         return;
       }
 
@@ -209,7 +226,7 @@ export default function CatalogPage() {
           style = await createStyle(productData.style_name, brand.id);
         } catch (error) {
           console.error('Error creating style:', error);
-          alert('Error al crear el estilo automáticamente');
+          showToast('Error al crear el estilo automáticamente', 'error');
           return;
         }
       }
@@ -251,10 +268,11 @@ export default function CatalogPage() {
       // Recargar productos
       await loadProducts();
       setIsCreateModalOpen(false);
+      showToast('Producto creado correctamente', 'success');
     } catch (error: any) {
       console.error('Error creating product:', error);
       const detail = error?.response?.data?.detail;
-      alert(detail ? `Error: ${detail}` : 'Error al crear el producto. Verifica que todos los datos sean válidos.');
+      showToast(detail || 'Error al crear el producto. Verifica que todos los datos sean válidos.', 'error');
     }
   };
 
@@ -276,9 +294,10 @@ export default function CatalogPage() {
       await loadProducts();
       setIsDeleteModalOpen(false);
       setDeletingProduct(null);
+      showToast('Producto eliminado correctamente', 'success');
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert('Error al eliminar el producto');
+      showToast('Error al eliminar el producto', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -321,14 +340,23 @@ export default function CatalogPage() {
     return matchesSearch && matchesCategory && matchesBrand && matchesStyle && matchesColor && matchesState;
   });
 
-  // Calcular métricas
-  const totalProducts = products.length;
+  // Calcular métricas (de todos los productos)
+  const totalProducts = total;
   const activeProducts = products.filter(p => p.is_active).length;
   const inactiveProducts = products.filter(p => !p.is_active).length;
 
-  // Inicializar
+  // Cargar productos cuando cambia página o filtros
   useEffect(() => {
     loadProducts();
+  }, [page, selectedCategory, selectedBrand, selectedStyle, selectedColor, selectedState]);
+
+  // Reiniciar página al cambiar filtros
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, selectedState, searchTerm]);
+
+  // Inicializar opciones de filtros
+  useEffect(() => {
     loadFilterOptions();
   }, []);
 
@@ -341,7 +369,7 @@ export default function CatalogPage() {
             <Layers className="w-8 h-8 text-orange-600" />
             Gestión de Catálogo
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Administra todos los productos del catálogo • {totalProducts} en total</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Administra todos los productos del catálogo • {total} en total</p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
@@ -606,6 +634,11 @@ export default function CatalogPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Paginación */}
+      {!loading && filteredProducts.length > 0 && (
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
 
       {/* Modal de Edición */}

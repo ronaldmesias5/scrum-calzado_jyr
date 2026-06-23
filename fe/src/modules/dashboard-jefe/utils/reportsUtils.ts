@@ -1,6 +1,7 @@
 ﻿import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { EmployeeReportResponse, CustomerReportResponse, OrderSummary, TaskDetail, DashboardReportResponse } from '../services/reportsApi';
+import { formatCOP } from '@/utils/format';
 
 const PROCESS_DISPLAY: Record<string, string> = {
   cortador: 'Corte',
@@ -32,10 +33,6 @@ const COLORS = {
 function formatDate(iso?: string): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toLocaleString('es-CO')}`;
 }
 
 function formatDateTime(iso?: string): string {
@@ -201,7 +198,7 @@ export async function exportEmployeePDF(
   summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatCurrency(grandTotal), 146, summaryY + 13, COLORS.accent);
+  summaryValue(formatCOP(grandTotal), 146, summaryY + 13, COLORS.accent);
 
   const tableStartY = summaryY + 21;
 
@@ -218,10 +215,10 @@ export async function exportEmployeePDF(
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : t.status === 'completado' ? 'Completado' : t.status || '—',
         t.completed_at ? formatDate(t.completed_at) : (t.created_at ? formatDate(t.created_at) : '—'),
-        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
-        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
+        t.price_per_dozen ? formatCOP(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCOP(t.task_total_price) : '$0',
       ]),
-      foot: [['', '', '', '', '', '', 'TOTAL', formatCurrency(grandTotal)]],
+      foot: [['', '', '', '', '', '', 'TOTAL', formatCOP(grandTotal)]],
       theme: 'grid',
       headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
@@ -507,7 +504,7 @@ export async function exportTasksPDF(
   // Row 2: values
   sv(String(totalTasks), 16, summaryY + 13, [60, 60, 60]);
   sv(String(totalPairs), 86, summaryY + 13, COLORS.green);
-  sv(formatCurrency(grandTotal), 146, summaryY + 13, COLORS.accent);
+  sv(formatCOP(grandTotal), 146, summaryY + 13, COLORS.accent);
 
   // Row 3: breakdown by process (tareas + pares por cargo)
   if (breakdownItems.length > 0) {
@@ -517,7 +514,7 @@ export async function exportTasksPDF(
     let bx = 16;
     const bgap = 190 / breakdownItems.length;
     breakdownItems.forEach(item => {
-      doc.text(`${item.displayName}: ${item.tasks}t, ${item.pairs}p, ${formatCurrency(item.total)}`, bx, summaryY + 24);
+      doc.text(`${item.displayName}: ${item.tasks}t, ${item.pairs}p, ${formatCOP(item.total)}`, bx, summaryY + 24);
       bx += bgap;
     });
   }
@@ -537,10 +534,10 @@ export async function exportTasksPDF(
         t.colour || '—',
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : t.status === 'completado' ? 'Completado' : t.status || '—',
-        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
-        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
+        t.price_per_dozen ? formatCOP(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCOP(t.task_total_price) : '$0',
       ]),
-      foot: [['', '', '', '', '', '', 'TOTAL', formatCurrency(grandTotal)]],
+      foot: [['', '', '', '', '', '', 'TOTAL', formatCOP(grandTotal)]],
       theme: 'grid',
       headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
@@ -839,10 +836,10 @@ export async function exportProductionPDF(
         t.colour || '—',
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : t.status === 'completado' ? 'Completado' : t.status || '—',
-        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
-        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
+        t.price_per_dozen ? formatCOP(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCOP(t.task_total_price) : '$0',
       ]),
-      foot: [['', '', '', '', '', '', 'TOTAL', formatCurrency(grandTotal)]],
+      foot: [['', '', '', '', '', '', 'TOTAL', formatCOP(grandTotal)]],
       theme: 'grid',
       headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },

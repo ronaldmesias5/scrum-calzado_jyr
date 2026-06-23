@@ -167,11 +167,11 @@ ACCOUNT_APPROVED_HTML = """\
   <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
     <div style="background:#1e3a5f;padding:24px;text-align:center">
       <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
-      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Cuenta aprobada</p>
+      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Registro exitoso</p>
     </div>
     <div style="padding:32px 24px">
       <p style="font-size:15px;color:#333">Hola <strong>{name}</strong>,</p>
-      <p style="font-size:15px;color:#333">Tu cuenta en el sistema de <strong>Calzado J&R</strong> ha sido <strong style="color:#16a34a">aprobada</strong>.</p>
+      <p style="font-size:15px;color:#333">Tu registro en el sistema de <strong>Calzado J&R</strong> se ha completado <strong style="color:#16a34a">exitosamente</strong>.</p>
       <p style="font-size:15px;color:#333">Ya puedes iniciar sesión y comenzar a realizar pedidos.</p>
       <div style="text-align:center;margin:28px 0">
         <a href="{login_url}" style="background:#2563eb;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Iniciar sesión</a>
@@ -215,7 +215,7 @@ async def send_account_approved_email(email: str, name: str) -> None:
 
     await _send_email(
         to_email=email,
-        subject="CALZADO J&R — ¡Tu cuenta ha sido aprobada!",
+        subject="CALZADO J&R — ¡Registro exitoso!",
         html_body=html,
     )
 

@@ -2,7 +2,7 @@
 Rutas públicas para el catálogo de productos
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
@@ -245,34 +245,48 @@ def get_products(
     style_id: str | None = None,
     color: str | None = None,
     search: str | None = None,
+    page: int = Query(1, ge=1, description="Página (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
     db: Session = Depends(get_db)
 ) -> ProductsListResponse:
     """
-    Retorna todos los productos disponibles en el catálogo.
+    Retorna los productos disponibles en el catálogo con paginación.
     Incluye información de estilo, categoría y marca.
     Endpoint público sin autenticación requerida.
     """
-    stmt = select(Product).where(Product.deleted_at == None).where(Product.state == True)
+    base_where = (Product.deleted_at == None) & (Product.state == True)
+    stmt = select(Product).where(*[base_where])
+    count_stmt = select(func.count(Product.id)).where(*[base_where])
     
     if category_id:
         stmt = stmt.where(Product.category_id == category_id)
+        count_stmt = count_stmt.where(Product.category_id == category_id)
     if brand_id:
         stmt = stmt.where(Product.brand_id == brand_id)
+        count_stmt = count_stmt.where(Product.brand_id == brand_id)
     if style_id:
         stmt = stmt.where(Product.style_id == style_id)
+        count_stmt = count_stmt.where(Product.style_id == style_id)
     if color:
         stmt = stmt.where(Product.color == color)
+        count_stmt = count_stmt.where(Product.color == color)
         
     if search:
-        # Búsqueda por nombre de producto, marca o estilo
-        stmt = stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
-        stmt = stmt.where(
+        search_filter = (
             Product.name_product.ilike(f"%{search}%") |
             Brand.name_brand.ilike(f"%{search}%") |
             Style.name_style.ilike(f"%{search}%")
         )
+        stmt = stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
+        stmt = stmt.where(search_filter)
+        count_stmt = count_stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
+        count_stmt = count_stmt.where(search_filter)
 
-    products = db.execute(stmt).scalars().all()
+    total = db.execute(count_stmt).scalar() or 0
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    offset = (page - 1) * page_size
+
+    products = db.execute(stmt.offset(offset).limit(page_size)).scalars().all()
     
     return ProductsListResponse(
         products=[
@@ -289,6 +303,10 @@ def get_products(
                 "color": product.color,
             }
             for product in products
-        ]
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
     )
 

@@ -1,14 +1,22 @@
-import { Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
 
-export default function LandingHeader() {
+interface LandingHeaderProps {
+  onLoginClick?: () => void;
+  onRegisterClick?: () => void;
+}
+
+export default function LandingHeader({ onLoginClick, onRegisterClick }: LandingHeaderProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const handleRegister = () => { onRegisterClick?.(); if (!onRegisterClick) navigate('/?register=true'); };
+  const handleLogin = () => { onLoginClick?.(); if (!onLoginClick) navigate('/?login=true'); };
   const { getHeaderClasses, getLogoClasses, getNavClasses, getButtonsClasses } = useHeaderAnimation();
 
   const navLinks = [
@@ -22,21 +30,29 @@ export default function LandingHeader() {
     <header className={`sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 shadow-sm transition-colors duration-500 ${getHeaderClasses()}`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
         {/* Logo */}
-        <Link to="/" className={`flex items-center ${getLogoClasses()}`}>
+        <a href="/" className={`flex items-center ${getLogoClasses()}`}>
           <img src="/logo.png" alt="Calzado J&R — Ir al inicio" className="h-16 w-16 object-contain" />
-        </Link>
+        </a>
 
         {/* Nav desktop */}
         <nav className={`hidden md:flex items-center gap-8 ${getNavClasses()}`} aria-label="Navegación principal">
           {navLinks.map((link) => (
-            link.href && link.href.startsWith("/") ? (
-              <Link
+            link.href && link.href.startsWith("/#") ? (
+              <a
                 key={link.label}
-                to={link.href}
+                href={link.href}
                 className="text-gray-700 dark:text-gray-200 hover:text-blue-800 dark:hover:text-blue-400 font-semibold transition-colors duration-200"
               >
                 {link.label}
-              </Link>
+              </a>
+            ) : link.href && link.href.startsWith("/") ? (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-gray-700 dark:text-gray-200 hover:text-blue-800 dark:hover:text-blue-400 font-semibold transition-colors duration-200"
+              >
+                {link.label}
+              </a>
             ) : (
               <a
                 key={link.label}
@@ -55,18 +71,18 @@ export default function LandingHeader() {
             <LanguageSwitcher />
             <ThemeToggle />
           </div>
-          <Link
-            to="/auth/register"
+          <button
+            onClick={handleRegister}
             className="px-5 py-2.5 border border-blue-800 dark:border-blue-500 text-blue-800 dark:text-blue-400 rounded-xl font-bold transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 btn-pulse"
           >
             {t('landing.nav.register')}
-          </Link>
-          <Link
-            to="/auth/login"
+          </button>
+          <button
+            onClick={handleLogin}
             className="px-4 py-2 bg-blue-800 text-white rounded-lg font-medium btn-pulse hover:bg-blue-900 transition-colors duration-200"
           >
             {t('common.login')}
-          </Link>
+          </button>
         </div>
 
         {/* Burger mobile */}
@@ -85,15 +101,24 @@ export default function LandingHeader() {
       {menuOpen && (
         <div id="mobile-menu" role="navigation" aria-label="Menú principal" className="md:hidden bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 px-6 py-6 flex flex-col gap-5 animate-in slide-in-from-top duration-300">
           {navLinks.map((link) => (
-            link.href && link.href.startsWith("/") ? (
-              <Link
+            link.href && link.href.startsWith("/#") ? (
+              <a
                 key={link.label}
-                to={link.href}
+                href={link.href}
                 className="text-gray-700 dark:text-gray-200 font-bold text-lg"
                 onClick={() => setMenuOpen(false)}
               >
                 {link.label}
-              </Link>
+              </a>
+            ) : link.href && link.href.startsWith("/") ? (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-gray-700 dark:text-gray-200 font-bold text-lg"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </a>
             ) : (
               <a
                 key={link.label}
@@ -111,20 +136,18 @@ export default function LandingHeader() {
               <LanguageSwitcher />
               <ThemeToggle />
             </div>
-            <Link
-              to="/auth/register"
+            <button
+              onClick={() => { handleRegister(); setMenuOpen(false); }}
               className="flex items-center justify-center px-4 py-3 border border-blue-800 dark:border-blue-500 text-blue-800 dark:text-blue-400 rounded-xl font-bold transition-colors duration-200 btn-pulse"
-              onClick={() => setMenuOpen(false)}
             >
               {t('landing.nav.register')}
-            </Link>
-            <Link
-              to="/auth/login"
+            </button>
+            <button
+              onClick={() => { handleLogin(); setMenuOpen(false); }}
               className="flex items-center justify-center px-4 py-2 bg-blue-800 text-white rounded-lg font-medium btn-pulse hover:bg-blue-900 transition-colors duration-200"
-              onClick={() => setMenuOpen(false)}
             >
               {t('common.login')}
-            </Link>
+            </button>
           </>
         </div>
       )}

@@ -27,9 +27,12 @@ function processQueue(error: unknown, token: string | null = null) {
 }
 
 function forceLogout() {
-  if (!sessionStorage.getItem("access_token")) return;
+  const hasToken = sessionStorage.getItem("access_token") || localStorage.getItem("access_token");
+  if (!hasToken) return;
   sessionStorage.removeItem("access_token");
   sessionStorage.removeItem("refresh_token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
   window.dispatchEvent(new CustomEvent("auth:logout"));
 }
 
@@ -51,7 +54,7 @@ function handleHttpError(error: unknown) {
 // ─── Request: inyecta token ────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem("access_token");
+    const token = sessionStorage.getItem("access_token") || localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -90,11 +93,13 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const storedRefreshToken = sessionStorage.getItem("refresh_token");
+    const storedRefreshToken = sessionStorage.getItem("refresh_token") || localStorage.getItem("refresh_token");
     if (!storedRefreshToken) {
       isRefreshing = false;
       return handleHttpError(error);
     }
+
+    const isPersisted = !!localStorage.getItem("refresh_token");
 
     try {
       const response = await axios.post(
@@ -103,8 +108,9 @@ api.interceptors.response.use(
       );
 
       const { access_token, refresh_token } = response.data;
-      sessionStorage.setItem("access_token", access_token);
-      sessionStorage.setItem("refresh_token", refresh_token);
+      const storage = isPersisted ? localStorage : sessionStorage;
+      storage.setItem("access_token", access_token);
+      storage.setItem("refresh_token", refresh_token);
       window.dispatchEvent(new CustomEvent("auth:token-refreshed"));
 
       processQueue(null, access_token);

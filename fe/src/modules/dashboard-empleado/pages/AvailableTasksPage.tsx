@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Package, AlertCircle, CheckCircle2, Search, X, RefreshCw,
+  Package, Search, X, RefreshCw,
 } from 'lucide-react';
 import { getAvailableTasks, claimTask } from '../services/employeeApi';
 import type { AvailableTask } from '../types/employee';
 import { TaskCard } from '@/modules/dashboard-jefe/components/TaskCard';
 import { ProductionTask } from '@/modules/dashboard-jefe/services/ordersApi';
 import EmployeeValeModal from '../components/EmployeeValeModal';
+import { useToast } from '@/context/ToastContext';
 
 const toProductionTask = (task: AvailableTask, extra?: Partial<ProductionTask>): ProductionTask => ({
   id: task.id,
@@ -27,17 +28,12 @@ const toProductionTask = (task: AvailableTask, extra?: Partial<ProductionTask>):
 });
 
 export default function AvailableTasksPage() {
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState<AvailableTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [valeTaskId, setValeTaskId] = useState<string | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -80,20 +76,6 @@ export default function AvailableTasksPage() {
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-8 duration-500">
-          <div className={`bg-white dark:bg-slate-900 border-2 ${toast.type === 'success' ? 'border-green-500' : 'border-red-500'} rounded-full px-6 py-4 shadow-2xl flex items-center gap-4 border-b-4`}>
-            <div className={`w-10 h-10 ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center flex-shrink-0`}>
-              {toast.type === 'success'
-                ? <CheckCircle2 className="w-6 h-6 text-white" />
-                : <AlertCircle className="w-6 h-6 text-white" />}
-            </div>
-            <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{toast.message}</p>
-          </div>
-        </div>
-      )}
-
       {/* CABECERA */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
         <div>

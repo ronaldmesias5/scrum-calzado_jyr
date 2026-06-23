@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Bell, Globe, Shield, Save, Smartphone, Package,
   Eye, EyeOff, Lock, LogOut, Sun, Moon, Type, LayoutGrid,
-  Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Palette, ChevronDown,
+  Clock, AlertCircle, RefreshCw, Palette, ChevronDown,
   User, Upload, Trash2, Camera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { changePassword, uploadAvatar, deleteAvatar } from '@/modules/auth/services/api';
+import { useToast } from '@/context/ToastContext';
 import i18n from '@/i18n';
 
 type TabId = 'profile' | 'notifications' | 'language' | 'security' | 'appearance';
@@ -25,15 +26,13 @@ function loadPref<T>(key: string, def: T): T {
 export default function EmployeeSettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { user, refreshUser } = useAuth();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabId>('profile');
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState('');
 
   // ── Profile / Avatar ──
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarMsg, setAvatarMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   // ── Notifications ──
   const [notif, setNotif] = useState<NotifSettings>(() =>
@@ -59,7 +58,6 @@ export default function EmployeeSettingsPage() {
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [pwLoading, setPwLoading] = useState(false);
-  const [pwMsg, setPwMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [sessionTimeout, setSessionTimeout] = useState(() =>
     loadPref('emp_cfg_sessionTimeout', '60')
   );
@@ -74,22 +72,21 @@ export default function EmployeeSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setAvatarMsg({ type: 'err', text: 'El archivo debe ser una imagen' });
+      showToast('El archivo debe ser una imagen', 'error');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setAvatarMsg({ type: 'err', text: 'La imagen no puede superar 5 MB' });
+      showToast('La imagen no puede superar 5 MB', 'error');
       return;
     }
     setAvatarUploading(true);
-    setAvatarMsg(null);
     try {
       await uploadAvatar(file);
       await refreshUser();
-      setAvatarMsg({ type: 'ok', text: 'Foto de perfil actualizada exitosamente' });
+      showToast('Foto de perfil actualizada exitosamente', 'success');
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Error al subir la imagen';
-      setAvatarMsg({ type: 'err', text: msg });
+      showToast(msg, 'error');
     } finally {
       setAvatarUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -98,14 +95,13 @@ export default function EmployeeSettingsPage() {
 
   async function handleAvatarDelete() {
     setAvatarUploading(true);
-    setAvatarMsg(null);
     try {
       await deleteAvatar();
       await refreshUser();
-      setAvatarMsg({ type: 'ok', text: 'Foto de perfil eliminada' });
+      showToast('Foto de perfil eliminada', 'success');
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Error al eliminar la imagen';
-      setAvatarMsg({ type: 'err', text: msg });
+      showToast(msg, 'error');
     } finally {
       setAvatarUploading(false);
     }
@@ -118,36 +114,33 @@ export default function EmployeeSettingsPage() {
       localStorage.setItem('emp_cfg_appearance', JSON.stringify(appearance));
       localStorage.setItem('emp_cfg_sessionTimeout', JSON.stringify(sessionTimeout));
       i18n.changeLanguage(lang.language);
-      setSaved(true);
-      setSaveError('');
-      setTimeout(() => setSaved(false), 3000);
+      showToast('Cambios guardados', 'success');
     } catch {
-      setSaveError('No se pudieron guardar los cambios.');
+      showToast('No se pudieron guardar los cambios.', 'error');
     }
   }
 
   async function handleChangePassword() {
     if (!pwForm.next || !pwForm.current) {
-      setPwMsg({ type: 'err', text: 'Completa todos los campos.' });
+      showToast('Completa todos los campos.', 'error');
       return;
     }
     if (pwForm.next !== pwForm.confirm) {
-      setPwMsg({ type: 'err', text: 'Las contraseñas nuevas no coinciden.' });
+      showToast('Las contraseñas nuevas no coinciden.', 'error');
       return;
     }
     if (pwForm.next.length < 8) {
-      setPwMsg({ type: 'err', text: 'La contraseña debe tener al menos 8 caracteres.' });
+      showToast('La contraseña debe tener al menos 8 caracteres.', 'error');
       return;
     }
     setPwLoading(true);
-    setPwMsg(null);
     try {
       await changePassword({ current_password: pwForm.current, new_password: pwForm.next });
-      setPwMsg({ type: 'ok', text: 'Contraseña actualizada correctamente.' });
+      showToast('Contraseña actualizada correctamente.', 'success');
       setPwForm({ current: '', next: '', confirm: '' });
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Error al cambiar la contraseña.';
-      setPwMsg({ type: 'err', text: msg });
+      showToast(msg, 'error');
     } finally {
       setPwLoading(false);
     }
@@ -182,23 +175,13 @@ export default function EmployeeSettingsPage() {
         <div className="flex flex-col items-end gap-1">
           {activeTab !== 'profile' && activeTab !== 'security' && (
             <>
-              <Button
-                onClick={handleSave}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 dark:bg-blue-500 text-white rounded-xl shadow-lg hover:shadow-blue-500/20 px-8 py-2.5 font-bold transition-all active:scale-95"
-              >
-                <Save className="w-5 h-5" />
-                Guardar Cambios
-              </Button>
-              {saved && (
-                <span className="text-xs font-semibold text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" /> Cambios guardados
-                </span>
-              )}
-              {saveError && (
-                <span className="text-xs font-semibold text-red-500 flex items-center gap-1">
-                  <XCircle className="w-3.5 h-3.5" /> {saveError}
-                </span>
-              )}
+<Button
+                 onClick={handleSave}
+                 className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 dark:bg-blue-500 text-white rounded-xl shadow-lg hover:shadow-blue-500/20 px-8 py-2.5 font-bold transition-all active:scale-95"
+               >
+                 <Save className="w-5 h-5" />
+                 Guardar Cambios
+               </Button>
             </>
           )}
         </div>
@@ -266,17 +249,7 @@ export default function EmployeeSettingsPage() {
                       )}
                     </div>
                     <p className="text-xs text-gray-400">Máximo 5 MB · Formato JPG o PNG</p>
-                    {avatarMsg && (
-                      <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${
-                        avatarMsg.type === 'ok'
-                          ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                          : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                      }`}>
-                        {avatarMsg.type === 'ok' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                        {avatarMsg.text}
-                      </div>
-                    )}
-                  </div>
+                   </div>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -409,17 +382,6 @@ export default function EmployeeSettingsPage() {
                   />
 
                   {pwForm.next && <PasswordStrength password={pwForm.next} />}
-
-                  {pwMsg && (
-                    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold ${
-                      pwMsg.type === 'ok'
-                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                        : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                    }`}>
-                      {pwMsg.type === 'ok' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                      {pwMsg.text}
-                    </div>
-                  )}
 
                   <button
                     onClick={handleChangePassword}

@@ -122,7 +122,7 @@ export default function EditProductModal({
       className="max-h-[90vh]"
     >
       <div className="flex flex-col h-full">
-        <div className="px-6 py-2 -mt-4 mb-2">
+        <div className="px-6 py-2 mb-2">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{productName}</p>
         </div>
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Package2, Eye, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ShoppingBag, Package2, Eye, Search } from 'lucide-react';
 import { getMyOrders, getMyOrderDetail, type ClientOrder } from '../services/clientApi';
 import Modal from '@/components/ui/Modal';
+import Pagination from '@/components/ui/Pagination';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   pendiente: { label: 'Pendiente', color: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400' },
@@ -16,24 +17,25 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<ClientOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
     setLoading(true);
-    getMyOrders()
-      .then((data) => setOrders(data.items))
+    getMyOrders(page, pageSize)
+      .then((data) => {
+        setOrders(data.items);
+        setTotalPages(data.total_pages);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   const filtered = orders.filter((o) =>
     o.id.toLowerCase().includes(search.toLowerCase()),
   );
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const handleViewDetail = async (orderId: string) => {
     setDetailLoading(true);
@@ -74,7 +76,7 @@ export default function OrdersPage() {
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : paginated.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
               <Package2 size={28} className="text-gray-300 dark:text-gray-600" />
@@ -94,7 +96,7 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-                {paginated.map((order) => {
+                {filtered.map((order) => {
                   const status = STATUS_MAP[order.state] || STATUS_MAP.pendiente;
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
@@ -129,29 +131,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Página {page} de {totalPages}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl disabled:opacity-40 transition-all hover:bg-gray-50 dark:hover:bg-slate-800"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl disabled:opacity-40 transition-all hover:bg-gray-50 dark:hover:bg-slate-800"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {/* Modal detalle */}

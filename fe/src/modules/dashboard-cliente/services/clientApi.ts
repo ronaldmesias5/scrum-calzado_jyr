@@ -28,11 +28,14 @@ export interface ClientOrder {
 
 export interface ClientOrderListResponse {
   total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
   items: ClientOrder[];
 }
 
-export async function getMyOrders(): Promise<ClientOrderListResponse> {
-  const res = await api.get('/api/v1/client/orders');
+export async function getMyOrders(page: number = 1, pageSize: number = 10): Promise<ClientOrderListResponse> {
+  const res = await api.get(`/api/v1/client/orders?page=${page}&page_size=${pageSize}`);
   return res.data;
 }
 

@@ -21,12 +21,13 @@
 import { useState, useEffect } from 'react';
 // @ts-ignore
 const XLSX = window.XLSX;
-import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, RefreshCw, Maximize2, Download, XCircle } from 'lucide-react';
+import { Package, TrendingUp, AlertCircle, AlertTriangle, Search, RefreshCw, Maximize2, Download } from 'lucide-react';
 import { Product, listProducts, resolveImageUrl } from '../services/catalogService';
 import AdjustInventoryModal from '../components/AdjustInventoryModal';
 import ViewManufacturedModal from '../components/ViewManufacturedModal';
 import ImageViewerModal from '../components/ImageViewerModal';
 import StatCard from '../components/StatCard';
+import { useToast } from '@/context/ToastContext';
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -43,22 +44,7 @@ export default function InventoryPage() {
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-  const [showExportError, setShowExportError] = useState(false);
-  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    if (showExportError) {
-      const timer = setTimeout(() => setShowExportError(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [showExportError]);
-
-  useEffect(() => {
-    if (showSaveSuccess) {
-      const timer = setTimeout(() => setShowSaveSuccess(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSaveSuccess]);
+  const { showToast } = useToast();
 
   const handleImageError = (imageUrl: string) => {
     setFailedImages(prev => new Set([...prev, imageUrl]));
@@ -69,7 +55,7 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       const data = await listProducts();
-      setProducts(data);
+      setProducts(data.products);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -143,7 +129,7 @@ export default function InventoryPage() {
     const productsWithStock = filteredProducts.filter(p => (p.stock_total || 0) > 0);
 
     if (productsWithStock.length === 0) {
-      setShowExportError(true);
+      showToast("Sin stock disponible para exportar", "error");
       return;
     }
 
@@ -542,20 +528,6 @@ export default function InventoryPage() {
         productName={viewingProductName}
         onClose={() => setViewingImage(null)}
       />
-
-      {/* Toast de Error de Exportación */}
-      <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform ${showExportError ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
-        <div className="bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-400/50 backdrop-blur-md">
-          <AlertTriangle size={20} />
-          <div className="flex flex-col">
-            <p className="text-sm font-bold">Sin stock disponible</p>
-            <p className="text-[10px] opacity-90 font-medium">No hay productos para exportar en el listado actual.</p>
-          </div>
-          <button onClick={() => setShowExportError(false)} className="ml-2 p-1 hover:bg-white/20 rounded-lg transition-colors">
-            <XCircle size={16} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

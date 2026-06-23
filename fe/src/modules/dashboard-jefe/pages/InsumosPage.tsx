@@ -13,6 +13,8 @@ import {
 } from '../services/suppliesService';
 import { getProducts } from '../services/ordersApi';
 import Modal from '@/components/ui/Modal';
+import Pagination from '@/components/ui/Pagination';
+import { useToast } from '@/context/ToastContext';
 
 // ─── Helpers ────────────────────────────────────────────────
 // ─── Helpers: Etapas Globales ────────────────────────────────
@@ -40,13 +42,13 @@ interface SupplyFormModalProps {
 }
 
 function SupplyFormModal({ isOpen, onClose, onSave, initial, title, categories, startInNewCategory = false }: SupplyFormModalProps) {
+  const { showToast } = useToast();
   const [form, setForm] = useState<SupplyCreatePayload>({
     name: '', category: 'otros', color: '', stock_quantity: 0, sizes: {}, unit: 'unidades', description: '',
   });
   const [selectedStage, setSelectedStage] = useState<string>('corte');
   const [categoryMode, setCategoryMode] = useState<'select'|'new'>('select');
   const [loading, setLoading] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -65,17 +67,15 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, categories, 
       });
       setSelectedStage(stage);
       setCategoryMode(startInNewCategory ? 'new' : 'select');
-      setSaveError(null);
     }
   }, [isOpen, initial, startInNewCategory, categories]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { setSaveError('El nombre es obligatorio'); return; }
-    if (!form.category.trim()) { setSaveError('La categoría es obligatoria'); return; }
+    if (!form.name.trim()) { showToast('El nombre es obligatorio', 'error'); return; }
+    if (!form.category.trim()) { showToast('La categoría es obligatoria', 'error'); return; }
     setLoading(true);
-    setSaveError(null);
     try {
       if (categoryMode === 'new') {
         const token = localStorage.getItem('access_token');
@@ -92,8 +92,7 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, categories, 
       onClose();
     } catch (e: any) {
       console.error(e);
-      const msg = e?.response?.data?.detail || e?.message || 'Error al guardar el insumo';
-      setSaveError(String(msg));
+      showToast(e?.response?.data?.detail || e?.message || 'Error al guardar el insumo', 'error');
     } finally {
       setLoading(false);
     }
@@ -108,71 +107,77 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, categories, 
     >
       <div className="flex flex-col">
         {/* Subtitle / Decoration */}
-        <div className="px-8 py-1 -mt-4 mb-2">
+        <div className="px-8 py-1 mb-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">Rellena los datos del insumo</p>
         </div>
 
         <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors">
           
           {/* Row 1: Etapa Global y Tipo */}
-          <div className="space-y-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">1. Etapa de Producción</label>
-              <div className="flex flex-wrap gap-2">
-                {PRODUCTION_STAGES.filter(s => s.key !== 'all').map(stage => (
-                  <button
-                    key={stage.key}
-                    type="button"
-                    onClick={() => {
-                      setSelectedStage(stage.key);
-                      // @ts-ignore
-                      const firstInStage = categories.find(c => c.global_stage === stage.key);
-                      setForm(p => ({ ...p, category: firstInStage?.name || 'otros' }));
-                    }}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                      selectedStage === stage.key 
-                        ? 'bg-blue-600 text-white shadow-lg scale-105' 
-                        : 'bg-white dark:bg-slate-900 text-gray-400 border border-gray-100 dark:border-slate-700'
-                    }`}
-                  >
-                    {stage.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">2. Tipo de Insumo (Categoría)</label>
-              {categoryMode === 'select' ? (
-                <div className="flex gap-2">
-                  <select 
-                    value={form.category} 
-                    onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                    className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                  >
-                    {categories.filter(c => normalize(c.global_stage || 'otros') === normalize(selectedStage)).map(cat => (
-                      <option key={cat.name} value={cat.name}>{cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}</option>
+          <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">1. Etapa de Producción</label>
+                  <div className="flex flex-wrap gap-2">
+                    {PRODUCTION_STAGES.filter(s => s.key !== 'all').map(stage => (
+                      <button
+                        key={stage.key}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStage(stage.key);
+                          // @ts-ignore
+                          const firstInStage = categories.find(c => c.global_stage === stage.key);
+                          setForm(p => ({ ...p, category: firstInStage?.name || 'otros' }));
+                        }}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
+                          selectedStage === stage.key 
+                            ? 'bg-blue-600 text-white shadow-lg scale-105' 
+                            : 'bg-white dark:bg-slate-900 text-gray-400 border border-gray-100 dark:border-slate-700'
+                        }`}
+                      >
+                        {stage.label}
+                      </button>
                     ))}
-                    {categories.filter(c => normalize(c.global_stage || 'otros') === normalize(selectedStage)).length === 0 && (
-                      <option value="">No hay tipos en esta etapa</option>
-                    )}
-                  </select>
-                  <button type="button" onClick={() => { setCategoryMode('new'); setForm(p => ({...p, category: ''})); }}
-                    className="px-3 py-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex-shrink-0">
-                    <Plus size={16} />
-                  </button>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} autoFocus
-                    className="flex-1 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-400 dark:border-blue-600 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    placeholder="Escribe el nuevo tipo..." />
-                  <button type="button" onClick={() => { setCategoryMode('select'); setForm(p => ({...p, category: categories.find(c => c.global_stage === selectedStage)?.name || 'otros'})); }}
-                    className="px-3 py-3 bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 transition-all flex-shrink-0 text-sm font-bold">
-                    ↩
-                  </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">2. Tipo de Insumo (Categoría)</label>
+                  {categoryMode === 'select' ? (
+                    <div className="flex gap-2">
+                      <select 
+                        value={form.category} 
+                        onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                        className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                      >
+                        {categories.filter(c => normalize(c.global_stage || 'otros') === normalize(selectedStage)).map(cat => (
+                          <option key={cat.name} value={cat.name}>{cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}</option>
+                        ))}
+                        {categories.filter(c => normalize(c.global_stage || 'otros') === normalize(selectedStage)).length === 0 && (
+                          <option value="">No hay tipos en esta etapa</option>
+                        )}
+                      </select>
+                      <button type="button" onClick={() => { setCategoryMode('new'); setForm(p => ({...p, category: ''})); }}
+                        className="px-3 py-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex-shrink-0">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} autoFocus
+                        className="flex-1 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-400 dark:border-blue-600 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        placeholder="Escribe el nuevo tipo..." />
+                      <button type="button" onClick={() => { setCategoryMode('select'); setForm(p => ({...p, category: categories.find(c => c.global_stage === selectedStage)?.name || 'otros'})); }}
+                        className="px-3 py-3 bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 transition-all flex-shrink-0 text-sm font-bold">
+                        ↩
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -263,16 +268,11 @@ function SupplyFormModal({ isOpen, onClose, onSave, initial, title, categories, 
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Descripción</label>
-            <textarea rows={2} value={form.description ?? ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            <textarea rows={2} maxLength={500} value={form.description ?? ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
               placeholder="Descripción opcional del insumo..." />
+            <span className="text-[10px] text-gray-400 text-right block mt-0.5">{(form.description ?? '').length}/500</span>
           </div>
-          {saveError && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl text-red-700 dark:text-red-300 text-xs font-bold">
-              <AlertTriangle size={14} className="flex-shrink-0" />
-              {saveError}
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between px-8 py-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30 gap-3">
@@ -297,18 +297,15 @@ interface CreateCategoryModalProps {
 }
 
 function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModalProps) {
+  const { showToast } = useToast();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => { if (isOpen) { setName(''); setError(null); } }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    if (!name.trim()) { setError('El nombre de la categoría es obligatorio'); return; }
+    if (!name.trim()) { showToast('El nombre de la categoría es obligatorio', 'error'); return; }
     setLoading(true);
-    setError(null);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/supplies/categories`, {
         method: 'POST',
@@ -323,7 +320,7 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
       onCreated(cat.name);
       onClose();
     } catch (e: any) {
-      setError(e?.message || 'Error al crear la categoría');
+      showToast(e?.message || 'Error al crear la categoría', 'error');
     } finally {
       setLoading(false);
     }
@@ -338,7 +335,7 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
     >
       <div className="flex flex-col">
         {/* Subtitle / Decoration */}
-        <div className="px-8 py-1 -mt-4 mb-2">
+        <div className="px-8 py-1 mb-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">Crea un nuevo tipo de insumo</p>
         </div>
         <div className="p-8 space-y-4">
@@ -352,12 +349,6 @@ function CreateCategoryModal({ isOpen, onClose, onCreated }: CreateCategoryModal
               className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               placeholder="Ej: montaje, acabado..." />
           </div>
-          {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl text-red-700 dark:text-red-300 text-xs font-bold">
-              <AlertTriangle size={14} className="flex-shrink-0" />
-              {error}
-            </div>
-          )}
         </div>
         <div className="flex items-center justify-between px-8 py-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
           <button onClick={onClose} className="px-6 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all active:scale-[0.98]">
@@ -432,7 +423,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
     >
       <div className="flex flex-col">
         {/* Subtitle / Decoration */}
-        <div className="px-8 py-1 -mt-4 mb-2">
+        <div className="px-8 py-1 mb-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">Insumo: <span className="font-bold text-blue-600 dark:text-blue-400">{supply.name}</span></p>
         </div>
 
@@ -514,6 +505,7 @@ function LinkProductModal({ isOpen, supply, onClose, onRefresh }: LinkProductMod
 
 // ─── Página Principal ────────────────────────────────────────
 export default function InsumosPage() {
+  const { showToast } = useToast();
   const [supplies, setSupplies] = useState<Supply[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; color: string; global_stage?: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -527,6 +519,9 @@ export default function InsumosPage() {
   const [startNewCategory, setStartNewCategory] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   const getStageFromCategory = (categoryName: string) => {
     const cat = categories.find(c => normalize(c.name) === normalize(categoryName));
@@ -549,15 +544,16 @@ export default function InsumosPage() {
   const fetchSupplies = useCallback(async () => {
     setLoading(true);
     try {
-      // Siempre traemos todos para filtrar localmente por etapa
-      const res = await listSupplies();
+      const res = await listSupplies(undefined, page, pageSize);
       setSupplies(res.items || []);
+      setTotalPages(res.total_pages || 1);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, []);
+  }, [page]);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
   useEffect(() => { fetchSupplies(); }, [fetchSupplies]);
+  useEffect(() => { setPage(1); }, [activeCategory, activeSubStage, search]);
 
   const suppliesByStage = activeCategory === 'all' 
     ? supplies 
@@ -573,35 +569,59 @@ export default function InsumosPage() {
   const filtered = suppliesBySubStage.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleCreate = async (data: SupplyCreatePayload) => {
-    await createSupply(data);
-    await Promise.all([fetchSupplies(), fetchCategories()]);
+    try {
+      await createSupply(data);
+      showToast('Insumo creado correctamente', 'success');
+      await Promise.all([fetchSupplies(), fetchCategories()]);
+    } catch (e) {
+      console.error(e);
+      showToast('Error al crear el insumo', 'error');
+    }
   };
 
   const handleUpdate = async (data: SupplyCreatePayload) => {
     if (!editTarget) return;
-    await updateSupply(editTarget.id, data);
-    await Promise.all([fetchSupplies(), fetchCategories()]);
+    try {
+      await updateSupply(editTarget.id, data);
+      showToast('Insumo actualizado correctamente', 'success');
+      await Promise.all([fetchSupplies(), fetchCategories()]);
+    } catch (e) {
+      console.error(e);
+      showToast('Error al actualizar el insumo', 'error');
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteSupply(id);
-    setDeleteId(null);
-    await fetchSupplies();
+    try {
+      await deleteSupply(id);
+      setDeleteId(null);
+      showToast('Insumo eliminado correctamente', 'success');
+      await fetchSupplies();
+    } catch (e) {
+      console.error(e);
+      showToast('Error al eliminar el insumo', 'error');
+    }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    await deleteCategory(id);
-    setDeleteCatId(null);
-    setActiveCategory('all');
-    await fetchCategories();
-    await fetchSupplies();
+    try {
+      await deleteCategory(id);
+      setDeleteCatId(null);
+      setActiveCategory('all');
+      showToast('Categoría eliminada correctamente', 'success');
+      await fetchCategories();
+      await fetchSupplies();
+    } catch (e) {
+      console.error(e);
+      showToast('Error al eliminar la categoría', 'error');
+    }
   };
 
   const handleLinkRefresh = async () => {
     await fetchSupplies();
     // Actualizar el supply del modal de vinculación
     if (linkTarget) {
-      const res = await listSupplies();
+      const res = await listSupplies(undefined, 1, 100);
       const updated = res.items.find(s => s.id === linkTarget.id);
       if (updated) setLinkTarget(updated);
     }
@@ -844,6 +864,9 @@ export default function InsumosPage() {
           </div>
         )}
       </div>
+
+      {/* Paginación */}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* Modal Crear Categoría */}
       <CreateCategoryModal

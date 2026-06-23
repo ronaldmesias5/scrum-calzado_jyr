@@ -45,7 +45,7 @@ export function RoleProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Si no hay restricciones de rol/ocupación, permitir acceso

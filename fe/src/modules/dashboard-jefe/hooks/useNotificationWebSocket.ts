@@ -59,7 +59,8 @@ export function useNotificationWebSocket() {
     };
 
     ws.onerror = () => {
-      ws.close();
+      // No llamar ws.close() aquí — el navegador cierra automáticamente
+      // y llamar close() manualmente causa "closed before connection established"
     };
   }, []);
 

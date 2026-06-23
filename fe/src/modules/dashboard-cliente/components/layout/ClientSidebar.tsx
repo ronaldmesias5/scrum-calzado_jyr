@@ -6,21 +6,28 @@ const links = [
   { to: '/dashboard/client/orders', icon: ShoppingBag, label: 'Mis Pedidos' },
 ];
 
+const ICON_COLORS: Record<string, string> = {
+  '/dashboard/client': 'text-indigo-500 dark:text-indigo-400',
+  '/dashboard/client/orders': 'text-blue-500 dark:text-blue-400',
+};
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  width: number;
+  isCollapsed: boolean;
 }
 
-export default function ClientSidebar({ isOpen, onClose }: Props) {
+export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: Props) {
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
       )}
 
       <aside
-        className={`fixed lg:sticky top-16 left-0 z-50 h-[calc(100vh-4rem)] w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-transform duration-300 flex flex-col ${
+        style={{ width: `${width}px` }}
+        className={`fixed lg:sticky top-16 left-0 z-50 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-transform duration-300 flex flex-col min-w-[72px] ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -38,16 +45,21 @@ export default function ClientSidebar({ isOpen, onClose }: Props) {
               to={link.to}
               end={link.to === '/dashboard/client'}
               onClick={onClose}
+              title={isCollapsed ? link.label : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                `flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} ${isCollapsed ? 'px-0' : 'px-4'} py-2.5 rounded-xl text-sm font-bold transition-all ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                 }`
               }
             >
-              <link.icon size={18} />
-              {link.label}
+              {({ isActive }) => (
+                <>
+                  <link.icon size={18} className={!isActive ? (ICON_COLORS[link.to] ?? '') : ''} />
+                  {!isCollapsed && link.label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>

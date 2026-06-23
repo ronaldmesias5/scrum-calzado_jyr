@@ -46,7 +46,7 @@ from app.modules.auth.schemas import (
     UserCreate,
     UserLogin,
 )
-from app.utils.email import send_password_reset_email
+from app.utils.email import send_password_reset_email, send_account_approved_email, send_welcome_email
 from app.core.logging_config import audit_logger
 from app.utils.security import (
     create_access_token,
@@ -67,8 +67,8 @@ def _redact_email(email: str) -> str:
         return "redacted-error"
 
 
-def register_user(db: Session, user_data: UserCreate) -> User:
-    """Registra un nuevo cliente. Queda con is_active=False hasta que un admin valide."""
+async def register_user(db: Session, user_data: UserCreate) -> User:
+    """Registra un nuevo cliente. La cuenta queda activa inmediatamente (sin validación del jefe)."""
     stmt = select(User).where(User.email == user_data.email)
     existing_user = db.execute(stmt).scalar_one_or_none()
 
@@ -98,8 +98,9 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         occupation=user_data.occupation,
         hashed_password=hash_password(user_data.password),
         role_id=client_role.id,
-        is_active=False,
-        is_validated=False,
+        is_active=True,
+        is_validated=True,
+        validated_at=datetime.now(timezone.utc),
         accepted_terms=user_data.accepted_terms,
         terms_accepted_at=datetime.now(timezone.utc) if user_data.accepted_terms else None,
     )
@@ -107,6 +108,16 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Enviar email de confirmación de registro (no bloquea el registro)
+    try:
+        await send_account_approved_email(
+            email=new_user.email,
+            name=f"{new_user.name_user} {new_user.last_name}",
+        )
+    except Exception as e:
+        audit_logger.warning(f"No se pudo enviar email de registro a {_redact_email(new_user.email)}: {e}")
+
     return new_user
 
 
@@ -127,11 +138,33 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
             audit_logger.warning(f"Intento de login bloqueado: {_redact_email(login_data.email)} (cuenta inactiva)")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cuenta pendiente de validación por el administrador.",
+                detail="Cuenta desactivada. Contacta al administrador.",
             )
 
-        access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
-        refresh_token = create_refresh_token(data={"sub": user.email, "version": user.session_version})
+        # Verificar si la invitación (contraseña temporal) ha expirado
+        if (
+            user.must_change_password
+            and user.invitation_expires_at is not None
+            and user.invitation_expires_at < datetime.now(timezone.utc)
+        ):
+            audit_logger.warning(f"Intento de login con invitación expirada: {_redact_email(login_data.email)}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu contraseña temporal ha expirado. Solicita una nueva invitación.",
+            )
+
+        if login_data.remember_me:
+            access_token = create_access_token(
+                data={"sub": user.email, "version": user.session_version},
+                expires_delta=timedelta(days=30),
+            )
+            refresh_token = create_refresh_token(
+                data={"sub": user.email, "version": user.session_version},
+                expires_delta=timedelta(days=90),
+            )
+        else:
+            access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
+            refresh_token = create_refresh_token(data={"sub": user.email, "version": user.session_version})
 
         audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
 
@@ -195,6 +228,7 @@ def change_password(db: Session, user: User, password_data: ChangePasswordReques
 
     user.hashed_password = hash_password(password_data.new_password)
     user.must_change_password = False
+    user.invitation_expires_at = None
     db.commit()
     audit_logger.info(f"Cambio de contraseña exitoso: {_redact_email(user.email)}")
 
@@ -260,3 +294,44 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
     token_record.used = True
     db.commit()
     audit_logger.info(f"Restablecimiento de contraseña exitoso (vía token): {_redact_email(user.email)}")
+
+
+async def request_new_invitation(db: Session, email: str) -> None:
+    """Genera una nueva contraseña temporal si la invitación anterior expiró. Envía email."""
+    import secrets as _secrets
+    import string as _string
+
+    stmt = select(User).where(User.email == email)
+    user = db.execute(stmt).scalar_one_or_none()
+
+    if not user:
+        return
+
+    # Solo proceder si el usuario tiene must_change_password y la invitación expiró
+    if not user.must_change_password:
+        return
+
+    if user.invitation_expires_at is not None and user.invitation_expires_at >= datetime.now(timezone.utc):
+        return  # La invitación aún es válida, no hacer nada
+
+    # Generar nueva contraseña temporal
+    uppercase = _secrets.choice(_string.ascii_uppercase)
+    lowercase = _secrets.choice(_string.ascii_lowercase)
+    digit = _secrets.choice(_string.digits)
+    remaining = "".join(
+        _secrets.choice(_string.ascii_letters + _string.digits) for _ in range(9)
+    )
+    chars = list(uppercase + lowercase + digit + remaining)
+    _secrets.SystemRandom().shuffle(chars)
+    temp_password = "".join(chars)
+
+    user.hashed_password = hash_password(temp_password)
+    user.invitation_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    db.commit()
+
+    await send_welcome_email(
+        email=user.email,
+        temp_password=temp_password,
+        name=f"{user.name_user} {user.last_name}",
+    )
+    audit_logger.info(f"Nueva invitación generada (auto-servicio): {_redact_email(user.email)}")

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { MyTasksReportResponse, MyTaskDetail, MyPerformanceResponse } from '../services/employeeApi';
+import { formatCOP } from '@/utils/format';
 
 const COLORS = {
   primary: [30, 64, 175] as [number, number, number],
@@ -21,10 +22,6 @@ function sanitizeFilename(name: string): string {
 function formatDate(iso?: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toLocaleString('es-CO')}`;
 }
 
 function formatDateTime(): string {
@@ -171,7 +168,7 @@ export async function exportMyTasksPDF(
   summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatCurrency(data.total_earnings), 146, summaryY + 13, COLORS.accent);
+  summaryValue(formatCOP(data.total_earnings), 146, summaryY + 13, COLORS.accent);
 
   const tableStartY = summaryY + 21;
 
@@ -187,10 +184,10 @@ export async function exportMyTasksPDF(
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : 'Completado',
         t.completed_at ? formatDate(t.completed_at) : (t.created_at ? formatDate(t.created_at) : '—'),
-        t.price_per_dozen ? formatCurrency(t.price_per_dozen / 12) : '—',
-        t.task_total_price ? formatCurrency(t.task_total_price) : '$0',
+        t.price_per_dozen ? formatCOP(t.price_per_dozen / 12) : '—',
+        t.task_total_price ? formatCOP(t.task_total_price) : '$0',
       ]),
-      foot: [['', '', '', '', '', 'TOTAL', formatCurrency(data.total_earnings)]],
+      foot: [['', '', '', '', '', 'TOTAL', formatCOP(data.total_earnings)]],
       theme: 'grid',
       headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
@@ -246,7 +243,7 @@ export async function exportPerformancePDF(
   summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatCurrency(data.total_earnings), 146, summaryY + 13, COLORS.accent);
+  summaryValue(formatCOP(data.total_earnings), 146, summaryY + 13, COLORS.accent);
 
   // ── Desglose por Proceso ────────────────────────────────────────────────
   let y = summaryY + 22;

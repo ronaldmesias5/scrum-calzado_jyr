@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Upload, Plus, DollarSign } from 'lucide-react';
+import { X, Upload, Plus, DollarSign, Search } from 'lucide-react';
 import { listBrands, listCategories, listStyles, Brand, Category, Style } from '../services/catalogService';
 import { listSupplies, Supply } from '../services/suppliesService';
 import Modal from '@/components/ui/Modal';
@@ -44,6 +44,8 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
   const [styleMode, setStyleMode] = useState<'select' | 'new'>('select');
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [addModalCategory, setAddModalCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -62,14 +64,14 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [brandsData, categoriesData, suppliesData] = await Promise.all([
+        const results = await Promise.allSettled([
           listBrands(),
           listCategories(),
-          listSupplies(),
+          listSupplies(undefined, 1, 100),
         ]);
-        setBrands(brandsData);
-        setCategories(categoriesData);
-        setSupplies(suppliesData.items);
+        if (results[0].status === 'fulfilled') setBrands(results[0].value);
+        if (results[1].status === 'fulfilled') setCategories(results[1].value);
+        if (results[2].status === 'fulfilled') setSupplies(results[2].value.items);
       } catch (error) {
         console.error('Error loading data:', error);
       }
@@ -187,17 +189,6 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
       return;
     }
 
-    // Validar que haya al menos un insumo seleccionado por cada categoría disponible
-    const missingCategories = Object.keys(suppliesByCategory).filter(cat => {
-      // Retorna true si NO hay ningún supply.id de esta categoría en supplyLinks
-      return !(suppliesByCategory[cat] || []).some(supply => supply.id in supplyLinks);
-    });
-
-    if (missingCategories.length > 0) {
-      alert(`Por favor, selecciona al menos un insumo para las siguientes categorías: ${missingCategories.join(', ')}`);
-      return;
-    }
-
     setLoading(true);
     try {
       const transformedLinks: Record<string, number> = {};
@@ -232,7 +223,7 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
     >
       <div className="flex flex-col h-full">
         {/* Header subtitle (since base Modal has its own title) */}
-        <div className="px-8 py-2 -mt-4 mb-4">
+        <div className="px-8 py-2 mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Agrega un nuevo producto al catálogo</p>
         </div>
 
@@ -353,31 +344,35 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
             </div>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
-              Color
-            </label>
-            <input
-              type="text"
-              name="color"
-              value={formData.color}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              placeholder="Negro"
-            />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                Color
+              </label>
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                placeholder="Negro"
+              />
+            </div>
 
-          {/* Descripción */}
-          <div>
-            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Descripción</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
-              placeholder="Describe materiales, características especiales, etc."
-            />
+            {/* Descripción */}
+            <div>
+              <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Descripción</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={3}
+                maxLength={500}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+                placeholder="Describe materiales, características especiales, etc."
+              />
+              <span className="text-[10px] text-gray-400 text-right block mt-0.5">{formData.description.length}/500</span>
+            </div>
           </div>
 
           {/* Upload de Imagen */}
@@ -465,33 +460,44 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
             {Object.keys(suppliesByCategory).length === 0 ? (
               <p className="text-xs font-medium text-gray-400 dark:text-gray-500">No hay insumos disponibles. Puedes crearlos en la sección de Insumos.</p>
             ) : (
-              <div className="space-y-4">
-                {Object.entries(suppliesByCategory).map(([cat, catSupplies]) => (
-                  <div key={cat} className="space-y-2">
-                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{cat}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {catSupplies.map(supply => {
-                        const isSelected = supply.id in supplyLinks;
-                        return (
-                          <div key={supply.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'}`}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                setSupplyLinks(prev => {
-                                  const next = { ...prev };
-                                  if (e.target.checked) next[supply.id] = '';
-                                  else delete next[supply.id];
-                                  return next;
-                                });
-                              }}
-                              className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 accent-blue-600 cursor-pointer flex-shrink-0"
-                            />
+              <div>
+                {/* Tarjetas de categorías clickeables */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {Object.entries(suppliesByCategory).map(([cat, catSupplies]) => {
+                    const linkedCount = catSupplies.filter(s => s.id in supplyLinks).length;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => { setAddModalCategory(cat); setSearchQuery(''); }}
+                        className="flex items-center gap-2.5 px-5 py-3.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/10 transition-all group"
+                      >
+                        <span className="text-sm font-bold text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{cat}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full transition-all ${linkedCount > 0 ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'}`}>
+                          {linkedCount}
+                        </span>
+                        <Plus size={16} className="text-blue-400 group-hover:text-blue-600 transition-colors" />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Insumos vinculados agrupados por categoría */}
+                {Object.entries(suppliesByCategory).map(([cat, catSupplies]) => {
+                  const linked = catSupplies.filter(s => s.id in supplyLinks);
+                  if (linked.length === 0) return null;
+                  const isSuelaCat = cat.toLowerCase() === 'suelas';
+                  return (
+                    <div key={cat} className="mb-4 last:mb-0">
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">{cat}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {linked.map(supply => (
+                          <div key={supply.id} className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 transition-all">
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-gray-900 dark:text-white truncate" title={supply.name}>{supply.name}</p>
                               {supply.color && <p className="text-[10px] text-gray-500 dark:text-gray-400">{supply.color}</p>}
                             </div>
-                            {isSelected && supply.category?.toLowerCase() !== 'suelas' && (
+                            {!isSuelaCat ? (
                               <input
                                 type="number"
                                 min={0}
@@ -499,20 +505,88 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
                                 placeholder="Ej: 1.50"
                                 className="w-20 px-2 py-1.5 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-700 rounded-lg text-xs font-bold text-center outline-none focus:ring-2 focus:ring-blue-500"
                                 value={supplyLinks[supply.id] ?? ''}
-                                onChange={e => {
-                                  setSupplyLinks(prev => ({ ...prev, [supply.id]: e.target.value }));
-                                }}
+                                onChange={e => setSupplyLinks(prev => ({ ...prev, [supply.id]: e.target.value }))}
                               />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 px-2">1</span>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => setSupplyLinks(prev => { const n = { ...prev }; delete n[supply.id]; return n; })}
+                              className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors flex-shrink-0"
+                              title="Quitar insumo"
+                            >
+                              <X size={14} />
+                            </button>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+
+                {Object.values(suppliesByCategory).flat().filter(s => s.id in supplyLinks).length === 0 && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-4">Selecciona una categoría para agregar insumos</p>
+                )}
               </div>
             )}
           </div>
+
+          {/* Mini-modal para agregar insumos por categoría */}
+          {addModalCategory && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setAddModalCategory(null)}>
+              <div
+                className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Agregar insumo — {addModalCategory}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setAddModalCategory(null)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  >
+                    <X size={18} className="text-gray-400" />
+                  </button>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Buscar insumo..."
+                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {(suppliesByCategory[addModalCategory] || [])
+                      .filter(s => !(s.id in supplyLinks))
+                      .filter(s => !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || (s.color?.toLowerCase() || '').includes(searchQuery.toLowerCase()))
+                      .map(supply => (
+                        <button
+                          key={supply.id}
+                          type="button"
+                          onClick={() => {
+                            setSupplyLinks(prev => ({ ...prev, [supply.id]: '' }));
+                            setAddModalCategory(null);
+                          }}
+                          className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all text-sm font-bold text-gray-900 dark:text-white"
+                        >
+                          {supply.name}
+                          {supply.color && <span className="text-gray-400 dark:text-gray-500 font-normal ml-2">· {supply.color}</span>}
+                        </button>
+                      ))}
+                    {(suppliesByCategory[addModalCategory] || []).filter(s => !(s.id in supplyLinks)).length === 0 && (
+                      <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No hay más insumos disponibles de esta categoría</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Precios por Tarea */}
           <div className="border-t border-gray-100 dark:border-slate-800 pt-5 transition-colors">
@@ -529,23 +603,28 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
                 { key: 'guarnicion' as const, label: 'Guarnición', color: 'text-indigo-600 dark:text-indigo-400' },
                 { key: 'soladura' as const, label: 'Soladura', color: 'text-blue-700 dark:text-blue-400' },
                 { key: 'emplantillado' as const, label: 'Emplantillado', color: 'text-emerald-600 dark:text-emerald-400' },
-              ]).map(t => (
+              ]).map(t => {
+                const val = formData.task_prices[t.key]
+                return (
                 <div key={t.key} className="space-y-1">
                   <label className={`block text-xs font-bold uppercase tracking-wide ${t.color}`}>{t.label}</label>
                   <input
-                    type="number"
-                    min={0}
-                    step={500}
-                    value={formData.task_prices[t.key] || ''}
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      task_prices: { ...prev.task_prices, [t.key]: parseFloat(e.target.value) || 0 }
-                    }))}
-                    placeholder="0"
+                    type="text"
+                    inputMode="numeric"
+                    value={val > 0 ? `$${val.toLocaleString('es-CO')}` : ''}
+                    onChange={e => {
+                      const cleaned = e.target.value.replace(/[^0-9]/g, '')
+                      const num = parseInt(cleaned, 10) || 0
+                      setFormData(prev => ({
+                        ...prev,
+                        task_prices: { ...prev.task_prices, [t.key]: num }
+                      }))
+                    }}
+                    placeholder="$0"
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:border-blue-500 rounded-xl outline-none text-sm font-bold transition-all"
                   />
                 </div>
-              ))}
+              )})}
             </div>
           </div>
 

@@ -8,7 +8,7 @@ interface ModalProps {
   children: ReactNode;
   title?: string;
   titleId?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
   variant?: 'blur' | 'dark' | 'light';
   showClose?: boolean;
   className?: string;
@@ -20,11 +20,12 @@ const SIZE_CLASSES: Record<string, string> = {
   md: 'max-w-md max-h-[85vh]',
   lg: 'max-w-lg max-h-[85vh]',
   xl: 'max-w-xl max-h-[85vh]',
+  '2xl': 'max-w-2xl max-h-[85vh]',
   full: 'max-w-4xl max-h-[90vh]',
 };
 
 const OVERLAY_CLASSES: Record<string, string> = {
-  blur: 'bg-black/85 backdrop-blur-md',
+  blur: 'bg-black/40',
   dark: 'bg-black/80',
   light: 'bg-black/40',
 };
@@ -109,7 +110,7 @@ export default function Modal({
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 overflow-y-auto">
       <div
         className={`absolute inset-0 ${overlay} transition-all duration-300`}
         onClick={handleClose}
@@ -121,7 +122,7 @@ export default function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 ${className}`}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 my-8 ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || showClose) && (

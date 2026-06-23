@@ -34,9 +34,10 @@ interface AuthLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  wide?: boolean;
 }
 
-export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+export function AuthLayout({ children, title, subtitle, wide }: AuthLayoutProps) {
   const { t } = useTranslation();
   const { getHeaderClasses, getLogoClasses, getButtonsClasses } = useHeaderAnimation();
 
@@ -58,7 +59,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
               <ThemeToggle />
             </div>
             <Link
-              to="/auth/login"
+              to="/"
               className="hidden md:flex px-6 py-2 rounded-xl bg-[#1e40af] dark:bg-blue-600 text-white font-bold text-sm shadow-lg hover:shadow-blue-500/20 active:scale-95 transition-all duration-200"
             >
               {t('common.login')}
@@ -75,10 +76,10 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       {/* ════════════════════════════════════════ */}
       {/* Contenido principal centrado */}
       {/* ════════════════════════════════════════ */}
-      <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-2xl transition-shadow duration-300">
-            <div className="mb-8 border-b border-gray-100 dark:border-slate-800 pb-4">
+      <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <div className={`w-full ${wide ? "max-w-4xl" : "max-w-md"}`}>
+          <div className={`rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-shadow duration-300 ${wide ? "p-6" : "p-8"}`}>
+            <div className={`border-b border-gray-100 dark:border-slate-800 ${wide ? "mb-4 pb-3" : "mb-8 pb-4"}`}>
               <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{title}</h2>
               {subtitle && (
                 <p className="mt-2 text-base text-gray-500 dark:text-gray-400 font-medium">{subtitle}</p>

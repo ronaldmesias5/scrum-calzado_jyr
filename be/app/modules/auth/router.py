@@ -36,6 +36,7 @@ from app.modules.auth.schemas import (
     MessageResponse,
     ReactivationRequest,
     RefreshTokenRequest,
+    RequestNewInvitationRequest,
     ResetPasswordRequest,
     TokenResponse,
     UserCreate,
@@ -56,12 +57,12 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo cliente",
 )
-def register(
+async def register(
     user_data: UserCreate,
     db: Session = Depends(get_db),
 ) -> UserResponse:
-    """Registra un nuevo cliente. La cuenta queda pendiente de validación por el admin."""
-    user = auth_service.register_user(db=db, user_data=user_data)
+    """Registra un nuevo cliente. La cuenta queda activa inmediatamente y recibe un email de confirmación."""
+    user = await auth_service.register_user(db=db, user_data=user_data)
     return UserResponse(
         id=user.id,
         email=user.email,
@@ -264,5 +265,27 @@ async def request_reactivation(
 
     return MessageResponse(
         message="Tu solicitud de reactivación ha sido registrada. Recibirás una respuesta por correo electrónico."
+    )
+
+
+@router.post(
+    "/request-new-invitation",
+    response_model=MessageResponse,
+    summary="Solicitar nueva invitación (contraseña temporal expirada)",
+)
+async def request_new_invitation(
+    data: RequestNewInvitationRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Permite a un usuario solicitar una nueva contraseña temporal cuando su
+    invitación anterior ha expirado. Endpoint público (sin auth).
+
+    Por seguridad, siempre responde con el mismo mensaje sin revelar si el
+    email existe o si la invitación estaba realmente expirada.
+    """
+    await auth_service.request_new_invitation(db=db, email=data.email)
+    return MessageResponse(
+        message="Si tu invitación había expirado, recibirás un nuevo email con tus credenciales."
     )
 

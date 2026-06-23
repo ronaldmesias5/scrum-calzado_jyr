@@ -148,3 +148,13 @@ export async function rejectReactivation(ticketId: string, comment: string): Pro
   );
   return response.data;
 }
+
+// ────────────────────────────────────────────────
+// Renovación de invitación
+// ────────────────────────────────────────────────
+
+/** Renueva la invitación de un usuario (genera nueva contraseña temporal) */
+export async function renewInvitation(userId: string): Promise<UserResponse> {
+  const response = await api.post<UserResponse>(`${ADMIN_PREFIX}/users/${userId}/renew-invitation`);
+  return response.data;
+}

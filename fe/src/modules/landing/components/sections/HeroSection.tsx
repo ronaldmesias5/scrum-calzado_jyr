@@ -1,26 +1,15 @@
 /**
- * Componente: HeroSection.tsx
- * Descripción: Sección heroica de landing (imagen grande + CTA).
- * 
- * ¿Qué?
- *   Hero con:
- *   - Imagen de fondo (background gradient + overlay)
- *   - Título "CALZADO J&R"
- *   - Subtítulo "Calidad y Estilo a tu Alcance"
- *   - CTA buttons: "Explorar Catálogo", "Contactar"
- * 
- * ¿Para qué?
- *   - Primera impresión visual en landing
- *   - Conversión: guiar a usuarios a catálogo o contacto
- * 
- * ¿Impacto?
- *   MEDIO — Visual, importante para conversión pero no crítico.
+ * HeroSection.tsx — Hero section with CTA buttons.
+ * Now uses callback props instead of Links for auth actions.
  */
 
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  onLoginClick?: () => void;
+}
+
+export default function HeroSection({ onLoginClick }: HeroSectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -51,18 +40,18 @@ export default function HeroSection() {
            {t('landing.hero.description')}
         </p>
         <div className="flex flex-col sm:flex-row gap-5 justify-center stagger-reveal" style={{ animationDelay: '0.5s' }}>
-          <Link
-            to="/catalog"
+          <a
+            href="/catalog"
             className="px-8 py-4 bg-secondary hover:bg-secondary-dark text-white font-bold rounded-xl shadow-lg hover:scale-105 transform transition duration-200 btn-shimmer"
           >
             {t('landing.hero.ctaCatalog')}
-          </Link>
-          <Link
-            to="/auth/login"
+          </a>
+          <button
+            onClick={onLoginClick}
             className="px-8 py-4 border-2 border-white/30 hover:border-white text-white font-bold rounded-xl backdrop-blur-sm transition duration-200"
           >
             {t('landing.hero.ctaLogin')}
-          </Link>
+          </button>
         </div>
 
         {/* Indicador de scroll */}

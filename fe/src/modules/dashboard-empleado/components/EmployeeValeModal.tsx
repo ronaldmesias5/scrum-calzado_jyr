@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   XCircle, Package, Scissors, PenTool, Hammer, Sparkles,
-  User, Loader2, AlertCircle, CheckCircle, CheckCircle2,
+  User, Loader2, CheckCircle, CheckCircle2,
 } from 'lucide-react';
 import { getTaskVale, updateEmployeeTaskStatus } from '../services/employeeApi';
 import type { ValeResponse } from '../types/employee';
+import { useToast } from '@/context/ToastContext';
+import { formatCOP } from '@/utils/format';
 
 interface Props {
   taskId: string;
@@ -20,21 +22,14 @@ const STAGES = [
 ];
 
 export default function EmployeeValeModal({ taskId, onClose }: Props) {
+  const { showToast } = useToast();
   const [vale, setVale] = useState<ValeResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [observations, setObservations] = useState<Record<string, string>>({});
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-
-  const showMsg = (text: string, type: 'success' | 'error') => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3000);
-  };
 
   const loadVale = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const data = await getTaskVale(taskId);
       setVale(data);
@@ -45,7 +40,8 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
       setObservations(obs);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      setError(err?.response?.data?.detail || 'Error al cargar el vale');
+      showToast(err?.response?.data?.detail || 'Error al cargar el vale', 'error');
+      onClose();
     } finally {
       setLoading(false);
     }
@@ -58,11 +54,11 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
     try {
       const obs = observations[tId] || '';
       await updateEmployeeTaskStatus(tId, newStatus, obs);
-      showMsg('Estado actualizado', 'success');
+      showToast('Estado actualizado', 'success');
       loadVale();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      showMsg(err?.response?.data?.detail || 'Error al actualizar estado', 'error');
+      showToast(err?.response?.data?.detail || 'Error al actualizar estado', 'error');
     } finally {
       setStatusUpdating(null);
     }
@@ -74,23 +70,6 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-white" />
           <p className="text-sm text-white font-medium">Cargando vale...</p>
-        </div>
-      </div>,
-      document.body
-    );
-  }
-
-  if (error) {
-    return createPortal(
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full">
-          <div className="flex items-center gap-3 text-red-600">
-            <AlertCircle className="w-6 h-6" />
-            <p className="font-bold">{error}</p>
-          </div>
-          <button onClick={onClose} className="mt-4 px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold">
-            Cerrar
-          </button>
         </div>
       </div>,
       document.body
@@ -125,18 +104,6 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8 min-h-0">
-
-          {/* Toast */}
-          {message && (
-            <div className={`px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-bold ${
-              message.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
-            }`}>
-              {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-              {message.text}
-            </div>
-          )}
 
           {/* ── Encabezado CALZADO J&R ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm gap-6">
@@ -265,10 +232,10 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                           {isMine && task.price_per_dozen > 0 && (
                             <div className="mt-1 flex flex-col">
                               <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400">
-                                ${task.price_per_dozen.toLocaleString('es-CO')} / docena
+                                {formatCOP(task.price_per_dozen)} / docena
                               </p>
                               <p className="text-[10px] font-black text-green-700 dark:text-green-400">
-                                Total: ${task.total_cost.toLocaleString('es-CO')} ({task.amount} pares)
+                                Total: {formatCOP(task.total_cost)} ({task.amount} pares)
                               </p>
                             </div>
                           )}
@@ -333,8 +300,10 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                                   onChange={(e) => setObservations((prev) => ({ ...prev, [task.id]: e.target.value }))}
                                   placeholder="Ej: Faltaron insumos..."
                                   rows={2}
+                                  maxLength={500}
                                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all resize-none placeholder:text-gray-400"
                                 />
+                                <span className="text-[10px] text-gray-400 text-right block mt-0.5">{(observations[task.id] || '').length}/500</span>
                                 <p className="text-[9px] text-blue-500 font-medium italic">La observación se guarda al cambiar el estado</p>
                               </div>
                             </div>

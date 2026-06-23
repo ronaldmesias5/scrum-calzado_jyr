@@ -11,10 +11,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { useToast } from "@/context/ToastContext";
 
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
 
@@ -22,27 +23,23 @@ export function ResetPasswordPage() {
     new_password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
 
     if (!token) {
-      setError("Token de recuperación no encontrado en la URL.");
+      showToast("Token de recuperación no encontrado en la URL.", "error");
       return;
     }
 
     if (formData.new_password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      showToast("Las contraseñas no coinciden", "error");
       return;
     }
 
@@ -50,11 +47,13 @@ export function ResetPasswordPage() {
 
     try {
       await resetPassword({ token, new_password: formData.new_password });
-      setSuccess("Contraseña restablecida exitosamente. Ya puedes iniciar sesión.");
+      const msg = "Contraseña restablecida exitosamente. Ya puedes iniciar sesión.";
+      setSuccess(msg);
+      showToast(msg, "success");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al restablecer la contraseña";
-      setError(message);
+      showToast(message, "error");
     } finally {
       setIsLoading(false);
     }
@@ -65,15 +64,9 @@ export function ResetPasswordPage() {
       title="Restablecer contraseña"
       subtitle="Ingresa tu nueva contraseña"
     >
-      {error && (
-        <div className="mb-4">
-          <Alert type="error" message={error} onClose={() => setError(null)} />
-        </div>
-      )}
-
       {success && (
-        <div className="mb-4">
-          <Alert type="success" message={success} />
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300">
+          {success}
         </div>
       )}
 

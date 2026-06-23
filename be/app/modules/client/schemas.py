@@ -38,4 +38,7 @@ class ClientOrderResponse(BaseModel):
 
 class ClientOrderListResponse(BaseModel):
     total: int
+    page: int = 1
+    page_size: int = 10
+    total_pages: int = 1
     items: list[ClientOrderResponse]

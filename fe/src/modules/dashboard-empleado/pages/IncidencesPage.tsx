@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  AlertTriangle, AlertCircle, RefreshCw,
-  Wrench, Plus, Box, Package,
+  AlertTriangle, RefreshCw,
+  Wrench, Plus, Box, Package, AlertCircle,
 } from 'lucide-react';
 import {
   getGeneralIncidences,
@@ -20,8 +20,10 @@ import type {
   ValeResponse,
 } from '../types/employee';
 import api from '@/api/axios';
+import { useToast } from '@/context/ToastContext';
 
 export default function EmployeeIncidencesPage() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'maquinaria' | 'insumo' | 'producto'>('maquinaria');
   const [generalIncidences, setGeneralIncidences] = useState<GeneralIncidence[]>([]);
   const [generalLoading, setGeneralLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function EmployeeIncidencesPage() {
   const [productTasks, setProductTasks] = useState<EmployeeTask[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
-  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
+  const [valeAmountMap, setValeAmountMap] = useState<Record<string, number>>({});
   const [description, setDescription] = useState('');
   const [productQuantity, setProductQuantity] = useState<number | ''>(1);
   const [productObservations, setProductObservations] = useState('');
@@ -73,20 +75,20 @@ export default function EmployeeIncidencesPage() {
   const loadTaskSizes = useCallback(async (taskId: string) => {
     try {
       const vale: ValeResponse = await getTaskVale(taskId);
-      setAvailableSizes([...new Set(vale.details.map((d) => d.size))]);
-    } catch (e) { console.error('Error al cargar tamaños:', e); setAvailableSizes([]); }
+      setValeAmountMap(Object.fromEntries(vale.details.map((d) => [d.size, d.amount])));
+    } catch (e) { console.error('Error al cargar tallas:', e); setValeAmountMap({}); }
   }, []);
 
   const handleOpenProductModal = async () => {
     setShowProductModal(true);
-    setSelectedTaskId(''); setSelectedSize(''); setAvailableSizes([]);
+    setSelectedTaskId(''); setSelectedSize(''); setValeAmountMap({});
     setDescription(''); setProductQuantity(1); setProductObservations('');
     await loadProductTasks();
   };
 
   const handleTaskSelect = async (taskId: string) => {
     setSelectedTaskId(taskId); setSelectedSize('');
-    if (taskId) await loadTaskSizes(taskId); else setAvailableSizes([]);
+    if (taskId) await loadTaskSizes(taskId); else setValeAmountMap({});
   };
 
   const handleCreateProductIncidence = async () => {
@@ -95,8 +97,9 @@ export default function EmployeeIncidencesPage() {
     try {
       await createProductIncidence({ task_id: selectedTaskId, size: selectedSize, description: description.trim(), quantity: productQuantity || 1, observations: productObservations || undefined });
       setShowProductModal(false);
+      showToast('Incidencia de producto registrada correctamente', 'success');
       await loadProductIncidences();
-    } catch (e) { console.error('Error al crear incidencia de producto:', e); }
+    } catch (e) { console.error('Error al crear incidencia de producto:', e); showToast('Error al crear incidencia de producto', 'error'); }
     finally { setCreatingProduct(false); }
   };
 
@@ -125,8 +128,9 @@ export default function EmployeeIncidencesPage() {
       else { if (supplyInputMode === 'select') payload.supply_id = newSupplyId; else payload.custom_supply_name = newCustomSupplyName.trim(); }
       await createGeneralIncidence(payload);
       setShowCreateModal(false);
+      showToast('Incidencia registrada correctamente', 'success');
       await loadGeneralIncidences();
-    } catch (e) { console.error('Error al crear incidencia general:', e); }
+    } catch (e) { console.error('Error al crear incidencia general:', e); showToast('Error al crear incidencia', 'error'); }
     finally { setCreating(false); }
   };
 
@@ -268,7 +272,8 @@ export default function EmployeeIncidencesPage() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observaciones</label>
-                  <textarea value={newObservations} onChange={(e) => setNewObservations(e.target.value)} placeholder="Describe la falla de la máquina..." rows={3} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none" />
+                  <textarea value={newObservations} onChange={(e) => setNewObservations(e.target.value)} placeholder="Describe la falla de la máquina..." rows={3} maxLength={500} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none" />
+                  <span className="text-[10px] text-gray-400 text-right block mt-0.5">{newObservations.length}/500</span>
                 </div>
               </>
             ) : (
@@ -287,7 +292,8 @@ export default function EmployeeIncidencesPage() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observaciones</label>
-                  <textarea value={newObservations} onChange={(e) => setNewObservations(e.target.value)} placeholder="Describe la falla del insumo..." rows={3} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm resize-none" />
+                  <textarea value={newObservations} onChange={(e) => setNewObservations(e.target.value)} placeholder="Describe la falla del insumo..." rows={3} maxLength={500} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm resize-none" />
+                  <span className="text-[10px] text-gray-400 text-right block mt-0.5">{newObservations.length}/500</span>
                 </div>
               </>
             )}
@@ -309,10 +315,10 @@ export default function EmployeeIncidencesPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Registrar Incidencia de Producto</h3><button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><span className="text-xl">&times;</span></button></div>
             <div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tarea <span className="text-red-500">*</span></label><select value={selectedTaskId} onChange={(e) => handleTaskSelect(e.target.value)} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"><option value="">Seleccionar tarea...</option>{productTasks.map((t) => (<option key={t.id} value={t.id}>Vale #{t.vale_number ?? '?'} — {t.product_name} — {t.type} (x{t.amount})</option>))}</select></div>
-            {selectedTaskId && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Talla <span className="text-red-500">*</span></label><select value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"><option value="">Seleccionar talla...</option>{availableSizes.map((s) => (<option key={s} value={s}>{s}</option>))}</select></div>)}
-            {selectedSize && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cantidad <span className="text-red-500">*</span></label><input type="number" min="1" max={productTasks.find(t => t.id === selectedTaskId)?.amount ?? 999} value={productQuantity} onChange={(e) => { const val = e.target.value; setProductQuantity(val === '' ? '' : (parseInt(val) || 1)); }} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" /></div>)}
-            {productQuantity && productQuantity > 0 && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción del defecto <span className="text-red-500">*</span></label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe el defecto encontrado (ej: 'despegue de suela', 'costura rota')" rows={3} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" /></div>)}
-            <div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observaciones</label><textarea value={productObservations} onChange={(e) => setProductObservations(e.target.value)} placeholder="Describe el problema..." rows={3} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" /></div>
+            {selectedTaskId && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Talla <span className="text-red-500">*</span></label><select value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"><option value="">Seleccionar talla...</option>{Object.keys(valeAmountMap).map((s) => (<option key={s} value={s}>{s}</option>))}</select></div>)}
+            {selectedSize && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cantidad <span className="text-red-500">*</span></label><input type="number" min="0" max={valeAmountMap[selectedSize] ?? 1} value={productQuantity} onChange={(e) => { const cleaned = e.target.value.replace(/[^0-9]/g, ''); const parsed = parseInt(cleaned, 10); const max = valeAmountMap[selectedSize] ?? 1; if (cleaned === '') { setProductQuantity(''); return; } setProductQuantity(Math.min(Math.max(parsed || 0, 0), max)); }} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />{valeAmountMap[selectedSize] != null && <p className="text-[10px] text-gray-400 mt-1">Máx. {valeAmountMap[selectedSize]} pares</p>}</div>)}
+            {productQuantity && productQuantity > 0 && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción del defecto <span className="text-red-500">*</span></label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe el defecto encontrado (ej: 'despegue de suela', 'costura rota')" rows={3} maxLength={500} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" /><span className="text-[10px] text-gray-400 text-right block mt-0.5">{description.length}/500</span></div>)}
+            <div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observaciones</label><textarea value={productObservations} onChange={(e) => setProductObservations(e.target.value)} placeholder="Describe el problema..." rows={3} maxLength={500} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" /><span className="text-[10px] text-gray-400 text-right block mt-0.5">{productObservations.length}/500</span></div>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowProductModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-colors">Cancelar</button>
               <button onClick={handleCreateProductIncidence} disabled={creatingProduct || !selectedTaskId || !selectedSize || !description.trim() || !productQuantity || productQuantity <= 0} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2">{creatingProduct ? (<span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />) : (<Plus size={16} />)} Registrar</button>

@@ -28,7 +28,7 @@ export default function DeleteConfirmModal({
     >
       <div className="flex flex-col">
         {/* Header decoration (since title is in base Modal) */}
-        <div className="bg-red-50 dark:bg-red-900/10 px-6 py-2 -mt-4 mb-4 border-b border-red-100 dark:border-red-900/20">
+        <div className="bg-red-50 dark:bg-red-900/10 px-6 py-2 mb-4 border-b border-red-100 dark:border-red-900/20">
           <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest">Acción irreversible</p>
         </div>
 

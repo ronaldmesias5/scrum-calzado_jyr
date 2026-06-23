@@ -21,6 +21,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+from sqlalchemy import select, func
+
 from app.core.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.supplies import Supplies
 from app.models.supply_categories import SupplyCategory
@@ -148,17 +150,33 @@ def delete_supply_category(
 @router.get("/supplies", response_model=SuppliesListResponse, summary="Listar insumos")
 def list_supplies(
     category: str | None = Query(None, description="Filtrar por categoría"),
+    page: int = Query(1, ge=1, description="Página (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
     db: Session = Depends(get_db),
     _current_user=Depends(get_current_user),
 ) -> SuppliesListResponse:
     stmt = select(Supplies).where(Supplies.deleted_at == None)
     if category:
         stmt = stmt.where(Supplies.category == category)
+
+    count_stmt = select(func.count(Supplies.id)).where(Supplies.deleted_at == None)
+    if category:
+        count_stmt = count_stmt.where(Supplies.category == category)
+    total = db.execute(count_stmt).scalar() or 0
+
     stmt = stmt.order_by(Supplies.created_at.desc())
+    offset = (page - 1) * page_size
+    stmt = stmt.offset(offset).limit(page_size)
     supplies = db.execute(stmt).scalars().all()
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+
     return SuppliesListResponse(
         items=[_supply_to_out(s) for s in supplies],
-        total=len(supplies),
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
     )
 
 

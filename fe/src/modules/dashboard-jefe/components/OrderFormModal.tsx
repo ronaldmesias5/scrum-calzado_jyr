@@ -4,13 +4,14 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Check, Package, Clipboard, Maximize2 } from 'lucide-react';
 import { createOrder, getStyles, getClients, getCategories, getProducts, updateOrderDetails, OrderCreateRequest, OrderDetailItemCreateRequest, type OrderDetail } from '../services/ordersApi';
 import { resolveImageUrl } from '../services/catalogService';
 import { useModalDialog } from '@/hooks/useModalDialog';
 import ImageViewerModal from './ImageViewerModal';
 import SummarySizer from './SummarySizer';
 import Modal from '@/components/ui/Modal';
+import { useToast } from '@/context/ToastContext';
 
 interface OrderFormModalProps {
   isOpen: boolean;
@@ -79,12 +80,10 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   const editProductIdReal = editProductId?.includes('::') ? editProductId.split('::')[0] : editProductId;
   const editLineGroup = editProductId?.includes('::') ? parseInt(editProductId.split('::')[1] || '0') : undefined;
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [addSuccess, setAddSuccess] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [hasAddedProducts, setHasAddedProducts] = useState(false);
   const [selectedClient, setSelectedClient] = useState<string>('');
+  const [deliveryDate, setDeliveryDate] = useState('');
   const [clients, setClients] = useState<Client[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
@@ -104,6 +103,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [viewingProductName, setViewingProductName] = useState('');
   const [activePreset, setActivePreset] = useState<string | null>(null);
+
+  const { showToast } = useToast();
 
   const loadData = useCallback(async () => {
     try {
@@ -126,7 +127,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
       setProducts(productsData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido al cargar datos';
-      setError('Error cargando datos: ' + message);
+      showToast('Error cargando datos: ' + message, 'error');
       console.error('LoadData error:', err);
     } finally {
       setLoading(false);
@@ -136,8 +137,6 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   useEffect(() => {
     if (isOpen) {
       loadData();
-      setError(null);
-      setSuccess(false);
       if (editOrder) {
         setSelectedClient(editOrder.customer_id);
         const preloaded: OrderLineItem[] = [];
@@ -228,6 +227,18 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
     }
   }, [selectedClient]);
 
+  // Pre-fill delivery date when editing
+  useEffect(() => {
+    if (editOrder?.delivery_date) {
+      try {
+        const d = new Date(editOrder.delivery_date);
+        setDeliveryDate(d.toISOString().split('T')[0] ?? '');
+      } catch {
+        setDeliveryDate('');
+      }
+    }
+  }, [editOrder]);
+
   const applyRelativeCurve = (curve: Record<string, number>, startSize: string, presetId: string) => {
     const newAmounts: Record<string, string> = {};
     const startIndex = availableSizes.indexOf(startSize);
@@ -268,20 +279,20 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   };
 
   const handleAddItem = async () => {
-    if (!selectedCategory || !selectedBrand || !selectedStyle || !selectedProduct) { 
-      setError('Por favor selecciona categoría, marca, estilo y producto'); 
-      return; 
+    if (!selectedCategory || !selectedBrand || !selectedStyle || !selectedProduct) {
+      showToast('Por favor selecciona categoría, marca, estilo y producto', 'error');
+      return;
     }
     const itemsWithAmount = Object.entries(sizeAmounts).filter(([, amount]) => amount && parseInt(amount as string) > 0);
-    if (itemsWithAmount.length === 0) { 
-      setError('Por favor ingresa cantidad para al menos una talla'); 
-      return; 
+    if (itemsWithAmount.length === 0) {
+      showToast('Por favor ingresa cantidad para al menos una talla', 'error');
+      return;
     }
-    
+
     const product = products.find((p) => p.id === selectedProduct);
-    if (!product) { 
-      setError('Producto no encontrado'); 
-      return; 
+    if (!product) {
+      showToast('Producto no encontrado', 'error');
+      return;
     }
     
     const maxLineGroup = items.reduce((max, it) => Math.max(max, it.line_group), 0);
@@ -318,24 +329,22 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
       });
     });
 
-    setError(null);
-
     if (isEditMode && editOrder) {
       setAddLoading(true);
       try {
         await updateOrderDetails(editOrder.id, { details });
         setItems(updatedItems);
         setHasAddedProducts(true);
-        setAddSuccess(true);
+        showToast('Producto agregado correctamente');
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error desconocido';
-        setError('Error al añadir producto: ' + msg);
+        showToast('Error al añadir producto: ' + msg, 'error');
       } finally {
         setAddLoading(false);
       }
     } else {
       setItems(updatedItems);
-      setAddSuccess(true);
+      showToast('Producto agregado correctamente');
     }
 
     setSelectedCategory('');
@@ -383,11 +392,10 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   };
 
   const handleSubmit = async () => {
-    if (!isEditMode && !selectedClient) { setError('Por favor selecciona un cliente'); return; }
-    if (items.length === 0) { setError('Por favor agrega al menos un producto'); return; }
+    if (!isEditMode && !selectedClient) { showToast('Por favor selecciona un cliente', 'error'); return; }
+    if (items.length === 0) { showToast('Por favor agrega al menos un producto', 'error'); return; }
     try {
       setLoading(true);
-      setError(null);
       const details: OrderDetailItemCreateRequest[] = [];
       let totalPairs = 0;
       items.forEach((item) => { 
@@ -405,16 +413,16 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
           } 
         }); 
       });
-      if (details.length === 0) { setError('Debes ingresar al menos un par en el pedido'); setLoading(false); return; }
+      if (details.length === 0) { showToast('Debes ingresar al menos un par en el pedido', 'error'); setLoading(false); return; }
       if (isEditMode) {
-        await updateOrderDetails(editOrder!.id, { details });
+        await updateOrderDetails(editOrder!.id, { delivery_date: deliveryDate || null, details });
       } else {
-        const orderData: OrderCreateRequest = { customer_id: selectedClient, total_pairs: totalPairs, details };
+        const orderData: OrderCreateRequest = { customer_id: selectedClient, total_pairs: totalPairs, delivery_date: deliveryDate || null, details };
         await createOrder(orderData);
       }
-      setSuccess(true);
+      showToast('Operación exitosa');
       setTimeout(() => { setSelectedClient(''); setItems([]); onClose(); onSuccess?.(); }, 1500);
-    } catch (err) { setError('Error ' + (isEditMode ? 'editando' : 'creando') + ' la orden: ' + (err instanceof Error ? err.message : 'Desconocido')); } finally { setLoading(false); }
+    } catch (err) { showToast('Error ' + (isEditMode ? 'editando' : 'creando') + ' la orden: ' + (err instanceof Error ? err.message : 'Desconocido'), 'error'); } finally { setLoading(false); }
   };
 
   const handleClose = useCallback(() => {
@@ -440,7 +448,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
     >
       <div className="flex flex-col h-full">
         {/* Custom Header Subtitle (integrated with base Modal) */}
-        <div className="px-6 py-2 -mt-4 mb-2 flex items-center gap-3">
+        <div className="px-6 py-2 mb-2 flex items-center gap-3">
           <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <Clipboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
@@ -449,28 +457,31 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
           </p>
         </div>
         <div className="p-6 flex-1 overflow-y-auto bg-white dark:bg-slate-900">
-          {success ? (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-8 text-center transition-colors">
-              <Check className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-green-900 dark:text-green-100">{isEditMode ? 'Pedido actualizado exitosamente' : 'Pedido creado exitosamente'}</h3>
-              <p className="text-green-700 dark:text-green-300 mt-2">{isEditMode ? 'Los cambios han sido guardados.' : 'La orden ha sido registrada en el sistema.'}</p>
-            </div>
-          ) : (
             <div className="space-y-8">
-              {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3"><AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" /><p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p></div>}
-              
-              {/* Sección 1: Cliente — solo al crear pedido nuevo */}
+
+              {/* Sección 1: Cliente y Fecha de entrega */}
               {!isEditMode && (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all">
-                <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Cliente del Pedido <span className="text-red-600">*</span></label>
-                {loading && !clients.length ? (
-                  <div className="flex items-center justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
-                ) : (
-                  <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-bold transition-all shadow-sm">
-                    <option value="">Seleccionar cliente mayorista...</option>
-                    {clients.map((client) => <option key={client.id} value={client.id}>{client.name} {client.last_name} {client.business_name ? `(${client.business_name})` : ''}</option>)}
-                  </select>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all">
+                  <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Cliente del Pedido <span className="text-red-600">*</span></label>
+                  {loading && !clients.length ? (
+                    <div className="flex items-center justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
+                  ) : (
+                    <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-bold transition-all shadow-sm">
+                      <option value="">Seleccionar cliente mayorista...</option>
+                      {clients.map((client) => <option key={client.id} value={client.id}>{client.name} {client.last_name} {client.business_name ? `(${client.business_name})` : ''}</option>)}
+                    </select>
+                  )}
+                </div>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all">
+                  <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Fecha estimada de entrega <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <input
+                    type="date"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-bold transition-all shadow-sm"
+                  />
+                </div>
               </div>
               )}
 
@@ -513,51 +524,78 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                   <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
                     <label className="block text-[10px] font-black text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">Selecciona Color / Variante <span className="text-red-600">*</span></label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {getAvailableProducts().map((prod) => (
+{getAvailableProducts().map((prod) => {
+                        const isAdded = items.some(it => it.product_id === prod.id);
+                        return (
                         <div 
                           key={prod.id}
                           onClick={() => setSelectedProduct(prod.id)}
                           className={`group cursor-pointer rounded-2xl p-2 border-2 transition-all duration-300 relative ${
                             selectedProduct === prod.id 
                               ? 'bg-white dark:bg-slate-800 border-blue-600 dark:border-blue-500 shadow-xl shadow-blue-500/10 scale-[1.02]' 
+                              : isAdded
+                              ? 'bg-green-50/80 dark:bg-green-900/20 border-green-500 dark:border-green-500 shadow-md shadow-green-500/20'
                               : 'bg-white/50 dark:bg-slate-800/50 border-transparent hover:border-gray-300 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-800'
                           }`}
                         >
-                          {/* Bot├│n Zoom */}
+                          {/* Already added overlay on image */}
+                          {isAdded && !(selectedProduct === prod.id) && (
+                            <div className="absolute inset-0 z-[5] rounded-2xl bg-green-500/10 pointer-events-none" />
+                          )}
+                          {/* Botón Zoom */}
                           {prod.image_url && (
                              <button 
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setViewingImage(resolveImageUrl(prod.image_url) ?? null);
-                                 setViewingProductName(prod.name);
-                               }}
-                               className="absolute top-3 right-3 z-10 p-1.5 bg-black/85 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
-                             >
-                               <Maximize2 className="w-3.5 h-3.5" />
-                             </button>
-                          )}
-                          
-                          <div className="aspect-square bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden mb-3 shadow-inner">
-                            {prod.image_url ? (
-                              <img src={resolveImageUrl(prod.image_url)} alt={prod.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400"><Package className="w-8 h-8 opacity-20" /></div>
-                            )}
-                          </div>
-                          <div className="px-1 text-center">
-                            <p className={`text-xs font-black truncate ${selectedProduct === prod.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                              {prod.color || 'Unico'}
-                            </p>
-                          </div>
-                          
-                          {/* Indicator Check */}
-                          {selectedProduct === prod.id && (
-                            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transform animate-in zoom-in duration-300">
-                              <Check className="w-3 h-3 font-bold" />
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingImage(resolveImageUrl(prod.image_url) ?? null);
+                                  setViewingProductName(prod.name);
+                                }}
+                                className="absolute top-3 right-3 z-10 p-1.5 bg-black/85 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                              >
+                                <Maximize2 className="w-3.5 h-3.5" />
+                              </button>
+                           )}
+                           
+                           <div className="aspect-square bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden mb-3 shadow-inner relative">
+                             {prod.image_url ? (
+                               <img src={resolveImageUrl(prod.image_url)} alt={prod.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                             ) : (
+                               <div className="w-full h-full flex flex-col items-center justify-center text-gray-400"><Package className="w-8 h-8 opacity-20" /></div>
+                             )}
+                             {/* Green checkmark overlay on image when added */}
+                             {isAdded && !(selectedProduct === prod.id) && (
+                               <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                                   <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                                 </div>
+                               </div>
+                             )}
+                           </div>
+                           <div className="px-1 text-center">
+                             <p className={`text-xs font-black truncate ${
+                               selectedProduct === prod.id ? 'text-blue-600 dark:text-blue-400' 
+                               : isAdded ? 'text-green-700 dark:text-green-400' 
+                               : 'text-gray-700 dark:text-gray-300'
+                             }`}>
+                               {prod.color || 'Unico'}
+                             </p>
+                           </div>
+                           
+                           {/* Already added badge */}
+                           {isAdded && !(selectedProduct === prod.id) && (
+                             <div className="absolute -top-2 -left-2 px-2 py-0.5 bg-green-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-green-500/30 flex items-center gap-1">
+                               <Check className="w-3 h-3" strokeWidth={3} /> Agregado
+                             </div>
+                           )}
+                           {/* Indicator Check */}
+                           {selectedProduct === prod.id && (
+                             <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transform animate-in zoom-in duration-300">
+                               <Check className="w-3 h-3 font-bold" />
+                             </div>
+                           )}
+                         </div>
+                         );
+                      })}
                     </div>
                   </div>
                 )}
@@ -713,24 +751,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                     {!isSingleProductEdit && items.length > 0 && <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-[10px] rounded-full">{items.length} {items.length === 1 ? 'modelo' : 'modelos'}</span>}
                   </label>
                 </div>
-                
-                {addSuccess && (
-                  <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-2xl p-5 animate-in fade-in slide-in-from-top-2 duration-300 relative">
-                    <button onClick={() => setAddSuccess(false)} className="absolute top-3 right-3 p-1 text-green-400 hover:text-green-600 hover:bg-green-100 dark:hover:bg-green-800/40 rounded-lg transition-all">
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="flex items-center gap-3 pr-8">
-                      <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30">
-                        <CheckCircle2 className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-green-800 dark:text-green-200">✓ Producto agregado correctamente</p>
-                        <p className="text-xs font-bold text-green-600 dark:text-green-400 mt-0.5">Puedes seguir agregando más productos al pedido</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
+
                 {(() => {
                   const itemsToDisplay = isSingleProductEdit
                     ? items.filter(it => {
@@ -783,15 +804,17 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                           <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
                              <label className="block text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase mb-1 tracking-widest">Observación para este modelo:</label>
                              <textarea
-                               value={item.observations || ''}
-                               onChange={(e) => {
-                                 const val = e.target.value;
-                                 setItems(prev => prev.map((it, i) => i === idx ? { ...it, observations: val } : it));
-                               }}
-                               className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-[11px] font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
-                               placeholder="Ej: Cordón largo, acabado mate..."
-                               rows={1}
-                             />
+                                value={item.observations || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setItems(prev => prev.map((it, i) => i === idx ? { ...it, observations: val } : it));
+                                }}
+                                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-[11px] font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
+                                placeholder="Ej: Cordón largo, acabado mate..."
+                                rows={1}
+                                maxLength={500}
+                              />
+                              <span className="text-[10px] text-gray-400 text-right block mt-0.5">{(item.observations || '').length}/500</span>
                           </div>
                         </div>
                         </div>);
@@ -809,9 +832,8 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
 
               {/* Notes removed per user request */}
             </div>
-          )}
         </div>
-        {!success && !isAddProductMode && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={handleClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || (!isEditMode && !selectedClient)} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
+        {!isAddProductMode && <div className="sticky bottom-0 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-end gap-3 rounded-b-2xl z-10 transition-colors"><button onClick={handleClose} disabled={loading} className="px-6 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-all font-bold disabled:opacity-50">Cancelar</button><button onClick={handleSubmit} disabled={loading || items.length === 0 || (!isEditMode && !selectedClient)} className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}>{loading ? <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? 'Guardando...' : 'Creando...'}</> : <><Check className="w-4 h-4" />{isEditMode ? 'Guardar Cambios' : 'Confirmar Pedido'}</>}</button></div>}
       </div>
       
       {/* Modal visor de imagen */}

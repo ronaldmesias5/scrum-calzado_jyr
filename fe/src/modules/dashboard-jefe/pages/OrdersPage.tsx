@@ -6,10 +6,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
+import { formatCOP } from '@/utils/format';
+import Pagination from '@/components/ui/Pagination';
 import {
   Scissors, Hammer, Sparkles, PenTool, Maximize2,
   ShoppingCart, Package, Filter, Search, Loader2, AlertCircle, Clock,
-  Zap, CheckCircle, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
+  Zap, CheckCircle, CheckCircle2, XCircle,
   ArrowRight, Mail, Phone, User, Plus, ArrowLeft,
   PlayCircle, Ban, RefreshCw, Trash2, Eraser, Edit2, UserPlus
 } from 'lucide-react';
@@ -38,6 +40,7 @@ import ImageViewerModal from '../components/ImageViewerModal';
 import { StatusBadge } from '../components/StatusBadgeComponent';
 import { resolveImageUrl } from '../services/catalogService';
 import { checkProductSupplies, type ProductSuppliesCheckResponse } from '../services/suppliesService';
+import { useToast } from '@/context/ToastContext';
 
 // ─── Etapas y Cargos ─────────────────────
 const STAGES_LOGIC = [
@@ -170,8 +173,6 @@ function OrderDetailView({
   onOrderUpdate,
   setIsEditModalOpen,
   onCompleteFromWarehouse,
-  successToast,
-  setSuccessToast,
 }: {
   order: OrderDetail;
   isUpdating: boolean;
@@ -199,9 +200,8 @@ function OrderDetailView({
   error?: string | null;
   setIsEditModalOpen: (productId?: string) => void;
   onCompleteFromWarehouse: (productId: string, lines: any[]) => void;
-  successToast: string | null;
-  setSuccessToast: (msg: string | null) => void;
 }) {
+  const { showToast } = useToast();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
@@ -380,8 +380,7 @@ function OrderDetailView({
       
       // Si no hay más detalles, no permitir (la orden debe tener al menos un producto)
       if (updatedDetails.length === 0) {
-        setSuccessToast('La orden debe tener al menos un producto');
-        setTimeout(() => setSuccessToast(null), 3000);
+        showToast('La orden debe tener al menos un producto', 'error');
         return;
       }
 
@@ -400,12 +399,10 @@ function OrderDetailView({
       // Actualizar la orden en el componente padre
       onOrderUpdate?.(response);
       setProductToDelete(null);
-      setSuccessToast('Producto eliminado de la orden');
-      setTimeout(() => setSuccessToast(null), 3000);
+      showToast('Producto eliminado de la orden');
     } catch (err) {
       console.error('Error eliminando producto:', err);
-      setSuccessToast('Error al eliminar el producto');
-      setTimeout(() => setSuccessToast(null), 3000);
+      showToast('Error al eliminar el producto', 'error');
     } finally {
       setLoadingTasks(false);
     }
@@ -482,16 +479,13 @@ function OrderDetailView({
           console.warn('Warning al refrescar orden:', refreshError);
           // No mostrar error, continuar
         }
-        setSuccessToast('🎉 Vale Terminado - Producto Completado - Listo para Entrega!');
+        showToast('🎉 Vale Terminado - Producto Completado - Listo para Entrega!');
       } else {
-        setSuccessToast(`Tarea actualizada a ${newStatus} con éxito`);
+        showToast(`Tarea actualizada a ${newStatus} con éxito`);
       }
-      
-      setTimeout(() => setSuccessToast(null), 4000);
     } catch (e) {
       console.error('Error updating task:', e);
-      setSuccessToast('Error al actualizar la tarea');
-      setTimeout(() => setSuccessToast(null), 4000);
+      showToast('Error al actualizar la tarea', 'error');
     } finally {
       setLoadingTasks(false);
     }
@@ -507,8 +501,7 @@ function OrderDetailView({
       const prevStage = STAGES_LOGIC[nextIndex - 1]!;
       const prevTask = Array.isArray(currentTasks) ? currentTasks.find(t => t?.type === prevStage?.key) : null;
       if (!prevTask || prevTask.status !== 'completado') {
-        setSuccessToast(`Completar ${prevStage?.label || 'la etapa anterior'} primero`);
-        setTimeout(() => setSuccessToast(null), 3000);
+        showToast(`Completar ${prevStage?.label || 'la etapa anterior'} primero`, 'error');
         return;
       }
     }
@@ -564,8 +557,7 @@ function OrderDetailView({
           }
         } catch (invError) {
           console.error('Error al descontar inventario:', invError);
-          setSuccessToast('⚠️ Tarea creada pero hubo error al descontar del inventario');
-          setTimeout(() => setSuccessToast(null), 4000);
+          showToast('⚠️ Tarea creada pero hubo error al descontar del inventario', 'error');
         }
       }
 
@@ -598,12 +590,21 @@ function OrderDetailView({
       setAssignments(newAssignments);
       setProductionStep(2);
 
-      setSuccessToast(`¡Etapa de ${stageLabel.toUpperCase()} iniciada!`);
-      setTimeout(() => setSuccessToast(null), 4000);
+      showToast(`¡Etapa de ${stageLabel.toUpperCase()} iniciada!`);
     } catch (e) {
       console.error(e);
-      setSuccessToast('Error al crear la tarea de producción');
-      setTimeout(() => setSuccessToast(null), 4000);
+      const err = e as { response?: { data?: { detail?: string } } };
+      const errorMsg = err?.response?.data?.detail || '';
+      if (errorMsg.includes('Stock insuficiente')) {
+        showToast(errorMsg, 'warning');
+      } else {
+        showToast('Error al crear la tarea de producción', 'error');
+      }
+      try {
+        await onUpdateItemsStatus(productId, 'pendiente');
+      } catch (rollbackErr) {
+        console.error('Error al revertir estado:', rollbackErr);
+      }
     } finally {
       setLoadingTasks(false);
     }
@@ -619,12 +620,10 @@ function OrderDetailView({
         const allTasks = await getOrderTasks(order.id);
         setCurrentTasks(allTasks.filter(t => t.product_id?.toLowerCase() === currentProductId.toLowerCase()));
       }
-      setSuccessToast('✅ Empleado asignado a la tarea');
-      setTimeout(() => setSuccessToast(null), 4000);
+      showToast('✅ Empleado asignado a la tarea');
     } catch (e) {
       console.error('Error al asignar empleado:', e);
-      setSuccessToast('Error al asignar empleado');
-      setTimeout(() => setSuccessToast(null), 4000);
+      showToast('Error al asignar empleado', 'error');
     } finally {
       setLoadingTasks(false);
     }
@@ -666,18 +665,6 @@ function OrderDetailView({
 
   return (
     <div className="space-y-6">
-      {/* Toast Animado Minimalista */}
-      {successToast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-8 duration-500">
-          <div className="bg-white dark:bg-slate-900 border-2 border-green-500 rounded-full px-6 py-4 shadow-2xl flex items-center gap-4 border-b-4">
-            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <CheckCircle className="w-6 h-6 text-white" />
-            </div>
-            <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{successToast}</p>
-          </div>
-        </div>
-      )}
-
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
@@ -1496,12 +1483,12 @@ function OrderDetailView({
                                        const taskCost = Math.round((pares / 12) * pricePerDozen);
                                        return (
                                          <div className="mt-1 flex flex-col">
-                                           <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400">
-                                             ${pricePerDozen.toLocaleString('es-CO')} / docena
-                                           </p>
-                                           <p className="text-[10px] font-black text-green-700 dark:text-green-400">
-                                             Total: ${taskCost.toLocaleString('es-CO')} ({pares} pares)
-                                           </p>
+<p className="text-[9px] font-bold text-gray-500 dark:text-gray-400">
+                                              {formatCOP(pricePerDozen)} / docena
+                                            </p>
+                                            <p className="text-[10px] font-black text-green-700 dark:text-green-400">
+                                              Total: {formatCOP(taskCost)} ({pares} pares)
+                                            </p>
                                          </div>
                                        );
                                      })()}
@@ -1904,7 +1891,7 @@ export default function OrdersPage() {
     forceProgress?: boolean;
   } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [totalByStatus, setTotalByStatus] = useState<Record<OrderStatus, number>>({
     pendiente: 0, en_progreso: 0, completado: 0, entregado: 0, cancelado: 0,
   });
@@ -2074,8 +2061,7 @@ export default function OrdersPage() {
       const refreshed = await getOrderDetail(selectedOrder.id);
       setSelectedOrder(refreshed);
       setOrders(prev => prev.map(o => o.id === refreshed.id ? { ...o, state: refreshed.state } : o));
-      setSuccessToast('✓ Producto completado desde bodega con éxito');
-      setTimeout(() => setSuccessToast(null), 3000);
+      showToast('✓ Producto completado desde bodega con éxito');
     } catch (err: any) {
       console.error('Error al completar desde bodega:', err);
       setError('No se pudo completar desde bodega: ' + (err.response?.data?.detail || err.message));
@@ -2187,8 +2173,6 @@ export default function OrdersPage() {
           onOrderUpdate={setSelectedOrder}
           error={error}
           onCompleteFromWarehouse={handleCompleteFromWarehouse}
-          successToast={successToast}
-          setSuccessToast={setSuccessToast}
           setIsEditModalOpen={(productId?: string) => {
             setEditingProductId(productId);
             setIsEditModalOpen(true);
@@ -2327,29 +2311,9 @@ export default function OrdersPage() {
       ) : (
         <>
           <OrdersTable orders={orders} onSelect={handleSelectOrder} />
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 stagger-reveal">
-              <p className="text-sm text-gray-600">
-                Página <strong>{page}</strong> de <strong>{totalPages}</strong>
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 1}
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages}
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="mt-4">
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </div>
         </>
       )}
 

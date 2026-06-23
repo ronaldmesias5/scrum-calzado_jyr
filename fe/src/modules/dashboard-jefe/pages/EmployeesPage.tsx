@@ -15,8 +15,10 @@ import CreateUserForm from '../components/CreateUserForm';
 import Modal from '@/components/ui/Modal';
 import StatusConfirmModal from '../components/StatusConfirmModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/context/ToastContext';
 
 export default function EmployeesPage() {
+  const { showToast } = useToast();
   const [employees, setEmployees] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,8 +87,10 @@ export default function EmployeesPage() {
       const updated = await updateUser(selectedEmployee.id.toString(), editForm);
       setEmployees(prev => prev.map(emp => emp.id === updated.id ? updated : emp));
       setIsEditModalOpen(false);
-    } catch {
-      alert('Error al actualizar el empleado.');
+      showToast('Empleado actualizado correctamente', 'success');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Error al actualizar el empleado.';
+      showToast(msg, 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -95,7 +99,7 @@ export default function EmployeesPage() {
   const toggleStatus = (emp: UserResponse) => {
     // Prevenir auto-desactivación
     if (currentUser && emp.id === currentUser.id) {
-      alert('Por seguridad, no puedes desactivar tu propia cuenta de administrador.');
+      showToast('Por seguridad, no puedes desactivar tu propia cuenta de administrador.', 'error');
       return;
     }
     setEmployeeToToggle(emp);
@@ -112,8 +116,10 @@ export default function EmployeesPage() {
       const updated = await updateUser(employeeToToggle.id.toString(), { is_active: newStatus });
       setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
       setIsStatusModalOpen(false);
-    } catch {
-      console.error('Error al cambiar el estado del empleado.');
+      showToast(`Empleado ${newStatus ? 'activado' : 'desactivado'} correctamente`, 'success');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Error al cambiar el estado del empleado.';
+      showToast(msg, 'error');
     } finally {
       setIsStatusLoading(false);
       setEmployeeToToggle(null);

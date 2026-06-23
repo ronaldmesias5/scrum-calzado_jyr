@@ -29,6 +29,9 @@ export interface Supply {
 export interface SuppliesListResponse {
   items: Supply[];
   total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface SupplyCreatePayload {
@@ -71,9 +74,12 @@ export interface ProductSuppliesCheckResponse {
 
 // ─── CRUD de Insumos ───────────────────────────────────────────
 
-export async function listSupplies(category?: string): Promise<SuppliesListResponse> {
-  const params = category ? `?category=${category}` : '';
-  const res = await api.get(`/api/v1/supplies${params}`);
+export async function listSupplies(category?: string, page: number = 1, pageSize: number = 100): Promise<SuppliesListResponse> {
+  const params = new URLSearchParams();
+  if (category) params.append('category', category);
+  params.append('page', String(page));
+  params.append('page_size', String(pageSize));
+  const res = await api.get(`/api/v1/supplies?${params}`);
   return res.data;
 }
 

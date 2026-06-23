@@ -4,13 +4,14 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import {
   createOrUpdateInventory,
   InventoryItem,
   Product,
 } from '../../services/catalogService';
 import Modal from '@/components/ui/Modal';
+import { useToast } from '@/context/ToastContext';
 
 interface InventoryFormModalProps {
   isOpen: boolean;
@@ -27,13 +28,13 @@ export default function InventoryFormModal({
   onClose,
   onSave,
 }: InventoryFormModalProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     product_id: '',
     size: '',
     quantity: 0,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Tallas comunes
   const commonSizes = [
@@ -56,13 +57,11 @@ export default function InventoryFormModal({
         quantity: 0,
       });
     }
-    setError(null);
   }, [inventory, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       if (!formData.product_id || !formData.size) {
@@ -80,9 +79,10 @@ export default function InventoryFormModal({
       );
       onSave();
       onClose();
+      showToast('Inventario guardado correctamente', 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al guardar inventario';
-      setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -100,13 +100,6 @@ export default function InventoryFormModal({
       <div className="flex flex-col">
         {/* Contenido */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white dark:bg-slate-900">
-            {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3 animate-pulse">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800 dark:text-red-200 font-medium">{error}</p>
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
                 Producto *

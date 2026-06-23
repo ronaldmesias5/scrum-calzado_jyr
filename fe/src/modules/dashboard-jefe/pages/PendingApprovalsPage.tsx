@@ -6,6 +6,7 @@ import {
   rejectPendingIncidence,
   type PendingProductIncidence,
 } from '../services/lossApi';
+import { useToast } from '@/context/ToastContext';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -20,6 +21,7 @@ const INCIDENT_TYPES = [
 ];
 
 export default function PendingApprovalsPage() {
+  const { showToast } = useToast();
   const [incidences, setIncidences] = useState<PendingProductIncidence[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('pending');
@@ -48,9 +50,11 @@ export default function PendingApprovalsPage() {
     setApprovingId(id);
     try {
       await approvePendingIncidence(id, incidentType);
+      showToast('Incidencia aprobada correctamente', 'success');
       await loadIncidences();
     } catch (e) {
       console.error('Error al aprobar:', e);
+      showToast('Error al aprobar incidencia', 'error');
     } finally {
       setApprovingId(null);
     }
@@ -60,9 +64,11 @@ export default function PendingApprovalsPage() {
     setRejectingId(id);
     try {
       await rejectPendingIncidence(id);
+      showToast('Incidencia rechazada', 'success');
       await loadIncidences();
     } catch (e) {
       console.error('Error al rechazar:', e);
+      showToast('Error al rechazar incidencia', 'error');
     } finally {
       setRejectingId(null);
     }

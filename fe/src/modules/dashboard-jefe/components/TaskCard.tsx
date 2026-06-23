@@ -4,6 +4,7 @@ import {
   ExternalLink, Loader2, UserPlus, CheckCircle, AlertTriangle
 } from 'lucide-react';
 import { ProductionTask } from '../services/ordersApi';
+import { formatCOP } from '@/utils/format';
 
 const STAGE_ICONS: Record<string, any> = {
   corte: Scissors,
@@ -219,8 +220,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <span className="text-[9px] font-bold text-green-600 dark:text-green-400">{totalPairs} pares</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`${compact ? 'text-[13px]' : 'text-sm'} font-black text-green-700 dark:text-green-400`}>${totalCost.toLocaleString('es-CO')}</span>
-              <span className="text-[8px] font-bold text-green-600/70 dark:text-green-400/50">(${pricePerDozen.toLocaleString('es-CO')}/doc)</span>
+              <span className={`${compact ? 'text-[13px]' : 'text-sm'} font-black text-green-700 dark:text-green-400`}>{formatCOP(totalCost)}</span>
+              <span className="text-[8px] font-bold text-green-600/70 dark:text-green-400/50">({formatCOP(pricePerDozen)}/doc)</span>
             </div>
           </div>
         )}

@@ -35,6 +35,7 @@ import {
   rejectPendingIncidence,
   type PendingProductIncidence,
 } from '../services/lossApi';
+import { useToast } from '@/context/ToastContext';
 
 type TabType = 'losses' | 'scrap' | 'repaired' | 'pending';
 
@@ -64,6 +65,16 @@ const CATEGORY_DISPLAY: Record<string, string> = {
   producto: 'Producto',
   maquinaria: 'Maquinaria',
   insumo: 'Insumo',
+};
+
+const TruncatedCell = ({ text, maxLength = 50 }: { text: string | null | undefined; maxLength?: number }) => {
+  if (!text) return <span className="text-gray-400 text-xs">—</span>;
+  const display = text.length > maxLength ? text.substring(0, maxLength) + '…' : text;
+  return (
+    <span className="text-xs text-gray-700 dark:text-gray-300 block max-w-[200px] truncate" title={text}>
+      {display}
+    </span>
+  );
 };
 
 const CATEGORY_BADGE: Record<string, string> = {
@@ -112,14 +123,7 @@ export default function LossesPage() {
   const [selectedType, setSelectedType] = useState<Record<string, string>>({});
 
   // ── Toast ─────────────────────────────
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const { showToast } = useToast();
 
   // ── Load incidents ─────────────────────
   const loadIncidents = async () => {
@@ -137,7 +141,7 @@ export default function LossesPage() {
       setIncidents(result.items);
     } catch (err) {
       console.error('Error loading incidents:', err);
-      setToast({ type: 'error', message: 'Error al cargar registros de incidencias' });
+      showToast('Error al cargar registros de incidencias', 'error');
     } finally {
       setIncidentsLoading(false);
     }
@@ -151,7 +155,7 @@ export default function LossesPage() {
       setScrapStock(data);
     } catch (err) {
       console.error('Error loading scrap stock:', err);
-      setToast({ type: 'error', message: 'Error al cargar stock de recuperables' });
+      showToast('Error al cargar stock de recuperables', 'error');
     } finally {
       setScrapLoading(false);
     }
@@ -189,10 +193,10 @@ export default function LossesPage() {
     try {
       await approvePendingIncidence(id, incidentType);
       await loadPendingIncidences();
-      setToast({ type: 'success', message: 'Incidencia aprobada exitosamente' });
+      showToast('Incidencia aprobada exitosamente');
     } catch (e) {
       console.error('Error al aprobar:', e);
-      setToast({ type: 'error', message: 'Error al aprobar la incidencia' });
+      showToast('Error al aprobar la incidencia', 'error');
     } finally {
       setApprovingId(null);
     }
@@ -203,10 +207,10 @@ export default function LossesPage() {
     try {
       await rejectPendingIncidence(id);
       await loadPendingIncidences();
-      setToast({ type: 'success', message: 'Incidencia rechazada exitosamente' });
+      showToast('Incidencia rechazada exitosamente');
     } catch (e) {
       console.error('Error al rechazar:', e);
-      setToast({ type: 'error', message: 'Error al rechazar la incidencia' });
+      showToast('Error al rechazar la incidencia', 'error');
     } finally {
       setRejectingId(null);
     }
@@ -242,42 +246,33 @@ export default function LossesPage() {
   const handleApprove = async (id: string) => {
     try {
       await approveIncident(id);
-      setToast({
-        type: 'success',
-        message: 'Incidencia aprobada exitosamente',
-      });
+      showToast('Incidencia aprobada exitosamente');
       loadIncidents();
     } catch (err) {
       console.error('Error approving incident:', err);
-      setToast({ type: 'error', message: 'Error al aprobar la incidencia' });
+      showToast('Error al aprobar la incidencia', 'error');
     }
   };
 
   const handleReject = async (id: string) => {
     try {
       await rejectIncident(id);
-      setToast({
-        type: 'success',
-        message: 'Incidencia rechazada exitosamente',
-      });
+      showToast('Incidencia rechazada exitosamente');
       loadIncidents();
     } catch (err) {
       console.error('Error rejecting incident:', err);
-      setToast({ type: 'error', message: 'Error al rechazar la incidencia' });
+      showToast('Error al rechazar la incidencia', 'error');
     }
   };
 
   const handleSolve = async (id: string) => {
     try {
       await solveIncident(id);
-      setToast({
-        type: 'success',
-        message: 'Incidencia solucionada exitosamente',
-      });
+      showToast('Incidencia solucionada exitosamente');
       loadIncidents();
     } catch (err) {
       console.error('Error solving incident:', err);
-      setToast({ type: 'error', message: 'Error al solucionar la incidencia' });
+      showToast('Error al solucionar la incidencia', 'error');
     }
   };
 
@@ -292,12 +287,12 @@ export default function LossesPage() {
     setRepairLoading(true);
     try {
       await repairIncident(repairIncidentData.id, repairDestination);
-      setToast({ type: 'success', message: 'Incidencia reparada exitosamente' });
+      showToast('Incidencia reparada exitosamente');
       setIsRepairModalOpen(false);
       setRepairIncidentData(null);
       loadIncidents();
     } catch (err: any) {
-      setToast({ type: 'error', message: err?.response?.data?.detail || 'Error al reparar incidencia' });
+      showToast(err?.response?.data?.detail || 'Error al reparar incidencia', 'error');
     } finally {
       setRepairLoading(false);
     }
@@ -546,7 +541,13 @@ export default function LossesPage() {
                         Tipo
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Código Defecto
+                        Descripción
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Observación
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Registró
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Pedido
@@ -599,18 +600,17 @@ export default function LossesPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          {inc.defect_code ? (
-                            <>
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300">
-                                {inc.defect_code.code}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                                {inc.defect_code.description ?? ''}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-gray-400 text-xs">—</span>
-                          )}
+                          <TruncatedCell text={inc.description} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <TruncatedCell text={inc.observations} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                            {inc.registered_by
+                              ? `${inc.registered_by.name_user} ${inc.registered_by.last_name}`
+                              : '—'}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           {inc.order_id ? (
@@ -706,7 +706,8 @@ export default function LossesPage() {
                     <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Talla</th>
                     <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cantidad</th>
                     <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo Original</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Código Defecto</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descripción</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Registró</th>
                     <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pedido</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha Reparación</th>
                   </tr>
@@ -735,12 +736,17 @@ export default function LossesPage() {
                           {INCIDENT_TYPE_DISPLAY[inc.incident_type] ?? inc.incident_type}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300">
-                          {inc.description ?? inc.defect_code?.code ?? '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3">
+                      <TruncatedCell text={inc.description} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {inc.registered_by
+                          ? `${inc.registered_by.name_user} ${inc.registered_by.last_name}`
+                          : '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
                         {inc.order_id ? (
                           <button
                             type="button"
@@ -801,7 +807,7 @@ export default function LossesPage() {
                       Cantidad
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Código Defecto
+                      Descripción
                     </th>
                   </tr>
                 </thead>
@@ -821,9 +827,7 @@ export default function LossesPage() {
                         {item.quantity}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300">
-                          {item.description ?? item.defect_code?.code ?? '—'}
-                        </span>
+                        <TruncatedCell text={item.description ?? item.defect_code?.code} />
                       </td>
                     </tr>
                   ))}
@@ -1005,7 +1009,7 @@ export default function LossesPage() {
         onClose={() => setIsFormModalOpen(false)}
         onSuccess={() => {
           loadIncidents();
-          setToast({ type: 'success', message: 'Incidencia registrada exitosamente' });
+          showToast('Incidencia registrada exitosamente');
         }}
       />
 
@@ -1107,36 +1111,6 @@ export default function LossesPage() {
         </div>,
       document.body
     )}
-
-      {/* ──────── Toast Notification ──────── */}
-      {toast && (
-        <div
-          className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${
-            toast ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`}
-        >
-          <div
-            className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border backdrop-blur-md ${
-              toast.type === 'success'
-                ? 'bg-green-500 text-white border-green-400/50'
-                : 'bg-red-500 text-white border-red-400/50'
-            }`}
-          >
-            {toast.type === 'success' ? (
-              <CheckCircle size={20} />
-            ) : (
-              <XCircle size={20} />
-            )}
-            <p className="text-sm font-bold">{toast.message}</p>
-            <button
-              onClick={() => setToast(null)}
-              className="ml-2 p-1 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <XCircle size={16} />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

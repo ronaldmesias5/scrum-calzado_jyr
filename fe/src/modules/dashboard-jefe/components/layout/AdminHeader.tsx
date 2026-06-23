@@ -27,7 +27,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login');
+    navigate('/');
   };
 
   const handleLogoutAll = async () => {
@@ -36,7 +36,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     setIsLoggingOutAll(true);
     try {
       await logoutAllDevices();
-      navigate('/auth/login');
+      navigate('/');
     } catch {
       alert('Error al cerrar sesiones globales.');
     } finally {

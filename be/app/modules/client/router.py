@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, desc, func
 from sqlalchemy.orm import Session, selectinload
 
@@ -54,8 +54,16 @@ def _order_to_client_response(order: Order) -> ClientOrderResponse:
 def list_my_orders(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    page: int = Query(1, ge=1, description="Página (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
 ) -> ClientOrderListResponse:
-    """Lista los pedidos del cliente autenticado."""
+    """Lista los pedidos del cliente autenticado con paginación."""
+    total_query = select(func.count(Order.id)).where(Order.customer_id == current_user.id)
+    total = db.execute(total_query).scalar() or 0
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    offset = (page - 1) * page_size
+
     query = (
         select(Order)
         .options(
@@ -63,15 +71,17 @@ def list_my_orders(
         )
         .where(Order.customer_id == current_user.id)
         .order_by(desc(Order.created_at))
+        .offset(offset)
+        .limit(page_size)
     )
     result = db.execute(query)
     orders = result.scalars().all()
 
-    total_query = select(func.count(Order.id)).where(Order.customer_id == current_user.id)
-    total = db.execute(total_query).scalar() or 0
-
     return ClientOrderListResponse(
         total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
         items=[_order_to_client_response(o) for o in orders],
     )
 

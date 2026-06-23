@@ -50,19 +50,29 @@ export interface PublicCatalogFilters {
   search?: string;
 }
 
+export interface PublicCatalogListResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 /**
- * Obtener todos los productos del catálogo público
+ * Obtener productos del catálogo público con paginación
  */
-export const getPublicProducts = async (filters?: PublicCatalogFilters): Promise<Product[]> => {
+export const getPublicProducts = async (filters?: PublicCatalogFilters, page: number = 1, pageSize: number = 10): Promise<PublicCatalogListResponse> => {
   const params = new URLSearchParams();
   if (filters?.category_id) params.append('category_id', filters.category_id);
   if (filters?.brand_id) params.append('brand_id', filters.brand_id);
   if (filters?.style_id) params.append('style_id', filters.style_id);
   if (filters?.color) params.append('color', filters.color);
   if (filters?.search) params.append('search', filters.search);
+  params.append('page', String(page));
+  params.append('page_size', String(pageSize));
 
   const res = await api.get('/api/v1/catalog/products', { params });
-  return res.data.products || [];
+  return res.data;
 };
 
 /**

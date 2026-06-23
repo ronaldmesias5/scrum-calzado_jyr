@@ -14,9 +14,11 @@ import {
   type SharedReportListResponse,
   type MyTasksReportResponse,
 } from '../services/employeeApi';
+import { formatCOP } from '@/utils/format';
 import { exportMyTasksPDF, exportPerformancePDF } from '../utils/reportsUtils';
 import Modal from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/context/ToastContext';
 
 const PROCESS_DISPLAY: Record<string, string> = {
   corte: 'Corte',
@@ -36,6 +38,7 @@ function getProcessColor(processName: string) {
 }
 
 export default function EmployeeReportsPage() {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [performance, setPerformance] = useState<MyPerformanceResponse | null>(null);
   const [shared, setShared] = useState<SharedReportItem[]>([]);
@@ -47,7 +50,6 @@ export default function EmployeeReportsPage() {
     created_at: string | null;
   } | null>(null);
   const [sharePdfGenerating, setSharePdfGenerating] = useState(false);
-  const [shareError, setShareError] = useState<string | null>(null);
 
   // Reporte detallado state
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'custom'>('today');
@@ -179,7 +181,6 @@ export default function EmployeeReportsPage() {
   const handleDownloadSharePDF = async () => {
     if (!selectedShare) return;
     setSharePdfGenerating(true);
-    setShareError(null);
 
     const params = selectedShare.parameters as Record<string, string | undefined>;
     const startDate = params?.start_date;
@@ -192,13 +193,13 @@ export default function EmployeeReportsPage() {
         end_date: endDate,
       });
     } catch {
-      setShareError('Error al consultar tus tareas. Verifica tu conexión e intenta de nuevo.');
+      showToast('Error al consultar tus tareas. Verifica tu conexión e intenta de nuevo.', 'error');
       setSharePdfGenerating(false);
       return;
     }
 
     if (report.tasks_list.length === 0) {
-      setShareError('No hay tareas completadas en el período de este reporte compartido.');
+      showToast('No hay tareas completadas en el período de este reporte compartido.', 'error');
       setSharePdfGenerating(false);
       return;
     }
@@ -212,7 +213,7 @@ export default function EmployeeReportsPage() {
         endDate,
       );
     } catch (e) {
-      setShareError('Error al generar el PDF. Intenta de nuevo.');
+      showToast('Error al generar el PDF. Intenta de nuevo.', 'error');
       console.error(e);
     } finally {
       setSharePdfGenerating(false);
@@ -271,7 +272,7 @@ export default function EmployeeReportsPage() {
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-100 dark:border-amber-800/30">
               <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Ganancias Totales</p>
-              <p className="text-3xl font-extrabold text-amber-700 dark:text-amber-400">${performance.total_earnings.toLocaleString()}</p>
+              <p className="text-3xl font-extrabold text-amber-700 dark:text-amber-400">{formatCOP(performance.total_earnings || 0)}</p>
             </div>
           </div>
 
@@ -436,7 +437,7 @@ export default function EmployeeReportsPage() {
                             {task.completed_at ? new Date(task.completed_at).toLocaleDateString('es-CO') : '—'}
                           </td>
                           <td className="py-3 px-4 text-right font-bold text-amber-700 dark:text-amber-400">
-                            ${task.task_total_price.toLocaleString('es-CO')}
+                            {formatCOP(task.task_total_price)}
                           </td>
                         </tr>
                       ))}
@@ -445,7 +446,7 @@ export default function EmployeeReportsPage() {
                     <tr className="bg-gray-50 dark:bg-slate-800/50">
                       <td colSpan={7} className="py-3 px-4 text-right font-black text-gray-500 uppercase text-xs">Total</td>
                       <td className="py-3 px-4 text-right font-black text-amber-700 dark:text-amber-400">
-                        ${tasksReport.total_earnings.toLocaleString('es-CO')}
+                        {formatCOP(tasksReport.total_earnings)}
                       </td>
                     </tr>
                   </tfoot>
@@ -506,7 +507,7 @@ export default function EmployeeReportsPage() {
       </div>
 
       {/* Modal detalle reporte compartido */}
-      <Modal isOpen={!!selectedShare} onClose={() => { setSelectedShare(null); setShareError(null); }} title="Reporte Compartido" size="md">
+      <Modal isOpen={!!selectedShare} onClose={() => { setSelectedShare(null); }} title="Reporte Compartido" size="md">
         {selectedShare && (
           <div className="p-6 space-y-4">
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4 border border-purple-100 dark:border-purple-800/30">
@@ -527,14 +528,6 @@ export default function EmployeeReportsPage() {
                 Este reporte fue generado y compartido por el jefe. Puedes descargar tu reporte de producción con las mismas fechas.
               </p>
             </div>
-            {shareError && (
-              <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 border border-red-200 dark:border-red-800">
-                <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  {shareError}
-                </p>
-              </div>
-            )}
             <Button
               onClick={handleDownloadSharePDF}
               disabled={sharePdfGenerating}

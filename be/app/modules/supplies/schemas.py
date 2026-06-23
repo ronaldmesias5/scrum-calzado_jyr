@@ -71,6 +71,9 @@ class SupplyOut(BaseModel):
 class SuppliesListResponse(BaseModel):
     items: list[SupplyOut]
     total: int
+    page: int = 1
+    page_size: int = 10
+    total_pages: int = 1
 
 
 # ─────────────────────────────────────────────────────────

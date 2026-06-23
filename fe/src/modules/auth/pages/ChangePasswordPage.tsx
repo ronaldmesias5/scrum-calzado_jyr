@@ -27,33 +27,29 @@ import { useAuth } from "@/hooks/useAuth";
 import { getDashboardRoute } from "@/utils/routing";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { useToast } from "@/context/ToastContext";
 
 export function ChangePasswordPage() {
   const navigate = useNavigate();
   const { changePassword, user } = useAuth();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     current_password: "",
     new_password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
 
     if (formData.new_password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      showToast("Las contraseñas no coinciden", "error");
       return;
     }
 
@@ -64,7 +60,7 @@ export function ChangePasswordPage() {
         current_password: formData.current_password,
         new_password: formData.new_password,
       });
-      setSuccess("Contraseña actualizada exitosamente.");
+      showToast("Contraseña actualizada exitosamente.", "success");
       setFormData({ current_password: "", new_password: "", confirmPassword: "" });
       
       // Redirigir al dashboard correcto según rol/ocupación después de 1.5 segundos
@@ -74,7 +70,7 @@ export function ChangePasswordPage() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al cambiar la contraseña";
-      setError(message);
+      showToast(message, "error");
     } finally {
       setIsLoading(false);
     }
@@ -87,18 +83,6 @@ export function ChangePasswordPage() {
       </h1>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        {error && (
-          <div className="mb-4">
-            <Alert type="error" message={error} onClose={() => setError(null)} />
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4">
-            <Alert type="success" message={success} onClose={() => setSuccess(null)} />
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} noValidate>
           <InputField
             label="Contraseña actual"

@@ -43,12 +43,10 @@ import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CookieBanner } from "@/components/ui/CookieBanner";
 import { CookiePolicyModal } from "@/components/ui/CookiePolicyModal";
+import { ToastProvider } from "@/context/ToastContext";
 
-import { LoginPage } from "@/modules/auth/pages/LoginPage";
-import { RegisterPage } from "@/modules/auth/pages/RegisterPage";
-import { DashboardPage } from "@/modules/auth/pages/DashboardPage";
 import { ChangePasswordPage } from "@/modules/auth/pages/ChangePasswordPage";
-import { ForgotPasswordPage } from "@/modules/auth/pages/ForgotPasswordPage";
+import { DashboardPage } from "@/modules/auth/pages/DashboardPage";
 import { ResetPasswordPage } from "@/modules/auth/pages/ResetPasswordPage";
 import { ReactivationPage } from "@/modules/auth/pages/ReactivationPage";
 
@@ -113,6 +111,7 @@ function App() {
           onShowPolicy={() => setShowCookiePolicy(true)}
         />
         <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+        <ToastProvider>
         <Routes>
           {/* ════════════════════════════════════════ */}
           {/* 🌐 Landing Page pública */}
@@ -123,16 +122,17 @@ function App() {
           {/* ════════════════════════════════════════ */}
           {/* 🔓 Rutas públicas de autenticación */}
           {/* ════════════════════════════════════════ */}
-          <Route path="/auth/login" element={<LoginPage />} />
-          <Route path="/auth/register" element={<RegisterPage />} />
-          <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+          {/* Login, Register, Forgot Password are now modals on the landing page */}
+          <Route path="/auth/login" element={<Navigate to="/" replace />} />
+          <Route path="/auth/register" element={<Navigate to="/" replace />} />
+          <Route path="/auth/forgot-password" element={<Navigate to="/" replace />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/reactivation" element={<ReactivationPage />} />
 
           {/* Compatibilidad con rutas antiguas */}
-          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/register" element={<Navigate to="/auth/register" replace />} />
-          <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/register" element={<Navigate to="/" replace />} />
+          <Route path="/forgot-password" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<Navigate to="/auth/reset-password" replace />} />
           <Route path="/auth/change-password" element={<Navigate to="/change-password" replace />} />
           <Route path="/dashboard/client" element={<Navigate to="/" replace />} />
@@ -205,6 +205,7 @@ function App() {
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </ToastProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

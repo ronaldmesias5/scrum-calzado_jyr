@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { 
   BarChart, TrendingUp, Package, ShoppingBag, 
   Calendar, Users, Briefcase, Download, CheckCircle,
-  Award, Star, Activity, ExternalLink, Share2, Send, Loader2,
-  X, AlertCircle
+  Award, Star, Activity, ExternalLink, Share2, Send, Loader2
 } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { formatCOP } from '@/utils/format';
 import Modal from '@/components/ui/Modal';
 import { 
   getDashboardReports, getEmployeeReport, getCustomerReport, 
@@ -259,7 +260,7 @@ function ReportGeneratorTab() {
   } | null>(null);
   const [sendingShare, setSendingShare] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const { showToast } = useToast();
 
   // Load basic lists when mounting or changing type
   useEffect(() => {
@@ -448,11 +449,11 @@ function ReportGeneratorTab() {
         });
       }
 
-      setToast({ message: 'Reporte enviado al dashboard del empleado', type: 'success' });
+      showToast('Reporte enviado al dashboard del empleado', 'success');
       setShareModal(null);
       setShareMessage('');
     } catch (err) {
-      setToast({ message: 'Error al compartir el reporte', type: 'error' });
+      showToast('Error al compartir el reporte', 'error');
       console.error(err);
     } finally {
       setSendingShare(false);
@@ -750,7 +751,7 @@ function ReportGeneratorTab() {
                 {totalEarnings > 0 && (
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 mb-6 flex items-center justify-between">
                     <span className="text-sm font-bold text-green-700 dark:text-green-400">Total Ganancias ({taskStatusFilter === 'all' ? 'todas las tareas' : taskStatusFilter})</span>
-                    <span className="text-xl font-black text-green-700 dark:text-green-400">${totalEarnings.toLocaleString('es-CO')}</span>
+                    <span className="text-xl font-black text-green-700 dark:text-green-400">{formatCOP(totalEarnings)}</span>
                   </div>
                 )}
 
@@ -1335,7 +1336,7 @@ function ReportGeneratorTab() {
                           </span>
                           {t.task_total_price != null && (
                             <p className="text-xs font-black text-gray-700 dark:text-gray-300 mt-1">
-                              ${t.task_total_price.toLocaleString()}
+                              {formatCOP(t.task_total_price)}
                             </p>
                           )}
                         </div>
@@ -1354,45 +1355,32 @@ function ReportGeneratorTab() {
         </div>
       )}
 
-      {/* Toast notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[200]">
-          <div className={`bg-white dark:bg-slate-900 border-2 ${toast.type === 'success' ? 'border-green-500' : 'border-red-500'} rounded-full px-6 py-4 shadow-2xl flex items-center gap-4 border-b-4`}>
-            <div className={`w-10 h-10 ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center flex-shrink-0`}>
-              {toast.type === 'success' ? <CheckCircle className="w-6 h-6 text-white" /> : <AlertCircle className="w-6 h-6 text-white" />}
-            </div>
-            <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{toast.message}</p>
-            <button onClick={() => setToast(null)} className="ml-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Share modal */}
       <Modal isOpen={!!shareModal} onClose={() => { setShareModal(null); setShareMessage(''); }} title="Compartir Reporte" size="md">
         <div className="p-6 space-y-4">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Correo del destinatario</label>
-            <input
-              type="email"
-              value={shareModal?.to_email || ''}
-              onChange={(e) => setShareModal(prev => prev ? { ...prev, to_email: e.target.value } : null)}
-              placeholder="correo@ejemplo.com"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
-              disabled={sendingShare}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Nombre del destinatario</label>
-            <input
-              type="text"
-              value={shareModal?.to_name || ''}
-              onChange={(e) => setShareModal(prev => prev ? { ...prev, to_name: e.target.value } : null)}
-              placeholder="Nombre"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
-              disabled={sendingShare}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Correo del destinatario</label>
+              <input
+                type="email"
+                value={shareModal?.to_email || ''}
+                onChange={(e) => setShareModal(prev => prev ? { ...prev, to_email: e.target.value } : null)}
+                placeholder="correo@ejemplo.com"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
+                disabled={sendingShare}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Nombre del destinatario</label>
+              <input
+                type="text"
+                value={shareModal?.to_name || ''}
+                onChange={(e) => setShareModal(prev => prev ? { ...prev, to_name: e.target.value } : null)}
+                placeholder="Nombre"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
+                disabled={sendingShare}
+              />
+            </div>
           </div>
           {shareModal?.type === 'employee' && shareModal?.target_user_id && (
             <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
@@ -1407,9 +1395,11 @@ function ReportGeneratorTab() {
               onChange={(e) => setShareMessage(e.target.value)}
               placeholder="Escribe un mensaje..."
               rows={3}
+              maxLength={500}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500 resize-none"
               disabled={sendingShare}
             />
+            <span className="text-[10px] text-gray-400 text-right block mt-0.5">{shareMessage.length}/500</span>
           </div>
           <div className="flex gap-3 pt-2">
             <Button

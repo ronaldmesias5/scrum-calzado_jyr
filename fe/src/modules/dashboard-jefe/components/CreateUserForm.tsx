@@ -5,7 +5,8 @@
  */
 
 import { useState } from 'react';
-import { UserPlus, CheckCircle, XCircle, Loader2, Copy, KeyRound, Mail, Eye } from 'lucide-react';
+import { UserPlus, CheckCircle, Loader2, Copy, KeyRound, Mail, Eye } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 import {
   createEmployee,
   createClient,
@@ -13,6 +14,7 @@ import {
   type CreateClientRequest,
 } from '../services/adminApi';
 import type { TypeDocument, UserResponse } from '@/types/auth';
+import { getDocAbbreviation } from '@/utils/type-documents';
 
 type UserType = 'employee' | 'client';
 
@@ -41,12 +43,11 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
     email: string;
     tempPassword: string;
   } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const { showToast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError(null);
   };
 
   const handleCopyPassword = async () => {
@@ -64,7 +65,6 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSuccess(null);
 
     setLoading(true);
@@ -116,7 +116,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
         'Error al crear la cuenta. Verifica los datos e inténtalo de nuevo.';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      showToast(typeof msg === 'string' ? msg : JSON.stringify(msg), 'error');
     } finally {
       setLoading(false);
     }
@@ -194,13 +194,6 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
         {isEmployee ? 'Datos del nuevo empleado' : 'Datos del nuevo cliente'}
       </h3>
 
-      {error && (
-        <div className="mb-5 flex items-start gap-2 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-          <XCircle size={16} className="mt-0.5 shrink-0" />
-          {error}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Nombre */}
         <div>
@@ -269,7 +262,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
             <option value="" className="dark:bg-slate-900">Seleccionar...</option>
             {typeDocuments.map((td) => (
               <option key={td.id.toString()} value={td.id.toString()}>
-                {td.name}
+                {getDocAbbreviation(td.name)}
               </option>
             ))}
           </select>

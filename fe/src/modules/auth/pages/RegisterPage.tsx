@@ -12,12 +12,12 @@
  * ¿Para qué?
  *   - Permitir auto-registro de clientes (role=client automático)
  *   - Validar datos con backend POST /api/v1/auth/register
- *   - Mostrar success message: "Cuenta creada, pendiente de validación"
+ *   - Mostrar success message: "¡Registro exitoso! Tu cuenta está activa."
  *   - Cargar dinámicamente tipos de documento desde backend
  * 
  * ¿Impacto?
  *   ALTO — Sin registro, clientes no pueden crear cuentas (solo admin los crearía).
- *   Cuenta creada queda is_validated=false hasta que admin valide.
+ *   Cuenta creada queda is_active=True e is_validated=True (acceso inmediato).
  *   Modificar formData debe sincronizarse con backend UserCreate schema.
  *   Dependencias: hooks/useAuth.ts, api/type-documents.ts, types/auth.ts,
  *                components/ui/TermsModal.tsx
@@ -106,7 +106,7 @@ export function RegisterPage() {
         accepted_terms: true,
       });
       setSuccess(
-        "Cuenta creada exitosamente. Pendiente de validación por el administrador. Revisa tu correo para la confirmación de tu cuenta."
+        "¡Registro exitoso! Tu cuenta está activa. Ya puedes iniciar sesión con tu correo y contraseña."
       );
       setFormData({ 
         name: "",
@@ -134,6 +134,7 @@ export function RegisterPage() {
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyPolicyModal onClose={() => setShowPrivacy(false)} />}
     <AuthLayout
+      wide
       title={t('common.register')}
       subtitle={t('auth.subtitleRegister') || "Completa tus datos para registrarte"}
     >
@@ -154,129 +155,135 @@ export function RegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} noValidate>
-        <InputField
-          label={t('auth.names') || "Nombres"}
-          name="name"
-          type="text"
-          value={formData.name}
-          placeholder="Juan Carlos"
-          autoComplete="given-name"
-          autoFocus
-          icon={<User className="h-5 w-5" />}
-          onChange={handleChange}
-        />
+        {/* Three-column grid for compact layout on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-0">
+          {/* Row 1: Nombres | Apellidos | Email */}
+          <InputField
+            label={t('auth.names') || "Nombres"}
+            name="name"
+            type="text"
+            value={formData.name}
+            placeholder="Juan Carlos"
+            autoComplete="given-name"
+            autoFocus
+            icon={<User className="h-5 w-5" />}
+            onChange={handleChange}
+          />
 
-        <InputField
-          label={t('auth.lastNames') || "Apellidos"}
-          name="last_name"
-          type="text"
-          value={formData.last_name}
-          placeholder="García Rodríguez"
-          autoComplete="family-name"
-          icon={<User className="h-5 w-5" />}
-          onChange={handleChange}
-        />
+          <InputField
+            label={t('auth.lastNames') || "Apellidos"}
+            name="last_name"
+            type="text"
+            value={formData.last_name}
+            placeholder="García Rodríguez"
+            autoComplete="family-name"
+            icon={<User className="h-5 w-5" />}
+            onChange={handleChange}
+          />
 
-        <InputField
-          label={t('auth.email')}
-          name="email"
-          type="email"
-          value={formData.email}
-          placeholder="correo@ejemplo.com"
-          autoComplete="email"
-          icon={<Mail className="h-5 w-5" />}
-          onChange={handleChange}
-        />
+          <InputField
+            label={t('auth.email')}
+            name="email"
+            type="email"
+            value={formData.email}
+            placeholder="correo@ejemplo.com"
+            autoComplete="email"
+            icon={<Mail className="h-5 w-5" />}
+            onChange={handleChange}
+          />
 
-        {/* Selector de tipo de documento */}
-        <div className="mb-4">
-          <label htmlFor="identity_document_type_id" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-            {t('auth.docType') || "Tipo de documento"}
-          </label>
-          <div className="relative">
-            <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
-            <select
-              id="identity_document_type_id"
-              name="identity_document_type_id"
-              value={formData.identity_document_type_id}
-              onChange={handleChange}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-[#1e40af] focus:border-transparent outline-none transition"
-            >
-              <option value="">{t('auth.docTypeSelect') || "Selecciona tu tipo de documento"}</option>
-              {typeDocuments.map((doc) => (
-                <option key={doc.id} value={doc.id}>
-                  {doc.name}
-                </option>
-              ))}
-            </select>
+          {/* Row 2: Teléfono | Tipo de documento | Documento de identidad */}
+          <InputField
+            label={t('auth.phone') || "Teléfono"}
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            placeholder="+57 3001234567"
+            autoComplete="tel"
+            icon={<Phone className="h-5 w-5" />}
+            onChange={handleChange}
+          />
+
+          <div className="mb-4">
+            <label htmlFor="identity_document_type_id" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              {t('auth.docType') || "Tipo de documento"}
+            </label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
+              <select
+                id="identity_document_type_id"
+                name="identity_document_type_id"
+                value={formData.identity_document_type_id}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-[#1e40af] focus:border-transparent outline-none transition"
+              >
+                <option value="">{t('auth.docTypeSelect') || "Selecciona tu tipo de documento"}</option>
+                {typeDocuments.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          <InputField
+            label={t('auth.idDoc') || "Documento de identidad"}
+            name="identity_document"
+            type="text"
+            value={formData.identity_document}
+            placeholder="1234567890"
+            icon={<FileText className="h-5 w-5" />}
+            onChange={handleChange}
+          />
+
+          {/* Row 3: Contraseña | Confirmar contraseña | Nombre del comercio */}
+          <InputField
+            label={t('auth.password')}
+            name="password"
+            type="password"
+            value={formData.password}
+            placeholder="Mínimo 8 caracteres"
+            autoComplete="new-password"
+            icon={<Lock className="h-5 w-5" />}
+            onChange={handleChange}
+            onPaste={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+          />
+
+          <InputField
+            label={t('auth.confirmPassword') || "Confirmar contraseña"}
+            name="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            placeholder="Repite tu contraseña"
+            autoComplete="new-password"
+            icon={<KeyRound className="h-5 w-5" />}
+            onChange={handleChange}
+            onPaste={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+          />
+
+          <InputField
+            label={t('auth.businessName') || "Nombre del comercio (opcional)"}
+            name="business_name"
+            type="text"
+            value={formData.business_name}
+            placeholder="Ej: Tienda Mi Calzado"
+            icon={<Store className="h-5 w-5" />}
+            onChange={handleChange}
+          />
         </div>
 
-        <InputField
-          label={t('auth.idDoc') || "Documento de identidad"}
-          name="identity_document"
-          type="text"
-          value={formData.identity_document}
-          placeholder="1234567890"
-          icon={<FileText className="h-5 w-5" />}
-          onChange={handleChange}
-        />
-
-        <InputField
-          label={t('auth.phone') || "Teléfono"}
-          name="phone"
-          type="tel"
-          value={formData.phone}
-          placeholder="+57 3001234567"
-          autoComplete="tel"
-          icon={<Phone className="h-5 w-5" />}
-          onChange={handleChange}
-        />
-
-        <InputField
-          label={t('auth.businessName') || "Nombre del comercio (opcional)"}
-          name="business_name"
-          type="text"
-          value={formData.business_name}
-          placeholder="Ej: Tienda Mi Calzado"
-          icon={<Store className="h-5 w-5" />}
-          onChange={handleChange}
-        />
-
-        <InputField
-          label={t('auth.password')}
-          name="password"
-          type="password"
-          value={formData.password}
-          placeholder="Mínimo 8 caracteres"
-          autoComplete="new-password"
-          icon={<Lock className="h-5 w-5" />}
-          onChange={handleChange}
-          onPaste={(e) => e.preventDefault()}
-          onCopy={(e) => e.preventDefault()}
-        />
-        
+        {/* Full-width items below the grid */}
         {formData.password && (
           <div className="mb-4">
             <PasswordStrengthIndicator password={formData.password} />
           </div>
         )}
 
-        <InputField
-          label={t('auth.confirmPassword') || "Confirmar contraseña"}
-          name="confirmPassword"
-          type="password"
-          value={formData.confirmPassword}
-          placeholder="Repite tu contraseña"
-          autoComplete="new-password"
-          icon={<KeyRound className="h-5 w-5" />}
-          onChange={handleChange}
-          onPaste={(e) => e.preventDefault()}
-          onCopy={(e) => e.preventDefault()}
-        />
-
         {/* Checkbox de aceptación consolidado */}
-        <div className="mb-8">
+        <div className="mb-4">
           <label className="flex items-start gap-4 cursor-pointer group">
             <input
               type="checkbox"
@@ -309,7 +316,7 @@ export function RegisterPage() {
           </label>
         </div>
 
-        <Button type="submit" fullWidth isLoading={isLoading} disabled={!acceptedPolicies} className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all">
+        <Button type="submit" fullWidth isLoading={isLoading} disabled={!acceptedPolicies} className="py-3 text-base font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all">
           {t('common.register')}
         </Button>
       </form>

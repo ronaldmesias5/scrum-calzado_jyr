@@ -30,7 +30,7 @@ Descripción: Router FastAPI con endpoints administrativos para gestión de usua
 import secrets
 import string
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -83,6 +83,7 @@ def _build_user_response(user: User) -> UserResponse:
         is_active=user.is_active,
         is_validated=user.is_validated,
         must_change_password=user.must_change_password,
+        invitation_expires_at=user.invitation_expires_at,
         role_name=user.role.name_role if user.role else None,
         business_name=user.business_name,
         occupation=user.occupation,
@@ -390,6 +391,7 @@ async def create_employee(
         is_active=True,
         is_validated=True,
         must_change_password=True,
+        invitation_expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
         validated_by=current_user.id,
         validated_at=datetime.now(timezone.utc),
     )
@@ -449,6 +451,7 @@ async def create_client(
         is_active=True,
         is_validated=True,
         must_change_password=True,
+        invitation_expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
         validated_by=current_user.id,
         validated_at=datetime.now(timezone.utc),
     )
@@ -514,6 +517,7 @@ async def create_jefe(
         is_active=True,
         is_validated=True,
         must_change_password=True,
+        invitation_expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
         validated_by=current_user.id,
         validated_at=datetime.now(timezone.utc),
     )
@@ -528,6 +532,50 @@ async def create_jefe(
     )
 
     response = _build_user_response(new_user)
+    response.temporary_password = temp_password
+    return response
+
+
+# ─────────────────────────────────────────
+# Renovación de invitación
+# ─────────────────────────────────────────
+
+@router.post(
+    "/users/{user_id}/renew-invitation",
+    response_model=UserResponse,
+    summary="Renovar invitación de usuario (genera nueva contraseña temporal)",
+)
+async def renew_invitation(
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """
+    Genera una nueva contraseña temporal para un usuario cuya invitación expiró.
+    Reinicia el contador de 24 horas y envía un email con las nuevas credenciales.
+    Solo admin o jefe.
+    """
+    _require_admin_or_jefe(current_user)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    temp_password = _generate_temporary_password()
+
+    user.hashed_password = hash_password(temp_password)
+    user.must_change_password = True
+    user.invitation_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    db.commit()
+    db.refresh(user)
+
+    await send_welcome_email(
+        email=user.email,
+        temp_password=temp_password,
+        name=f"{user.name_user} {user.last_name}",
+    )
+
+    response = _build_user_response(user)
     response.temporary_password = temp_password
     return response
 

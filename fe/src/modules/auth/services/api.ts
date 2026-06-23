@@ -116,3 +116,12 @@ export async function requestReactivation(data: ReactivationRequest): Promise<Me
   const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/request-reactivation`, data);
   return response.data;
 }
+
+// ────────────────────────────────────────────────
+// Solicitar nueva invitación (contraseña temporal expirada) — público
+// ────────────────────────────────────────────────
+
+export async function requestNewInvitation(email: string): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/request-new-invitation`, { email });
+  return response.data;
+}

@@ -25,28 +25,50 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, Send } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { useToast } from "@/context/ToastContext";
 import { getDashboardRoute } from "@/utils/routing";
+import { requestNewInvitation } from "@/modules/auth/services/api";
 
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [rememberMe, setRememberMe] = useState(false);
+  const rememberedEmail = localStorage.getItem("remembered_email") || "";
+  const [formData, setFormData] = useState({ email: rememberedEmail, password: "" });
+  const [rememberMe, setRememberMe] = useState(!!rememberedEmail);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [invitationExpired, setInvitationExpired] = useState(false);
+  const [requestingNew, setRequestingNew] = useState(false);
+
+  const { showToast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError(null);
+    setInvitationExpired(false);
+  };
+
+  const handleRequestNewInvitation = async () => {
+    setRequestingNew(true);
+    try {
+      await requestNewInvitation(formData.email);
+      showToast("Se ha enviado una nueva invitación a tu correo electrónico.", "success");
+      setInvitationExpired(false);
+      setError(null);
+    } catch {
+      showToast("No se pudo procesar la solicitud. Verifica tu correo.", "error");
+    } finally {
+      setRequestingNew(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,20 +77,30 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const userData = await login(formData);
-      
+      const userData = await login({ ...formData, remember_me: rememberMe });
+
+      if (rememberMe) {
+        localStorage.setItem("remembered_email", formData.email);
+      } else {
+        localStorage.removeItem("remembered_email");
+      }
+
       // Si el usuario debe cambiar contraseña en el primer inicio
       if (userData?.must_change_password) {
         navigate("/change-password", { replace: true });
         return;
       }
-      
+
       // Redirigir al dashboard correspondiente según rol y ocupación
       const dashboardRoute = getDashboardRoute(userData);
       navigate(dashboardRoute, { replace: true });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al iniciar sesión";
+      const isExpired = message.toLowerCase().includes("expirado") || message.toLowerCase().includes("invitación");
+      if (isExpired) {
+        setInvitationExpired(true);
+      }
       setError(message);
     } finally {
       setIsLoading(false);
@@ -132,6 +164,29 @@ export function LoginPage() {
           {t('common.login')}
         </Button>
       </form>
+
+      {invitationExpired && (
+        <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-center">
+          <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-3">
+            Tu contraseña temporal ha expirado. Solicita una nueva invitación a tu correo.
+          </p>
+          <button
+            type="button"
+            onClick={handleRequestNewInvitation}
+            disabled={requestingNew || !formData.email}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
+          >
+            {requestingNew ? (
+              <span className="animate-pulse">Enviando...</span>
+            ) : (
+              <>
+                <Send size={14} />
+                Solicitar nueva invitación
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
         {t('auth.noAccountPhrase') || "¿No tienes cuenta?"}{" "}

@@ -10,8 +10,10 @@ import { getTypeDocuments } from '@/api/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
 import CreateUserForm from '../components/CreateUserForm';
 import Modal from '@/components/ui/Modal';
+import { useToast } from '@/context/ToastContext';
 
 export default function ClientsPage() {
+  const { showToast } = useToast();
   const [clients, setClients] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,8 +73,10 @@ export default function ClientsPage() {
       const updated = await updateUser(selectedClient.id.toString(), editForm);
       setClients(prev => prev.map(cli => cli.id === updated.id ? updated : cli));
       setIsEditModalOpen(false);
-    } catch {
-      alert('Error al actualizar el cliente.');
+      showToast('Cliente actualizado correctamente', 'success');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Error al actualizar el cliente.';
+      showToast(msg, 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -83,9 +87,10 @@ export default function ClientsPage() {
     try {
       const updated = await updateUser(cli.id.toString(), { is_active: newStatus });
       setClients(prev => prev.map(c => c.id === updated.id ? updated : c));
-    } catch {
-      // Error handling integrated in UI would be better, but for now avoiding alert
-      console.error('Error al cambiar el estado.');
+      showToast(`Cliente ${newStatus ? 'activado' : 'desactivado'} correctamente`, 'success');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Error al cambiar el estado.';
+      showToast(msg, 'error');
     }
   };
 

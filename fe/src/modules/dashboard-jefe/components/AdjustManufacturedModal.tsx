@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Product } from '../services/catalogService';
 import Modal from '@/components/ui/Modal';
+import { useToast } from '@/context/ToastContext';
 
 interface AdjustManufacturedModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface AdjustManufacturedModalProps {
 }
 
 export default function AdjustManufacturedModal({ isOpen, product, onClose, onSave }: AdjustManufacturedModalProps) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(0);
 
@@ -25,8 +27,11 @@ export default function AdjustManufacturedModal({ isOpen, product, onClose, onSa
     try {
       await onSave(quantity);
       onClose();
+      showToast('Pares fabricados actualizados correctamente', 'success');
     } catch (error) {
       console.error('Error saving manufactured pairs:', error);
+      const msg = error instanceof Error ? error.message : 'Error al guardar los pares fabricados';
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -43,7 +48,7 @@ export default function AdjustManufacturedModal({ isOpen, product, onClose, onSa
     >
       <div className="flex flex-col">
         {/* Header decoration */}
-        <div className="px-6 py-2 -mt-4 mb-2">
+        <div className="px-6 py-2 mb-2">
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name}</p>
         </div>
 
