@@ -91,6 +91,7 @@ class ProductSupplyOut(BaseModel):
     supply_color: str | None = None
     supply_unit: str | None = None
     supply_category: str
+    global_stage: str | None = None
     quantity_required: float
     stock_quantity: float
     stock_sufficient: bool  # True si stock_quantity >= quantity_required * (pedidos activos del producto)

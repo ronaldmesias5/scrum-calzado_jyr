@@ -1628,7 +1628,7 @@ function OrderDetailView({
                                   <div className="flex flex-wrap gap-1.5">
                                      {(() => {
                                         const productSupplies = orderSupplies[productionModal?.productId]?.supplies || [];
-                                        const stageSupplies = productSupplies.filter(is => getStageByCat(is.supply_category) === stage.key);
+                                        const stageSupplies = productSupplies.filter(is => (is.global_stage || getStageByCat(is.supply_category)) === stage.key);
                                         const totalPairs = selectedOption === 'A' ? (productionModal?.missingCount || 0) : (productionModal?.totalCount || 0);
                                         
                                         if (stageSupplies.length === 0) return <span className="text-[10px] text-gray-400 italic">No hay insumos específicos</span>;

@@ -60,6 +60,7 @@ export interface ProductSupplyCheck {
   supply_color?: string | null;
   supply_unit?: string | null;
   supply_category: string;
+  global_stage?: string | null;
   quantity_required: number;
   stock_quantity: number;
   stock_sufficient: boolean;
