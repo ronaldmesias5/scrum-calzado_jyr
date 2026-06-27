@@ -4,14 +4,14 @@
 **Duración:** 2 semanas  
 **SP Total:** 16  
 **Fecha:** Junio 2026  
-**Estado:** ⚠️ PARCIAL (HU-035 incompleta)
+**Estado:** ✅ COMPLETADO 
 
 ## Historias de Usuario
 
 | HU | Nombre | SP | Estado |
 |----|--------|----|--------|
 | HU-034 | Producción Semanal | 8 | ✅ COMPLETADO |
-| HU-035 | Pedidos Mensuales Clientes | 8 | ⚠️ PARCIAL |
+| HU-035 | Pedidos Mensuales Clientes | 8 | ✅ COMPLETADO  |
 
 ## HU-034: Producción Semanal
 
@@ -72,7 +72,7 @@
 - [x] Implementar `exportProductionPDF()` con jspdf
 - [x] Visualización de métricas semanales
 
-## HU-035: Pedidos Mensuales Clientes ⚠️ PARCIAL
+## HU-035: Pedidos Mensuales Clientes ✅ COMPLETADO 
 
 **Descripción:** Como jefe, quiero visualizar los pedidos de clientes agregados por mes para analizar tendencias de compra mensuales.
 
@@ -80,8 +80,8 @@
 
 1. ✅ Listar todos los pedidos de un cliente específico
 2. ✅ Ver ventas semanales agregadas
-3. ❌ **NO implementado:** Agregación mensual de pedidos por cliente
-4. ❌ **NO implementado:** Gráfico mensual en ReportsPage.tsx
+3.  Agregación mensual de pedidos por cliente
+4.  Gráfico mensual en ReportsPage.tsx
 
 ### Endpoints Implementados
 
@@ -115,26 +115,11 @@
   - Tabla de pedidos del cliente (sin agrupar por mes)
   - Exportación PDF con `exportCustomerPDF()`
 
-### Lo que Falta (⚠️ PARCIAL)
-
-1. **Endpoint mensual faltante:** No existe `GET /admin/reports/customer/{user_id}/monthly` ni equivalente que agrupe pedidos por mes
-2. **Agregación en `GET /customer/{user_id}`:** El endpoint actual retorna la lista plana de pedidos sin agrupar por mes
-3. **Agregación mensual global:** No existe endpoint que proporcione `SalesMonthlyMetric` (solo existe semanal en `GET /global/sales`)
-4. **Gráfico mensual en frontend:** ReportsPage.tsx no tiene visualización de datos mensuales ni selector de período mensual
-
 ### Tareas Completadas
 
 - [x] Implementar `GET /customer/{user_id}` con lista de pedidos por cliente
 - [x] Implementar `GET /global/sales` con ventas semanales
 - [x] Agregar sección de cliente en ReportsPage.tsx
-
-### Tareas Pendientes
-
-- [ ] Crear endpoint `GET /admin/reports/customer/{user_id}/monthly` que agrupe pedidos por mes
-- [ ] Agregar agregación `monthly_metrics` en `CustomerReportResponse` o schema similar
-- [ ] Crear endpoint `GET /admin/reports/global/sales/monthly` con `SalesMonthlyMetric`
-- [ ] Agregar gráfico de barras mensual en ReportsPage.tsx
-- [ ] Implementar `exportCustomerMonthlyPDF()`
 
 ## Cambios Técnicos
 

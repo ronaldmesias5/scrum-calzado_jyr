@@ -36,6 +36,7 @@ import {
   type PendingProductIncidence,
 } from '../services/lossApi';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/hooks/useAuth';
 
 type TabType = 'losses' | 'scrap' | 'repaired' | 'pending';
 
@@ -86,6 +87,8 @@ const CATEGORY_BADGE: Record<string, string> = {
 export default function LossesPage() {
   const navigate = useNavigate();
   const { counts } = useBadgeCounts();
+  const { user } = useAuth();
+  const canAccess = user?.role_name === 'admin' || user?.occupation === 'jefe';
   const [activeTab, setActiveTab] = useState<TabType>('losses');
 
   // ── Incidents state ────────────────────
@@ -218,6 +221,7 @@ export default function LossesPage() {
 
   // Load data when tab or filters change
   useEffect(() => {
+    if (!canAccess) return;
     if (activeTab === 'losses') {
       loadIncidents();
     } else if (activeTab === 'repaired') {
@@ -228,7 +232,7 @@ export default function LossesPage() {
       loadScrapStock();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, incidentTypeFilter, categoryFilter, pendingStatusFilter]);
+  }, [canAccess, activeTab, incidentTypeFilter, categoryFilter, pendingStatusFilter]);
 
   // ── Stats ─────────────────────────────
   const totalQuantity = Math.round(incidents.reduce((sum, inc) => sum + (Number(inc.quantity) || 0), 0));
@@ -309,6 +313,18 @@ export default function LossesPage() {
       minute: '2-digit',
     });
   };
+
+  if (!canAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle className="w-16 h-16 text-amber-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Acceso Denegado</h2>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md">
+          Solo los administradores y jefes pueden acceder a la sección de incidencias.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

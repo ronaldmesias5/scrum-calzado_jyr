@@ -108,10 +108,6 @@ Transiciones:
 - `be/app/models/inventory_movement.py` — `InventoryMovementType` enum (`entrada`, `salida`)
 - `fe/src/modules/dashboard-jefe/pages/OrdersPage.tsx` — Botones de estado en la interfaz
 
-### ⚠️ Nota Técnica: Filtro de Colour en Búsquedas de Inventario
-
-Las consultas de inventario en `update_order_status()` filtran por `Inventory.colour == detail.colour` (líneas 497, 540, 572). Debido a que inventory almacena colour como cadena vacía mientras order details usa nombres completos, estas búsquedas pueden fallar. Workaround implementado en otros endpoints eliminando el filtro de colour.
-
 ## Cambios Técnicos
 
 - Notificaciones con arquitectura híbrida: síncrona (BD) + asíncrona fire-and-forget (WebSocket + email)

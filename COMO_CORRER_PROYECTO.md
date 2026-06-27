@@ -4,7 +4,7 @@
 
 ---
 
-## ⚡ Quick Start (3 pasos)
+## Quick Start (3 pasos)
 
 ### 1️⃣ Clonar y Configurar
 
@@ -36,7 +36,7 @@ docker compose up -d --build
 
 Esperar 30-60 segundos a que todo inicie.
 
-**Nota:** Las migraciones de Alembic (37) se ejecutan automáticamente al iniciar el backend. La BD se crea completa con tablas, índices, datos de prueba (65 productos, 3 roles, usuarios de prueba).
+**Nota:** Las migraciones de Alembic (27) se ejecutan automáticamente al iniciar el backend. La BD se crea completa con tablas, índices, triggers y datos de prueba (65 productos, 3 roles, usuarios de prueba).
 
 ### 3️⃣ Acceder a la Aplicación
 
@@ -130,7 +130,7 @@ https://myaccount.google.com/apppasswords
 
 ## 🛠️ Stack Tecnológico
 
-- **Backend:** FastAPI + SQLAlchemy + PostgreSQL + Alembic (37 migraciones)
+- **Backend:** FastAPI + SQLAlchemy + PostgreSQL + Alembic (27 migraciones)
 - **Frontend:** React 19 + TypeScript + Vite + TailwindCSS 4
 - **Orquestación:** Docker Compose (db + be + fe + mailpit)
 - **Auth:** JWT + Bcrypt

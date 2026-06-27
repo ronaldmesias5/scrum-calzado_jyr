@@ -5,8 +5,6 @@
 **Última Actualización:** 16 de Junio de 2026  
 **Metodología:** 2 HU por sprint, organizadas por orden de implementación real
 
-> **Nota:** Los sprints están ordenados según lo que se construyó realmente en el sistema, no por dependencias teóricas. Cada sprint representa un entregable funcional de 2 historias de usuario.
-
 ---
 
 ## Resumen Global
