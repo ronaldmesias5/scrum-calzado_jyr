@@ -4,14 +4,14 @@
 **Duración:** 2 semanas
 **SP Total:** 18
 **Fecha:** Mayo–Junio 2026
-**Estado:** ⚠️ PARCIALMENTE COMPLETADO
+**Estado:** ✅ COMPLETADO
 
 ## Historias de Usuario
 
 | HU | Nombre | SP | Estado |
 |----|--------|----|--------|
 | HU-006 | Creación de Catálogo de Productos | 13 | ✅ COMPLETADO |
-| HU-007 | Clasificación por Categorías | 5 | ⚠️ PARCIAL |
+| HU-007 | Clasificación por Categorías | 5 | ✅ COMPLETADO |
 
 ---
 
@@ -75,9 +75,9 @@ El catálogo se siembra automáticamente al iniciar el backend con **65 producto
 
 ---
 
-## HU-007: Clasificación por Categorías (5 SP) — ⚠️ PARCIAL
+## HU-007: Clasificación por Categorías (5 SP) — ✅ COMPLETADO
 
-### Estado: ⚠️ PARCIALMENTE COMPLETADO
+### Estado: ✅ COMPLETADO
 
 ### Lo que SÍ está implementado
 - **Modelo `Category`** en `be/app/models/category.py`: `id`, `name`, `description`, `is_active`, `deleted_at`

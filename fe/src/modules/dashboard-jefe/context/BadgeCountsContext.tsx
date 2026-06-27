@@ -7,6 +7,7 @@ import apiClient from '@/api/axios';
 import { getUnreadCount } from '../services/notificationApi';
 import { useNotificationWebSocket } from '../hooks/useNotificationWebSocket';
 import { getPendingIncidences } from '../services/lossApi';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface PendingUser {
   id: string;
@@ -42,8 +43,19 @@ export function BadgeCountsProvider({ children }: { children: React.ReactNode })
   const [counts, setCounts] = useState<BadgeCounts>({ pedidos: 0, usuarios: 0, incidencias: 0 });
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const { unreadCount, resetUnreadCount } = useNotificationWebSocket();
+  const { user, isLoading: authLoading } = useAuth();
+  const canAccessAdmin = user?.role_name === 'admin' || user?.occupation === 'jefe';
 
   const refresh = useCallback(async () => {
+    if (!canAccessAdmin) {
+      setPendingUsers([]);
+      try {
+        const notifUnread = await getUnreadCount();
+        setCounts((prev) => ({ ...prev, pedidos: notifUnread, usuarios: 0, incidencias: 0 }));
+      } catch { /* silently ignore */ }
+      return;
+    }
+
     try {
       // Usuarios pendientes
       const usersRes = await apiClient.get<PendingUser[]>('/api/v1/admin/users/pending-validation');
@@ -68,7 +80,7 @@ export function BadgeCountsProvider({ children }: { children: React.ReactNode })
     } catch {
       // silently ignore
     }
-  }, []);
+  }, [canAccessAdmin]);
 
   // Sincronizar contador WebSocket con el estado local
   useEffect(() => {
@@ -76,10 +88,11 @@ export function BadgeCountsProvider({ children }: { children: React.ReactNode })
   }, [unreadCount]);
 
   useEffect(() => {
+    if (authLoading) return;
     refresh();
     const id = setInterval(refresh, 30_000);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [refresh, authLoading]);
 
   const resetNotificationCount = useCallback(() => {
     resetUnreadCount();

@@ -93,14 +93,6 @@ def get_products(
 - `be/app/models/inventory_movement.py` — Modelo `InventoryMovement` con `type_of_movement` (entrada/salida)
 - `fe/src/modules/dashboard-jefe/pages/InventoryPage.tsx` — Página de gestión de inventario
 
-### ⚠️ Nota Técnica: Error de Color en Inventario
-
-Existe una inconsistencia conocida entre el almacenamiento de colores en inventario vs. detalles de pedido:
-
-- **Inventory**: almacena `colour = ""` (cadena vacía) para muchos registros
-- **OrderDetail**: almacena colores completos como `"negro x blanco"`, `"rojo"`, etc.
-
-Esto causa que las búsquedas de inventario que filtran por `colour` fallen al no encontrar coincidencias con los detalles del pedido. Como workaround, varias búsquedas en `orders/router.py` ya no filtran por colour (eliminaron el filtro en líneas 497, 540, 572, 730, 1212). **Pendiente**: Normalizar los valores de colour en inventario o eliminar el filtro de colour permanentemente.
 
 ## Cambios Técnicos
 
