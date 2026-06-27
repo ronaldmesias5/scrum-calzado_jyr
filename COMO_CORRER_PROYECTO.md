@@ -4,7 +4,7 @@
 
 ---
 
-## ⚡ Quick Start (3 pasos)
+## Quick Start (3 pasos)
 
 ### 1️⃣ Clonar y Configurar
 
