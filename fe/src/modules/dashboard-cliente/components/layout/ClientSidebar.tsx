@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, X, LogOut } from 'lucide-react';
+import { Home, Store, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ClientSidebarProps {
@@ -11,10 +11,12 @@ interface ClientSidebarProps {
 
 const ICON_COLORS: Record<string, string> = {
   '/dashboard/client': 'text-indigo-500 dark:text-indigo-400',
+  '/dashboard/client/catalog': 'text-blue-500 dark:text-blue-400',
 };
 
 const NAV_ITEMS = [
   { label: 'Inicio', icon: Home, path: '/dashboard/client' },
+  { label: 'Catálogo Mayorista', icon: Store, path: '/dashboard/client/catalog' },
 ] as const;
 
 export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: ClientSidebarProps) {

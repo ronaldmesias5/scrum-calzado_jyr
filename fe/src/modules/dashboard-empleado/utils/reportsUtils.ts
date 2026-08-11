@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { MyTasksReportResponse, MyTaskDetail, MyPerformanceResponse } from '../services/employeeApi';
-import { formatCOP } from '@/utils/format';
+import { formatCOP, formatReportCOP } from '@/utils/format';
 
 const COLORS = {
   primary: [30, 64, 175] as [number, number, number],
@@ -168,7 +168,7 @@ export async function exportMyTasksPDF(
   summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatCOP(data.total_earnings), 146, summaryY + 13, COLORS.accent);
+  summaryValue(formatReportCOP(data.total_earnings, 2), 146, summaryY + 13, COLORS.accent);
 
   const tableStartY = summaryY + 21;
 
@@ -184,10 +184,10 @@ export async function exportMyTasksPDF(
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : 'Completado',
         t.completed_at ? formatDate(t.completed_at) : (t.created_at ? formatDate(t.created_at) : '—'),
-        t.price_per_dozen ? formatCOP(t.price_per_dozen / 12) : '—',
-        t.task_total_price ? formatCOP(t.task_total_price) : '$0',
+        t.price_per_dozen ? formatReportCOP(t.price_per_dozen / 12, 3) : '—',
+        t.task_total_price ? formatReportCOP(t.task_total_price, 2) : '$0',
       ]),
-      foot: [['', '', '', '', '', 'TOTAL', formatCOP(data.total_earnings)]],
+      foot: [['', '', '', '', '', 'TOTAL', formatReportCOP(data.total_earnings, 2)]],
       theme: 'grid',
       headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
@@ -243,7 +243,7 @@ export async function exportPerformancePDF(
   summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatCOP(data.total_earnings), 146, summaryY + 13, COLORS.accent);
+  summaryValue(formatReportCOP(data.total_earnings, 2), 146, summaryY + 13, COLORS.accent);
 
   // ── Desglose por Proceso ────────────────────────────────────────────────
   let y = summaryY + 22;

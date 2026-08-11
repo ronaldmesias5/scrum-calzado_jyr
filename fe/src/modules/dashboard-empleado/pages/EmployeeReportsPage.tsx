@@ -14,7 +14,7 @@ import {
   type SharedReportListResponse,
   type MyTasksReportResponse,
 } from '../services/employeeApi';
-import { formatCOP } from '@/utils/format';
+import { formatCOP, formatReportCOP } from '@/utils/format';
 import { exportMyTasksPDF, exportPerformancePDF } from '../utils/reportsUtils';
 import Modal from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -272,7 +272,7 @@ export default function EmployeeReportsPage() {
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-100 dark:border-amber-800/30">
               <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Ganancias Totales</p>
-              <p className="text-3xl font-extrabold text-amber-700 dark:text-amber-400">{formatCOP(performance.total_earnings || 0)}</p>
+              <p className="text-3xl font-extrabold text-amber-700 dark:text-amber-400">{formatReportCOP(performance.total_earnings || 0, 2)}</p>
             </div>
           </div>
 
@@ -437,7 +437,7 @@ export default function EmployeeReportsPage() {
                             {task.completed_at ? new Date(task.completed_at).toLocaleDateString('es-CO') : '—'}
                           </td>
                           <td className="py-3 px-4 text-right font-bold text-amber-700 dark:text-amber-400">
-                            {formatCOP(task.task_total_price)}
+                            {formatReportCOP(task.task_total_price, 2)}
                           </td>
                         </tr>
                       ))}
@@ -446,7 +446,7 @@ export default function EmployeeReportsPage() {
                     <tr className="bg-gray-50 dark:bg-slate-800/50">
                       <td colSpan={7} className="py-3 px-4 text-right font-black text-gray-500 uppercase text-xs">Total</td>
                       <td className="py-3 px-4 text-right font-black text-amber-700 dark:text-amber-400">
-                        {formatCOP(tasksReport.total_earnings)}
+                        {formatReportCOP(tasksReport.total_earnings, 2)}
                       </td>
                     </tr>
                   </tfoot>

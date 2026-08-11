@@ -59,6 +59,7 @@ class ProductResponse(BaseModel):
     brand_name: str
     image_url: str | None = None
     color: str | None = None
+    available: int = 0
     
     class Config:
         from_attributes = True
@@ -66,7 +67,6 @@ class ProductResponse(BaseModel):
 class ProductDetailResponse(ProductResponse):
     """Detalle completo de producto con inventario"""
     description: str | None = None
-    price: float | int
     sizes_inventory: list[SizeInventoryResponse] = []
     
 class ProductsListResponse(BaseModel):

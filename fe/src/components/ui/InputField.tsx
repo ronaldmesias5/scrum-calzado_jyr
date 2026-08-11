@@ -44,13 +44,13 @@ export function InputField({
     <div className="mb-4">
       <label
         htmlFor={name}
-        className="mb-1 block text-sm font-medium text-gray-700"
+        className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
       >
         {label}
       </label>
       <div className="relative">
         {icon && (
-          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500">
             {icon}
           </div>
         )}
@@ -72,17 +72,17 @@ export function InputField({
           aria-describedby={error ? `${name}-error` : undefined}
           className={`block w-full rounded-lg border ${icon ? "pl-10" : "px-3"} ${
             isPassword ? "pr-10" : icon ? "pr-3" : ""
-          } py-2.5 text-sm transition-colors duration-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+          } py-2.5 text-sm transition-colors duration-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100 ${
             error
               ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-              : "border-gray-300 focus:border-[#1e40af] focus:ring-[#1e40af]/20"
+              : "border-gray-300 dark:border-slate-700 focus:border-[#1e40af] focus:ring-[#1e40af]/20"
           }`}
         />
         {isPassword && (
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
             aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
             {showPassword ? (
