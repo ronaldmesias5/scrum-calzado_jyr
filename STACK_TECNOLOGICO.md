@@ -5,13 +5,48 @@
 
 ---
 
-## 1. ¿Qué estructura tiene el proyecto y por qué?
+## 1. Modelo Cliente-Servidor — ¿Cómo funciona?
 
-### 1.1 El porqué de la estructura
+CALZADO J&R usa el **modelo cliente-servidor**: la interfaz (React) es el **cliente** que pide datos, y el backend (FastAPI) es el **servidor** que los procesa y responde. El cliente nunca accede a la base de datos directamente; siempre pasa por el servidor.
 
-La estructura de CALZADO J&R se eligió siguiendo la que nos enseñaron durante la formación para el desarrollo de proyectos. Es el modelo de referencia que aprendimos para construir aplicaciones web completas: separar el proyecto en capas (cliente, servidor y base de datos), dividir la lógica por responsabilidades dentro de cada capa, y centralizar la comunicación bajo un mismo contrato (la API REST).
+### ¿Cómo funciona?
 
-### 1.2 Stack Tecnológico
+1. El usuario interactúa con la aplicación **React** (el frontend).
+2. React hace una solicitud HTTP, por ejemplo: `GET /api/v1/admin/orders`.
+3. **FastAPI** recibe la petición.
+4. FastAPI valida la solicitud y consulta **PostgreSQL**.
+5. PostgreSQL devuelve los datos.
+6. FastAPI responde en formato **JSON**.
+7. React muestra los datos en la interfaz.
+
+```
+  React (cliente)          FastAPI (servidor)          PostgreSQL (BD)
+  ┌──────────────┐  HTTP   ┌──────────────────┐  SQL   ┌──────────────┐
+  │ Interfaz Web │ ──────▶ │ Validación +     │ ─────▶ │ Almacenamiento│
+  │ (axios)      │ ◀────── │ lógica de negocio│ ◀───── │ persistente   │
+  └──────────────┘  JSON   └──────────────────┘        └──────────────┘
+```
+
+### El porqué de la estructura
+
+La estructura de CALZADO J&R se eligió siguiendo la que nos enseñaron durante la formación para el desarrollo de proyectos. Es el modelo de referencia que aprendimos para construir aplicaciones web completas: separar el proyecto en capas (cliente, servidor y base de datos), dividir la lógica por responsabilidades dentro de cada capa, y centralizar la comunicación bajo un mismo contrato (la API REST). Así el código es ordenado, mantenible y escalable.
+
+---
+
+## 2. API REST — ¿Qué es una API REST?
+
+Una API REST es una **interfaz que permite que dos sistemas se comuniquen a través de HTTP**, por ejemplo entre un frontend hecho con React, HTML o una app móvil, y un backend hecho con FastAPI, Node.js, Django, Spring, etc.
+
+La palabra **REST** viene de *Representational State Transfer*. **No es un lenguaje ni una librería**, sino un *estilo arquitectónico* para diseñar servicios web.
+
+### Cómo aplicamos REST en CALZADO J&R
+
+- El backend expone **recursos** (pedidos, productos, tareas, incidencias, insumos…) identificados por URLs bajo `/api/v1`.
+- Las peticiones usan los **verbos HTTP** (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) según la operación.
+- El servidor responde siempre en **JSON**, que el frontend consume directamente.
+- REST es **sin estado** (stateless): cada petición es independiente y se autoriza con un token JWT.
+
+### Stack Tecnológico
 
 | Capa | Tecnología | Rol |
 |---|---|---|
@@ -22,21 +57,103 @@ La estructura de CALZADO J&R se eligió siguiendo la que nos enseñaron durante 
 | **Pruebas** | pytest (BE) · Vitest (FE) | Calidad |
 | **Linting/Formato** | Ruff (BE) · ESLint + Prettier (FE) | Estilo de código |
 
-### 1.3 Tipos de estructura y por qué los usamos
+---
+
+## 3. Estructura → MVC
+
+**MVC** es un patrón de arquitectura de software que organiza el código en tres componentes principales: **Modelo**, **Vista** y **Controlador**. La idea principal de MVC es **separar responsabilidades** para que el código sea más ordenado, mantenible y escalable.
+
+En CALZADO J&R aplicamos este patrón dentro del backend, adaptado a las herramientas que usamos:
+
+| Componente MVC | En CALZADO J&R | Carpeta |
+|---|---|---|
+| **Model** | Modelos ORM SQLAlchemy (entidades de la BD) | `be/app/models/` |
+| **Vista** | Schemas Pydantic (contrato de entrada/salida en JSON) | `be/app/schemas/` |
+| **Controlador** | Rutas HTTP (`routers/`) + lógica de negocio (`services/`), con `controllers/` como adaptadores intermedios | `be/app/routers/` · `be/app/controllers/` · `be/app/services/` |
+
+```
+Petición HTTP
+      │
+      ▼
+  Router  ──▶  Controller  ──▶  Service  ──▶  Model (ORM)  ──▶  PostgreSQL
+  (Vista:   (adaptador)        (lógica de     (Model)
+   schemas                    negocio)
+   Pydantic)
+```
+
+### Tipos de estructura y por qué los usamos
 
 | Ámbito | Tipo de estructura | Por qué la hacemos así |
 |---|---|---|
-| **Global** | **Modelo Cliente-Servidor** | Existen varios clientes (Web y Postman) que consumen un único servidor (FastAPI) que a su vez consulta la base de datos. Es el modelo estándar para aplicaciones web y fue el que aprendimos en la formación: el cliente pide, el servidor responde, nunca el cliente toca la BD directamente. |
-| **Backend** | **API REST** | La comunicación entre clientes y servidor se hace con peticiones HTTP sobre recursos (pedidos, productos, tareas, incidencias…), devolviendo **JSON**. REST es un estilo arquitectónico ampliamente usado porque es simple, sin estado y funciona con el protocolo HTTP que ya conocemos. |
-| **Backend (interna)** | **Arquitectura en capas** | Dentro del servidor separamos: **Model** (modelos ORM SQLAlchemy en `models/`), **Vista** (contratos Pydantic en `schemas/`, que definen cómo se ve la información al salir/entrar) y **Controlador** (rutas HTTP en `routers/` + lógica de negocio en `services/` con `controllers/` como adaptadores intermedios). Lo hacemos así para que la lógica sea reutilizable, testeable y el código quede ordenado. |
-| **Frontend** | **Organización por módulo de negocio** | Los componentes se agrupan **por módulo de negocio** (`modules/dashboard-jefe/`, `modules/dashboard-empleado/`…), cada uno con sus páginas, componentes, servicios de API y utilidades. Los átomos reutilizables viven en `components/ui/`. Así los componentes son fáciles de encontrar y escalan cuando el proyecto crece. |
-| **Base de datos** | **Esquema versionado con migraciones (Alembic)** | Las tablas no se crean "a mano" sino mediante **38 migraciones versionadas** que se aplican automáticamente al arrancar el backend. Esto garantiza que todos los desarrolladores tengan la misma estructura de BD y que los cambios sean controlados y reversibles. |
+| **Global** | **Modelo Cliente-Servidor** | Existen varios clientes (Web y Postman) que consumen un único servidor (FastAPI) que a su vez consulta la base de datos. Es el modelo estándar para aplicaciones web. |
+| **Backend** | **API REST** | La comunicación entre clientes y servidor se hace con peticiones HTTP sobre recursos, devolviendo JSON. |
+| **Backend (interna)** | **Arquitectura en capas / MVC** | Separamos Model (modelos ORM), Vista (schemas Pydantic) y Controlador (routers + services). Así la lógica es reutilizable y testeable. |
+| **Frontend** | **Organización por módulo + inspiración Atomic Design** | Los componentes se agrupan por módulo de negocio, con carpetas de estructura y de átomos reutilizables. |
+| **Base de datos** | **Esquema versionado con migraciones (Alembic)** | Las tablas no se crean "a mano" sino mediante **38 migraciones versionadas** que se aplican automáticamente al arrancar el backend. |
 
 ---
 
-## 2. Estructura del proyecto
+## 4. Estructura → Frontend
 
-### 2.1 Estructura completa
+### 4.1 Organización por módulo de negocio
+
+El frontend se organiza **por módulo de negocio**. Cada módulo reúne sus páginas, componentes, servicios de API, tipos y utilidades, de modo que todo lo relacionado con una funcionalidad esté en el mismo lugar y sea fácil de encontrar y escalar.
+
+```
+fe/src/
+├── api/                    # Cliente HTTP compartido (axios.ts) + catálogos
+├── components/
+│   ├── ui/                 # Átomos reutilizables (Button, Modal, Toast…)
+│   └── layout/             # Layouts y estructura de la app (AppLayout, AuthLayout…)
+├── config/                 # Configuración (api.ts)
+├── context/                # Contextos globales (Auth, Theme, Toast)
+├── hooks/                  # Hooks reutilizables (useAuth, useModalDialog…)
+├── modules/                # Módulos de negocio
+│   ├── auth/               # Login, Register, Password Reset (7 páginas)
+│   ├── dashboard-jefe/     # Panel admin (14 páginas)
+│   ├── dashboard-empleado/ # Panel empleado (6 páginas)
+│   ├── dashboard-cliente/  # Panel cliente (3 páginas)
+│   └── landing/            # Landing pública + catálogo
+├── types/                  # Tipos TypeScript compartidos
+├── utils/                  # Utilidades (format, routing)
+└── locales/                # Traducciones
+```
+
+### 4.2 Patrones de organización de componentes
+
+Los **patrones de organización de componentes** son formas de estructurar el código del frontend para que los componentes, páginas, hooks, servicios y archivos relacionados estén ordenados, sean fáciles de encontrar y puedan escalar cuando el proyecto crece.
+
+En lugar de tener todos los componentes mezclados en una sola carpeta, organizamos según su **propósito**:
+
+| Categoría | En CALZADO J&R |
+|---|---|
+| **Componentes reutilizables** | `components/ui/` — Button, Modal, InputField, Toast, Alert, Pagination… |
+| **Componentes de layout** | `components/layout/` — AppLayout, AuthLayout, layouts de cada dashboard |
+| **Funcionalidades específicas** | `modules/<módulo>/components/` — OrderFormModal, CreateUserForm… |
+| **Páginas** | `modules/<módulo>/pages/` — OrdersPage, TasksPage, ReportsPage… |
+| **Servicios** | `modules/<módulo>/services/` + `api/` — llamadas HTTP a la API |
+| **Hooks** | `hooks/` y `modules/<módulo>/hooks/` — useAuth, useModalDialog… |
+| **Tipos** | `types/` y `modules/<módulo>/types/` — auth, orders, products, tasks… |
+| **Utilidades** | `utils/` y `modules/<módulo>/utils/` — format, routing… |
+
+### 4.3 Estructura → Atomic Design
+
+**Atomic Design** es una metodología de organización de interfaces creada por **Brad Frost**, inspirada en la química. La idea es construir la interfaz **desde lo más simple hasta lo más complejo**, combinando componentes pequeños para formar componentes más grandes.
+
+| Nivel | Concepto | En CALZADO J&R |
+|---|---|---|
+| **Átomos** | Componentes básicos que no se descomponen más | `components/ui/` (Button, InputField, Modal, Toast…) |
+| **Moléculas** | Combinación de átomos que forman una unidad funcional | Componentes de un módulo (OrderFormModal, SummarySizer…) |
+| **Organismos** | Unión de moléculas que forman una sección completa | Vistas compuestas de cada página y layouts (AppLayout, AdminLayout…) |
+| **Plantillas / Páginas** | Estructura final que se enruta | `modules/<módulo>/pages/` |
+
+En la práctica, aplicamos una **inspiración Atomic Design**: los átomos viven en `components/ui/`, las moléculas en cada módulo, y las páginas las componen.
+
+---
+
+## 5. Estructura del proyecto
+
+### 5.1 Estructura completa
 
 ```
 CALZADO-J&R/
@@ -51,7 +168,7 @@ CALZADO-J&R/
 └── fe/                       # Frontend — React + Vite + TypeScript
 ```
 
-### 2.2 Estructura del backend (`be/`)
+### 5.2 Estructura del backend (`be/`)
 
 ```
 be/
@@ -71,7 +188,7 @@ be/
 │   │   ├── inventory.py  inventory_movement.py  supplies.py  supply_categories.py
 │   │   ├── tasks.py  vale.py  incidence.py  scrap.py  pending_incidence.py
 │   │   ├── reactivation_ticket.py  notifications.py  report_share.py …
-│   ├── routers/              # (21 archivos) Endpoints HTTP por módulo (ver sección 3.3)
+│   ├── routers/              # (21 archivos) Endpoints HTTP por módulo (ver sección 6.3)
 │   │   ├── auth.py  users.py  admin.py  type_document.py
 │   │   ├── catalog.py  catalog_brands.py  catalog_styles.py
 │   │   ├── catalog_products.py  catalog_inventory.py
@@ -92,34 +209,7 @@ be/
 └── Dockerfile
 ```
 
-### 2.3 Estructura del frontend (`fe/src/`)
-
-```
-fe/
-├── src/
-│   ├── main.tsx              # Punto de entrada
-│   ├── App.tsx               # Router y providers
-│   ├── index.css             # Tema (TailwindCSS 4)
-│   ├── modules/              # Módulos de negocio (import alias @/modules/…)
-│   │   ├── auth/             # (7 páginas) Login, Register, Password Reset
-│   │   ├── dashboard-jefe/   # (14 páginas) Panel admin: usuarios, pedidos, catálogo,
-│   │   │                     #   inventario, insumos, reportes, incidencias
-│   │   ├── dashboard-empleado/  # (6 páginas) Tareas, vale, incidencias, reportes
-│   │   ├── dashboard-cliente/   # (3 páginas) Pedidos, catálogo mayorista
-│   │   └── landing/          # (2 páginas) Landing pública + catálogo
-│   │       └── (cada módulo: pages/ · components/ · services/ · types/ · utils/)
-│   ├── components/
-│   │   ├── ui/               # (16) Átomos reutilizables: Button, Modal, PageTransition…
-│   │   └── layout/           # Estructura: AdminLayout, EmployeeLayout, ClientLayout…
-│   ├── context/              # EmployeeBadgeCountsContext y otros
-│   ├── hooks/                # useModalDialog y otros
-│   ├── lib/                  # Utilidades (axios, format)
-│   └── types/                # Tipos TypeScript compartidos (auth, orders, products…)
-├── package.json  vite.config.ts  tsconfig.json
-└── Dockerfile
-```
-
-### 2.4 Estructura de la base de datos (`db/`)
+### 5.3 Estructura de la base de datos (`db/`)
 
 ```
 db/
@@ -134,9 +224,24 @@ db/
 
 ---
 
-## 3. Comunicación con la API
+## 6. Comunicación con la API
 
-### 3.1 ¿Cómo se comunican los componentes?
+### 6.1 Modelos de comunicación con el backend
+
+Existen varios modelos para que el frontend consuma datos del backend. CALZADO J&R usa **REST API** como modelo principal y **WebSocket** para notificaciones en tiempo real.
+
+| Modelo | ¿Se usa en CALZADO J&R? | Dónde |
+|---|---|---|
+| **REST API** | ✅ Sí | Toda la comunicación HTTP del sistema (pedidos, catálogo, reportes…) |
+| **GraphQL** | ❌ No | — |
+| **WebSocket** | ✅ Sí | Notificaciones en tiempo real (`/api/v1/notifications/ws`) |
+| **Server-Sent Events** | ❌ No | — |
+| **tRPC** | ❌ No | — |
+| **RPC** | ❌ No | — |
+| **Polling** | ❌ No | El frontend refresca datos puntuales, pero no hay polling del backend |
+| **Real-time** | ✅ Sí | Notificaciones WebSocket (`app/utils/ws_manager.py`) |
+
+### 6.2 ¿Cómo se comunican los componentes?
 
 CALZADO J&R usa el modelo **REST**: los clientes (Web, Postman) hacen peticiones HTTP al backend FastAPI, y este responde en **JSON**. El flujo completo de una petición es:
 
@@ -173,7 +278,7 @@ Respuesta JSON (schema Pydantic) → Cliente → Interfaz
 6. La API responde `201 Created` con el pedido creado en JSON.
 7. La interfaz muestra el pedido en la lista de órdenes.
 
-### 3.2 Convención de rutas
+### 6.3 Convención de rutas
 
 Todas las rutas parten de `/api/v1`. El diseño separa por rol: rutas **públicas**, rutas de **usuario autenticado**, rutas de **empleado**, rutas de **cliente** y rutas **admin/jefe**.
 
@@ -196,7 +301,7 @@ Todas las rutas parten de `/api/v1`. El diseño separa por rol: rutas **pública
 └── /supplies/*            → insumos y categorías de insumo
 ```
 
-### 3.3 Mapa de rutas por módulo (resumen)
+### 6.4 Mapa de rutas por módulo (resumen)
 
 Cada router del backend se corresponde con un módulo de negocio. Los verbos usados son **GET**, **POST**, **PUT**, **PATCH** y **DELETE**.
 
@@ -356,6 +461,7 @@ Cada router del backend se corresponde con un módulo de negocio. Los verbos usa
 | GET | `/unread-count` | Número de no leídas |
 | PATCH | `/{id}/read` · `/read-all` | Marcar como leídas |
 | DELETE | `/{notification_id}` | Eliminar notificación |
+| WS | `/ws` | Notificaciones en tiempo real (WebSocket) |
 
 **Health check**
 
@@ -364,11 +470,12 @@ Cada router del backend se corresponde con un módulo de negocio. Los verbos usa
 | GET | `/` | Estado del servicio |
 | GET | `/api/v1/health` | Salud del backend |
 
-### 3.4 Autenticación y autorización
+### 6.5 Autenticación y autorización
 
 - **JWT de doble token**: al iniciar sesión se reciben un **access token** (15 min) y un **refresh token** (7 días). El access viaja en cada petición como `Authorization: Bearer <token>`.
 - **Roles del sistema**: cada usuario tiene un rol (**admin/jefe**, **empleado**, **cliente**). El control de acceso se hace de forma declarativa en la firma de la ruta con dependencias como `get_current_user`, `_require_admin_or_jefe` y `_require_jefe`.
 - **Protección de rutas**: las rutas públicas (auth, catálogo) no requieren token; las del dashboard, cliente, pedidos, reportes e insumos sí.
 - **Contraseñas temporales**: al crear empleados, clientes o jefes, el sistema genera una contraseña temporal (válida 24 h), la envía por email y obliga al cambio en el primer inicio de sesión (`must_change_password`).
+- **Tiempo real**: las notificaciones se entregan vía WebSocket (`/api/v1/notifications/ws`) usando `app/utils/ws_manager.py`.
 
 ---
