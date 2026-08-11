@@ -217,11 +217,12 @@ def get_product_detail(product_id: str, db: Session = Depends(get_db)) -> Produc
         for item in inventory_items
     ]
 
+    available = int(sum((item.amount or 0) for item in inventory_items))
+
     return ProductDetailResponse(
         id=str(product.id),
         name=product.name_product,
         description=product.description_product,
-        price=product.price,
         style_id=str(product.style_id),
         style_name=product.style.name_style if product.style else "Unknown",
         category_id=str(product.category_id),
@@ -230,6 +231,7 @@ def get_product_detail(product_id: str, db: Session = Depends(get_db)) -> Produc
         brand_name=product.brand.name_brand if product.brand else "Unknown",
         image_url=product.image_url,
         color=product.color,
+        available=available,
         sizes_inventory=sizes_inventory,
     )
 
@@ -287,7 +289,21 @@ def get_products(
     offset = (page - 1) * page_size
 
     products = db.execute(stmt.offset(offset).limit(page_size)).scalars().all()
-    
+
+    # Stock total por producto (evita N+1: una sola consulta agrupada)
+    product_ids = [p.id for p in products]
+    available_by_product: dict = {}
+    if product_ids:
+        inventory_rows = db.execute(
+            select(Inventory.product_id, func.sum(Inventory.amount))
+            .where(
+                (Inventory.product_id.in_(product_ids)) &
+                (Inventory.deleted_at.is_(None))
+            )
+            .group_by(Inventory.product_id)
+        ).all()
+        available_by_product = {str(pid): int(qty or 0) for pid, qty in inventory_rows}
+
     return ProductsListResponse(
         products=[
             {
@@ -301,6 +317,7 @@ def get_products(
                 "brand_name": product.brand.name_brand if product.brand else "Unknown",
                 "image_url": product.image_url,
                 "color": product.color,
+                "available": available_by_product.get(str(product.id), 0),
             }
             for product in products
         ],

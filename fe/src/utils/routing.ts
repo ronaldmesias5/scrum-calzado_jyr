@@ -12,8 +12,8 @@ import type { UserResponse } from "@/types/auth";
  * Lógica:
  * - Admin: /dashboard/admin
  * - Jefe (employee + occupation='jefe'): /dashboard/admin
- * - Employee (otros): /dashboard/employee (cuando esté implementado)
- * - Client: /dashboard/client (cuando esté implementado)
+ * - Employee (otros): /dashboard/employee
+ * - Client: /dashboard/client
  * - Default: /dashboard (legacy)
  */
 export function getDashboardRoute(user: UserResponse | null): string {
@@ -36,12 +36,12 @@ export function getDashboardRoute(user: UserResponse | null): string {
 
   // Otros empleados van a su dashboard de tareas
   if (role === "employee") {
-    return "/dashboard/employee"; // TODO: Implementar en futuros sprints
+    return "/dashboard/employee";
   }
 
   // Clientes van a su dashboard de catálogo y pedidos
   if (role === "client") {
-    return "/dashboard/client"; // TODO: Implementar en Sprint 4
+    return "/dashboard/client";
   }
 
   // Fallback para roles desconocidos

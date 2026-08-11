@@ -78,11 +78,11 @@ export function ChangePasswordPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">
+      <h1 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">
         Cambiar contraseña
       </h1>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <form onSubmit={handleSubmit} noValidate>
           <InputField
             label="Contraseña actual"

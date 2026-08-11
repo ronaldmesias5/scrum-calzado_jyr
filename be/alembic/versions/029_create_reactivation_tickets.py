@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision: str = "029_create_reactivation_tickets"
-down_revision: Union[str, None] = "028_add_rejection_fields_to_users"
+down_revision: Union[str, None] = "028_reject_fields_users"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

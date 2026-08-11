@@ -1,68 +1,94 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, X } from 'lucide-react';
+import { Home, Store, X, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
-const links = [
-  { to: '/dashboard/client', icon: LayoutDashboard, label: 'Inicio' },
-  { to: '/dashboard/client/orders', icon: ShoppingBag, label: 'Mis Pedidos' },
-];
-
-const ICON_COLORS: Record<string, string> = {
-  '/dashboard/client': 'text-indigo-500 dark:text-indigo-400',
-  '/dashboard/client/orders': 'text-blue-500 dark:text-blue-400',
-};
-
-interface Props {
+interface ClientSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   width: number;
   isCollapsed: boolean;
 }
 
-export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: Props) {
+const ICON_COLORS: Record<string, string> = {
+  '/dashboard/client': 'text-indigo-500 dark:text-indigo-400',
+  '/dashboard/client/catalog': 'text-blue-500 dark:text-blue-400',
+};
+
+const NAV_ITEMS = [
+  { label: 'Inicio', icon: Home, path: '/dashboard/client' },
+  { label: 'Catálogo Mayorista', icon: Store, path: '/dashboard/client/catalog' },
+] as const;
+
+export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: ClientSidebarProps) {
+  const { logout } = useAuth();
+
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          onClick={onClose}
+        />
       )}
 
       <aside
         style={{ width: `${width}px` }}
-        className={`fixed lg:sticky top-16 left-0 z-50 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-transform duration-300 flex flex-col min-w-[72px] ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`
+          fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800
+          transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto
+          lg:relative lg:translate-x-0 lg:z-0 min-w-[72px]
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-slate-800 lg:hidden">
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Menú</span>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
-            <X size={18} />
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-800 lg:hidden">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
+            <span className="font-bold text-gray-900 dark:text-white">Calzado J&R</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg"
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <nav className="flex-1 py-4 space-y-1 px-3 overflow-y-auto">
-          {links.map((link) => (
+        <nav className="flex-1 py-4 overflow-y-auto">
+          {NAV_ITEMS.map(({ label, icon: Icon, path }) => (
             <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/dashboard/client'}
-              onClick={onClose}
-              title={isCollapsed ? link.label : undefined}
+              key={label}
+              to={path}
+              onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+              end={path === '/dashboard/client'}
+              title={isCollapsed ? label : undefined}
               className={({ isActive }) =>
-                `flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} ${isCollapsed ? 'px-0' : 'px-4'} py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                `flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-5'} py-3 text-sm font-semibold transition-all duration-200 rounded-none hover:scale-[1.02] hover:translate-x-0.5
+                ${isActive
+                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
-                <>
-                  <link.icon size={18} className={!isActive ? (ICON_COLORS[link.to] ?? '') : ''} />
-                  {!isCollapsed && link.label}
-                </>
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                  <Icon size={18} className={!isActive ? (ICON_COLORS[path] ?? '') : ''} />
+                  {!isCollapsed && <span>{label}</span>}
+                </div>
               )}
             </NavLink>
           ))}
         </nav>
+
+        <div className="border-t border-gray-100 dark:border-slate-800 p-3">
+          <button
+            onClick={logout}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group`}
+            title={isCollapsed ? 'Cerrar Sesión' : undefined}
+          >
+            <LogOut size={17} className="group-hover:-translate-x-0.5 transition-transform" />
+            {!isCollapsed && 'Cerrar Sesión'}
+          </button>
+        </div>
       </aside>
     </>
   );

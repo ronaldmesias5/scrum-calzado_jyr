@@ -11,9 +11,10 @@ import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
 
 interface AdminHeaderProps {
   onMenuClick?: () => void;
+  homePath?: string;
 }
 
-export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
+export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin' }: AdminHeaderProps) {
   const { t } = useTranslation();
   const { user, logout, logoutAllDevices } = useAuth();
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         {/* Logo */}
         <div
           className={`flex items-center gap-3 cursor-pointer flex-shrink-0 ${getLogoClasses()}`}
-          onClick={() => navigate('/dashboard/admin')}
+          onClick={() => navigate(homePath)}
         >
           <img src="/logo.png" alt="CALZADO J&R" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
           <div className="hidden sm:block">

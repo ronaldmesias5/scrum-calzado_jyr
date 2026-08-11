@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
-revision: str = "028_add_rejection_fields_to_users"
+revision: str = "028_reject_fields_users"
 down_revision: Union[str, None] = "027_add_avatar_url_to_users"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

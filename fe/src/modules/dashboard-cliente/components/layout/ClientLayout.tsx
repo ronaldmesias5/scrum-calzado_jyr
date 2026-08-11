@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import ClientSidebar from './ClientSidebar';
 import AdminHeader from '@/modules/dashboard-jefe/components/layout/AdminHeader';
+import { BadgeCountsProvider } from '@/modules/dashboard-jefe/context/BadgeCountsContext';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import PageTransition from '@/components/ui/PageTransition';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
@@ -57,32 +58,34 @@ export default function ClientLayout() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
-      <AdminHeader onMenuClick={toggleSidebar} />
+    <BadgeCountsProvider>
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
+        <AdminHeader onMenuClick={toggleSidebar} homePath="/dashboard/client" />
 
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden relative">
-        <ClientSidebar
-          isOpen={isSidebarOpen}
-          onClose={closeSidebar}
-          width={sidebarWidth}
-          isCollapsed={isCollapsed}
-        />
+        <div className="flex h-[calc(100vh-4rem)] overflow-hidden relative">
+          <ClientSidebar
+            isOpen={isSidebarOpen}
+            onClose={closeSidebar}
+            width={sidebarWidth}
+            isCollapsed={isCollapsed}
+          />
 
-        <div
-          onMouseDown={handleResizeMouseDown}
-          className="hidden lg:block w-1.5 cursor-col-resize bg-transparent hover:bg-blue-400/30 active:bg-blue-500/50 transition-colors flex-shrink-0"
-        />
+          <div
+            onMouseDown={handleResizeMouseDown}
+            className="hidden lg:block w-1.5 cursor-col-resize bg-transparent hover:bg-blue-400/30 active:bg-blue-500/50 transition-colors flex-shrink-0"
+          />
 
-        <main id="main-content" className="flex-1 flex flex-col min-h-full min-w-0">
-          <div className="flex-1 overflow-y-auto px-4 sm:px-8 pt-3 pb-8">
-            <Breadcrumbs />
-            <PageTransition>
-              <Outlet />
-            </PageTransition>
-            <DashboardFooter />
-          </div>
-        </main>
+          <main id="main-content" className="flex-1 flex flex-col min-h-full min-w-0">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 pt-3 pb-8">
+              <Breadcrumbs />
+              <PageTransition>
+                <Outlet />
+              </PageTransition>
+              <DashboardFooter />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </BadgeCountsProvider>
   );
 }

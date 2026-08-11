@@ -85,6 +85,11 @@ import InsumosPage from "@/modules/dashboard-jefe/pages/InsumosPage";
 // RF-019 - Losses module
 import LossesPage from "@/modules/dashboard-jefe/pages/LossesPage";
 
+// Sprint - Dashboard Cliente
+import ClientLayout from "@/modules/dashboard-cliente/components/layout/ClientLayout";
+import ClientDashboardPage from "@/modules/dashboard-cliente/pages/DashboardPage";
+import WholesaleCatalogPage from "@/modules/dashboard-cliente/pages/WholesaleCatalogPage";
+
 // Additional Dashboard sections
 import ProductionTaskDashboard from "@/modules/dashboard-jefe/pages/TasksPage";
 import AlertsPage from "@/modules/dashboard-jefe/pages/AlertsPage";
@@ -135,7 +140,21 @@ function App() {
           <Route path="/forgot-password" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<Navigate to="/auth/reset-password" replace />} />
           <Route path="/auth/change-password" element={<Navigate to="/change-password" replace />} />
-          <Route path="/dashboard/client" element={<Navigate to="/" replace />} />
+
+          {/* ════════════════════════════════════════ */}
+          {/* 🔒 Dashboard Cliente (protegido) */}
+          {/* ════════════════════════════════════════ */}
+          <Route
+            path="/dashboard/client"
+            element={
+              <RoleProtectedRoute allowedRoles={["client"]}>
+                <ClientLayout />
+              </RoleProtectedRoute>
+            }
+          >
+            <Route index element={<ClientDashboardPage />} />
+            <Route path="catalog" element={<WholesaleCatalogPage />} />
+          </Route>
 
           {/* ════════════════════════════════════════ */}
           {/* 🔒 Dashboard Jefe (protegido) */}
