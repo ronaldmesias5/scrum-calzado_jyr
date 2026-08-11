@@ -13,8 +13,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.core.config import settings
-from app.core.database import SessionLocal
+from app.config import settings
+from app.database import SessionLocal
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -36,24 +36,24 @@ from app.models import (  # noqa: F401
     type_document,
     user,
 )
-from app.modules.auth.router import router as auth_router
-from app.modules.catalog.brands import router as catalog_brands_router
-from app.modules.catalog.inventory import router as catalog_inventory_router
-from app.modules.catalog.products import router as catalog_products_router
-from app.modules.catalog.router import router as catalog_router
-from app.modules.catalog.styles import router as catalog_styles_router
-from app.modules.client.router import router as client_router
-from app.modules.dashboard_empleado.router import router as dashboard_empleado_router
-from app.modules.dashboard_jefe.router import router as dashboard_jefe_router
-from app.modules.notifications.router import router as notifications_router
-from app.modules.orders.router import router as orders_router
-from app.modules.orders.tasks import router as orders_tasks_router
-from app.modules.reports.router import router as reports_router
-from app.modules.scrap.router import router as scrap_router
-from app.modules.supplies.router import router as supplies_router
-from app.modules.type_document.router import router as type_document_router
-from app.modules.users.admin import router as admin_router
-from app.modules.users.router import router as users_router
+from app.routers.auth import router as auth_router
+from app.routers.catalog_brands import router as catalog_brands_router
+from app.routers.catalog_inventory import router as catalog_inventory_router
+from app.routers.catalog_products import router as catalog_products_router
+from app.routers.catalog import router as catalog_router
+from app.routers.catalog_styles import router as catalog_styles_router
+from app.routers.client import router as client_router
+from app.routers.dashboard_empleado import router as dashboard_empleado_router
+from app.routers.dashboard_jefe import router as dashboard_jefe_router
+from app.routers.notifications import router as notifications_router
+from app.routers.orders import router as orders_router
+from app.routers.orders_tasks import router as orders_tasks_router
+from app.routers.reports import router as reports_router
+from app.routers.scrap import router as scrap_router
+from app.routers.supplies import router as supplies_router
+from app.routers.type_document import router as type_document_router
+from app.routers.admin import router as admin_router
+from app.routers.users import router as users_router
 
 
 @asynccontextmanager

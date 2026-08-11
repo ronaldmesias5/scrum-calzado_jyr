@@ -29,14 +29,8 @@ from sqlalchemy.orm import Session
 from app.models.role import Role
 from app.models.type_document import TypeDocument
 from app.models.user import User
-from app.models.product import Product
-from app.models.brand import Brand
-from app.models.style import Style
-from app.models.category import Category
-from app.models.inventory import Inventory
-from app.models.order import Order, OrderDetail, OrderStatus
+from app.models.order import Order, OrderStatus
 from app.utils.security import hash_password
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -476,7 +470,7 @@ def seed_catalog(db: Session) -> bool:
         ]
         
         db.commit()
-        print(f"✅ Catálogo insertado exitosamente:")
+        print("✅ Catálogo insertado exitosamente:")
         print(f"   • {len(brands)} brands ({', '.join([b['name'] for b in brands_data])})")
         print(f"   • {len(categories)} categorías ({', '.join([c['name'] for c in categories_data])})")
         print(f"   • {len(styles_data)} estilos")

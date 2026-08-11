@@ -6,7 +6,7 @@ Descripción: Tests para validación de configuración (Pydantic Settings).
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings
+from app.config import Settings
 
 
 class TestSettingsValidation:

@@ -11,7 +11,6 @@ Capa de error manejo que:
 """
 
 import traceback
-from typing import Optional
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
@@ -19,7 +18,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Usar loggers centralizados
-from app.core.logging_config import error_logger
+from app.logging_config import error_logger
 
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):

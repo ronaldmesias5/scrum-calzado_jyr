@@ -32,13 +32,10 @@ from sqlalchemy import String, Text, DateTime, ForeignKey, Boolean, Integer, fun
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.database import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
-    from app.models.style import Style
-    from app.models.brand import Brand
-    from app.models.category import Category
+    pass
 
 
 class Product(Base):

@@ -27,7 +27,6 @@ import os
 from alembic.config import Config
 from alembic.command import upgrade as alembic_upgrade
 from sqlalchemy.orm import Session
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,6 @@ def run_migrations(db_url: str) -> None:
         # Alembic está en /app/alembic dentro del contenedor
         # y en be/alembic en desarrollo local
         # Nota: alembic.ini está en el directorio PADRE de alembic/ (be/ o /app/)
-        import sys
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_dir)  # be/
         parent_root = os.path.dirname(project_root)  # scrum/

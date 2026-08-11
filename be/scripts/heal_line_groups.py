@@ -14,8 +14,8 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from app.core.config import settings
-from app.core.database import SessionLocal
+from app.config import settings
+from app.database import SessionLocal
 from sqlalchemy import text
 
 

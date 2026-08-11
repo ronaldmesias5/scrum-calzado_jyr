@@ -7,7 +7,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 
 from app.utils.security import hash_password, verify_password, create_access_token, decode_token
-from app.core.config import settings
+from app.config import settings
 
 
 class TestPasswordHashing:

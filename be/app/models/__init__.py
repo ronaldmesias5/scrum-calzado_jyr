@@ -5,7 +5,7 @@ Descripción: Importa todos los modelos ORM para registro con SQLAlchemy.
 """
 
 # Importar Base primero
-from app.core.database import Base
+from app.database import Base
 
 # Modelos sin dependencias externas (orden alfabético)
 from app.models.brand import Brand

@@ -19,7 +19,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import base64
 
-from app.core.config import settings
+from app.config import settings
 
 logger = logging.getLogger("app")
 
