@@ -13,10 +13,8 @@ from app.models.tasks import Task, TaskStatus
 from app.models.product import Product
 from app.models.category import Category
 from typing import List as TypingList
-from uuid import UUID, uuid4
-from datetime import datetime, timezone, timedelta
 
-from app.modules.admin.reports_schemas import (
+from app.modules.reports.schemas import (
     CategorySalesResponse,
     CustomerReportResponse,
     DashboardReportResponse,

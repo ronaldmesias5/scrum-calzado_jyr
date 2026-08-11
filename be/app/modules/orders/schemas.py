@@ -7,12 +7,10 @@ Descripción: Esquemas Pydantic para validación y serialización de órdenes.
 
 from datetime import datetime
 from uuid import UUID
-from typing import List
 
 from pydantic import BaseModel, Field
 
 from app.models.order import OrderStatus
-
 
 # ────────────────────────────────────────────────
 # Esquemas para OrderDetail (línea de pedido)
@@ -90,7 +88,7 @@ class OrderDetailResponse(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     deleted_at: datetime | None = None
-    details: List[OrderDetailItemResponse] = []
+    details: list[OrderDetailItemResponse] = []
 
     class Config:
         from_attributes = True
@@ -102,7 +100,7 @@ class OrderListResponse(BaseModel):
     page: int = Field(..., description="Página actual (1-indexed)")
     page_size: int = Field(..., description="Cantidad de órdenes por página")
     total_pages: int = Field(..., description="Total de páginas")
-    items: List[OrderResponse] = Field(..., description="Órdenes en esta página")
+    items: list[OrderResponse] = Field(..., description="Órdenes en esta página")
 
 
 class OrderCreateRequest(BaseModel):
@@ -110,7 +108,7 @@ class OrderCreateRequest(BaseModel):
     customer_id: UUID = Field(..., description="ID del cliente que realiza el pedido")
     total_pairs: int = Field(..., gt=0, description="Total de pares en el pedido")
     delivery_date: datetime | None = Field(None, description="Fecha estimada de entrega")
-    details: List[OrderDetailItemCreateRequest] = Field(default_factory=list, description="Líneas del pedido")
+    details: list[OrderDetailItemCreateRequest] = Field(default_factory=list, description="Líneas del pedido")
 
     class Config:
         from_attributes = True
@@ -127,7 +125,7 @@ class OrderUpdateStatusRequest(BaseModel):
 class OrderUpdateDetailsRequest(BaseModel):
     """Esquema para actualizar los detalles de un pedido existente."""
     delivery_date: datetime | None = None
-    details: List[OrderDetailItemCreateRequest] = Field(..., description="Nueva lista completa de líneas del pedido")
+    details: list[OrderDetailItemCreateRequest] = Field(..., description="Nueva lista completa de líneas del pedido")
 
     class Config:
         from_attributes = True
@@ -177,7 +175,7 @@ class ProductionTaskResponse(BaseModel):
 
 class ProductionBatchTasksRequest(BaseModel):
     """Request para crear las 4 tareas de una orden de golpe."""
-    tasks: List[ProductionTaskCreate]
+    tasks: list[ProductionTaskCreate]
 
 
 class AssignTaskEmployeeRequest(BaseModel):

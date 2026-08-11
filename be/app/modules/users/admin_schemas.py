@@ -1,5 +1,5 @@
 """
-Archivo: be/app/modules/admin/schemas.py
+Archivo: be/app/modules/users/admin_schemas.py
 Descripción: Schemas Pydantic para validación en endpoints administrativos.
 
 ¿Qué?
