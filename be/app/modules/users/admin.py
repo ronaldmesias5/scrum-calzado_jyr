@@ -1,5 +1,5 @@
 """
-Archivo: be/app/modules/admin/router.py
+Archivo: be/app/modules/users/admin.py
 Descripción: Router FastAPI con endpoints administrativos para gestión de usuarios.
 
 ¿Qué?
@@ -22,7 +22,7 @@ Descripción: Router FastAPI con endpoints administrativos para gestión de usua
   CRÍTICO — Sin este router, admin/jefe no pueden gestionar usuarios.
   Modificar create-employee rompe: dashboard AdminCreateEmployeeForm.
   Modificar /users lista rompe: AdminUserListPage en dashboard.
-  Dependencias: admin/schemas.py, auth/schemas.py (UserResponse),
+  Dependencias: users/admin_schemas.py, auth/schemas.py (UserResponse),
                dependencies.py, models/user.py, models/role.py,
                utils/security.py (hash_password)
 """
@@ -40,7 +40,7 @@ from app.models.role import Role
 from app.models.user import User
 from app.models.reactivation_ticket import ReactivationTicket
 from app.modules.auth.schemas import MessageResponse, UserResponse
-from app.modules.admin.schemas import (
+from app.modules.users.admin_schemas import (
     AdminCreateClientRequest, 
     AdminCreateEmployeeRequest, 
     AdminCreateJefeRequest,

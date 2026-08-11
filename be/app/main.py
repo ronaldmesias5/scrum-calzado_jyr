@@ -5,30 +5,16 @@ Descripción: Punto de entrada de la aplicación FastAPI — configura y arranca
 ¿Impacto? Este es el archivo que Uvicorn ejecuta. Sin él, no hay servidor.
 """
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
 from app.core.config import settings
-from app.core.database import engine, Base, SessionLocal
-from app.modules.auth.router import router as auth_router
-from app.modules.users.router import router as users_router
-from app.modules.admin.router import router as admin_router
-from app.modules.admin.catalog_router import router as admin_catalog_router
-from app.modules.type_document.router import router as type_document_router
-from app.modules.dashboard_jefe.router import router as dashboard_jefe_router
-from app.modules.orders.router import router as orders_router
-from app.modules.catalog.router import router as catalog_router
-from app.modules.admin.reports_router import router as reports_router
-from app.modules.supplies.router import router as supplies_router
-from app.modules.dashboard_empleado.router import router as dashboard_empleado_router
-from app.modules.client.router import router as client_router
-from app.modules.notifications.router import router as notifications_router
-from app.modules.scrap.router import router as scrap_router
+from app.core.database import SessionLocal
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -36,7 +22,38 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
 # Importar modelos para que SQLAlchemy los registre en Base.metadata
-from app.models import role, user, password_reset_token, type_document, order, category, brand, style, product, supplies, product_supplies, scrap  # noqa: F401
+from app.models import (  # noqa: F401
+    brand,
+    category,
+    order,
+    password_reset_token,
+    product,
+    product_supplies,
+    role,
+    scrap,
+    style,
+    supplies,
+    type_document,
+    user,
+)
+from app.modules.auth.router import router as auth_router
+from app.modules.catalog.brands import router as catalog_brands_router
+from app.modules.catalog.inventory import router as catalog_inventory_router
+from app.modules.catalog.products import router as catalog_products_router
+from app.modules.catalog.router import router as catalog_router
+from app.modules.catalog.styles import router as catalog_styles_router
+from app.modules.client.router import router as client_router
+from app.modules.dashboard_empleado.router import router as dashboard_empleado_router
+from app.modules.dashboard_jefe.router import router as dashboard_jefe_router
+from app.modules.notifications.router import router as notifications_router
+from app.modules.orders.router import router as orders_router
+from app.modules.orders.tasks import router as orders_tasks_router
+from app.modules.reports.router import router as reports_router
+from app.modules.scrap.router import router as scrap_router
+from app.modules.supplies.router import router as supplies_router
+from app.modules.type_document.router import router as type_document_router
+from app.modules.users.admin import router as admin_router
+from app.modules.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -72,7 +89,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         from app.init.seed_data import seed_all
         seed_all(db)
     except Exception as e:
-        print(f"⚠️  Error en verificación de datos iniciales: {str(e)}")
+        print(f"⚠️  Error en verificación de datos iniciales: {e!s}")
     finally:
         db.close()
     
@@ -133,10 +150,14 @@ app.mount("/uploads", StaticFiles(directory=str(_uploads_path)), name="uploads")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
-app.include_router(admin_catalog_router)
+app.include_router(catalog_brands_router)
+app.include_router(catalog_styles_router)
+app.include_router(catalog_products_router)
+app.include_router(catalog_inventory_router)
 app.include_router(type_document_router)
 app.include_router(dashboard_jefe_router)
 app.include_router(orders_router)
+app.include_router(orders_tasks_router)
 app.include_router(reports_router)
 app.include_router(catalog_router)
 app.include_router(supplies_router)
@@ -174,8 +195,9 @@ async def health_check() -> dict[str, str]:
 # ────────────────────────────
 # 📍 Endpoint para servir imágenes (con CORS explícito)
 # ────────────────────────────
+
 from fastapi.responses import FileResponse
-import os
+
 
 @app.get(
     "/api/v1/uploads/{file_path:path}",
