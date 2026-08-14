@@ -69,6 +69,7 @@ class TestSettingsValidation:
             MAIL_USERNAME="test@test.com",
             MAIL_PASSWORD="pass",
             MAIL_SERVER="smtp.test.com",
+            ENVIRONMENT="development",
         )
         assert settings.ALGORITHM == "HS256"
         assert settings.ACCESS_TOKEN_EXPIRE_MINUTES == 15
