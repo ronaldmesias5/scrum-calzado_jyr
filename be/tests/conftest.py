@@ -73,7 +73,7 @@ def test_database():
     _ensure_test_database_exists()
     _reset_schema()
 
-    assert run_migrations(TEST_DATABASE_URL), "Las migraciones Alembic fallaron en la BD de tests"
+    assert run_migrations(TEST_DATABASE_URL, raise_on_error=True), "Las migraciones Alembic fallaron en la BD de tests"
 
     from app.init.seed_data import seed_all
 

@@ -31,12 +31,14 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 
-def run_migrations(db_url: str) -> None:
+def run_migrations(db_url: str, raise_on_error: bool = False) -> bool:
     """
     Ejecuta todas las migraciones pendientes de Alembic.
     
     Args:
         db_url: URL de conexión a la base de datos (ej: postgresql://user:pass@host/db)
+        raise_on_error: si es True, re-lanza la excepción en lugar de devolver False.
+            Útil en tests/CI para que el error SQL real no quede oculto.
     """
     try:
         logger.info("🔄 Ejecutando migraciones Alembic...")
@@ -80,6 +82,8 @@ def run_migrations(db_url: str) -> None:
         
     except Exception as e:
         logger.warning(f"⚠️  Error ejecutando migraciones: {str(e)}")
+        if raise_on_error:
+            raise
         # No lanzar excepción para permitir que el servidor continúe
         return False
 
