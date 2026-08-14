@@ -107,9 +107,8 @@ def apply_order_state_inventory(
             stmt = select(Inventory).where(
                 (Inventory.product_id == detail.product_id) &
                 (Inventory.size == detail.size) &
-                (Inventory.colour == detail.colour) &
                 (Inventory.deleted_at == None)
-            )
+            ).limit(1)
             inventory_item = db.execute(stmt).scalar_one_or_none()
 
             quantity = Decimal(detail.amount)
@@ -147,9 +146,8 @@ def apply_order_state_inventory(
             stmt = select(Inventory).where(
                 (Inventory.product_id == detail.product_id) &
                 (Inventory.size == detail.size) &
-                (Inventory.colour == detail.colour) &
                 (Inventory.deleted_at == None)
-            )
+            ).limit(1)
             inventory_item = db.execute(stmt).scalar_one_or_none()
 
             if inventory_item:
@@ -177,10 +175,9 @@ def apply_order_state_inventory(
         for detail in order.details:
             stmt = select(Inventory).where(
                 (Inventory.product_id == detail.product_id) &
-                (Inventory.colour == detail.colour) &
                 (Inventory.size == detail.size) &
                 (Inventory.deleted_at == None)
-            )
+            ).limit(1)
             inventory_item = db.execute(stmt).scalar_one_or_none()
 
             if inventory_item:
@@ -379,9 +376,8 @@ def complete_emplantillado(
                 stmt = select(Inventory).where(
                     (Inventory.product_id == detail.product_id) &
                     (Inventory.size == detail.size) &
-                    (Inventory.colour == detail.colour) &
                     (Inventory.deleted_at == None)
-                )
+                ).limit(1)
                 inventory_item = db.execute(stmt).scalar_one_or_none()
 
                 if inventory_item:

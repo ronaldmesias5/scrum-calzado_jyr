@@ -29,7 +29,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, DateTime, ForeignKey, Numeric, Integer, func
+from sqlalchemy import String, DateTime, ForeignKey, Numeric, Integer, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,6 +42,12 @@ if TYPE_CHECKING:
 class Inventory(Base):
     """Modelo para inventario de productos"""
     __tablename__ = "inventory"
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id", "size", "colour",
+            name="uq_inventory_product_size_colour",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
