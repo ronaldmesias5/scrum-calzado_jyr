@@ -114,6 +114,9 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            # Cada migración en su propia transacción: evita "unsafe use of new
+            # value" de enums cuando una migración agrega un valor y otra lo usa.
+            transaction_per_migration=True,
         )
 
         with context.begin_transaction():
