@@ -32,6 +32,11 @@ jobs:
       REFRESH_TOKEN_EXPIRE_DAYS: 7
       FRONTEND_URL: http://localhost:5173
       ENVIRONMENT: test
+      # Mail settings required by Settings() in be/app/config.py (no .env in CI)
+      MAIL_SERVER: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ci@example.com
+      MAIL_PASSWORD: ci-password
     defaults:
       run:
         working-directory: be
@@ -69,7 +74,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11.0.9
 
       - name: Set up Node
         uses: actions/setup-node@v4
