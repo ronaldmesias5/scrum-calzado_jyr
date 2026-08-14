@@ -249,12 +249,7 @@ def create_order(
     Solo el jefe (ocupación='jefe') puede crear órdenes.
     """
     try:
-        # Verificar que el usuario sea jefe
-        if current_user.occupation != "jefe":
-            raise HTTPException(
-                status_code=403,
-                detail="Solo el jefe puede crear órdenes"
-            )
+        _require_jefe(current_user)
 
         # Verificar que el cliente existe
         customer_check = db.execute(
@@ -323,12 +318,7 @@ def update_order_status(
     Actualiza el estado de una orden.
     """
     try:
-        # Verificar que el usuario sea jefe
-        if current_user.occupation != "jefe":
-            raise HTTPException(
-                status_code=403,
-                detail="Solo el jefe puede actualizar órdenes"
-            )
+        _require_jefe(current_user)
 
         result = db.execute(select(Order).where(Order.id == order_id))
         order = result.scalar_one_or_none()
@@ -375,11 +365,7 @@ def update_order_details(
     Actualiza los detalles (líneas de producto) de una orden pendiente o en producción.
     Reemplaza todos los detalles existentes con los nuevos proporcionados.
     """
-    if current_user.occupation != "jefe":
-        raise HTTPException(
-            status_code=403,
-            detail="Solo el jefe puede editar órdenes",
-        )
+    _require_jefe(current_user)
 
     result = db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()

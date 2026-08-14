@@ -80,8 +80,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Sobreescribir la URL de la BD con la configuración de Pydantic Settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Usar la URL de la BD: la que pase el caller (ej. tests) o, si no,
+# la de Pydantic Settings. NO sobreescribir si ya viene seteada.
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 target_metadata = Base.metadata
 

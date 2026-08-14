@@ -2,7 +2,7 @@
 Schemas Pydantic para endpoints administrativos de catálogo
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 
 
@@ -13,8 +13,7 @@ class TaskPrices(BaseModel):
     soladura: float = Field(0.0, ge=0)
     emplantillado: float = Field(0.0, ge=0)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ─────────────────────────────────────────
@@ -116,7 +115,8 @@ class BulkInventoryUpdateRequest(BaseModel):
     product_id: str = Field(..., description="UUID del producto")
     quantities: dict = Field(..., description="Diccionario {talla: cantidad} ej: {'21': 5, '22': 3, '23': 0}")
     
-    @validator('quantities')
+    @field_validator("quantities")
+    @classmethod
     def validate_quantities(cls, v):
         if not v:
             raise ValueError("quantities no puede estar vacío")

@@ -2,16 +2,15 @@
 Schemas para catálogo público
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class CategoryResponse(BaseModel):
     """Categoría de productos"""
     id: str
     name: str
     description: str | None = None
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class CategoriesListResponse(BaseModel):
     """Lista de categorías"""
@@ -22,9 +21,8 @@ class StyleResponse(BaseModel):
     name: str
     brand_id: str
     brand_name: str
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class StylesListResponse(BaseModel):
     styles: list[StyleResponse]
@@ -41,9 +39,8 @@ class BrandResponse(BaseModel):
     id: str
     name: str
     description: str | None = None
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class BrandsListResponse(BaseModel):
     brands: list[BrandResponse]
@@ -60,9 +57,8 @@ class ProductResponse(BaseModel):
     image_url: str | None = None
     color: str | None = None
     available: int = 0
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class ProductDetailResponse(ProductResponse):
     """Detalle completo de producto con inventario"""

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 import uuid
@@ -17,8 +17,7 @@ class ClientOrderDetailItem(BaseModel):
     amount: int
     state: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ClientOrderResponse(BaseModel):
@@ -32,8 +31,7 @@ class ClientOrderResponse(BaseModel):
     updated_at: Optional[datetime] = None
     details: list[ClientOrderDetailItem] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ClientOrderListResponse(BaseModel):

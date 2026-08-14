@@ -8,7 +8,7 @@ Descripción: Esquemas Pydantic para validación y serialización de órdenes.
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.order import OrderStatus
 
@@ -34,8 +34,7 @@ class OrderDetailItemResponse(BaseModel):
     observations: str | None = None
     line_group: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderDetailItemCreateRequest(BaseModel):
@@ -48,8 +47,7 @@ class OrderDetailItemCreateRequest(BaseModel):
     observations: str | None = Field(None, max_length=500, description="Observaciones del producto")
     line_group: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ────────────────────────────────────────────────
@@ -69,8 +67,7 @@ class OrderResponse(BaseModel):
     creation_date: datetime | None = None
     created_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderDetailResponse(BaseModel):
@@ -90,8 +87,7 @@ class OrderDetailResponse(BaseModel):
     deleted_at: datetime | None = None
     details: list[OrderDetailItemResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderListResponse(BaseModel):
@@ -110,16 +106,14 @@ class OrderCreateRequest(BaseModel):
     delivery_date: datetime | None = Field(None, description="Fecha estimada de entrega")
     details: list[OrderDetailItemCreateRequest] = Field(default_factory=list, description="Líneas del pedido")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderUpdateStatusRequest(BaseModel):
     """Esquema para actualizar el estado de una orden."""
     state: OrderStatus = Field(..., description="Nuevo estado de la orden")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderUpdateDetailsRequest(BaseModel):
@@ -127,8 +121,7 @@ class OrderUpdateDetailsRequest(BaseModel):
     delivery_date: datetime | None = None
     details: list[OrderDetailItemCreateRequest] = Field(..., description="Nueva lista completa de líneas del pedido")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ────────────────────────────────────────────────
@@ -170,8 +163,7 @@ class ProductionTaskResponse(BaseModel):
     product_category: str | None = None
     product_image: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProductionBatchTasksRequest(BaseModel):
     """Request para crear las 4 tareas de una orden de golpe."""
