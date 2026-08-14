@@ -82,11 +82,11 @@ El empleado o jefe puede marcar una tarea como completada, lo que dispara la cre
 | `be/app/models/task.py` | Modelo `Task` con relaciones a producto y usuario |
 | `be/app/models/inventory.py` | Modelo `InventoryMovement` para registrar producción |
 | `be/app/modules/orders/schemas.py` | Schemas de tareas, vale, dashboard |
-| `fe/src/modules/dashboard-empleado/pages/DashboardPage.tsx` | Resumen con KPIs y últimas tareas |
-| `fe/src/modules/dashboard-empleado/pages/TasksPage.tsx` | Lista de tareas con filtros y botón completar |
-| `fe/src/modules/dashboard-empleado/pages/AvailableTasksPage.tsx` | Tareas disponibles con reclamar |
-| `fe/src/modules/dashboard-empleado/services/employeeApi.ts` | API calls: `getMyTasks()`, `getAvailableTasks()`, `getTaskVale()`, `updateEmployeeTaskStatus()` |
-| `fe/src/modules/dashboard-empleado/types/employee.ts` | Tipos `EmployeeTask`, `AvailableTask`, `ValeResponse` |
+| `fe/src/pages/employee/DashboardPage.tsx` | Resumen con KPIs y últimas tareas |
+| `fe/src/pages/employee/TasksPage.tsx` | Lista de tareas con filtros y botón completar |
+| `fe/src/pages/employee/AvailableTasksPage.tsx` | Tareas disponibles con reclamar |
+| `fe/src/services/employeeApi.ts` | API calls: `getMyTasks()`, `getAvailableTasks()`, `getTaskVale()`, `updateEmployeeTaskStatus()` |
+| `fe/src/types/employee.ts` | Tipos `EmployeeTask`, `AvailableTask`, `ValeResponse` |
 
 ### Secuencia de etapas de producción
 

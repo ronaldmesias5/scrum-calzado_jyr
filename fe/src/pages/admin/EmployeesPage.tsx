@@ -1,0 +1,420 @@
+/**
+ * Página: EmployeesPage.tsx
+ * Descripción: Gestión de empleados de la fábrica (cortadores, soladores, etc.)
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { 
+  Users, Search, Edit2, Loader2, AlertCircle,
+  UserPlus, CheckCircle2, XCircle, Shield, ShieldOff
+} from 'lucide-react';
+import { getAllUsers, updateUser, type UpdateUserRequest } from '@/services/adminApi';
+import { getTypeDocuments } from '@/services/type-documents';
+import type { UserResponse, TypeDocument } from '@/types/auth';
+import CreateUserForm from '@/features/admin/components/molecules/CreateUserForm';
+import Modal from '@/components/atoms/Modal';
+import StatusConfirmModal from '@/features/admin/components/molecules/StatusConfirmModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/store/ToastContext';
+
+export default function EmployeesPage() {
+  const { showToast } = useToast();
+  const [employees, setEmployees] = useState<UserResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOccupation, setFilterOccupation] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  
+  // Estado para el modal de edición
+  const [selectedEmployee, setSelectedEmployee] = useState<UserResponse | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [typeDocuments, setTypeDocuments] = useState<TypeDocument[]>([]);
+  const [editForm, setEditForm] = useState<UpdateUserRequest>({});
+
+  // Estado para el modal de estado (activar/desactivar)
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [employeeToToggle, setEmployeeToToggle] = useState<UserResponse | null>(null);
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
+
+  const { user: currentUser } = useAuth();
+
+  const fetchEmployees = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getAllUsers('employee');
+      setEmployees(data);
+    } catch {
+      console.error('Error loading employees');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEmployees();
+    getTypeDocuments().then(setTypeDocuments).catch(() => {});
+  }, [fetchEmployees]);
+
+  const filteredEmployees = employees.filter(emp => {
+    const matchesSearch = (emp.name + ' ' + emp.last_name + ' ' + emp.email).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesOccupation = filterOccupation === 'all' || emp.occupation === filterOccupation;
+    const matchesStatus = filterStatus === 'all' || (filterStatus === 'active' ? emp.is_active : !emp.is_active);
+    return matchesSearch && matchesOccupation && matchesStatus;
+  });
+
+  const handleEditClick = (emp: UserResponse) => {
+    setSelectedEmployee(emp);
+    setEditForm({
+      name: emp.name,
+      last_name: emp.last_name,
+      phone: emp.phone || '',
+      identity_document: emp.identity_document || '',
+      identity_document_type_id: emp.identity_document_type_id || undefined,
+      occupation: emp.occupation || '',
+      is_active: emp.is_active
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEmployee) return;
+    
+    setIsUpdating(true);
+    try {
+      const updated = await updateUser(selectedEmployee.id.toString(), editForm);
+      setEmployees(prev => prev.map(emp => emp.id === updated.id ? updated : emp));
+      setIsEditModalOpen(false);
+      showToast('Empleado actualizado correctamente', 'success');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Error al actualizar el empleado.';
+      showToast(msg, 'error');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const toggleStatus = (emp: UserResponse) => {
+    // Prevenir auto-desactivación
+    if (currentUser && emp.id === currentUser.id) {
+      showToast('Por seguridad, no puedes desactivar tu propia cuenta de administrador.', 'error');
+      return;
+    }
+    setEmployeeToToggle(emp);
+    setIsStatusModalOpen(true);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!employeeToToggle) return;
+    
+    setIsStatusLoading(true);
+    const newStatus = !employeeToToggle.is_active;
+    
+    try {
+      const updated = await updateUser(employeeToToggle.id.toString(), { is_active: newStatus });
+      setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+      setIsStatusModalOpen(false);
+      showToast(`Empleado ${newStatus ? 'activado' : 'desactivado'} correctamente`, 'success');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Error al cambiar el estado del empleado.';
+      showToast(msg, 'error');
+    } finally {
+      setIsStatusLoading(false);
+      setEmployeeToToggle(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
+            <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            Gestión de Empleados
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 transition-colors">
+            Administra el personal de la fábrica y controla sus accesos.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/20 active:scale-95"
+        >
+          <UserPlus size={18} />
+          Nuevo Empleado
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 transition-all duration-300 stagger-reveal">
+        <div className="relative md:col-span-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre o correo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          />
+        </div>
+        
+        <div>
+          <select
+            value={filterOccupation}
+            onChange={(e) => setFilterOccupation(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          >
+            <option value="all">Todas las ocupaciones</option>
+            <option value="jefe">Jefe</option>
+            <option value="cortador">Cortador</option>
+            <option value="guarnecedor">Guarnecedor</option>
+            <option value="solador">Solador</option>
+            <option value="emplantillador">Emplantillador</option>
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-all duration-300 stagger-reveal">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
+            <p>Cargando nómina de empleados...</p>
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
+            <p className="text-lg font-medium">No se encontraron empleados</p>
+            <p className="text-sm">Prueba con otros filtros o términos de búsqueda.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Empleado</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detalles</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                {filteredEmployees.map((emp) => (
+                  <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-2">
+                       <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-inner transition-colors ${emp.is_active ? 'bg-blue-600' : 'bg-gray-400 dark:bg-slate-700'}`}>
+                          {emp.name[0]}{emp.last_name[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">{emp.name} {emp.last_name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{emp.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-gray-700 dark:text-gray-200 font-bold uppercase tracking-wider">{emp.occupation || 'Empleado'}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{emp.identity_document || 'S/D'}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      {emp.is_active ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-widest border border-green-200 dark:border-green-900/50">
+                          <CheckCircle2 className="w-3 h-3" /> Activo
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-200 dark:border-red-900/50">
+                          <XCircle className="w-3 h-3" /> Inactivo
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => handleEditClick(emp)}
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="Editar información"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleStatus(emp)}
+                          disabled={currentUser?.id === emp.id}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            currentUser?.id === emp.id 
+                              ? 'opacity-20 cursor-not-allowed' 
+                              : emp.is_active 
+                                ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
+                                : 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
+                          }`}
+                          title={currentUser?.id === emp.id ? 'No puedes desactivar tu propia cuenta' : (emp.is_active ? 'Desactivar cuenta' : 'Activar cuenta')}
+                        >
+                          {emp.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {isEditModalOpen && selectedEmployee && (
+        <Modal
+          isOpen={true}
+          onClose={() => setIsEditModalOpen(false)}
+          title="Actualizar Empleado"
+          size="lg"
+        >
+          <div className="flex flex-col">
+            
+            <form onSubmit={handleUpdate} className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Apellido</label>
+                  <input
+                    type="text"
+                    value={editForm.last_name}
+                    onChange={(e) => setEditForm({...editForm, last_name: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Teléfono</label>
+                <input
+                  type="text"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Tipo Doc.</label>
+                  <select
+                    value={editForm.identity_document_type_id}
+                    onChange={(e) => setEditForm({...editForm, identity_document_type_id: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                  >
+                    <option value="" className="dark:bg-slate-800">Seleccionar...</option>
+                    {typeDocuments.map(td => <option key={td.id} value={td.id} className="dark:bg-slate-800">{td.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nro. Documento</label>
+                  <input
+                    type="text"
+                    value={editForm.identity_document}
+                    onChange={(e) => setEditForm({...editForm, identity_document: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Cargo / Ocupación</label>
+                  <select
+                    value={editForm.occupation}
+                    onChange={(e) => setEditForm({...editForm, occupation: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    required
+                  >
+                  <option value="jefe">Jefe</option>
+                  <option value="cortador">Cortador</option>
+                  <option value="guarnecedor">Guarnecedor</option>
+                  <option value="solador">Solador</option>
+                  <option value="emplantillador">Emplantillador</option>
+                </select>
+              </div>
+
+              <div className="pt-6 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-bold transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+                >
+                  {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+      )}
+      {isCreateModalOpen && (
+        <Modal
+          isOpen={true}
+          onClose={() => setIsCreateModalOpen(false)}
+          title="Registrar Nuevo Empleado"
+          size="lg"
+        >
+          <div className="flex flex-col">
+            <div className="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar bg-white dark:bg-slate-900 transition-colors">
+              <CreateUserForm 
+                userType="employee" 
+                typeDocuments={typeDocuments} 
+                onSuccess={() => {
+                  fetchEmployees();
+                  // No cerramos el modal automáticamente por si quiere ver el mensaje de éxito
+                  // Opcional: setTimeout(() => setIsCreateModalOpen(false), 2000);
+                }}
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal de Confirmación de Estado */}
+      <StatusConfirmModal
+        isOpen={isStatusModalOpen}
+        employee={employeeToToggle}
+        loading={isStatusLoading}
+        onConfirm={handleConfirmToggleStatus}
+        onCancel={() => {
+          setIsStatusModalOpen(false);
+          setEmployeeToToggle(null);
+        }}
+      />
+    </div>
+  );
+}

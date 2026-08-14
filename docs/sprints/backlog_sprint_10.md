@@ -84,9 +84,9 @@ El jefe puede asignar tareas a empleados específicos, y los empleados pueden au
 | `be/app/models/task.py` | Modelo `Task` con campos para producción |
 | `be/app/modules/orders/schemas.py` | Schemas: `ProductionTaskResponse`, `TaskCreateRequest` |
 | `be/alembic/versions/XXX_task_tables.py` | Migración para tablas de tareas |
-| `fe/src/modules/dashboard-jefe/pages/OrdersPage.tsx` | Botón "Iniciar Producción" |
-| `fe/src/modules/dashboard-jefe/pages/TasksPage.tsx` | Listado y gestión de tareas |
-| `fe/src/modules/dashboard-empleado/pages/AvailableTasksPage.tsx` | Tareas disponibles con reclamar |
+| `fe/src/pages/admin/OrdersPage.tsx` | Botón "Iniciar Producción" |
+| `fe/src/pages/admin/TasksPage.tsx` | Listado y gestión de tareas |
+| `fe/src/pages/employee/AvailableTasksPage.tsx` | Tareas disponibles con reclamar |
 
 ### Tipos de tarea de producción
 

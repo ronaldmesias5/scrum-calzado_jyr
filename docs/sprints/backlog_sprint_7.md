@@ -106,7 +106,7 @@ Transiciones:
 - `be/app/models/order.py` — `OrderStatus` enum con valores: `pendiente`, `en_progreso`, `completado`, `entregado`, `cancelado`
 - `be/app/models/inventory.py` — Campo `reserved` en modelo Inventory
 - `be/app/models/inventory_movement.py` — `InventoryMovementType` enum (`entrada`, `salida`)
-- `fe/src/modules/dashboard-jefe/pages/OrdersPage.tsx` — Botones de estado en la interfaz
+- `fe/src/pages/admin/OrdersPage.tsx` — Botones de estado en la interfaz
 
 ## Cambios Técnicos
 

@@ -24,8 +24,8 @@ import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { ThemeToggle } from "@/components/atoms/ThemeToggle";
+import { LanguageSwitcher } from "@/components/atoms/LanguageSwitcher";
 
 
 export function AppLayout() {

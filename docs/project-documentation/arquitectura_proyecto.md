@@ -158,99 +158,71 @@ scrum/
 │
 ├── fe/                         # Frontend - React + TypeScript
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── ui/             # Componentes base reutilizables
+│   │   ├── app/                 # Entry points (App.tsx, main.tsx, i18n.ts, ProtectedRoute, RoleProtectedRoute)
+│   │   │   ├── App.tsx, main.tsx, i18n.ts
+│   │   │   └── ProtectedRoute.tsx, RoleProtectedRoute.tsx
+│   │   │
+│   │   ├── assets/              # Recursos estáticos
+│   │   │
+│   │   ├── components/          # Componentes UI reutilizables
+│   │   │   ├── atoms/           # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
 │   │   │   │   ├── Modal.tsx           # createPortal + focus trap + a11y
 │   │   │   │   ├── PageTransition.tsx  # Animación automática de rutas
 │   │   │   │   ├── ThemeToggle.tsx     # Modo claro/oscuro
 │   │   │   │   ├── Button.tsx, InputField.tsx, Alert.tsx
 │   │   │   │   ├── Breadcrumbs.tsx
 │   │   │   │   ├── LanguageSwitcher.tsx
-│   │   │   │   └── CookieBanner.tsx, CookiePolicyModal.tsx
+│   │   │   │   ├── CookieBanner.tsx, CookiePolicyModal.tsx
 │   │   │   │   └── PasswordStrengthIndicator.tsx
-│   │   │   │   └── ...
-│   │   │   └── layout/         # Layouts compartidos
+│   │   │   └── layout/         # Layouts globales (AppLayout, AuthLayout…)
 │   │   │       ├── AppLayout.tsx
 │   │   │       ├── AuthLayout.tsx
 │   │   │       └── DashboardFooter.tsx
 │   │   │
-│   │   ├── modules/            # 5 módulos feature-based
-│   │   │   ├── auth/           # 5 páginas + servicios
-│   │   │   │   ├── pages/LoginPage.tsx, RegisterPage.tsx
-│   │   │   │   │       ForgotPasswordPage.tsx, ResetPasswordPage.tsx
-│   │   │   │   │       ChangePasswordPage.tsx, DashboardPage.tsx
-│   │   │   │   └── services/api.ts
-│   │   │   │
-│   │   │   ├── dashboard-jefe/ # 12 páginas de gestión
-│   │   │   │   ├── pages/
-│   │   │   │   │   ├── DashboardPage.tsx
-│   │   │   │   │   ├── ClientsPage.tsx
-│   │   │   │   │   ├── CatalogPage.tsx
-│   │   │   │   │   ├── OrdersPage.tsx
-│   │   │   │   │   ├── TasksPage.tsx
-│   │   │   │   │   ├── InventoryPage.tsx
-│   │   │   │   │   ├── InsumosPage.tsx
-│   │   │   │   │   ├── EmployeesPage.tsx
-│   │   │   │   │   ├── UsersManagementPage.tsx
-│   │   │   │   │   ├── ReportsPage.tsx
-│   │   │   │   │   ├── SettingsPage.tsx
-│   │   │   │   │   └── AlertsPage.tsx
-│   │   │   │   ├── components/       # ~20+ modales y subcomponentes
-│   │   │   │   │   ├── layout/       # AdminLayout, AdminSidebar, AdminHeader
-│   │   │   │   │   ├── home/         # MetricsCards, QuickActionsSection, etc.
-│   │   │   │   │   ├── catalog/      # ProductFormModal, BrandFormModal, etc.
+│   │   ├── features/            # Features de negocio (Atomic Design por feature)
+│   │   │   ├── admin/           # Panel admin (14 páginas) — components/{atoms,molecules,organisms}, utils/reportsUtils.ts
+│   │   │   │   ├── components/  # molecules: modales CRUD, SummarySizer, TaskCard; organisms: OrderFormModal, home/, layout/
+│   │   │   │   │   ├── layout/  # AdminLayout, AdminSidebar, AdminHeader, NotificationsPanel
+│   │   │   │   │   ├── home/    # AlertsPanel, AvailableTasksPanel, etc.
 │   │   │   │   │   └── ...
-│   │   │   │   ├── services/         # ordersApi, catalogService, adminApi, etc.
-│   │   │   │   ├── context/          # BadgeCountsContext
-│   │   │   │   └── types/           # dashboard.ts
-│   │   │   │
-│   │   │   ├── dashboard-empleado/  # 6 páginas + utils
-│   │   │   │   ├── pages/DashboardPage.tsx, TasksPage.tsx
-│   │   │   │   │       AvailableTasksPage.tsx, IncidencesPage.tsx
-│   │   │   │   │       EmployeeReportsPage.tsx, EmployeeSettingsPage.tsx
-│   │   │   │   ├── components/layout/  # EmployeeLayout, EmployeeSidebar
-│   │   │   │   ├── services/      # employeeApi
-│   │   │   │   ├── types/         # employee.ts
-│   │   │   │   └── utils/         # reportsUtils.ts (export PDF rendimiento)
-│   │   │   │
-│   │   │   ├── dashboard-cliente/ # 2 páginas
-│   │   │   │   ├── pages/DashboardPage.tsx, OrdersPage.tsx
-│   │   │   │   ├── components/layout/  # ClientLayout, ClientSidebar
-│   │   │   │   └── services/      # clientApi
-│   │   │   │
-│   │   │   └── landing/         # Landing page + catálogo público
-│   │   │       ├── pages/LandingPage.tsx, CatalogPage.tsx
-│   │   │       ├── components/  # HeroSection, Features, etc.
-│   │   │       └── services/    # publicCatalogService
+│   │   │   │   └── utils/       # reportsUtils.ts (export PDF reportes)
+│   │   │   ├── auth/            # Login, Register, Password Reset — components/{molecules,organisms}
+│   │   │   ├── client/          # Panel cliente — components/{molecules,organisms}
+│   │   │   ├── employee/        # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
+│   │   │   └── landing/         # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
 │   │   │
-│   │   ├── api/                 # Cliente Axios + config
-│   │   │   ├── axios.ts
-│   │   │   └── type-documents.ts
+│   │   ├── pages/               # Páginas enrutables: admin(14), auth(7), client(3), employee(6), public(2)
+│   │   │   ├── admin/           # DashboardPage, ClientsPage, CatalogPage, OrdersPage, TasksPage, InventoryPage, …
+│   │   │   ├── auth/            # LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, …
+│   │   │   ├── client/          # DashboardPage, OrdersPage
+│   │   │   ├── employee/        # DashboardPage, TasksPage, AvailableTasksPage, IncidencesPage, ReportsPage, SettingsPage
+│   │   │   └── public/          # LandingPage, CatalogPage
 │   │   │
-│   │   ├── hooks/               # Hooks personalizados globales
-│   │   │   ├── useAuth.ts
-│   │   │   ├── useModalDialog.ts
-│   │   │   └── useHeaderAnimation.ts
+│   │   ├── hooks/               # Hooks reutilizables (useAuth, useModalDialog, useHeaderAnimation, useNotificationWebSocket…)
 │   │   │
-│   │   ├── context/             # Contextos globales
+│   │   ├── services/            # Servicios de API globales
+│   │   │   ├── axios.ts         # Cliente Axios + interceptores (JWT)
+│   │   │   ├── config.ts        # Configuración de API
+│   │   │   ├── adminApi.ts, ordersApi, authService, employeeApi, clientApi, etc.
+│   │   │
+│   │   ├── store/               # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
 │   │   │   ├── AuthContext.tsx
 │   │   │   ├── authContextDef.ts
-│   │   │   └── ThemeContext.tsx
+│   │   │   ├── ThemeContext.tsx
+│   │   │   └── ...
 │   │   │
 │   │   ├── types/               # Tipos TypeScript compartidos
 │   │   │   ├── auth.ts, orders.ts, products.ts, tasks.ts
 │   │   │   └── index.ts
 │   │   │
-│   │   ├── locales/             # Traducciones i18next
-│   │   │   ├── es/              # Español
-│   │   │   └── en/              # Inglés
+│   │   ├── utils/               # Utilidades (format, routing…)
 │   │   │
-│   │   ├── utils/routing.ts
-│   │   ├── config/api.ts
-│   │   ├── i18n.ts
-│   │   ├── index.css            # Tailwind v4 @theme + @import
-│   │   ├── App.tsx
-│   │   └── main.tsx
+│   │   ├── styles/              # Estilos globales (TailwindCSS)
+│   │   │   └── index.css        # Tailwind v4 @theme + @import
+│   │   │
+│   │   └── locales/             # Traducciones i18next
+│   │       ├── es/              # Español
+│   │       └── en/              # Inglés
 │   │
 │   ├── public/                  # Logo, favicon, imágenes
 │   ├── __tests__/               # Tests frontend
@@ -304,16 +276,16 @@ be/app/modules/{nombre}/
 
 A diferencia de la estructura documentada inicialmente, los módulos actuales **no tienen carpetas separadas** controllers/, models/ ni services/ — los modelos están centralizados en `be/app/models/` y la lógica se inyecta directamente desde el router o desde un service simplificado.
 
-### Frontend (Feature-Based Modules)
+### Frontend (Features)
 
-El frontend tiene **5 módulos**:
+El frontend tiene **5 features**:
 
-| Módulo | Propósito |
-|--------|----------|
+| Feature | Propósito |
+|---------|----------|
 | **auth** | Login, registro, recuperación de contraseña (5 páginas) |
-| **dashboard-jefe** | Panel administrativo completo (12 páginas + ~20 componentes) |
-| **dashboard-empleado** | Panel empleado (6 páginas: tareas, incidencias, reportes con PDF, configuración con avatar) |
-| **dashboard-cliente** | Panel cliente (2 páginas: dashboard y pedidos) |
+| **admin** | Panel administrativo completo (14 páginas + ~20 componentes) |
+| **employee** | Panel empleado (6 páginas: tareas, incidencias, reportes con PDF, configuración con avatar) |
+| **client** | Panel cliente (3 páginas: dashboard, pedidos y catálogo mayorista) |
 | **landing** | Landing page pública + catálogo público visible |
 
 ---
@@ -322,7 +294,7 @@ El frontend tiene **5 módulos**:
 
 ### 1. Modal base con focus trap + createPortal
 
-`fe/src/components/ui/Modal.tsx` es el componente base para todos los modales del sistema:
+`fe/src/components/atoms/Modal.tsx` es el componente base para todos los modales del sistema:
 - Usa `createPortal` para renderizar fuera del árbol DOM
 - `role="dialog"` + `aria-modal="true"` para accesibilidad
 - Focus trap interno (Tab/Shift+Tab cíclico)
@@ -334,7 +306,7 @@ El frontend tiene **5 módulos**:
 
 ### 2. PageTransition para animación automática de rutas
 
-`fe/src/components/ui/PageTransition.tsx` envuelve `<Outlet />` en `AdminLayout.tsx`:
+`fe/src/components/atoms/PageTransition.tsx` envuelve `<Outlet />` en `AdminLayout.tsx`:
 - Aplica `animate-in fade-in slide-in-from-top-4 duration-500` en cada navegación
 - Usa `key={location.pathname}` para re-triggerear animación
 - **TODAS** las páginas del dashboard heredan esta animación automáticamente

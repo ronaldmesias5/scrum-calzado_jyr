@@ -52,7 +52,7 @@
     - `weekly_metrics`: lista de `ProductionWeeklyMetric` ordenada descendente por semana
     - `orders`: listado detallado de pedidos con items agrupados
 
-**Frontend — `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx`:**
+**Frontend — `fe/src/pages/admin/ReportsPage.tsx`:**
 
 - Tab "Generador de Reportes" → opción "Producción"
 - Gráfico semanal con métricas por semana ISO
@@ -108,7 +108,7 @@
   - Retorna `SalesWeeklyMetric` con orders_created y pairs_ordered por semana
   - **No hay versión mensual** de esta agregación
 
-**Frontend — `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx`:**
+**Frontend — `fe/src/pages/admin/ReportsPage.tsx`:**
 
 - En el "Generador de Reportes", opción "Cliente":
   - Selector de cliente
@@ -128,9 +128,9 @@
 - `be/app/modules/admin/reports_schemas.py` — Schemas: `ProductionGlobalReport`, `ProductionWeeklyMetric`, `SalesGlobalReport`, `SalesWeeklyMetric`, `CustomerReportResponse`, `OrderSummary`, `OrderItemSummary`
 
 **Archivos modificados en el frontend:**
-- `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx` — Secciones producción y cliente en generador de reportes
-- `fe/src/modules/dashboard-jefe/utils/reportsUtils.ts` — `exportProductionPDF()`, `exportCustomerPDF()`
-- `fe/src/modules/dashboard-jefe/services/reportsApi.ts` — Llamadas `getGlobalProduction()`, `getCustomerReport()`, `getAllCustomersReport()`
+- `fe/src/pages/admin/ReportsPage.tsx` — Secciones producción y cliente en generador de reportes
+- `fe/src/features/admin/utils/reportsUtils.ts` — `exportProductionPDF()`, `exportCustomerPDF()`
+- `fe/src/services/reportsApi.ts` — Llamadas `getGlobalProduction()`, `getCustomerReport()`, `getAllCustomersReport()`
 
 ## Logros
 

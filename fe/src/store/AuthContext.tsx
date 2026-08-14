@@ -1,0 +1,244 @@
+/**
+ * Archivo: fe/src/context/AuthContext.tsx
+ * Descripción: Provider de React Context para gestionar estado de autenticación global.
+ * 
+ * ¿Qué?
+ *   Provee AuthContext con:
+ *   - Estado: user (UserResponse), accessToken, refreshToken, isLoading
+ *   - Acciones: login(), register(), logout(), changePassword(), forgotPassword(), resetPassword()
+ *   - Persistencia: sessionStorage para tokens, verificación automática al montar
+ * 
+ * ¿Para qué?
+ *   - Centralizar lógica de autenticación (DRY, evitar prop drilling)
+ *   - Proveer acceso global al usuario autenticado (useAuth() hook)
+ *   - Manejar ciclo completo: login → sessionStorage → verificar → logout
+ *   - Auto-redirigir según estado (ProtectedRoute depende de isAuthenticated)
+ * 
+ * ¿Impacto?
+ *   CRÍTICO — Sin este contexto, NO hay autenticación funcional en frontend.
+ *   Modificar métodos rompe: LoginPage, RegisterPage, AdminHeader,
+ *   ProtectedRoute, Dashboard, cualquier componente que use useAuth().
+ *   Dependencias: types/auth.ts (interfaces), modules/auth/services/api.ts,
+ *                App.tsx (wrap con <AuthProvider>), hooks/useAuth.ts
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import * as authApi from "@/services/authService";
+import { AuthContext } from "@/store/authContextDef";
+import type {
+  AuthContextType,
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  ResetPasswordRequest,
+  UserResponse,
+} from "@/types/auth";
+
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
+const INACTIVITY_CHECK_INTERVAL = 30_000; // cada 30s
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<UserResponse | null>(null);
+
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const isAuthenticated = !!user && !!accessToken;
+
+  const lastActivityRef = useRef(Date.now());
+
+  const STORAGE_KEY_ACCESS = "access_token";
+  const STORAGE_KEY_REFRESH = "refresh_token";
+
+  const saveTokens = useCallback((access: string, refresh: string, persist = false) => {
+    setAccessToken(access);
+    setRefreshToken(refresh);
+    const storage = persist ? localStorage : sessionStorage;
+    storage.setItem(STORAGE_KEY_ACCESS, access);
+    storage.setItem(STORAGE_KEY_REFRESH, refresh);
+  }, []);
+
+  const clearAuth = useCallback(async () => {
+    try {
+      await authApi.logoutUser();
+    } catch (error) {
+      console.error("Logout error", error);
+    }
+    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
+    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
+    localStorage.removeItem(STORAGE_KEY_ACCESS);
+    localStorage.removeItem(STORAGE_KEY_REFRESH);
+    setAccessToken(null);
+    setRefreshToken(null);
+    setUser(null);
+  }, []);
+
+  // ─── Verificar sesión al montar ──────────────────────────────
+  useEffect(() => {
+    const verifySession = async () => {
+      const token = sessionStorage.getItem(STORAGE_KEY_ACCESS) || localStorage.getItem(STORAGE_KEY_ACCESS);
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await authApi.getMe();
+        setUser(userData);
+        setAccessToken(token);
+      } catch {
+        clearAuth();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifySession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Inactivity timer ────────────────────────────────────────
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    const checkInactivity = () => {
+      const elapsed = Date.now() - lastActivityRef.current;
+      if (elapsed >= INACTIVITY_LIMIT) {
+        clearAuth();
+      }
+    };
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, updateActivity));
+
+    const interval = setInterval(checkInactivity, INACTIVITY_CHECK_INTERVAL);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, updateActivity));
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, clearAuth]);
+
+  // ─── Sincronizar con eventos del interceptor axios ──────────
+  useEffect(() => {
+    const handleTokenRefreshed = () => {
+      const token = sessionStorage.getItem(STORAGE_KEY_ACCESS) || localStorage.getItem(STORAGE_KEY_ACCESS);
+      if (token) setAccessToken(token);
+    };
+
+    const handleForceLogout = () => {
+      clearAuth();
+    };
+
+    window.addEventListener("auth:token-refreshed", handleTokenRefreshed);
+    window.addEventListener("auth:logout", handleForceLogout);
+
+    return () => {
+      window.removeEventListener("auth:token-refreshed", handleTokenRefreshed);
+      window.removeEventListener("auth:logout", handleForceLogout);
+    };
+  }, [clearAuth]);
+
+  const login = useCallback(
+    async (data: LoginRequest) => {
+      const tokens = await authApi.loginUser({ ...data, remember_me: data.remember_me ?? false });
+      const persist = data.remember_me ?? false;
+      saveTokens(tokens.access_token, tokens.refresh_token, persist);
+      const userData = await authApi.getMe();
+      setUser(userData);
+      return userData;
+    },
+    [saveTokens],
+  );
+
+  const register = useCallback(async (data: RegisterRequest) => {
+    await authApi.registerUser(data);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await clearAuth();
+  }, [clearAuth]);
+
+  const logoutAllDevices = useCallback(async () => {
+    try {
+      await authApi.logoutAllDevices();
+    } catch (error) {
+      console.error("Logout all error", error);
+    }
+    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
+    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
+    localStorage.removeItem(STORAGE_KEY_ACCESS);
+    localStorage.removeItem(STORAGE_KEY_REFRESH);
+    setAccessToken(null);
+    setRefreshToken(null);
+    setUser(null);
+  }, []);
+
+  const changePassword = useCallback(async (data: ChangePasswordRequest) => {
+    await authApi.changePassword(data);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const userData = await authApi.getMe();
+      setUser(userData);
+    } catch (error) {
+      console.error("Error refreshing user data", error);
+    }
+  }, []);
+
+  const forgotPassword = useCallback(async (data: ForgotPasswordRequest) => {
+    await authApi.forgotPassword(data);
+  }, []);
+
+  const resetPasswordAction = useCallback(async (data: ResetPasswordRequest) => {
+    await authApi.resetPassword(data);
+  }, []);
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      accessToken,
+      refreshToken,
+      isAuthenticated,
+      isLoading,
+      login,
+      register,
+      logout,
+      logoutAllDevices,
+      changePassword,
+      forgotPassword,
+      resetPassword: resetPasswordAction,
+      refreshUser,
+    }),
+    [
+      user,
+      accessToken,
+      refreshToken,
+      isAuthenticated,
+      isLoading,
+      login,
+      register,
+      logout,
+      logoutAllDevices,
+      changePassword,
+      forgotPassword,
+      resetPasswordAction,
+      refreshUser,
+    ]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}

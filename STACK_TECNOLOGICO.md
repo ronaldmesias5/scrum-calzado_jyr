@@ -95,28 +95,45 @@ Petición HTTP
 
 ## 4. Estructura → Frontend
 
-### 4.1 Organización por módulo de negocio
+### 4.1 Organización feature-based
 
-El frontend se organiza **por módulo de negocio**. Cada módulo reúne sus páginas, componentes, servicios de API, tipos y utilidades, de modo que todo lo relacionado con una funcionalidad esté en el mismo lugar y sea fácil de encontrar y escalar.
+El frontend se organiza por **features** (funcionalidades de negocio). Cada feature reúne sus componentes Atomic Design; los servicios de API, tipos, hooks, stores y utilidades viven en carpetas globales (`services/`, `types/`, `hooks/`, `store/`, `utils/`); las páginas enrutables viven en `pages/`.
 
 ```
 fe/src/
-├── api/                    # Cliente HTTP compartido (axios.ts) + catálogos
+├── app/                    # Entry points (App.tsx, main.tsx, i18n.ts, ProtectedRoute, RoleProtectedRoute)
+├── assets/                 # Recursos estáticos
 ├── components/
-│   ├── ui/                 # Átomos reutilizables (Button, Modal, Toast…)
+│   ├── atoms/              # Átomos globales reutilizables (Button, Modal, Toast, PageTransition…)
 │   └── layout/             # Layouts y estructura de la app (AppLayout, AuthLayout…)
-├── config/                 # Configuración (api.ts)
-├── context/                # Contextos globales (Auth, Theme, Toast)
-├── hooks/                  # Hooks reutilizables (useAuth, useModalDialog…)
-├── modules/                # Módulos de negocio
-│   ├── auth/               # Login, Register, Password Reset (7 páginas)
-│   ├── dashboard-jefe/     # Panel admin (14 páginas)
-│   ├── dashboard-empleado/ # Panel empleado (6 páginas)
-│   ├── dashboard-cliente/  # Panel cliente (3 páginas)
-│   └── landing/            # Landing pública + catálogo
+├── features/               # Features de negocio (Atomic Design por feature)
+│   ├── admin/              # Panel admin: components/{atoms,molecules,organisms}, utils/
+│   ├── auth/               # Login, Register, Password Reset: components/{molecules,organisms}
+│   ├── client/             # Panel cliente: components/{molecules,organisms}
+│   ├── employee/           # Panel empleado: components/{molecules,organisms}, utils/
+│   └── landing/            # Landing pública + catálogo: components/{atoms,molecules,organisms}, config/
+├── pages/                  # Páginas enrutables
+│   ├── admin/              # 14 páginas del panel admin
+│   ├── auth/               # 7 páginas (login, register, password reset…)
+│   ├── client/             # 3 páginas (Dashboard, Orders, WholesaleCatalog)
+│   ├── employee/           # 6 páginas (Dashboard, Tasks, Incidences, Reports, Settings…)
+│   └── public/             # 2 páginas (Landing, Reactivation)
+├── hooks/                  # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
+├── services/               # Servicios de API globales (adminApi, authService, ordersApi, employeeApi…)
+├── store/                  # Contextos globales (Auth, Theme, Toast, BadgeCounts…)
 ├── types/                  # Tipos TypeScript compartidos
 ├── utils/                  # Utilidades (format, routing)
-└── locales/                # Traducciones
+├── styles/                 # Estilos globales (TailwindCSS)
+└── locales/                # Traducciones (en, es)
+```
+
+Cada feature organiza sus componentes siguiendo **Atomic Design** dentro de `features/<feature>/components/`:
+
+```
+features/<feature>/components/
+├── atoms/                  # Átomos específicos de la feature (StatCard, WhatsAppButton…)
+├── molecules/              # Unidades funcionales (ProductCard, OrderFormModal…)
+└── organisms/              # Secciones compuestas y layouts (AdminLayout, LandingHeader…)
 ```
 
 ### 4.2 Patrones de organización de componentes
@@ -127,14 +144,15 @@ En lugar de tener todos los componentes mezclados en una sola carpeta, organizam
 
 | Categoría | En CALZADO J&R |
 |---|---|
-| **Componentes reutilizables** | `components/ui/` — Button, Modal, InputField, Toast, Alert, Pagination… |
-| **Componentes de layout** | `components/layout/` — AppLayout, AuthLayout, layouts de cada dashboard |
-| **Funcionalidades específicas** | `modules/<módulo>/components/` — OrderFormModal, CreateUserForm… |
-| **Páginas** | `modules/<módulo>/pages/` — OrdersPage, TasksPage, ReportsPage… |
-| **Servicios** | `modules/<módulo>/services/` + `api/` — llamadas HTTP a la API |
-| **Hooks** | `hooks/` y `modules/<módulo>/hooks/` — useAuth, useModalDialog… |
-| **Tipos** | `types/` y `modules/<módulo>/types/` — auth, orders, products, tasks… |
-| **Utilidades** | `utils/` y `modules/<módulo>/utils/` — format, routing… |
+| **Componentes reutilizables** | `components/atoms/` — Button, Modal, InputField, Toast, Alert, Pagination… |
+| **Componentes de layout** | `components/layout/` — AppLayout, AuthLayout (layout global) + `organisms/` de cada feature |
+| **Funcionalidades específicas** | `features/<feature>/components/` — clasificados en `atoms/`, `molecules/` y `organisms/` |
+| **Páginas** | `pages/<dominio>/` — OrdersPage, TasksPage, ReportsPage… (admin, auth, client, employee, public) |
+| **Servicios** | `services/` — llamadas HTTP globales (adminApi, authService, ordersApi, employeeApi, clientApi…) |
+| **Hooks** | `hooks/` — useAuth, useModalDialog, useNotificationWebSocket… |
+| **Tipos** | `types/` — auth, orders, products, tasks… |
+| **Utilidades** | `utils/` globales + `features/<feature>/utils/` — format, routing, reportsUtils… |
+| **Store** | `store/` — AuthContext, ThemeContext, ToastContext, BadgeCountsContext… |
 
 ### 4.3 Estructura → Atomic Design
 
@@ -142,12 +160,12 @@ En lugar de tener todos los componentes mezclados en una sola carpeta, organizam
 
 | Nivel | Concepto | En CALZADO J&R |
 |---|---|---|
-| **Átomos** | Componentes básicos que no se descomponen más | `components/ui/` (Button, InputField, Modal, Toast…) |
-| **Moléculas** | Combinación de átomos que forman una unidad funcional | Componentes de un módulo (OrderFormModal, SummarySizer…) |
-| **Organismos** | Unión de moléculas que forman una sección completa | Vistas compuestas de cada página y layouts (AppLayout, AdminLayout…) |
-| **Plantillas / Páginas** | Estructura final que se enruta | `modules/<módulo>/pages/` |
+| **Átomos** | Componentes básicos que no se descomponen más | `components/atoms/` globales (Button, InputField, Modal, Toast…) y `features/<feature>/components/atoms/` (StatCard, WhatsAppButton…) |
+| **Moléculas** | Combinación de átomos que forman una unidad funcional | `features/<feature>/components/molecules/` — OrderFormModal, SummarySizer, ProductCard… |
+| **Organismos** | Unión de moléculas que forman una sección completa | `features/<feature>/components/organisms/` — layouts y secciones (AdminLayout, LandingHeader…) |
+| **Plantillas / Páginas** | Estructura final que se enruta | `pages/<dominio>/` |
 
-En la práctica, aplicamos una **inspiración Atomic Design**: los átomos viven en `components/ui/`, las moléculas en cada módulo, y las páginas las componen.
+En la práctica, aplicamos **Atomic Design por feature**: los átomos globales viven en `components/atoms/`, y cada feature clasifica sus componentes en `atoms/`, `molecules/` y `organisms/`; las páginas en `pages/` los componen.
 
 ---
 
@@ -271,7 +289,7 @@ Respuesta JSON (schema Pydantic) → Cliente → Interfaz
 **Ejemplo real (crear un pedido):**
 
 1. El jefe llena el formulario de pedido en el dashboard.
-2. `fe/src/modules/dashboard-jefe/services/ordersApi.ts` llama a la API con `POST /api/v1/admin/orders`.
+2. `fe/src/services/ordersApi.ts` llama a la API con `POST /api/v1/admin/orders`.
 3. FastAPI valida el JWT y verifica que el usuario es admin o jefe.
 4. El router valida los datos con `OrderCreateRequest` (Pydantic).
 5. El service guarda el pedido y sus líneas en PostgreSQL vía el modelo ORM `Order` / `OrderDetail`.

@@ -80,14 +80,14 @@ El frontend es una **Single Page Application (SPA)** construida con **React 19**
 
 ```
 src/
-├── modules/           # Módulos funcionales (auth, dashboard-jefe, dashboard-empleado, dashboard-cliente, landing)
+├── features/          # Features funcionales (admin, auth, client, employee, landing)
 │   ├── pages/         # Páginas del módulo (30+ páginas)
 │   ├── components/    # Componentes específicos del módulo
 │   ├── services/      # Llamadas API (Axios)
 │   ├── context/       # Estado local con React Context
 │   ├── types/         # Interfaces TypeScript
 │   └── utils/         # Utilidades específicas
-├── components/ui/     # Componentes UI reutilizables (Modal, Button, PageTransition, etc.)
+├── components/atoms/  # Componentes UI reutilizables (Modal, Button, PageTransition, etc.)
 ├── api/               # Configuración Axios (interceptors, base URL)
 ├── hooks/             # Custom hooks (useModalDialog, etc.)
 ├── context/           # Contextos globales (AuthContext)
@@ -261,7 +261,7 @@ FastAPI Router  →  Service  →  Repository  →  SQLAlchemy ORM  →  Postgre
 
 ### 5.3. Patrón en Frontend: Componentes + Context API
 
-- **Componentes atómicos:** `Button`, `Modal`, `Input` reutilizables en `components/ui/`.
+- **Componentes atómicos:** `Button`, `Modal`, `Input` reutilizables en `components/atoms/`.
 - **Páginas:** Composición de componentes + lógica de negocio específica.
 - **Context API:** Estado global (AuthContext, EmployeeBadgeCountsContext) sin necesidad de Redux.
 - **Servicios:** Capa de abstracción para llamadas HTTP (Axios) por módulo.

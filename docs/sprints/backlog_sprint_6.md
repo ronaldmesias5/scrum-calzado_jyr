@@ -91,7 +91,7 @@ def get_products(
 - `be/app/modules/admin/catalog_schemas.py` — Schemas: `InventoryCreateRequest`, `InventoryResponse`, `BulkInventoryUpdateRequest`, `InventoryMovementCreateRequest`
 - `be/app/models/inventory.py` — Modelo `Inventory` con campos `amount`, `reserved`, `minimum_stock`, `size`, `colour`
 - `be/app/models/inventory_movement.py` — Modelo `InventoryMovement` con `type_of_movement` (entrada/salida)
-- `fe/src/modules/dashboard-jefe/pages/InventoryPage.tsx` — Página de gestión de inventario
+- `fe/src/pages/admin/InventoryPage.tsx` — Página de gestión de inventario
 
 
 ## Cambios Técnicos

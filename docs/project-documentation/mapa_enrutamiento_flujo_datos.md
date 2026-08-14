@@ -4,7 +4,7 @@
 
 > **Versión del documento:** 1.0
 > **Última actualización:** Julio 2026
-> **Stack verificado contra:** `be/app/main.py`, `be/app/modules/*/router.py`, `fe/src/App.tsx`, `fe/src/api/axios.ts`, `fe/src/config/api.ts`, `vite.config.ts`
+> **Stack verificado contra:** `be/app/main.py`, `be/app/modules/*/router.py`, `fe/src/app/App.tsx`, `fe/src/services/axios.ts`, `fe/src/services/config.ts`, `vite.config.ts`
 
 ---
 
@@ -15,7 +15,7 @@
 │                          NAVEGADOR (Cliente)                             │
 │                                                                         │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────────────┐  │
-│  │  React Router │───►│  Páginas /       │───►│  Axios (api/axios.ts)│  │
+│  │  React Router │───►│  Páginas /       │───►│  Axios (services/axios.ts)│  │
 │  │  (App.tsx)    │    │  Componentes     │    │  + JWT Interceptor  │  │
 │  └──────────────┘    └──────────────────┘    └──────────┬───────────┘  │
 │                                                         │              │
@@ -291,7 +291,7 @@ Endpoints para el dashboard del cliente (historial de pedidos, perfil).
 sequenceDiagram
     actor U as Usuario
     participant FE as Frontend React
-    participant AX as Axios (api/axios.ts)
+    participant AX as Axios (services/axios.ts)
     participant VP as Vite Proxy (dev)
     participant MW as Middleware Pipeline
     participant BE as Backend FastAPI
@@ -517,4 +517,4 @@ Request entrante
 
 ---
 
-*Documento generado a partir de la verificación directa de los archivos de enrutamiento del proyecto (`be/app/main.py`, `be/app/modules/*/router.py`, `fe/src/App.tsx`, `fe/src/api/axios.ts`, `fe/src/config/api.ts`, `vite.config.ts`).*
+*Documento generado a partir de la verificación directa de los archivos de enrutamiento del proyecto (`be/app/main.py`, `be/app/modules/*/router.py`, `fe/src/app/App.tsx`, `fe/src/services/axios.ts`, `fe/src/services/config.ts`, `vite.config.ts`).*
