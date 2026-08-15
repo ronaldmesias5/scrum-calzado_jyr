@@ -139,7 +139,7 @@ app.add_middleware(CORSMiddleware,
 # ────────────────────────────
 # � Archivos estáticos (imágenes de productos)
 # ────────────────────────────
-_uploads_path = Path("/app/uploads")
+_uploads_path = Path(settings.UPLOAD_DIR) if settings.UPLOAD_DIR else Path(__file__).resolve().parent.parent / "uploads"
 _uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_uploads_path)), name="uploads")
 
@@ -207,10 +207,10 @@ from fastapi.responses import FileResponse
 )
 async def serve_image(file_path: str):
     """Sirve una imagen desde el directorio de uploads con CORS explícito."""
-    file_location = Path(f"/app/uploads/{file_path}")
+    file_location = _uploads_path / file_path
     
     # Seguridad: prevenir path traversal
-    if not file_location.resolve().is_relative_to(Path("/app/uploads").resolve()):
+    if not file_location.resolve().is_relative_to(_uploads_path.resolve()):
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     if not file_location.exists():

@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     # ────────────────────────────
     ENVIRONMENT: str = "development"  # development o production
 
+    # ────────────────────────────
+    # 📁 Archivos subidos
+    # ────────────────────────────
+    UPLOAD_DIR: str = Field(
+        default="",
+        description="Directorio para archivos subidos (vacío = be/uploads junto al código)"
+    )
+
     @field_validator("DATABASE_URL")
     @classmethod
     def validate_database_url(cls, v: str) -> str:

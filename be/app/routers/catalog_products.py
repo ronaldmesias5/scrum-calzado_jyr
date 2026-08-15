@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
+from app.config import settings
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.brand import Brand
 from app.models.style import Style
@@ -22,7 +23,7 @@ from app.models.inventory import Inventory
 from app.models.user import User
 from app.schemas.catalog_admin import ProductCreateRequest
 
-UPLOADS_DIR = Path("/app/uploads")
+UPLOADS_DIR = Path(settings.UPLOAD_DIR) if settings.UPLOAD_DIR else Path(__file__).resolve().parent.parent.parent / "uploads"
 
 router = APIRouter(
     prefix="/api/v1/admin/catalog",

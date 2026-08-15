@@ -26,6 +26,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.auth import UserResponse
@@ -35,7 +36,7 @@ router = APIRouter(
     tags=["users"],
 )
 
-UPLOADS_DIR = Path("/app/uploads")
+UPLOADS_DIR = Path(settings.UPLOAD_DIR) if settings.UPLOAD_DIR else Path(__file__).resolve().parent.parent.parent / "uploads"
 
 
 @router.get(
