@@ -76,7 +76,9 @@ def list_defect_codes(
     return [DefectCodeResponse.model_validate(c) for c in codes]
 
 
-@router.post("/defect-codes", response_model=DefectCodeResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/defect-codes", response_model=DefectCodeResponse, status_code=status.HTTP_201_CREATED
+)
 def create_defect_code_endpoint(
     data: DefectCodeCreateRequest,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -263,6 +265,43 @@ def list_scrap_stock(
 # ────────────────────────────
 
 
+def _pending_to_response(p, current_user) -> ProductIncidenceResponse:
+    """Serializa una PendingProductIncidence en ProductIncidenceResponse."""
+    employee_name = ""
+    if p.employee:
+        employee_name = f"{p.employee.name_user} {p.employee.last_name}".strip()
+    customer_name = None
+    if p.customer:
+        customer_name = f"{p.customer.name_user} {p.customer.last_name}".strip()
+    reviewed_by_name = None
+    if p.reviewed_by:
+        reviewed_by_name = f"{p.reviewed_by.name_user} {p.reviewed_by.last_name}".strip()
+
+    return ProductIncidenceResponse(
+        id=str(p.id),
+        task_id=str(p.task_id) if p.task_id else None,
+        task_type=p.task.type if p.task else None,
+        product_id=str(p.product_id),
+        product_name=p.product.name_product if p.product else None,
+        size=p.size,
+        colour=p.colour,
+        defect_code_id=str(p.defect_code_id) if p.defect_code_id else None,
+        defect_code=p.defect_code.code if p.defect_code else None,
+        defect_name=p.defect_code.name if p.defect_code else None,
+        description=p.description,
+        quantity=int(p.quantity),
+        observations=p.observations,
+        status=p.status,
+        approved_type=p.approved_type,
+        employee_name=employee_name,
+        customer_name=customer_name,
+        order_id=str(p.order_id) if p.order_id else None,
+        reviewed_by_name=reviewed_by_name,
+        reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
+        created_at=p.created_at.isoformat() if p.created_at else None,
+    )
+
+
 @router.get("/pending-incidences", response_model=ProductIncidenceListResponse)
 def list_pending_product_incidences(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -275,36 +314,7 @@ def list_pending_product_incidences(
     _ensure_admin_or_jefe(current_user)
     pendings = get_all_pending_incidences(db, status_filter=status_filter)
 
-    items = []
-    for p in pendings:
-        employee_name = ""
-        if p.employee:
-            employee_name = f"{p.employee.name_user} {p.employee.last_name}".strip()
-        reviewed_by_name = None
-        if p.reviewed_by:
-            reviewed_by_name = f"{p.reviewed_by.name_user} {p.reviewed_by.last_name}".strip()
-
-        items.append(ProductIncidenceResponse(
-            id=str(p.id),
-            task_id=str(p.task_id),
-            task_type=p.task.type if p.task else None,
-            product_id=str(p.product_id),
-            product_name=p.product.name_product if p.product else None,
-            size=p.size,
-            colour=p.colour,
-            defect_code_id=str(p.defect_code_id) if p.defect_code_id else None,
-            defect_code=p.defect_code.code if p.defect_code else None,
-            defect_name=p.defect_code.name if p.defect_code else None,
-            description=p.description,
-            quantity=int(p.quantity),
-            observations=p.observations,
-            status=p.status,
-            approved_type=p.approved_type,
-            employee_name=employee_name,
-            reviewed_by_name=reviewed_by_name,
-            reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
-            created_at=p.created_at.isoformat() if p.created_at else None,
-        ))
+    items = [_pending_to_response(p, current_user) for p in pendings]
 
     return ProductIncidenceListResponse(incidences=items, total=len(items))
 
@@ -322,32 +332,7 @@ def approve_product_incidence(
     _ensure_admin_or_jefe(current_user)
     try:
         pending = approve_pending_incidence(db, pending_id, current_user.id, data.incident_type)
-
-        reviewed_by_name = f"{current_user.name_user} {current_user.last_name}".strip()
-        employee_name = ""
-        if pending.employee:
-            employee_name = f"{pending.employee.name_user} {pending.employee.last_name}".strip()
-        return ProductIncidenceResponse(
-            id=str(pending.id),
-            task_id=str(pending.task_id),
-            task_type=pending.task.type if pending.task else None,
-            product_id=str(pending.product_id),
-            product_name=pending.product.name_product if pending.product else None,
-            size=pending.size,
-            colour=pending.colour,
-            defect_code_id=str(pending.defect_code_id) if pending.defect_code_id else None,
-            defect_code=pending.defect_code.code if pending.defect_code else None,
-            defect_name=pending.defect_code.name if pending.defect_code else None,
-            description=pending.description,
-            quantity=int(pending.quantity),
-            observations=pending.observations,
-            status=pending.status,
-            approved_type=pending.approved_type,
-            employee_name=employee_name,
-            reviewed_by_name=reviewed_by_name,
-            reviewed_at=pending.reviewed_at.isoformat() if pending.reviewed_at else None,
-            created_at=pending.created_at.isoformat() if pending.created_at else None,
-        )
+        return _pending_to_response(pending, current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -364,31 +349,6 @@ def reject_product_incidence(
     _ensure_admin_or_jefe(current_user)
     try:
         pending = reject_pending_incidence(db, pending_id, current_user.id)
-
-        reviewed_by_name = f"{current_user.name_user} {current_user.last_name}".strip()
-        employee_name = ""
-        if pending.employee:
-            employee_name = f"{pending.employee.name_user} {pending.employee.last_name}".strip()
-        return ProductIncidenceResponse(
-            id=str(pending.id),
-            task_id=str(pending.task_id),
-            task_type=pending.task.type if pending.task else None,
-            product_id=str(pending.product_id),
-            product_name=pending.product.name_product if pending.product else None,
-            size=pending.size,
-            colour=pending.colour,
-            defect_code_id=str(pending.defect_code_id) if pending.defect_code_id else None,
-            defect_code=pending.defect_code.code if pending.defect_code else None,
-            defect_name=pending.defect_code.name if pending.defect_code else None,
-            description=pending.description,
-            quantity=int(pending.quantity),
-            observations=pending.observations,
-            status=pending.status,
-            approved_type=pending.approved_type,
-            employee_name=employee_name,
-            reviewed_by_name=reviewed_by_name,
-            reviewed_at=pending.reviewed_at.isoformat() if pending.reviewed_at else None,
-            created_at=pending.created_at.isoformat() if pending.created_at else None,
-        )
+        return _pending_to_response(pending, current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

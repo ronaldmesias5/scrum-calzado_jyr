@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 class PendingIncidenceStatus(str, Enum):
     """Estados de una incidencia pendiente de aprobación."""
+
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
@@ -43,18 +44,38 @@ class PendingProductIncidence(Base):
         default=uuid.uuid4,
     )
 
-    # Empleado que reporta
-    employee_id: Mapped[uuid.UUID] = mapped_column(
+    # Empleado que reporta (nullable: el cliente reporta sin tarea)
+    employee_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT", onupdate="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
 
-    # Tarea vinculada
-    task_id: Mapped[uuid.UUID] = mapped_column(
+    # Tarea vinculada (nullable: el cliente reporta sin tarea)
+    task_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("tasks.id", ondelete="RESTRICT", onupdate="CASCADE"),
-        nullable=False,
+        nullable=True,
+    )
+
+    # Cliente que reporta (solo en incidencias de cliente)
+    customer_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    # Pedido y detalle vinculados (cliente reporta sobre su pedido entregado)
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=True,
+    )
+
+    order_detail_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("order_details.id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=True,
     )
 
     # Producto (denormalizado desde la tarea para conveniencia)
@@ -161,10 +182,15 @@ class PendingProductIncidence(Base):
 
     employee = relationship("User", foreign_keys=[employee_id], lazy="selectin")
     task = relationship("Task", foreign_keys=[task_id], lazy="selectin")
+    customer = relationship("User", foreign_keys=[customer_id], lazy="selectin")
+    order = relationship("Order", foreign_keys=[order_id], lazy="selectin")
+    order_detail = relationship("OrderDetail", foreign_keys=[order_detail_id], lazy="selectin")
     product = relationship("Product", foreign_keys=[product_id], lazy="selectin")
     defect_code = relationship("DefectCode", foreign_keys=[defect_code_id], lazy="selectin")
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id], lazy="selectin")
     loss_record = relationship("LossRecord", foreign_keys=[loss_record_id], lazy="selectin")
 
     def __repr__(self) -> str:
-        return f"PendingProductIncidence(id={self.id}, task_id={self.task_id}, status={self.status})"
+        return (
+            f"PendingProductIncidence(id={self.id}, task_id={self.task_id}, status={self.status})"
+        )

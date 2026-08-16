@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Loader2, Store } from "lucide-react";
 import Pagination from "@/components/atoms/Pagination";
-import { useToast } from "@/store/ToastContext";
+import { useAuth } from "@/hooks/useAuth";
+import OrderFormModal from "@/features/admin/components/organisms/OrderFormModal";
 import { WholesaleProductCard } from "@/features/client/components/molecules/WholesaleProductCard";
 import { WholesaleCatalogFilters } from "@/features/client/components/molecules/WholesaleCatalogFilters";
 import {
@@ -20,7 +21,8 @@ import {
 const PAGE_SIZE = 12;
 
 export default function WholesaleCatalogPage() {
-  const { showToast } = useToast();
+  const { user } = useAuth();
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
 
   const [products, setProducts] = useState<WholesaleProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -137,7 +139,7 @@ export default function WholesaleCatalogPage() {
     !!searchTerm;
 
   const handleOrderClick = () => {
-    showToast("La solicitud de pedidos estará disponible próximamente", "info");
+    setOrderModalOpen(true);
   };
 
   return (
@@ -223,6 +225,16 @@ export default function WholesaleCatalogPage() {
           )}
         </>
       )}
+
+      <OrderFormModal
+        isOpen={orderModalOpen}
+        onClose={() => setOrderModalOpen(false)}
+        onSuccess={() => {
+          setOrderModalOpen(false);
+          window.dispatchEvent(new Event("orders-updated"));
+        }}
+        fixedCustomerId={user?.id ?? null}
+      />
     </div>
   );
 }

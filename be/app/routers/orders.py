@@ -251,44 +251,21 @@ def create_order(
     try:
         _require_jefe(current_user)
 
-        # Verificar que el cliente existe
+        from app.controllers.orders import create_order as _create_order
+
+        new_order = _create_order(
+            db=db,
+            customer_id=order_data.customer_id,
+            total_pairs=order_data.total_pairs,
+            delivery_date=order_data.delivery_date,
+            details=order_data.details,
+            created_by=current_user.id,
+        )
+
+        # Verificar que el cliente existe (para notificaciones)
         customer_check = db.execute(
             select(User).where(User.id == order_data.customer_id)
         ).scalar_one_or_none()
-
-        if not customer_check:
-            raise HTTPException(
-                status_code=404,
-                detail="Cliente no encontrado"
-            )
-
-        # Crear orden
-        new_order = Order(
-            customer_id=order_data.customer_id,
-            total_pairs=order_data.total_pairs,
-            state=OrderStatus.pendiente,
-            delivery_date=order_data.delivery_date,
-            creation_date=datetime.now(UTC),
-        )
-
-        # Agregar líneas de pedido (SIN descontar stock físico)
-        for detail_data in order_data.details:
-            detail = OrderDetail(
-                product_id=detail_data.product_id,
-                size=detail_data.size,
-                colour=detail_data.colour,
-                amount=detail_data.amount,
-                state=OrderStatus.pendiente,
-                order_date=datetime.now(UTC),
-                created_by=current_user.id,
-                line_group=detail_data.line_group,
-                observations=detail_data.observations,
-            )
-            new_order.details.append(detail)
-
-        db.add(new_order)
-        db.commit()
-        db.refresh(new_order)
 
         # ─── NOTIFICACIONES: notificar al jefe + email (fire-and-forget vía thread) ───
         _trigger_notifications(
@@ -300,6 +277,9 @@ def create_order(
 
         return _order_to_detail_response(new_order)
 
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

@@ -172,8 +172,17 @@ export default function PendingApprovalsPage() {
                   </div>
 
                   <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3">
-                    <p>Empleado: {inc.employee_name || '—'}</p>
-                    <p>Tarea: {inc.task_type} — Talla: {inc.size}</p>
+                    {inc.customer_name ? (
+                      <>
+                        <p>Cliente: {inc.customer_name}</p>
+                        <p>Pedido: #{inc.order_id ? inc.order_id.slice(0, 8) : '—'} — Talla: {inc.size}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>Empleado: {inc.employee_name || '—'}</p>
+                        <p>Tarea: {inc.task_type} — Talla: {inc.size}</p>
+                      </>
+                    )}
                     {inc.description && <p>Defecto: {inc.description}</p>}
                     {!inc.description && inc.defect_code && <p>Defecto: {inc.defect_code} — {inc.defect_name}</p>}
                     <p>Cantidad: {inc.quantity}</p>

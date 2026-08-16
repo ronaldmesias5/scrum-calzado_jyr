@@ -88,7 +88,11 @@ import LossesPage from "@/pages/admin/LossesPage";
 // Sprint - Dashboard Cliente
 import ClientLayout from "@/features/client/components/organisms/ClientLayout";
 import ClientDashboardPage from "@/pages/client/DashboardPage";
+import ClientOrdersPage from "@/pages/client/OrdersPage";
 import WholesaleCatalogPage from "@/pages/client/WholesaleCatalogPage";
+import MisIncidenciasPage from "@/pages/client/MisIncidenciasPage";
+import ClientReportsPage from "@/pages/client/ReportsPage";
+import ClientSettingsPage from "@/pages/client/SettingsPage";
 
 // Additional Dashboard sections
 import ProductionTaskDashboard from "@/pages/admin/TasksPage";
@@ -154,6 +158,10 @@ function App() {
           >
             <Route index element={<ClientDashboardPage />} />
             <Route path="catalog" element={<WholesaleCatalogPage />} />
+            <Route path="orders" element={<ClientOrdersPage />} />
+            <Route path="incidences" element={<MisIncidenciasPage />} />
+            <Route path="reports" element={<ClientReportsPage />} />
+            <Route path="settings" element={<ClientSettingsPage />} />
           </Route>
 
           {/* ════════════════════════════════════════ */}

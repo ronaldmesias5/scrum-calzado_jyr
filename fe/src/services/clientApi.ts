@@ -34,6 +34,63 @@ export interface ClientOrderListResponse {
   items: ClientOrder[];
 }
 
+export interface OrderDetailItemCreateRequest {
+  product_id: string;
+  size: string;
+  colour?: string | null;
+  amount: number;
+  observations?: string;
+  line_group?: number;
+}
+
+export interface OrderCreateRequest {
+  customer_id: string;
+  total_pairs: number;
+  delivery_date?: string | null;
+  details: OrderDetailItemCreateRequest[];
+}
+
+export interface ClientOrderSummaryResponse {
+  total: number;
+  by_state: Record<string, number>;
+}
+
+export interface ClientIncidence {
+  id: string;
+  order_id: string | null;
+  order_number: string | null;
+  product_id: string;
+  product_name: string | null;
+  size: string;
+  colour: string | null;
+  defect_code: string | null;
+  defect_name: string | null;
+  description: string | null;
+  quantity: number;
+  observations: string | null;
+  status: string;
+  approved_type: string | null;
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+  created_at: string | null;
+}
+
+export interface ClientIncidenceListResponse {
+  incidences: ClientIncidence[];
+  total: number;
+}
+
+export interface ClientIncidenceCreateRequest {
+  order_id: string;
+  order_detail_id: string;
+  size: string;
+  colour?: string | null;
+  defect_code_id?: string | null;
+  description?: string | null;
+  quantity: number;
+  observations?: string | null;
+}
+
 export async function getMyOrders(page: number = 1, pageSize: number = 10): Promise<ClientOrderListResponse> {
   const res = await api.get(`/api/v1/client/orders?page=${page}&page_size=${pageSize}`);
   return res.data;
@@ -41,5 +98,25 @@ export async function getMyOrders(page: number = 1, pageSize: number = 10): Prom
 
 export async function getMyOrderDetail(orderId: string): Promise<ClientOrder> {
   const res = await api.get(`/api/v1/client/orders/${orderId}`);
+  return res.data;
+}
+
+export async function createMyOrder(orderData: OrderCreateRequest): Promise<ClientOrder> {
+  const res = await api.post('/api/v1/client/orders', orderData);
+  return res.data;
+}
+
+export async function getMyOrdersSummary(): Promise<ClientOrderSummaryResponse> {
+  const res = await api.get('/api/v1/client/orders/summary');
+  return res.data;
+}
+
+export async function getMyIncidences(): Promise<ClientIncidenceListResponse> {
+  const res = await api.get('/api/v1/client/incidences');
+  return res.data;
+}
+
+export async function createMyIncidence(data: ClientIncidenceCreateRequest): Promise<ClientIncidence> {
+  const res = await api.post('/api/v1/client/incidences', data);
   return res.data;
 }

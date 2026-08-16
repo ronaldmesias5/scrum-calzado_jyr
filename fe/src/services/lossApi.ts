@@ -129,7 +129,7 @@ const PENDING_PREFIX = '/api/v1/scrap';
 
 export interface PendingProductIncidence {
   id: string;
-  task_id: string;
+  task_id?: string | null;
   task_type?: string | null;
   product_id: string;
   product_name?: string | null;
@@ -144,6 +144,8 @@ export interface PendingProductIncidence {
   status: string;
   approved_type?: string | null;
   employee_name?: string | null;
+  customer_name?: string | null;
+  order_id?: string | null;
   reviewed_by_name?: string | null;
   reviewed_at?: string | null;
   created_at?: string | null;

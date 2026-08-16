@@ -40,3 +40,50 @@ class ClientOrderListResponse(BaseModel):
     page_size: int = 10
     total_pages: int = 1
     items: list[ClientOrderResponse]
+
+
+class ClientOrderSummaryResponse(BaseModel):
+    """Resumen de pedidos del cliente por estado (sin datos financieros)."""
+
+    total: int
+    by_state: dict[str, int]
+
+
+class ClientIncidenceCreateRequest(BaseModel):
+    """Reclamo de un producto de un pedido entregado (incidencia de cliente)."""
+
+    order_id: uuid.UUID
+    order_detail_id: uuid.UUID
+    size: str
+    colour: Optional[str] = None
+    defect_code_id: Optional[uuid.UUID] = None
+    description: Optional[str] = None
+    quantity: int = 1
+    observations: Optional[str] = None
+
+
+class ClientIncidenceResponse(BaseModel):
+    """Respuesta de reclamo para el dashboard del cliente."""
+
+    id: str
+    order_id: str | None = None
+    order_number: str | None = None
+    product_id: str
+    product_name: str | None = None
+    size: str
+    colour: str | None = None
+    defect_code: str | None = None
+    defect_name: str | None = None
+    description: str | None = None
+    quantity: int
+    observations: str | None = None
+    status: str
+    approved_type: str | None = None
+    reviewed_by_name: str | None = None
+    reviewed_at: str | None = None
+    created_at: str | None = None
+
+
+class ClientIncidenceListResponse(BaseModel):
+    incidences: list[ClientIncidenceResponse]
+    total: int = 0

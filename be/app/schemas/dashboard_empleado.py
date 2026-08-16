@@ -19,6 +19,7 @@ class EmployeeMetricsResponse(BaseModel):
 
 class EmployeeTaskSchema(BaseModel):
     """Tarea asignada al empleado."""
+
     id: str
     order_id: str | None = None
     product_id: str | None = None
@@ -63,6 +64,7 @@ class EmployeeIncidenceListResponse(BaseModel):
 
 class AvailableTaskSchema(BaseModel):
     """Tarea pendiente disponible para reclamar."""
+
     id: str
     order_id: str | None = None
     product_id: str | None = None
@@ -93,16 +95,20 @@ class AvailableTaskListResponse(BaseModel):
 
 class TaskObservationUpdate(BaseModel):
     """Actualizar observación de una tarea."""
+
     observation: str | None = None
+
 
 class EmployeeTaskStatusUpdate(BaseModel):
     """Actualizar estado y observación de una tarea desde el dashboard del empleado."""
+
     status: str
     observation: str | None = None
 
 
 class ValeTaskInfo(BaseModel):
     """Info de una tarea dentro del vale, vista por empleado."""
+
     id: str
     type: str
     status: str
@@ -118,12 +124,14 @@ class ValeTaskInfo(BaseModel):
 
 class ValeDetailItem(BaseModel):
     """Línea de pedido en el vale (vista empleado)."""
+
     size: str
     amount: int
 
 
 class ValeResponse(BaseModel):
     """Respuesta completa del vale de producción para empleado."""
+
     order_id: str
     customer_name: str | None = None
     customer_last_name: str | None = None
@@ -189,6 +197,7 @@ class SharedReportDetailResponse(BaseModel):
 
 class MyTaskDetail(BaseModel):
     """Tarea individual con valor calculado, para reporte detallado (empleado)."""
+
     id: str
     order_id: str | None = None
     product_name: str
@@ -205,6 +214,7 @@ class MyTaskDetail(BaseModel):
 
 class MyTasksReportResponse(BaseModel):
     """Reporte detallado de tareas del empleado autenticado."""
+
     total_tasks_completed: int
     total_pairs_produced: int
     total_earnings: float = 0.0
@@ -220,6 +230,7 @@ class MyTasksReportResponse(BaseModel):
 
 class GeneralIncidenceCreateRequest(BaseModel):
     """Crear incidencia general (maquinaria o insumo) desde el dashboard del empleado."""
+
     incidence_category: str  # "maquinaria" or "insumo"
     machinery_name: str | None = None
     supply_id: str | None = None
@@ -229,6 +240,7 @@ class GeneralIncidenceCreateRequest(BaseModel):
 
 class GeneralIncidenceResponse(BaseModel):
     """Respuesta de incidencia general para el empleado."""
+
     id: str
     incidence_category: str
     machinery_name: str | None = None
@@ -253,6 +265,7 @@ class GeneralIncidenceListResponse(BaseModel):
 
 class ProductIncidenceCreateRequest(BaseModel):
     """Crear incidencia de producto vinculada a una tarea del empleado."""
+
     task_id: str
     size: str
     colour: str | None = None
@@ -263,9 +276,10 @@ class ProductIncidenceCreateRequest(BaseModel):
 
 
 class ProductIncidenceResponse(BaseModel):
-    """Respuesta de incidencia de producto para el empleado."""
+    """Respuesta de incidencia de producto para el empleado/jefe."""
+
     id: str
-    task_id: str
+    task_id: str | None = None
     task_type: str | None = None
     product_id: str
     product_name: str | None = None
@@ -280,6 +294,8 @@ class ProductIncidenceResponse(BaseModel):
     status: str
     approved_type: str | None = None
     employee_name: str | None = None
+    customer_name: str | None = None
+    order_id: str | None = None
     reviewed_by_name: str | None = None
     reviewed_at: str | None = None
     created_at: str | None = None
@@ -292,4 +308,5 @@ class ProductIncidenceListResponse(BaseModel):
 
 class ApproveProductIncidenceRequest(BaseModel):
     """Aprobar incidencia de producto — el jefe elige el tipo."""
+
     incident_type: str  # perdida, en_reparacion, devuelto
