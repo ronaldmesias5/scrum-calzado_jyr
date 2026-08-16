@@ -146,11 +146,10 @@ export default function WholesaleCatalogPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
             <Store className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            Catálogo Mayorista
+            Catálogo
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">
-            Explora los modelos disponibles con precios al por mayor y stock en
-            tiempo real.
+            Explora los modelos disponibles con precios al por mayor.
           </p>
         </div>
       </div>

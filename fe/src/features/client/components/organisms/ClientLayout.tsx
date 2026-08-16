@@ -60,7 +60,7 @@ export default function ClientLayout() {
   return (
     <BadgeCountsProvider>
       <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
-        <AdminHeader onMenuClick={toggleSidebar} homePath="/dashboard/client" />
+        <AdminHeader onMenuClick={toggleSidebar} homePath="/dashboard/client" roleLabel="Cliente" />
 
         <div className="flex h-[calc(100vh-4rem)] overflow-hidden relative">
           <ClientSidebar

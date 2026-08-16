@@ -12,9 +12,10 @@ import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
 interface AdminHeaderProps {
   onMenuClick?: () => void;
   homePath?: string;
+  roleLabel?: string;
 }
 
-export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin' }: AdminHeaderProps) {
+export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin', roleLabel }: AdminHeaderProps) {
   const { t } = useTranslation();
   const { user, logout, logoutAllDevices } = useAuth();
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
         >
           <img src="/logo.png" alt="CALZADO J&R" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
           <div className="hidden sm:block">
-            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{user?.occupation || t('dashboard.header.adminRole')}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{roleLabel || user?.occupation || t('dashboard.header.adminRole')}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{t('dashboard.header.welcome')}, {fullName}</p>
           </div>
         </div>
@@ -127,7 +128,7 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
             <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
               {fullName}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{user?.occupation || t('dashboard.header.adminRole')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabel || user?.occupation || t('dashboard.header.adminRole')}</p>
           </div>
         </div>
 

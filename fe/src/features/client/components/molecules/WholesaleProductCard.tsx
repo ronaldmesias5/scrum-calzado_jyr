@@ -9,23 +9,6 @@ interface WholesaleProductCardProps {
   onOrderClick: (product: WholesaleProduct) => void;
 }
 
-const STOCK_BADGE = {
-  out: {
-    label: "Agotado",
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  },
-  low: {
-    label: "Bajo stock",
-    className:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  },
-  ok: {
-    label: "Disponible",
-    className:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-  },
-} as const;
-
 function getSizeRange(categoryName: string): string {
   const category = categoryName.toLowerCase();
   if (category.includes("infantil")) return "21 al 32";
@@ -38,14 +21,6 @@ export function WholesaleProductCard({
   product,
   onOrderClick,
 }: WholesaleProductCardProps) {
-  const available = product.available ?? 0;
-  const stockBadge =
-    available <= 0
-      ? STOCK_BADGE.out
-      : available < 12
-        ? STOCK_BADGE.low
-        : STOCK_BADGE.ok;
-
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-slate-700 flex flex-col">
       {/* Imagen del modelo */}
@@ -95,28 +70,20 @@ export function WholesaleProductCard({
           <span className="font-semibold">Estilo:</span> {product.style_name}
         </p>
 
-        {/* Tallas + stock */}
-        <div className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg mb-4">
-          <div className="flex items-center gap-2">
-            <Box className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Tallas {getSizeRange(product.category_name)}
-            </span>
-          </div>
-          <span
-            className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${stockBadge.className}`}
-          >
-            {stockBadge.label}
+        {/* Tallas */}
+        <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg mb-4">
+          <Box className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Tallas {getSizeRange(product.category_name)}
           </span>
         </div>
 
         <button
           onClick={() => onOrderClick(product)}
-          disabled={available <= 0}
-          className="mt-auto w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-blue-500/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600 disabled:active:scale-100"
+          className="mt-auto w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-blue-500/50"
         >
           <ShoppingCart className="w-5 h-5" />
-          {available <= 0 ? "Sin stock disponible" : "Realizar Pedido"}
+          Realizar Pedido
         </button>
       </div>
     </div>
