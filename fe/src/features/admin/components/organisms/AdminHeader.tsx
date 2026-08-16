@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/atoms/ThemeToggle';
 import { LanguageSwitcher } from '@/components/atoms/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
+import { resolveImageUrl } from '@/services/catalogService';
 
 interface AdminHeaderProps {
   onMenuClick?: () => void;
@@ -115,7 +116,7 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
         <div className="flex items-center gap-2 pl-1 border-l border-gray-100 dark:border-slate-800 sm:border-0 sm:pl-0">
           {user?.avatar_url ? (
             <img
-              src={user.avatar_url}
+              src={resolveImageUrl(user.avatar_url)}
               alt={fullName}
               className="w-8 h-8 lg:w-9 lg:h-9 rounded-full object-cover shadow-lg"
             />

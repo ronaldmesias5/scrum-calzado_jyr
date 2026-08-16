@@ -9,6 +9,7 @@ import { Button } from '@/components/atoms/Button';
 import { useTheme } from '@/store/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { changePassword, uploadAvatar, deleteAvatar } from '@/services/authService';
+import { resolveImageUrl } from '@/services/catalogService';
 import { useToast } from '@/store/ToastContext';
 import i18n from '@/app/i18n';
 
@@ -210,7 +211,7 @@ export default function EmployeeSettingsPage() {
                   <div className="relative">
                     {user?.avatar_url ? (
                       <img
-                        src={user.avatar_url}
+                        src={resolveImageUrl(user.avatar_url)}
                         alt="Avatar"
                         className="w-28 h-28 rounded-full object-cover shadow-lg border-4 border-white dark:border-slate-800"
                       />

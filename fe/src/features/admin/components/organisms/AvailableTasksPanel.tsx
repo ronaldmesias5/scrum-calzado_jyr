@@ -1,22 +1,68 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Loader2 } from 'lucide-react';
-import { getAllProductionTasks, type ProductionTask } from '@/services/ordersApi';
+import { getAllProductionTasks, assignTaskEmployee, type ProductionTask } from '@/services/ordersApi';
+import { getAllUsers } from '@/services/adminApi';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
+import type { UserResponse } from '@/types/auth';
+import { useToast } from '@/store/ToastContext';
 
 export default function AvailableTasksPanel() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState<ProductionTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState<{ id: string; name: string; occupation: string }[]>([]);
+
+  const reloadTasks = () => {
+    getAllProductionTasks({ status: 'pendiente' })
+      .then((data) => setTasks(data.filter((t) => !t.assigned_to)))
+      .catch(() => {});
+  };
 
   useEffect(() => {
+    let mounted = true;
     getAllProductionTasks({ status: 'pendiente' })
       .then((data) => {
-        setTasks(data.filter((t) => !t.assigned_to));
+        if (mounted) setTasks(data.filter((t) => !t.assigned_to));
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    getAllUsers()
+      .then((users: UserResponse[]) => {
+        if (!mounted) return;
+        const filtered = users.filter(
+          (u) =>
+            u.occupation &&
+            ['cortador', 'guarnecedor', 'solador', 'emplantillador'].includes(u.occupation)
+        );
+        setEmployees(
+          filtered.map((u) => ({
+            id: u.id,
+            name: `${u.name} ${u.last_name}`.toUpperCase(),
+            occupation: u.occupation || '',
+          }))
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  const handleAssignEmployee = async (taskId: string, employeeId: string) => {
+    try {
+      await assignTaskEmployee(taskId, employeeId);
+      showToast('Empleado asignado correctamente', 'success');
+      reloadTasks();
+    } catch {
+      showToast('Error al asignar empleado', 'error');
+    }
+  };
 
   if (!loading && tasks.length === 0) return null;
 
@@ -47,7 +93,11 @@ export default function AvailableTasksPanel() {
               task={task}
               compact
               showProductInfo
-              onViewOrder={() => navigate('/dashboard/admin/orders')}
+              employees={employees}
+              onAssignEmployee={handleAssignEmployee}
+              onViewOrder={(orderId, productId) =>
+                navigate(`/dashboard/admin/orders?order=${orderId}&product=${productId}&line_group=${task.line_group ?? 0}`)
+              }
             />
           ))}
         </div>
