@@ -24,7 +24,9 @@ import { ImageViewerModal } from '@/components/admin/ImageViewerModal';
 import { OrderFormModal } from '@/components/admin/OrderFormModal';
 import { ProductionModal } from '@/components/admin/ProductionModal';
 import { ordersService } from '@/services/ordersService';
+import { checkProductSupplies } from '@/services/suppliesService';
 import type { OrderDetail, OrderDetailItem, OrderStatus, ProductionTask } from '@/types/orders';
+import type { SupplyCheckResponse } from '@/types/supplies';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/utils/cn';
 
@@ -62,6 +64,7 @@ interface GroupedProduct {
   product_name: string;
   brand_name: string | null;
   style_name: string | null;
+  category_name: string | null;
   image_url: string | null;
   state: OrderStatus | null;
   items: OrderDetailItem[];
@@ -77,6 +80,7 @@ function groupByProduct(details: OrderDetailItem[]): GroupedProduct[] {
         product_name: d.product_name || 'Producto',
         brand_name: d.brand_name,
         style_name: d.style_name,
+        category_name: d.category_name,
         image_url: d.image_url,
         state: d.state,
         items: [],
@@ -87,16 +91,17 @@ function groupByProduct(details: OrderDetailItem[]): GroupedProduct[] {
   return Array.from(map.values());
 }
 
-function StockIndicator({ available, amount }: { available: number | null; amount: number }) {
+function StockNumber({ available, amount }: { available: number | null; amount: number }) {
   if (available === null) return null;
-  const bg = available >= amount ? 'bg-green-500' : available > 0 ? 'bg-orange-500' : 'bg-red-500';
+  const color = available >= amount
+    ? 'text-green-500 dark:text-green-400'
+    : available > 0
+      ? 'text-orange-500 dark:text-orange-400'
+      : 'text-red-500 dark:text-red-400';
   return (
-    <View className="flex-row items-center gap-1">
-      <View className={cn('h-2 w-2 rounded-full', bg)} />
-      <Text className="text-[11px] text-gray-500 dark:text-gray-400">
-        {available} / {amount}
-      </Text>
-    </View>
+    <Text className={cn('text-xs font-bold', color)}>
+      {Math.max(0, Math.floor(available))}
+    </Text>
   );
 }
 
@@ -107,6 +112,7 @@ function ProductGroupCard({
   onStartProduction,
   onEdit,
   onDelete,
+  supplies,
 }: {
   group: GroupedProduct;
   onViewImage: (url: string | null) => void;
@@ -114,6 +120,7 @@ function ProductGroupCard({
   onStartProduction: (productId: string, productName: string) => void;
   onEdit: (productId: string) => void;
   onDelete: (productId: string, productName: string) => void;
+  supplies?: SupplyCheckResponse;
 }) {
   const statusInfo = group.state ? STATUS_BADGE[group.state] : null;
   const resolvedImage = resolveImageUrl(group.image_url);
@@ -142,12 +149,11 @@ function ProductGroupCard({
             </Text>
             {statusInfo && <Badge tone={statusInfo.tone} label={statusInfo.label} />}
           </View>
-          <View className="mt-1 flex-row flex-wrap gap-2">
-            {group.brand_name && (
-              <Badge tone="blue" label={group.brand_name} className="self-start" />
-            )}
-            {group.style_name && (
-              <Badge tone="purple" label={group.style_name} className="self-start" />
+          <View className="mt-1">
+            {[group.brand_name, group.style_name, group.category_name].filter(Boolean).length > 0 && (
+              <Text className="text-sm text-gray-600 dark:text-gray-400">
+                {[group.brand_name, group.style_name, group.category_name].filter(Boolean).join(' · ')}
+              </Text>
             )}
           </View>
           <View className="mt-2 flex-row items-center gap-3">
@@ -161,22 +167,133 @@ function ProductGroupCard({
         </View>
       </View>
 
-      <View className="flex-row border-t border-gray-100 px-2 py-2 dark:border-slate-800">
-        <Text className="w-[30%] text-[10px] font-bold uppercase text-gray-400">Talla</Text>
-        <Text className="w-[30%] text-[10px] font-bold uppercase text-gray-400">Pares</Text>
-        <Text className="w-[40%] text-[10px] font-bold uppercase text-gray-400">Stock</Text>
+      <View className="flex-row flex-wrap gap-2 px-1 py-2">
+        {group.items
+          .sort((a, b) => (a.size || '').localeCompare(b.size || ''))
+          .map((item) => {
+            const hasStock = (item.stock_available ?? 0) >= item.amount;
+            const bgColor = hasStock
+              ? 'bg-green-950/10 dark:bg-green-950/10'
+              : 'bg-gray-50 dark:bg-slate-800/30';
+            const borderColor = hasStock
+              ? 'border-green-200 dark:border-green-900/30'
+              : 'border-gray-200 dark:border-slate-800';
+
+            return (
+              <View
+                key={item.id}
+                className={cn(
+                  'w-[48%] flex-col gap-1 rounded-lg border px-3 py-2',
+                  bgColor,
+                  borderColor,
+                )}
+              >
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                    Talla {item.size}
+                  </Text>
+                  <Text className="text-sm font-bold text-gray-900 dark:text-white">
+                    {item.amount} pares
+                  </Text>
+                </View>
+                {productState === 'pendiente' && (
+                  <View className="mt-1 flex-row items-center justify-between border-t border-gray-100 pt-1 dark:border-slate-800">
+                    <Text className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500">
+                      En Bodega:
+                    </Text>
+                    <StockNumber available={item.stock_available} amount={item.amount} />
+                  </View>
+                )}
+              </View>
+            );
+          })}
       </View>
-      {group.items
-        .sort((a, b) => (a.size || '').localeCompare(b.size || ''))
-        .map((item) => (
-          <View key={item.id} className="flex-row items-center border-t border-gray-50 px-2 py-2 dark:border-slate-800/50">
-            <Text className="w-[30%] text-xs font-bold text-gray-900 dark:text-white">{item.size}</Text>
-            <Text className="w-[30%] text-xs font-bold text-blue-600 dark:text-blue-400">{item.amount}</Text>
-            <View className="w-[40%]">
-              <StockIndicator available={item.stock_available} amount={item.amount} />
+
+      {productState !== 'completado' && productState !== 'entregado' && supplies && supplies.supplies.length > 0 && (() => {
+        const totalProductPairs = group.items.reduce((s, i) => s + i.amount, 0);
+        const totalStock = group.items.reduce((s, i) => s + (i.stock_available ?? 0), 0);
+        const totalToProduce = Math.max(0, totalProductPairs - totalStock);
+
+        return (
+          <View className="border-t border-gray-100 px-2 pt-3 dark:border-slate-800">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
+                Insumos para Producción
+              </Text>
+              {totalToProduce > 0 && (
+                <View className="rounded-full bg-red-100 px-2 py-0.5 dark:bg-red-900/30">
+                  <Text className="text-[10px] font-bold text-red-600 dark:text-red-400">
+                    Faltan {totalToProduce} pares
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View className="mb-1 flex-row px-1">
+              <Text className="flex-1 text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500">
+                Insumo
+              </Text>
+              <Text className="w-14 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500">
+                Stock
+              </Text>
+              <Text className="w-16 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500">
+                Faltantes
+              </Text>
+              <Text className="w-14 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500">
+                Total
+              </Text>
+            </View>
+
+            <View className="gap-1">
+              {supplies.supplies.map((s) => {
+                const forMissing = totalToProduce * s.quantity_required;
+                const forTotal = totalProductPairs * s.quantity_required;
+                const missingOk = s.stock_quantity >= forMissing;
+                const totalOk = s.stock_quantity >= forTotal;
+
+                return (
+                  <View
+                    key={s.supply_id}
+                    className="flex-row items-center rounded-lg border border-gray-100 px-1 py-2 dark:border-slate-800"
+                  >
+                    <View className="flex-1 pl-1">
+                      <Text className="text-[11px] font-bold text-gray-900 dark:text-white">
+                        {s.supply_name}
+                      </Text>
+                      <Text className="text-[9px] uppercase text-gray-400 dark:text-gray-500">
+                        {s.supply_category}
+                      </Text>
+                    </View>
+                    <View className="w-14 items-center">
+                      <Text className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                        {s.stock_quantity}
+                      </Text>
+                    </View>
+                    <View className="w-16 flex-row items-center justify-center gap-1">
+                      <Text className={cn('text-[11px] font-bold', missingOk ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400')}>
+                        {forMissing}
+                      </Text>
+                      {missingOk
+                        ? <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
+                        : <Ionicons name="close-circle" size={12} color="#ef4444" />
+                      }
+                    </View>
+                    <View className="w-14 flex-row items-center justify-center gap-1">
+                      <Text className={cn('text-[11px] font-bold', totalOk ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400')}>
+                        {forTotal}
+                      </Text>
+                      {totalOk
+                        ? <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
+                        : <Ionicons name="close-circle" size={12} color="#ef4444" />
+                      }
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           </View>
-        ))}
+        );
+      })()}
 
       {productState === 'pendiente' && (
         <View className="flex-row gap-2 border-t border-gray-100 px-2 py-3 dark:border-slate-800">
@@ -245,6 +362,7 @@ export default function OrderDetailScreen() {
   const [productionModalProductId, setProductionModalProductId] = useState<string | null>(null);
   const [productionModalProductName, setProductionModalProductName] = useState('');
   const [editModalProductId, setEditModalProductId] = useState<string | null>(null);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [deleteTargetProductId, setDeleteTargetProductId] = useState<string | null>(null);
   const [deleteTargetProductName, setDeleteTargetProductName] = useState('');
 
@@ -290,6 +408,23 @@ export default function OrderDetailScreen() {
   });
 
   const grouped = useMemo(() => (order ? groupByProduct(order.details) : []), [order]);
+
+  const productIds = useMemo(() => order ? Array.from(new Set(order.details.map((d) => d.product_id))) : [], [order]);
+
+  const fetchAllSupplies = async (): Promise<Record<string, SupplyCheckResponse>> => {
+    if (productIds.length === 0) return {};
+    const results = await Promise.all(productIds.map((pid) => checkProductSupplies(pid)));
+    const map: Record<string, SupplyCheckResponse> = {};
+    productIds.forEach((pid, i) => { map[pid] = results[i]; });
+    return map;
+  };
+
+  const { data: suppliesMap = {} } = useQuery<Record<string, SupplyCheckResponse>>({
+    queryKey: ['order-supplies', ...productIds],
+    queryFn: fetchAllSupplies,
+    enabled: productIds.length > 0 && !!order && order.state !== 'completado' && order.state !== 'entregado',
+    staleTime: 120_000,
+  });
 
   const handleStatusChange = (newState: OrderStatus) => {
     if (!order) return;
@@ -379,10 +514,38 @@ export default function OrderDetailScreen() {
           </View>
         </Card>
 
-        <Pressable onPress={() => setShowContactModal(true)} className="mx-4 mt-3 flex-row items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 dark:border-slate-700">
-          <Ionicons name="chatbubbles-outline" size={16} color="#3b82f6" />
-          <Text className="text-sm font-bold text-blue-600 dark:text-blue-400">Contactar Cliente</Text>
-        </Pressable>
+        <Card className="mx-4 mt-3">
+          <Text className="mb-3 text-base font-bold text-gray-900 dark:text-white">Acciones</Text>
+          <View className="gap-2.5">
+            {order.state !== 'entregado' && order.state !== 'cancelado' && (
+              <Pressable
+                onPress={() => setShowAddProductModal(true)}
+                className="w-full flex-row items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2.5 dark:bg-indigo-500"
+              >
+                <Ionicons name="add-circle-outline" size={16} color="#ffffff" />
+                <Text className="text-sm font-bold text-white">Agregar Producto</Text>
+              </Pressable>
+            )}
+
+            {order.state === 'pendiente' && (
+              <Pressable
+                onPress={() => handleStatusChange('cancelado')}
+                className="w-full flex-row items-center justify-center gap-2 rounded-lg border border-red-300 py-2.5 dark:border-red-700"
+              >
+                <Ionicons name="ban-outline" size={16} color="#ef4444" />
+                <Text className="text-sm font-bold text-red-600 dark:text-red-400">Cancelar Pedido</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              onPress={() => setShowContactModal(true)}
+              className="w-full flex-row items-center justify-center gap-2 rounded-lg border border-gray-200 py-2.5 dark:border-slate-700"
+            >
+              <Ionicons name="chatbubbles-outline" size={16} color="#64748b" />
+              <Text className="text-sm font-bold text-gray-700 dark:text-gray-300">Contactar Cliente</Text>
+            </Pressable>
+          </View>
+        </Card>
 
         <View className="mx-4 mt-4">
           <Text className="mb-2 text-base font-bold text-gray-900 dark:text-white">Detalles del Pedido</Text>
@@ -398,18 +561,12 @@ export default function OrderDetailScreen() {
                 onStartProduction={handleOpenProduction}
                 onEdit={handleEditProduct}
                 onDelete={handleDeleteProduct}
+                supplies={suppliesMap[group.product_id]}
               />
             ))
           )}
         </View>
 
-        {order.state === 'pendiente' && (
-          <View className="mx-4 mt-3">
-            <Pressable onPress={() => handleStatusChange('cancelado')} className="items-center rounded-xl border border-red-300 py-3 dark:border-red-700">
-              <Text className="text-sm font-bold text-red-600 dark:text-red-400">Cancelar Pedido</Text>
-            </Pressable>
-          </View>
-        )}
         {order.state === 'en_progreso' && (
           <View className="mx-4 mt-3">
             <Pressable onPress={() => handleStatusChange('completado')} className="items-center rounded-xl bg-green-600 py-3 dark:bg-green-500">
@@ -454,6 +611,13 @@ export default function OrderDetailScreen() {
         orderId={order.id}
         editProductId={editModalProductId}
         orderDetails={order.details}
+      />
+      <OrderFormModal
+        visible={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        orderId={order.id}
+        orderDetails={order.details}
+        addProductMode
       />
     </View>
   );

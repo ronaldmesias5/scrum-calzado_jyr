@@ -42,11 +42,14 @@ interface OrderFormModalProps {
   orderId?: string;
   editProductId?: string | null;
   orderDetails?: OrderDetailItem[];
+  addProductMode?: boolean;
 }
 
-export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProductId, orderDetails }: OrderFormModalProps) {
+
+export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProductId, orderDetails, addProductMode = false }: OrderFormModalProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!orderId && !!editProductId;
+  const isAddToOrder = !!orderId && addProductMode && !editProductId;
   const [selectedClient, setSelectedClient] = useState<AdminUser | null>(null);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
@@ -90,6 +93,25 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
           delivery_date: orderDetails[0]?.order_date ?? null,
           details: [...otherLines, ...editedLines],
         });
+      } else if (isAddToOrder) {
+        if (!orderId || !orderDetails) return;
+        if (lineItems.length === 0) throw new Error('Agrega al menos un producto');
+        const existingLines = orderDetails.map((d) => ({
+          product_id: d.product_id,
+          size: d.size,
+          colour: d.colour ?? undefined,
+          amount: d.amount,
+        }));
+        const newLines = lineItems.map((item) => ({
+          product_id: item.product_id,
+          size: item.size,
+          colour: item.colour || undefined,
+          amount: parseInt(item.amount, 10) || 0,
+        }));
+        await ordersService.updateDetails(orderId, {
+          delivery_date: orderDetails[0]?.order_date ?? null,
+          details: [...existingLines, ...newLines],
+        });
       } else {
         if (!selectedClient) throw new Error('Selecciona un cliente');
         if (lineItems.length === 0) throw new Error('Agrega al menos un producto');
@@ -115,7 +137,7 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      if (isEditMode) {
+      if (isEditMode || isAddToOrder) {
         queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
       }
       resetForm();
@@ -149,8 +171,10 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
           colour: d.colour ?? '',
         })),
       );
+    } else if (isAddToOrder) {
+      setLineItems([]);
     }
-  }, [visible, isEditMode, editProductId, orderDetails, resetForm]);
+  }, [visible, isEditMode, isAddToOrder, editProductId, orderDetails, resetForm]);
 
   const addLineItem = (product: Product) => {
     setLineItems((prev) => [
@@ -203,13 +227,13 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
             <Ionicons name="close" size={24} color="#64748b" />
           </Pressable>
           <Text className="text-lg font-bold text-gray-900 dark:text-white">
-            {isEditMode ? 'Editar Producto' : 'Nuevo Pedido'}
+            {isAddToOrder ? 'Agregar Producto' : isEditMode ? 'Editar Producto' : 'Nuevo Pedido'}
           </Text>
           <View className="w-8" />
         </View>
 
         <ScrollView className="flex-1" contentContainerClassName="p-4 pb-10">
-          {!isEditMode && (
+          {!isEditMode && !isAddToOrder && (
             <>
               <Text className="mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                 Cliente *
@@ -244,6 +268,14 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
                 keyboardType="numbers-and-punctuation"
               />
             </>
+          )}
+
+          {isAddToOrder && (
+            <View className="mb-4 rounded-xl bg-indigo-50 p-3 dark:bg-indigo-950/30">
+              <Text className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                Agregando producto al pedido existente
+              </Text>
+            </View>
           )}
 
           {/* Productos */}
@@ -314,7 +346,7 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
             )}
           >
             <Ionicons name="add-circle-outline" size={20} color="#3b82f6" />
-            <Text className="text-sm font-bold text-blue-600">{isEditMode ? 'Agregar talla' : 'Agregar producto'}</Text>
+            <Text className="text-sm font-bold text-blue-600">              {isAddToOrder ? 'Agregar talla' : isEditMode ? 'Agregar talla' : 'Agregar producto'}</Text>
           </Pressable>
 
           {/* Resumen */}
@@ -327,9 +359,9 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
 
           {/* Submit */}
           <Button
-            title={createMutation.isPending ? 'Guardando...' : isEditMode ? 'Guardar cambios' : 'Crear pedido'}
+            title={createMutation.isPending ? 'Guardando...' : isAddToOrder ? 'Agregar al Pedido' : isEditMode ? 'Guardar cambios' : 'Crear pedido'}
             onPress={() => createMutation.mutate()}
-            disabled={createMutation.isPending || (!isEditMode && !selectedClient) || lineItems.length === 0}
+            disabled={createMutation.isPending || (!isEditMode && !isAddToOrder && !selectedClient) || lineItems.length === 0}
             loading={createMutation.isPending}
           />
         </ScrollView>
@@ -411,13 +443,9 @@ export function OrderFormModal({ visible, onClose, onSuccess, orderId, editProdu
                   <Text className="text-sm font-bold text-gray-900 dark:text-white" numberOfLines={1}>
                     {product.name}
                   </Text>
-                  <View className="flex-row gap-2 mt-1">
-                    <Badge tone="blue" label={product.brand_name} />
-                    {product.style_name ? <Badge tone="purple" label={product.style_name} /> : null}
-                    {product.color ? (
-                      <Badge tone="yellow" label={product.color} />
-                    ) : null}
-                  </View>
+                  <Text className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {[product.brand_name, product.style_name, product.category_name].filter(Boolean).join(' · ')}
+                  </Text>
                 </Pressable>
               )}
               ListEmptyComponent={
