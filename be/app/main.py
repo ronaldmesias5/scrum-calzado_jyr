@@ -130,7 +130,13 @@ app.add_middleware(ErrorHandlerMiddleware)
 
 # CORSMiddleware debe ser el último (el más externo) para manejar OPTIONS correctamente
 app.add_middleware(CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+    allow_origins=[
+        settings.FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:8081",  # Expo Metro web (app móvil)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
