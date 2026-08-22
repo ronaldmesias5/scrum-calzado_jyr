@@ -250,6 +250,7 @@ function ProductGroupCard({
                 const forTotal = totalProductPairs * s.quantity_required;
                 const missingOk = s.stock_quantity >= forMissing;
                 const totalOk = s.stock_quantity >= forTotal;
+                const fmt = (v: number) => Number(v.toFixed(2));
 
                 return (
                   <View
@@ -266,12 +267,12 @@ function ProductGroupCard({
                     </View>
                     <View className="w-14 items-center">
                       <Text className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
-                        {s.stock_quantity}
+                        {fmt(s.stock_quantity)}
                       </Text>
                     </View>
                     <View className="w-16 flex-row items-center justify-center gap-1">
                       <Text className={cn('text-[11px] font-bold', missingOk ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400')}>
-                        {forMissing}
+                        {fmt(forMissing)}
                       </Text>
                       {missingOk
                         ? <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
@@ -280,7 +281,7 @@ function ProductGroupCard({
                     </View>
                     <View className="w-14 flex-row items-center justify-center gap-1">
                       <Text className={cn('text-[11px] font-bold', totalOk ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400')}>
-                        {forTotal}
+                        {fmt(forTotal)}
                       </Text>
                       {totalOk
                         ? <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
