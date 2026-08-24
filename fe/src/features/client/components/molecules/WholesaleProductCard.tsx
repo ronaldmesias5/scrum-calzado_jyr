@@ -1,91 +1,68 @@
-import { ShoppingCart, Package, Box } from "lucide-react";
-import {
-  WholesaleProduct,
-  resolveImageUrl,
-} from "@/services/wholesaleCatalogApi";
+import { ShoppingCart, Package } from "lucide-react";
+import { WholesaleProduct, resolveImageUrl } from "@/services/wholesaleCatalogApi";
 
 interface WholesaleProductCardProps {
   product: WholesaleProduct;
   onOrderClick: (product: WholesaleProduct) => void;
 }
 
-function getSizeRange(categoryName: string): string {
-  const category = categoryName.toLowerCase();
-  if (category.includes("infantil")) return "21 al 32";
-  if (category.includes("dama")) return "33 al 43";
-  if (category.includes("caballero")) return "33 al 43";
-  return "33 al 43";
-}
-
 export function WholesaleProductCard({
   product,
   onOrderClick,
 }: WholesaleProductCardProps) {
+  const sizeStart = product.category_name.toLowerCase().includes("infantil") ? 21 : 33;
+  const sizeEnd = product.category_name.toLowerCase().includes("infantil") ? 32 : 43;
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-slate-700 flex flex-col">
-      {/* Imagen del modelo */}
-      <div className="relative h-52 bg-gray-100 dark:bg-slate-700 overflow-hidden group">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_10px_30px_-18px_rgba(15,23,42,0.45)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
+      <div className="relative flex h-56 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 dark:from-slate-800 dark:via-slate-700 dark:to-blue-950/40">
         {product.image_url ? (
           <img
             src={resolveImageUrl(product.image_url)}
-            alt={`${product.name} — Calzado J&R`}
+            alt={product.name}
+            className="h-full max-w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
-            width="400"
-            height="208"
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-20 h-20 text-gray-300 dark:text-slate-600" />
-          </div>
+          <Package className="h-12 w-12 text-gray-400" />
         )}
-
-        {/* Badge de marca */}
-        <div className="absolute top-3 left-3 bg-blue-600 dark:bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+        <span className="absolute left-4 top-4 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-lg shadow-blue-600/20">
           {product.brand_name}
-        </div>
-
-        {/* Badge de color */}
+        </span>
         {product.color && (
-          <div className="absolute top-3 right-3 bg-gray-800/90 dark:bg-gray-700/90 text-white px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-lg">
-            {product.color}
-          </div>
+          <span className="absolute right-4 top-4 rounded-full bg-slate-800 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-lg dark:bg-slate-700">
+            {product.color.trim()}
+          </span>
         )}
       </div>
 
-      {/* Contenido */}
-      <div className="p-5 flex flex-col flex-1">
-        <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">
+      <div className="flex flex-1 flex-col p-7">
+        <p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
           {product.category_name}
         </p>
-
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 line-clamp-2">
+        <h3 className="line-clamp-2 text-2xl font-bold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
           {product.name}
         </h3>
-
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          <span className="font-semibold">Estilo:</span> {product.style_name}
+        <p className="mt-2 text-base text-slate-600 dark:text-slate-300">
+          <span className="font-bold">Estilo:</span> {product.style_name}
         </p>
 
-        {/* Tallas */}
-        <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg mb-4">
-          <Box className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Tallas {getSizeRange(product.category_name)}
+        <div className="mt-7 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
+          <Package className="h-5 w-5 shrink-0 text-slate-500 dark:text-slate-300" />
+          <span className="text-base font-medium text-slate-700 dark:text-slate-200">
+            Tallas {sizeStart} al {sizeEnd}
           </span>
         </div>
 
         <button
+          type="button"
           onClick={() => onOrderClick(product)}
-          className="mt-auto w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-blue-500/50"
+          className="mt-auto flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-blue-600/30 active:scale-[.98] dark:bg-blue-500 dark:hover:bg-blue-600"
         >
-          <ShoppingCart className="w-5 h-5" />
+          <ShoppingCart className="h-5 w-5" />
           Realizar Pedido
         </button>
       </div>
-    </div>
+    </article>
   );
 }

@@ -146,9 +146,25 @@ async def upload_product_image(
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    # Validar tipo de archivo
-    if not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+    # Validar tipo de archivo por MIME real (independiente del nombre del archivo)
+    # y derivar la extensión segura. Bloquea SVG/HTML/ejecutables disfrazados.
+    ALLOWED_MIME = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "image/avif": ".avif",
+        "image/bmp": ".bmp",
+        "image/heic": ".heic",
+        "image/heif": ".heif",
+        "image/tiff": ".tiff",
+    }
+    ext = ALLOWED_MIME.get((image.content_type or "").lower())
+    if not ext:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de imagen no permitido. Usa JPG, PNG, WEBP, GIF, AVIF, BMP, HEIC o TIFF",
+        )
 
     # Validar tamaño (máximo 5 MB)
     content = await image.read()
@@ -166,7 +182,6 @@ async def upload_product_image(
             old_path.unlink()
 
     # Guardar nuevo archivo con nombre único basado en el product_id
-    ext = Path(image.filename).suffix.lower() if image.filename else ".jpg"
     filename = f"product_{product_id}{ext}"
     file_path = UPLOADS_DIR / filename
     file_path.write_bytes(content)
@@ -465,7 +480,13 @@ def update_manufactured_pairs(
     - product_id: ID del producto
     - quantity: Cantidad de pares fabricados a establecer
     """
-    product_uuid = UUID(product_id)
+    _require_admin_or_jefe(current_user)
+
+    try:
+        product_uuid = UUID(product_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
+
     quantity = request.get('quantity', 0)
     
     # Buscar el producto
@@ -482,15 +503,17 @@ def update_manufactured_pairs(
     
     if inventory:
         # Actualizar reserved
-        old_reserved = inventory.reserved or 0
         inventory.reserved = quantity
+        inventory.amount = quantity
         inventory.updated_at = datetime.now(timezone.utc)
     else:
-        # Crear nuevo registro de inventario con reserved
+        # Crear nuevo registro de inventario con reserved (size/amount son NOT NULL)
         inventory = Inventory(
             id=uuid.uuid4(),
             product_id=product_uuid,
+            size="TODOS",
             colour=product.color,
+            amount=quantity,
             reserved=quantity,
         )
         db.add(inventory)
@@ -518,7 +541,12 @@ def get_inventory_by_size(
     **Retorna:**
     - inventory: Lista de objetos con {size, reserved} agrupado y sumado por talla
     """
-    product_uuid = UUID(product_id)
+    _require_admin_or_jefe(current_user)
+
+    try:
+        product_uuid = UUID(product_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
     # Buscar el producto
     product = db.query(Product).filter(Product.id == product_uuid).first()
@@ -535,7 +563,10 @@ def get_inventory_by_size(
     size_map: dict = {}
     for item in inventory_items:
         if item.reserved and item.reserved > 0:
-            size_key = int(item.size) if item.size else 0
+            try:
+                size_key = int(item.size) if item.size else 0
+            except ValueError:
+                size_key = item.size or "0"
             size_map[size_key] = size_map.get(size_key, 0) + item.reserved
     
     # Convertir a lista ordenada por talla

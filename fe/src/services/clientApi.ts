@@ -12,6 +12,7 @@ export interface ClientOrderDetailItem {
   colour: string | null;
   amount: number;
   state: string;
+  observations?: string | null;
 }
 
 export interface ClientOrder {

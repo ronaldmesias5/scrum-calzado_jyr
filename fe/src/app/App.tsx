@@ -30,8 +30,8 @@
  *   DEPENDENCIAS CRÍTICAS:
  *   - AuthContext.tsx (contexto de autenticación)
  *   - react-router-dom (librería de enrutamiento)
+ * 
  */
-
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";

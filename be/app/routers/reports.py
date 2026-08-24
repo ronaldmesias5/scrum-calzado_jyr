@@ -587,7 +587,7 @@ def get_all_customers_report(
     if end_date:
         query = query.where(Order.created_at <= end_date)
     if state:
-        query = query.where(Order.state == state)
+        query = query.where(cast(Order.state, String) == state)
         
     query = query.order_by(desc(Order.created_at))
     orders = db.execute(query).scalars().all()

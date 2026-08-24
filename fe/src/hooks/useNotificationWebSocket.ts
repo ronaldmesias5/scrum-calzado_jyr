@@ -13,6 +13,7 @@ export function useNotificationWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  const connectRef = useRef<() => void>(() => undefined);
 
   const connect = useCallback(() => {
     const token = localStorage.getItem('access_token');
@@ -54,7 +55,7 @@ export function useNotificationWebSocket() {
       if (mountedRef.current) {
         setIsConnected(false);
         // Reconectar después de 5 segundos
-        reconnectTimerRef.current = setTimeout(connect, 5000);
+        reconnectTimerRef.current = setTimeout(() => connectRef.current(), 5000);
       }
     };
 
@@ -63,6 +64,10 @@ export function useNotificationWebSocket() {
       // y llamar close() manualmente causa "closed before connection established"
     };
   }, []);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   // Mantener conexión viva con ping cada 30s
   useEffect(() => {

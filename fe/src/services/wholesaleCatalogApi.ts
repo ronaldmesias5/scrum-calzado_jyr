@@ -23,6 +23,7 @@ export interface WholesaleProduct {
   brand_name: string;
   image_url?: string | null;
   color?: string | null;
+  sizes_inventory?: Array<{ size: string; available: number }>;
   available: number;
 }
 
@@ -61,6 +62,12 @@ export interface WholesaleCatalogListResponse {
   total_pages: number;
 }
 
+/** Obtener un producto público con sus tallas e inventario por talla. */
+export const getWholesaleProductDetail = async (productId: string): Promise<WholesaleProduct> => {
+  const res = await api.get<WholesaleProduct>(`/api/v1/catalog/products/${productId}`);
+  return res.data;
+};
+
 /** Obtener productos del catálogo mayorista con paginación y filtros */
 export const getWholesaleProducts = async (
   filters?: WholesaleCatalogFilters,
@@ -76,8 +83,18 @@ export const getWholesaleProducts = async (
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
 
-  const res = await api.get("/api/v1/catalog/products", { params });
-  return res.data;
+  const res = await api.get<WholesaleCatalogListResponse>("/api/v1/catalog/products", { params });
+  const products = await Promise.all(
+    res.data.products.map(async (product) => {
+      try {
+        return await getWholesaleProductDetail(product.id);
+      } catch {
+        return product;
+      }
+    }),
+  );
+
+  return { ...res.data, products };
 };
 
 /** Obtener categorías */

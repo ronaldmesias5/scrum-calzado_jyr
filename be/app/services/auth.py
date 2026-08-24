@@ -95,7 +95,7 @@ async def register_user(db: Session, user_data: UserCreate) -> User:
         identity_document=user_data.identity_document,
         identity_document_type_id=user_data.identity_document_type_id,
         business_name=user_data.business_name,
-        occupation=user_data.occupation,
+        occupation=None,
         hashed_password=hash_password(user_data.password),
         role_id=client_role.id,
         is_active=True,
@@ -210,6 +210,13 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no encontrado o cuenta desactivada",
+        )
+
+    token_version = payload.get("version")
+    if token_version is not None and token_version != user.session_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="La sesión fue invalidada. Vuelve a iniciar sesión.",
         )
 
     new_access = create_access_token(data={"sub": user.email, "version": user.session_version})

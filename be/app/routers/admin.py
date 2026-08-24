@@ -34,6 +34,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.role import Role
@@ -345,8 +346,15 @@ def delete_user(
             detail="No puedes eliminar tu propia cuenta"
         )
 
-    db.delete(user_to_delete)
-    db.commit()
+    try:
+        db.delete(user_to_delete)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede eliminar el usuario porque tiene registros asociados (pedidos, tareas, etc.). Desactívelo en su lugar.",
+        )
     return MessageResponse(message=f"Usuario {user_to_delete.email} eliminado exitosamente")
 
 

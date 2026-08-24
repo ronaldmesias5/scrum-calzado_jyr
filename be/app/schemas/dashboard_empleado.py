@@ -4,7 +4,7 @@ Descripción: Schemas Pydantic para el dashboard del empleado.
 """
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class EmployeeMetricSchema(BaseModel):
@@ -104,6 +104,15 @@ class EmployeeTaskStatusUpdate(BaseModel):
 
     status: str
     observation: str | None = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        """El empleado solo puede mover su tarea entre pendiente/en_progreso/completado."""
+        allowed = {"pendiente", "en_progreso", "completado"}
+        if v not in allowed:
+            raise ValueError("Estado no permitido para el empleado")
+        return v
 
 
 class ValeTaskInfo(BaseModel):

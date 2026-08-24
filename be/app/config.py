@@ -85,8 +85,12 @@ class Settings(BaseSettings):
     @field_validator("SECRET_KEY")
     @classmethod
     def validate_secret_key(cls, v: str) -> str:
-        """Validar que SECRET_KEY no es el valor de ejemplo."""
-        if v == "CAMBIA_ESTO_genera_con_secrets_token_urlsafe_48" or len(v) < 32:
+        """Validar que SECRET_KEY no es un valor de ejemplo conocido."""
+        placeholder_keys = {
+            "CAMBIA_ESTO_genera_con_secrets_token_urlsafe_48",
+            "replace_with_a_secure_random_secret_for_dev_only",
+        }
+        if v in placeholder_keys or len(v) < 32:
             raise ValueError(
                 "SECRET_KEY inválida. Debe cambiar el valor en .env y tener al menos 32 caracteres. "
                 "Generar con: python -c \"import secrets; print(secrets.token_urlsafe(48))\""

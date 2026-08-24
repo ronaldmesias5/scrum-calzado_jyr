@@ -28,6 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
+from app.config import settings
 from app.models.user import User
 from app.models.reactivation_ticket import ReactivationTicket
 from app.schemas.auth import (
@@ -100,7 +101,7 @@ def login(
         value=token_response.access_token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.ENVIRONMENT == "production",
     )
     return token_response
 
@@ -125,7 +126,7 @@ def refresh_token(
         value=token_response.access_token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.ENVIRONMENT == "production",
     )
     return token_response
 

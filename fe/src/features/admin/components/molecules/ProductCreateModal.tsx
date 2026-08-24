@@ -77,7 +77,7 @@ export default function ProductCreateModal({ isOpen, onClose, onSave }: ProductC
       }
     };
     loadData();
-  }, []);
+  }, [isOpen]);
 
   // Reinicializar cuando se abre/cierra
   useEffect(() => {

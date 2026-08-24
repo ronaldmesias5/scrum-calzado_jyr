@@ -6,8 +6,6 @@ Create Date: 2026-05-02 00:00:00.000000
 
 """
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
 
 revision = '018_product_task_prices'
 down_revision = '017_add_completed_at_to_tasks'

@@ -7,8 +7,6 @@ Create Date: 2026-04-18 00:00:00.000000
 
 """
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
 
 # revision identifiers, used by Alembic.
 revision = '013_tasks_columns'

@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.dependencies import get_current_user, get_db
+from app.dependencies import _require_jefe, get_current_user, get_db
 from app.models.order import Order, OrderDetail
 from app.models.tasks import Task
 from app.models.user import User
@@ -39,6 +39,7 @@ def get_next_vale_number(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    _require_jefe(current_user)
     try:
         max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
         return {"next_number": int(max_vale) + 1}
@@ -58,6 +59,7 @@ def list_all_production_tasks(
     """
     Lista TODAS las tareas de producción del sistema con filtros.
     """
+    _require_jefe(current_user)
     try:
         # Subconsulta para obtener el total de pares por orden y producto
         pairs_subquery = (
@@ -324,6 +326,7 @@ def get_order_tasks(
     Lista las tareas de producción de una orden.
     Si se pasa product_id, filtra al nivel del servidor (más preciso que filtrar en frontend).
     """
+    _require_jefe(current_user)
     try:
         pairs_subquery = (
             select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))

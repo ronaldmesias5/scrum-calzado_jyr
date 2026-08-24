@@ -1,5 +1,4 @@
-import { X, Search } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Filter, X, Search } from 'lucide-react';
 import { Brand, Category, Style } from '@/services/publicCatalogService';
 
 interface CatalogFiltersProps {
@@ -39,24 +38,34 @@ export default function CatalogFilters({
   onClear,
   isFiltering,
 }: CatalogFiltersProps) {
-  const { t } = useTranslation();
-
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-100 dark:border-slate-700 shadow-lg">
+    <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-7">
+      <div className="pointer-events-none absolute right-0 top-0 h-1 w-1/3 bg-blue-500" />
       {/* Título */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <span>{t('landing.catalog.title')}</span>
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t('landing.catalog.subtitle')}
-        </p>
+      <div className="relative mb-7 flex items-start justify-between gap-4">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <Filter className="h-4 w-4" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Explorar por</span>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Refine your selection
+          </h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Choose a category, brand or style to narrow the collection.
+          </p>
+        </div>
+        {isFiltering && (
+          <span className="hidden rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 sm:inline-flex">
+            Filtros activos
+          </span>
+        )}
       </div>
 
       {/* Filtros */}
-      <div className="space-y-4">
+      <div className="relative space-y-5">
         {/* Una sola fila con todos los filtros */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Categoría */}
           <div>
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
@@ -65,7 +74,7 @@ export default function CatalogFilters({
             <select
               value={selectedCategory}
               onChange={(e) => onCategoryChange(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3.5 py-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200"
             >
               <option value="">Todas</option>
               {categories.map((cat) => (
@@ -84,7 +93,7 @@ export default function CatalogFilters({
             <select
               value={selectedBrand}
               onChange={(e) => onBrandChange(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3.5 py-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200"
             >
               <option value="">Todas</option>
               {brands.map((brand) => (
@@ -103,7 +112,7 @@ export default function CatalogFilters({
             <select
               value={selectedStyle}
               onChange={(e) => onStyleChange(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3.5 py-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200"
             >
               <option value="">Todos</option>
               {styles.map((style) => (
@@ -122,7 +131,7 @@ export default function CatalogFilters({
             <select
               value={selectedColor}
               onChange={(e) => onColorChange(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3.5 py-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200"
             >
               <option value="">Todos</option>
               {colors.map((color) => (
@@ -134,7 +143,7 @@ export default function CatalogFilters({
           </div>
 
           {/* Búsqueda */}
-          <div>
+          <div className="sm:col-span-2 lg:col-span-2">
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
               Buscar
             </label>
@@ -145,7 +154,7 @@ export default function CatalogFilters({
                 placeholder="Nombre..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full rounded-xl border border-gray-200 bg-slate-50 py-3 pl-10 pr-3.5 text-sm text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
               />
             </div>
           </div>
@@ -155,7 +164,7 @@ export default function CatalogFilters({
             <button
               onClick={onClear}
               disabled={!isFiltering}
-              className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all font-bold text-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+              className="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm font-bold text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700/50"
             >
               <X className="w-4 h-4" />
               <span className="hidden sm:inline">Limpiar</span>
@@ -165,11 +174,12 @@ export default function CatalogFilters({
 
         {/* Indicador de filtros activos */}
         {isFiltering && (
-          <div className="flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-semibold">
-            <span>✓ Filtros activos aplicados</span>
+          <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-2.5 text-sm font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+            <span>Filtros activos aplicados</span>
+            <span className="text-xs font-medium opacity-75">Actualizado</span>
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

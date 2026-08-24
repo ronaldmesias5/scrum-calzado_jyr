@@ -43,9 +43,9 @@ export default function ProductCard({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-slate-700 flex flex-col">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
       {/* Imagen del producto */}
-      <div className="relative h-56 bg-gray-100 dark:bg-slate-700 overflow-hidden group">
+      <div className="relative flex h-60 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 dark:from-slate-800 dark:via-slate-700 dark:to-blue-950/40">
         {product.image_url ? (
           <img
             src={resolveImageUrl(product.image_url)}
@@ -53,9 +53,9 @@ export default function ProductCard({
             loading="lazy"
             width="400"
             height="224"
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            className="h-full w-full object-contain p-5 transition-transform duration-500 group-hover:scale-105"
             onError={(e) => {
-              (e.target as any).style.display = 'none';
+              e.currentTarget.style.display = 'none';
             }}
           />
         ) : (
@@ -66,36 +66,36 @@ export default function ProductCard({
         
         {/* Badge de marca */}
         {brandName && (
-          <div className="absolute top-4 left-4 bg-blue-600 dark:bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+          <div className="absolute left-4 top-4 rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg dark:bg-blue-500">
             {brandName}
           </div>
         )}
 
         {/* Badge de color */}
         {product.color && (
-          <div className="absolute top-4 right-4 bg-gray-800 dark:bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-semibold uppercase shadow-lg">
+          <div className="absolute right-4 top-4 rounded-full bg-slate-900/85 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-lg dark:bg-slate-700/90">
             {product.color}
           </div>
         )}
       </div>
 
       {/* Contenido */}
-      <div className="p-6 flex flex-col flex-1">
+      <div className="flex flex-1 flex-col p-5">
         {/* Categoría */}
         {categoryName && (
-          <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
             {categoryName}
           </p>
         )}
 
         {/* Nombre */}
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+        <h3 className="mb-2 line-clamp-2 text-lg font-bold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
           {product.name}
         </h3>
 
         {/* Estilo */}
         {styleName && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
             <span className="font-semibold">Estilo:</span> {styleName}
           </p>
         )}
@@ -108,8 +108,8 @@ export default function ProductCard({
         )}
 
         {/* Info de tallas (según categoría) */}
-        <div className="flex items-center gap-2 mb-6 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-          <Package className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-700/50">
+          <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Tallas: {getSizeRange()}
           </span>
@@ -118,7 +118,7 @@ export default function ProductCard({
         {/* Botón de pedido - Ocupar espacio restante */}
         <button
           onClick={handleOrderClick}
-          className="mt-auto w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-blue-500/50"
+          className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white shadow-lg shadow-blue-600/15 transition-all duration-200 hover:bg-blue-700 hover:shadow-blue-500/30 active:scale-[.98] dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           <ShoppingCart className="w-5 h-5" />
           Realizar Pedido
@@ -136,6 +136,6 @@ export default function ProductCard({
           {' '}(venta al por mayor).
         </p>
       </div>
-    </div>
+      </article>
   );
 }

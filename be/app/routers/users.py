@@ -81,9 +81,25 @@ async def upload_avatar(
     db: Session = Depends(get_db),
 ):
     """Sube y guarda la foto de perfil del usuario autenticado."""
-    # Validar tipo de archivo
-    if not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+    # Validar tipo de archivo por MIME real (independiente del nombre del archivo)
+    # y derivar la extensión segura. Bloquea SVG/HTML/ejecutables disfrazados.
+    ALLOWED_MIME = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "image/avif": ".avif",
+        "image/bmp": ".bmp",
+        "image/heic": ".heic",
+        "image/heif": ".heif",
+        "image/tiff": ".tiff",
+    }
+    ext = ALLOWED_MIME.get((image.content_type or "").lower())
+    if not ext:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de imagen no permitido. Usa JPG, PNG, WEBP, GIF, AVIF, BMP, HEIC o TIFF",
+        )
 
     # Validar tamaño (máximo 5 MB)
     content = await image.read()
@@ -101,7 +117,6 @@ async def upload_avatar(
             old_path.unlink()
 
     # Guardar nuevo archivo
-    ext = Path(image.filename).suffix.lower() if image.filename else ".jpg"
     user_id_str = str(current_user.id)
     filename = f"avatar_{user_id_str}{ext}"
     file_path = UPLOADS_DIR / filename

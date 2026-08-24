@@ -67,7 +67,7 @@ export default function ProductEditModal({ isOpen, product, onClose, onSave }: P
       }
     };
     loadData();
-  }, []);
+  }, [isOpen]);
 
   // Inicializar formulario cuando se abre modal
   useEffect(() => {

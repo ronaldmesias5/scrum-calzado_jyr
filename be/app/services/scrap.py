@@ -58,6 +58,7 @@ def create_defect_code(
     )
     db.add(defect_code)
     db.flush()
+    db.commit()
     return defect_code
 
 
