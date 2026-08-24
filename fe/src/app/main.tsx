@@ -19,19 +19,19 @@
  *   
  *   Este archivo NO debe modificarse a menudo.
  *   El cambio real está en App.tsx y sus componentes hijos.
+ * 
  */
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "../styles/index.css";
-
-// ════════════════════════════════════════
-// 🚀 Renderizar la aplicación
-// ════════════════════════════════════════
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 );

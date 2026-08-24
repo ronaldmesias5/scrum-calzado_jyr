@@ -53,6 +53,7 @@ def _order_to_client_response(order: Order) -> ClientOrderResponse:
                 colour=d.colour,
                 amount=d.amount,
                 state=d.state,
+                observations=d.observations,
             )
             for d in order.details
         ],

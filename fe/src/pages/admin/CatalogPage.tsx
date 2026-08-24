@@ -358,7 +358,7 @@ export default function CatalogPage() {
   // Inicializar opciones de filtros
   useEffect(() => {
     loadFilterOptions();
-  }, []);
+  }, [searchTerm]);
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import Modal from '@/components/atoms/Modal';
 
@@ -25,12 +25,12 @@ export default function EditProductModal({
   const [sizeAmounts, setSizeAmounts] = useState<Record<string, number>>({});
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
-  const getAvailableSizes = () => {
-    if (categoryName === 'Infantil') return Array.from({ length: 12 }, (_, i) => String(21 + i));
-    return Array.from({ length: 11 }, (_, i) => String(33 + i));
-  };
-
-  const availableSizes = getAvailableSizes();
+  const availableSizes = useMemo(
+    () => categoryName === 'Infantil'
+      ? Array.from({ length: 12 }, (_, i) => String(21 + i))
+      : Array.from({ length: 11 }, (_, i) => String(33 + i)),
+    [categoryName],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -44,7 +44,7 @@ export default function EditProductModal({
       setSizeAmounts(newSizeAmounts);
       setActivePreset(null);
     }
-  }, [isOpen, currentAmount, categoryName]);
+  }, [availableSizes, currentAmount, isOpen]);
 
   const applyPreset = (preset: 'equal3' | 'equal5' | 'equal10' | 'comercial') => {
     const newAmounts: Record<string, number> = {};
@@ -60,7 +60,7 @@ export default function EditProductModal({
       case 'equal10':
         amount = 10;
         break;
-      case 'comercial':
+      case 'comercial': {
         // Patrón comercial: 1, 2, 3, 3, 2, 1 desde la mitad
         const midIdx = Math.floor(availableSizes.length / 2);
         const pattern = [1, 2, 3, 3, 2, 1];
@@ -72,6 +72,7 @@ export default function EditProductModal({
         setSizeAmounts(newAmounts);
         setActivePreset(preset);
         return;
+      }
     }
 
     availableSizes.forEach(size => {

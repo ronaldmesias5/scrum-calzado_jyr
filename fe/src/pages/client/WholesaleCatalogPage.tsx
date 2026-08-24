@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Loader2, Store } from "lucide-react";
+import { Loader2, ShoppingCart, Store } from "lucide-react";
 import Pagination from "@/components/atoms/Pagination";
-import { useAuth } from "@/hooks/useAuth";
-import OrderFormModal from "@/features/admin/components/organisms/OrderFormModal";
+import CartModal from "@/features/client/components/organisms/CartModal";
+import { ProductDetailModal } from "@/features/client/components/molecules/ProductDetailModal";
+import { useCart } from "@/store/CartContext";
 import { WholesaleProductCard } from "@/features/client/components/molecules/WholesaleProductCard";
 import { WholesaleCatalogFilters } from "@/features/client/components/molecules/WholesaleCatalogFilters";
 import {
@@ -21,8 +22,9 @@ import {
 const PAGE_SIZE = 12;
 
 export default function WholesaleCatalogPage() {
-  const { user } = useAuth();
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const { cart } = useCart();
+  const [cartModalOpen, setCartModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<WholesaleProduct | null>(null);
 
   const [products, setProducts] = useState<WholesaleProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -138,8 +140,8 @@ export default function WholesaleCatalogPage() {
     !!selectedColor ||
     !!searchTerm;
 
-  const handleOrderClick = () => {
-    setOrderModalOpen(true);
+  const handleOrderClick = (product: WholesaleProduct) => {
+    setSelectedProduct(product);
   };
 
   return (
@@ -226,15 +228,27 @@ export default function WholesaleCatalogPage() {
         </>
       )}
 
-      <OrderFormModal
-        isOpen={orderModalOpen}
-        onClose={() => setOrderModalOpen(false)}
-        onSuccess={() => {
-          setOrderModalOpen(false);
-          window.dispatchEvent(new Event("orders-updated"));
-        }}
-        fixedCustomerId={user?.id ?? null}
+      <CartModal isOpen={cartModalOpen} onClose={() => setCartModalOpen(false)} />
+      <ProductDetailModal
+        key={selectedProduct?.id ?? "no-product"}
+        isOpen={selectedProduct !== null}
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAdded={() => setCartModalOpen(true)}
       />
+      <button
+        type="button"
+        onClick={() => setCartModalOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-xl shadow-blue-900/25 transition-all hover:-translate-y-1 hover:bg-blue-700 active:scale-95 dark:bg-blue-500 dark:hover:bg-blue-600"
+        aria-label="Abrir carrito de pedidos"
+        title="Abrir carrito de pedidos"
+      >
+        <ShoppingCart className="h-5 w-5" />
+        <span>Mi carrito</span>
+        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-blue-700">
+          {cart.length}
+        </span>
+      </button>
     </div>
   );
 }

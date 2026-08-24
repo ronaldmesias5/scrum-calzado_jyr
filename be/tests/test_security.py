@@ -3,11 +3,9 @@ Archivo: be/tests/test_security.py
 Descripción: Tests unitarios para el módulo de seguridad (hashing, JWT).
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 
 from app.utils.security import hash_password, verify_password, create_access_token, decode_token
-from app.config import settings
 
 
 class TestPasswordHashing:

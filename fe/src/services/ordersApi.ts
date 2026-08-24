@@ -125,6 +125,14 @@ export async function createOrder(orderData: OrderCreateRequest): Promise<OrderD
   return response.data;
 }
 
+/** Crea una orden para el cliente autenticado. */
+export async function createMyOrder(
+  orderData: OrderCreateRequest,
+): Promise<OrderDetail> {
+  const response = await axios.post<OrderDetail>('/api/v1/client/orders', orderData);
+  return response.data;
+}
+
 /**
  * Actualiza el estado de una orden.
  * @param orderId - UUID de la orden

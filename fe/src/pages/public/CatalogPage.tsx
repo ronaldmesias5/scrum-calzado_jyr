@@ -6,14 +6,16 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Tag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LandingHeader from '@/features/landing/components/organisms/LandingHeader';
 import LandingFooter from '@/features/landing/components/organisms/LandingFooter';
 import ProductCard from '@/features/landing/components/molecules/ProductCard';
 import CatalogFilters from '@/features/landing/components/molecules/CatalogFilters';
+import OrderFormModal from '@/features/admin/components/organisms/OrderFormModal';
 import Pagination from '@/components/atoms/Pagination';
 import { Breadcrumbs } from '@/components/atoms/Breadcrumbs';
+import { useAuth } from '@/hooks/useAuth';
 import {
   getPublicProducts,
   getCatalogCategories,
@@ -30,6 +32,8 @@ import {
 export default function CatalogPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
   
   // Estados
   const [products, setProducts] = useState<Product[]>([]);
@@ -141,8 +145,11 @@ export default function CatalogPage() {
     !!selectedColor ||
     !!searchTerm;
 
-  const handleOrderClick = (_product: Product) => {
-    // Redirigir a landing con modal de login
+  const handleOrderClick = () => {
+    if (user?.id) {
+      setOrderModalOpen(true);
+      return;
+    }
     navigate('/?login=true');
   };
 
@@ -200,6 +207,36 @@ export default function CatalogPage() {
             </div>
           ) : (
             <>
+              <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-200/60 bg-slate-950 px-6 py-8 text-white shadow-xl shadow-blue-950/10 dark:border-blue-900/60 sm:px-9 sm:py-10">
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-blue-900/40 to-transparent" />
+                <div className="relative flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+                  <div className="max-w-2xl">
+                    <div className="mb-4 flex items-center gap-2 text-blue-300">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-[11px] font-bold uppercase tracking-[0.25em]">
+                        Calzado J&R / colección actual
+                      </span>
+                    </div>
+                    <h1 className="max-w-xl text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
+                      {t('landing.catalog.title')}
+                    </h1>
+                    <p className="mt-4 max-w-lg text-sm leading-6 text-slate-300 sm:text-base">
+                      {t('landing.catalog.subtitle')}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-8">
+                    <div className="border-l border-blue-400/50 pl-4">
+                      <p className="text-2xl font-bold text-white">{products.length}</p>
+                      <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">Modelos visibles</p>
+                    </div>
+                    <div className="border-l border-blue-400/50 pl-4">
+                      <p className="text-2xl font-bold text-white">{brands.length}</p>
+                      <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">Marcas</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               {/* Filtros */}
               <CatalogFilters
                 categories={categories}
@@ -230,11 +267,15 @@ export default function CatalogPage() {
               ) : (
                 <>
                   {/* Contador de resultados */}
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {products.length}{' '}
-                      {products.length === 1 ? 'producto encontrado' : 'productos encontrados'}
-                    </p>
+                  <div className="flex items-end justify-between border-b border-slate-200 pb-3 dark:border-slate-700">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Selección disponible</p>
+                      <p className="mt-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {products.length}{' '}
+                        {products.length === 1 ? 'producto encontrado' : 'productos encontrados'}
+                      </p>
+                    </div>
+                    <Tag className="h-5 w-5 text-slate-400" />
                   </div>
 
                   {/* Grilla de productos */}
@@ -258,6 +299,15 @@ export default function CatalogPage() {
             </>
           )}
         </div>
+        <OrderFormModal
+          isOpen={orderModalOpen}
+          onClose={() => setOrderModalOpen(false)}
+          onSuccess={() => {
+            setOrderModalOpen(false);
+            window.dispatchEvent(new Event('orders-updated'));
+          }}
+          fixedCustomerId={user?.id ?? null}
+        />
       </main>
 
       <LandingFooter />

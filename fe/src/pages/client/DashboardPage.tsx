@@ -35,10 +35,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMyOrders()
-      .then((data) => setOrders(data.items))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const loadOrders = () => {
+      getMyOrders()
+        .then((data) => setOrders(data.items))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+
+    loadOrders();
+    window.addEventListener('orders-updated', loadOrders);
+    return () => window.removeEventListener('orders-updated', loadOrders);
   }, []);
 
   const totalOrders = orders.length;

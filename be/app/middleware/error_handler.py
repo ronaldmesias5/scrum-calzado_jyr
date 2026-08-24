@@ -14,7 +14,6 @@ import traceback
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Usar loggers centralizados
@@ -29,21 +28,6 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             return response
-        
-        except RequestValidationError as exc:
-            # Errores de validación de Pydantic → 422
-            client_ip = request.client.host if request.client else "unknown"
-            error_logger.warning(
-                f"Validation error on {request.url.path} from {client_ip}: {str(exc)}"
-            )
-            
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content={
-                    "detail": "Los datos enviados son incorrectos",
-                    "errors": exc.errors()  # Pydantic proporciona detalles seguros
-                }
-            )
         
         except Exception as exc:
             # Todas las demás excepciones no esperadas

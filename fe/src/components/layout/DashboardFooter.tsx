@@ -1,15 +1,19 @@
 import { useTranslation } from 'react-i18next';
 
-export function DashboardFooter() {
+interface DashboardFooterProps {
+  className?: string;
+}
+
+export function DashboardFooter({ className = '' }: DashboardFooterProps) {
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-8 py-8 text-center border-t border-gray-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-colors duration-500">
+    <footer className={`min-h-[112px] shrink-0 bg-white px-4 py-7 text-center text-slate-600 shadow-[0_-8px_24px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500 dark:bg-slate-950 dark:text-gray-400 ${className}`}>
       <div className="max-w-7xl mx-auto px-6">
-        <p className="text-base font-bold text-gray-800 dark:text-gray-200 tracking-tight">
+        <p className="text-base font-bold tracking-tight text-slate-800 dark:text-gray-200">
           {t('landing.hero.title')} - {t('landing.hero.subtitle')}
         </p>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-2">
+        <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
           {t('landing.footer.location')} | {t('landing.footer.phone')} | {t('landing.footer.copyright')}
         </p>
       </div>

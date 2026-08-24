@@ -173,7 +173,7 @@ def get_available_tasks(
     summary="Reclamar una tarea disponible",
 )
 def claim_task(
-    task_id: str,
+    task_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
@@ -216,7 +216,7 @@ def claim_task(
     summary="Actualizar observación de una tarea",
 )
 def update_task_observation(
-    task_id: str,
+    task_id: uuid.UUID,
     data: TaskObservationUpdate,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -246,7 +246,7 @@ def update_task_observation(
     summary="Actualizar estado y observación de una tarea (empleado)",
 )
 def update_employee_task_status(
-    task_id: str,
+    task_id: uuid.UUID,
     data: EmployeeTaskStatusUpdate,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -317,7 +317,7 @@ def update_employee_task_status(
     summary="Obtener vale de producción para el empleado",
 )
 def get_task_vale(
-    task_id: str,
+    task_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ValeResponse:
@@ -708,7 +708,7 @@ def get_shared_reports(
     summary="Detalle de un reporte compartido",
 )
 def get_shared_report_detail(
-    share_id: str,
+    share_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

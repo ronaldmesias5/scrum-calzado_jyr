@@ -13,7 +13,6 @@ Cambios:
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # Identificadores de migración
 revision = '014_add_reserved'

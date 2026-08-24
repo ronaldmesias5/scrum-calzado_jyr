@@ -13,6 +13,7 @@ interface ModalProps {
   showClose?: boolean;
   className?: string;
   initialFocus?: boolean;
+  centered?: boolean;
 }
 
 const SIZE_CLASSES: Record<string, string> = {
@@ -41,11 +42,15 @@ export default function Modal({
   showClose = true,
   className = '',
   initialFocus = true,
+  centered = false,
 }: ModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -97,7 +102,7 @@ export default function Modal({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, initialFocus]);
+  }, [handleKeyDown, initialFocus, isOpen]);
 
   const handleClose = useCallback(() => {
     onCloseRef.current();
@@ -110,7 +115,7 @@ export default function Modal({
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 overflow-y-auto">
+    <div className={`fixed inset-0 z-[100] flex justify-center overflow-y-auto p-4 ${centered ? 'items-center' : 'items-start'}`}>
       <div
         className={`absolute inset-0 ${overlay} transition-all duration-300`}
         onClick={handleClose}

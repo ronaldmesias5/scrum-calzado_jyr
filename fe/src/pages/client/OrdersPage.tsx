@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ShoppingBag, Package2, Eye, Search } from 'lucide-react';
 import { getMyOrders, getMyOrderDetail, type ClientOrder } from '@/services/clientApi';
 import Modal from '@/components/atoms/Modal';
@@ -28,14 +28,20 @@ export default function OrdersPage() {
   const pageSize = 10;
 
   useEffect(() => {
-    setLoading(true);
-    getMyOrders(page, pageSize)
-      .then((data) => {
-        setOrders(data.items);
-        setTotalPages(data.total_pages);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const loadOrders = () => {
+      setLoading(true);
+      getMyOrders(page, pageSize)
+        .then((data) => {
+          setOrders(data.items);
+          setTotalPages(data.total_pages);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+
+    loadOrders();
+    window.addEventListener('orders-updated', loadOrders);
+    return () => window.removeEventListener('orders-updated', loadOrders);
   }, [page]);
 
   const filtered = orders.filter((o) =>
@@ -53,6 +59,42 @@ export default function OrdersPage() {
       setDetailLoading(false);
     }
   };
+
+  const groupedProducts = useMemo(() => {
+    if (!selectedOrder) return [];
+    const map = new Map<string, {
+      product_id: string;
+      product_name: string | null;
+      brand_name: string | null;
+      category_name: string | null;
+      image_url: string | null;
+      total: number;
+      sizes: { size: string; amount: number; colour: string | null }[];
+      observations: string[];
+    }>();
+    for (const d of selectedOrder.details) {
+      const group = map.get(d.product_id) ?? {
+        product_id: d.product_id,
+        product_name: d.product_name,
+        brand_name: d.brand_name,
+        category_name: d.category_name,
+        image_url: d.image_url,
+        total: 0,
+        sizes: [],
+        observations: [],
+      };
+      group.total += d.amount;
+      group.sizes.push({ size: d.size, amount: d.amount, colour: d.colour });
+      if (d.observations && !group.observations.includes(d.observations)) {
+        group.observations.push(d.observations);
+      }
+      map.set(d.product_id, group);
+    }
+    return [...map.values()].map((g) => ({
+      ...g,
+      sizes: g.sizes.sort((a, b) => Number(a.size) - Number(b.size)),
+    }));
+  }, [selectedOrder]);
 
   return (
     <div className="space-y-6">
@@ -181,30 +223,50 @@ export default function OrdersPage() {
 
             <div>
               <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Productos</h3>
-              <div className="space-y-2">
-                {selectedOrder.details.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-3">
+              <div className="space-y-3">
+                {groupedProducts.map((group) => (
+                  <div key={group.product_id} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-3">
-                      {d.image_url ? (
-                        <img src={d.image_url} alt={d.product_name || ''} className="w-10 h-10 rounded-lg object-cover" />
+                      {group.image_url ? (
+                        <img src={group.image_url} alt={group.product_name || ''} className="w-12 h-12 rounded-lg object-cover" />
                       ) : (
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
-                          <Package2 size={16} className="text-gray-400" />
+                        <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
+                          <Package2 size={18} className="text-gray-400" />
                         </div>
                       )}
-                      <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{d.product_name || 'Producto'}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{group.product_name || 'Producto'}</p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                          {d.brand_name} · {d.category_name} · Talla {d.size}
+                          {[group.brand_name, group.category_name].filter(Boolean).join(' · ')}
                         </p>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-gray-900 dark:text-white">{d.amount} pares</p>
-                      <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${(STATUS_MAP[d.state] || DEFAULT_STATUS).color}`}>
-                        {(STATUS_MAP[d.state] || DEFAULT_STATUS).label}
+                      <span className="inline-flex shrink-0 items-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/50">
+                        {group.total} pares
                       </span>
                     </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {group.sizes.map((s) => (
+                        <span
+                          key={`${group.product_id}-${s.size}-${s.colour ?? ''}`}
+                          className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
+                        >
+                          Talla {s.size}: <span className="font-bold text-blue-600 dark:text-blue-400">{s.amount}</span>
+                        </span>
+                      ))}
+                    </div>
+                    {group.observations.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        {group.observations.map((obs, i) => (
+                          <p
+                            key={i}
+                            className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300"
+                          >
+                            <span className="font-bold">Nota: </span>
+                            {obs}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

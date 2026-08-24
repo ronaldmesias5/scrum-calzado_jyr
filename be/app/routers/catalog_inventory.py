@@ -349,7 +349,10 @@ def create_inventory_movement(
     """
     _require_admin_or_jefe(current_user)
     
-    product_uuid = UUID(request.product_id)
+    try:
+        product_uuid = UUID(request.product_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
     # 1. Buscar inventario para ese producto y talla
     inventory_items = db.execute(
@@ -368,10 +371,11 @@ def create_inventory_movement(
     
     # 2. Actualizar amount dependiendo del tipo de movimiento
     if request.movement_type == 'salida':
-        if inv.amount < request.quantity:
-            # En vez de error bloqueante, permitimos quedar en negativo temporalmente o lo ajustamos a 0
-            # para no bloquear el inicio de producción si hay discrepancias menores.
-            pass
+        if inv.amount < Decimal(request.quantity):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Stock insuficiente: hay {inv.amount} y se solicitan {request.quantity}",
+            )
         inv.amount -= Decimal(request.quantity)
     elif request.movement_type == 'entrada':
         inv.amount += Decimal(request.quantity)

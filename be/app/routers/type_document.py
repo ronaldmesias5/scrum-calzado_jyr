@@ -27,7 +27,8 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db
+from app.dependencies import get_db, get_current_user, _require_admin
+from app.models.user import User
 from app.models.type_document import TypeDocument
 from app.schemas.type_document import TypeDocumentCreate, TypeDocumentResponse
 
@@ -82,8 +83,11 @@ def get_type_document(
 def create_type_document(
     type_document_data: TypeDocumentCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TypeDocumentResponse:
     """Crea un nuevo tipo de documento."""
+    _require_admin(current_user)
+
     existing = (
         db.query(TypeDocument)
         .filter(TypeDocument.name_type_document == type_document_data.name)

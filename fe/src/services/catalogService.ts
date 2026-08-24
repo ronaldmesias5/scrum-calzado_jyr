@@ -188,7 +188,7 @@ export const uploadProductImage = async (id: string, imageFile: File): Promise<{
   const formData = new FormData();
   formData.append('image', imageFile);
   const res = await axios.post(`/api/v1/admin/catalog/products/${id}/image`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined },
   });
   return res.data;
 };

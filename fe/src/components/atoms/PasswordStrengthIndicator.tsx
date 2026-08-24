@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Check, X, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -10,17 +10,13 @@ interface Requirement {
 
 export function PasswordStrengthIndicator({ password }: { password: string }) {
   const { t } = useTranslation();
-  const [requirements, setRequirements] = useState<Requirement[]>([]);
-
-  useEffect(() => {
-    setRequirements([
+  const requirements = useMemo<Requirement[]>(() => [
       { id: "length", label: t("auth.passwordReq.length"), met: password.length >= 8 },
       { id: "upper", label: t("auth.passwordReq.upper"), met: /[A-Z]/.test(password) },
       { id: "lower", label: t("auth.passwordReq.lower"), met: /[a-z]/.test(password) },
       { id: "number", label: t("auth.passwordReq.number"), met: /[0-9]/.test(password) },
       { id: "special", label: t("auth.passwordReq.special"), met: /[^A-Za-z0-9]/.test(password) },
-    ]);
-  }, [password, t]);
+    ], [password, t]);
 
   const metCount = requirements.filter((r) => r.met).length;
   const strengthColor = 

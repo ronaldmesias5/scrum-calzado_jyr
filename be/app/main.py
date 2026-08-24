@@ -9,8 +9,11 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -135,6 +138,19 @@ app.add_middleware(CORSMiddleware,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ────────────────────────────
+# 🧯 Errores de validación (sin exponer detalles internos en producción)
+# ────────────────────────────
+# FastAPI maneja RequestValidationError ANTES de que llegue al middleware,
+# así que registramos un handler explícito para controlar la respuesta.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    content = {"detail": "Los datos enviados son incorrectos"}
+    if settings.ENVIRONMENT != "production":
+        content["errors"] = jsonable_encoder(exc.errors())
+    return JSONResponse(status_code=422, content=content)
 
 # ────────────────────────────
 # � Archivos estáticos (imágenes de productos)

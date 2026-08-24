@@ -20,8 +20,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.supplies import Supplies
@@ -140,8 +140,15 @@ def delete_supply_category(
     cat = db.execute(select(SupplyCategory).where(SupplyCategory.id == uid)).scalars().first()
     if not cat:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    db.delete(cat)
-    db.commit()
+    try:
+        db.delete(cat)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede eliminar la categoría porque tiene insumos asociados",
+        )
 
 # ─────────────────────────────────────────────────────────
 # GET /supplies — Listar insumos
@@ -320,7 +327,14 @@ def link_supply_to_product(
 # ─────────────────────────────────────────────────────────
 
 @router.delete("/products/{product_id}/supplies/{supply_id}", status_code=204, summary="Desvincular insumo de producto")
-def unlink_supply_from_product(product_id: str, supply_id: str, db: Session = Depends(get_db)) -> None:
+def unlink_supply_from_product(
+    product_id: str,
+    supply_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    _require_admin_or_jefe(current_user)
+
     try:
         pid = uuid.UUID(product_id)
         sid = uuid.UUID(supply_id)
@@ -341,7 +355,13 @@ def unlink_supply_from_product(product_id: str, supply_id: str, db: Session = De
 # ─────────────────────────────────────────────────────────
 
 @router.get("/products/{product_id}/supplies/check", response_model=ProductSuppliesCheckResponse, summary="Verificar disponibilidad de insumos")
-def check_product_supplies(product_id: str, db: Session = Depends(get_db)) -> ProductSuppliesCheckResponse:
+def check_product_supplies(
+    product_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ProductSuppliesCheckResponse:
+    _require_admin_or_jefe(current_user)
+
     try:
         pid = uuid.UUID(product_id)
     except ValueError:
