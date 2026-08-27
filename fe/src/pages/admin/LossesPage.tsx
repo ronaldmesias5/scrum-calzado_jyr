@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ClipboardCheck,
   AlertCircle,
+  Share2,
 } from 'lucide-react';
 import StatCard from '@/features/admin/components/atoms/StatCard';
 import LossFormModal from '@/features/admin/components/molecules/LossFormModal';
@@ -26,6 +27,7 @@ import {
   rejectIncident,
   repairIncident,
   solveIncident,
+  shareIncident,
   type IncidentRecord,
   type ScrapStockItem,
 } from '@/services/lossService';
@@ -112,6 +114,46 @@ export default function LossesPage() {
   const [repairIncidentData, setRepairIncidentData] = useState<IncidentRecord | null>(null);
   const [repairDestination, setRepairDestination] = useState('stock');
   const [repairLoading, setRepairLoading] = useState(false);
+
+  // ── Compartir incidencia al cliente ──
+  const [shareTarget, setShareTarget] = useState<IncidentRecord | null>(null);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
+  const [shareLoading, setShareLoading] = useState(false);
+
+  const openShareModal = (inc: IncidentRecord) => {
+    setShareTarget(inc);
+    setShareEmail('');
+    setShareMessage('');
+  };
+
+  const handleShareSubmit = async () => {
+    if (!shareTarget) return;
+    if (!shareTarget.order_id && !shareEmail.trim()) {
+      showToast('Esta incidencia no tiene pedido vinculado: escribe un correo destino.', 'error');
+      return;
+    }
+    setShareLoading(true);
+    try {
+      const resp = await shareIncident(shareTarget.id, {
+        to_email: shareEmail.trim() || undefined,
+        message: shareMessage.trim() || undefined,
+      });
+      const parts: string[] = [];
+      if (resp.shared_internally) parts.push('visible en el dashboard del cliente');
+      if (resp.email_sent) parts.push('correo enviado');
+      showToast(`Incidencia compartida: ${parts.join(' · ') || resp.detail}`, 'success');
+      setShareTarget(null);
+    } catch (e) {
+      const err = e as { response?: { data?: { detail?: string } }; message?: string };
+      showToast(
+        'Error al compartir: ' + (err.response?.data?.detail || err.message || 'Desconocido'),
+        'error',
+      );
+    } finally {
+      setShareLoading(false);
+    }
+  };
 
   // ── Repaired Incidents ────────────────
   const [repairedIncidents, setRepairedIncidents] = useState<IncidentRecord[]>([]);
@@ -295,8 +337,9 @@ export default function LossesPage() {
       setIsRepairModalOpen(false);
       setRepairIncidentData(null);
       loadIncidents();
-    } catch (err: any) {
-      showToast(err?.response?.data?.detail || 'Error al reparar incidencia', 'error');
+    } catch (err) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      showToast(e.response?.data?.detail || 'Error al reparar incidencia', 'error');
     } finally {
       setRepairLoading(false);
     }
@@ -643,6 +686,13 @@ export default function LossesPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => openShareModal(inc)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all text-xs font-bold mr-1"
+                            title="Compartir al cliente y/o correo"
+                          >
+                            <Share2 size={14} />
+                          </button>
                           {(inc.incident_type === 'en_reparacion' || inc.incident_type === 'devuelto') && (
                             <button
                               onClick={() => handleRepairClick(inc)}
@@ -1127,6 +1177,97 @@ export default function LossesPage() {
         </div>,
       document.body
     )}
+
+    {/* ──────── Modal: Compartir incidencia al cliente ──────── */}
+    {shareTarget &&
+      createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                  <Share2 size={18} className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Compartir incidencia</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">El cliente la verá en su dashboard y/o correo</p>
+                </div>
+              </div>
+              <button onClick={() => setShareTarget(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Cerrar">✕</button>
+            </div>
+
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{shareTarget.product?.name_product || 'Incidencia'}</p>
+              <div className="flex gap-4 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {shareTarget.size && <span>Talla: <strong className="text-gray-800 dark:text-gray-200">{shareTarget.size}</strong></span>}
+                <span>Cantidad: <strong className="text-gray-800 dark:text-gray-200">{Number(shareTarget.quantity)}</strong></span>
+                <span>Tipo: <strong className="text-gray-800 dark:text-gray-200">{INCIDENT_TYPE_DISPLAY[shareTarget.incident_type]}</strong></span>
+                {shareTarget.order_id && (
+                  <span>Pedido: <strong className="text-blue-600 dark:text-blue-400 font-mono">#{shareTarget.order_id.slice(0, 8)}</strong></span>
+                )}
+              </div>
+            </div>
+
+            {shareTarget.order_id && (
+              <div className="mb-4 flex items-start gap-2 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-900/20 px-3 py-2.5">
+                <CheckCircle size={14} className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  Se compartirá automáticamente con el cliente de este pedido en su dashboard.
+                </p>
+              </div>
+            )}
+
+            <label className="block mb-4">
+              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Correo destino (opcional)</span>
+              <input
+                type="email"
+                value={shareEmail}
+                onChange={e => setShareEmail(e.target.value)}
+                placeholder="cliente@correo.com"
+                className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+              {!shareTarget.order_id && (
+                <span className="block mt-1 text-[11px] text-red-500">Obligatorio: esta incidencia no tiene pedido vinculado.</span>
+              )}
+            </label>
+
+            <label className="block mb-5">
+              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Mensaje para el cliente (opcional)</span>
+              <textarea
+                value={shareMessage}
+                onChange={e => setShareMessage(e.target.value.slice(0, 1000))}
+                rows={3}
+                placeholder="Ej.: Detectamos un defecto en tu pedido, ya estamos gestionando el reemplazo..."
+                className="w-full resize-none px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+              <span className="block mt-1 text-right text-[10px] text-gray-400">{shareMessage.length}/1000</span>
+            </label>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShareTarget(null)}
+                disabled={shareLoading}
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleShareSubmit}
+                disabled={shareLoading}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/20"
+              >
+                {shareLoading ? (
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <Share2 size={16} />
+                )}
+                Compartir
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

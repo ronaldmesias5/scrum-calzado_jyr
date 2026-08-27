@@ -317,18 +317,26 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
       setLoadingOrders(true);
       try {
         const res = await api.get('/api/v1/admin/orders', {
-          params: { page: 1, page_size: 100, state: 'en_progreso' },
+          params: { page: 1, page_size: 100 },
         });
         const items: OrderSummary[] = res.data.items ?? res.data ?? [];
         setOrders(items);
       } catch (err) {
         console.error('Error loading orders:', err);
+        const e = err as { response?: { status?: number } };
+        showToast(
+          e.response?.status === 403
+            ? 'Se requieren permisos de jefe para cargar los pedidos'
+            : 'Error al cargar los pedidos',
+          'error',
+        );
       } finally {
         setLoadingOrders(false);
       }
     };
 
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Load order details when an order is selected
@@ -664,7 +672,9 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                 onChange={e => handleOrderChange(e.target.value)}
                 className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
               >
-                <option value="">Seleccionar pedido</option>
+                <option value="">
+                  {orders.length === 0 ? 'No hay pedidos registrados' : 'Seleccionar pedido'}
+                </option>
                 {orders.map(o => (
                   <option key={o.id} value={o.id}>
                     {o.customer_name ?? 'Cliente'} — {o.total_pairs ?? '?'} pares — #
@@ -672,7 +682,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                   </option>
                 ))}
               </select>
-            )}
+              )}
           </div>
           <button
             type="button"

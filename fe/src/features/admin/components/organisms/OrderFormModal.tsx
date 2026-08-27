@@ -117,6 +117,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
   const [hasAddedProducts, setHasAddedProducts] = useState(false);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [deliveryDate, setDeliveryDate] = useState('');
+  const todayLocal = new Date().toLocaleDateString('en-CA');
   const [clients, setClients] = useState<Client[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
@@ -499,6 +500,10 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
 
   const handleSubmit = async () => {
     if (!isEditMode && !selectedClient) { showToast('Por favor selecciona un cliente', 'error'); return; }
+    if (!isEditMode && deliveryDate && deliveryDate < todayLocal) {
+      showToast('La fecha estimada no puede ser anterior a hoy', 'error');
+      return;
+    }
     if (items.length === 0) { showToast('Por favor agrega al menos un producto', 'error'); return; }
     try {
       setLoading(true);
@@ -773,7 +778,15 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                       <input
                         type="date"
                         value={deliveryDate}
-                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        min={todayLocal}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value && value < todayLocal && !isEditMode) {
+                            showToast('Solo puedes elegir hoy o fechas futuras', 'warning');
+                            return;
+                          }
+                          setDeliveryDate(value);
+                        }}
                         className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-bold transition-all shadow-sm"
                       />
                     </div>

@@ -4,12 +4,13 @@ import {
   Settings, Bell, Globe, Shield, Save, Smartphone, Package,
   ShoppingBag, Eye, EyeOff, Lock, LogOut, Sun, Moon, Type, LayoutGrid,
   Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Palette, ChevronDown,
-  User, Camera, Upload, Trash2,
+  User, Camera, Upload, Trash2, Mail,
 } from 'lucide-react';
 import { Button } from '@/components/atoms/Button';
+import type { LucideIcon } from 'lucide-react';
 import { useTheme } from '@/store/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import { changePassword, uploadAvatar, deleteAvatar } from '@/services/authService';
+import { changePassword, uploadAvatar, deleteAvatar, getEmailCredentialsStatus } from '@/services/authService';
 import { resolveImageUrl } from '@/services/catalogService';
 import { useToast } from '@/store/ToastContext';
 import i18n from '@/app/i18n';
@@ -74,12 +75,22 @@ export default function SettingsPage() {
     loadPref('cfg_sessionTimeout', '60')
   );
 
+  // ── Correo saliente (solo informativo, 0 configuración) ──
+  const [mailStatus, setMailStatus] = useState<{ configured: boolean; sender_email: string } | null>(null);
+
   // Apply font size to <html>
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('text-sm', 'text-base', 'text-lg');
     if (appearance.fontSize !== 'base') root.classList.add(`text-${appearance.fontSize}`);
   }, [appearance.fontSize]);
+
+  // Cargar estado del correo saliente (solo para mostrar remitente global)
+  useEffect(() => {
+    getEmailCredentialsStatus()
+      .then(setMailStatus)
+      .catch(() => setMailStatus(null));
+  }, []);
 
   function handleSave() {
     try {
@@ -120,8 +131,9 @@ export default function SettingsPage() {
       await uploadAvatar(file);
       await refreshUser();
       showToast('Foto de perfil actualizada exitosamente', 'success');
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Error al subir la imagen';
+    } catch (err) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      const msg = e.response?.data?.detail || 'Error al subir la imagen';
       showToast(msg, 'error');
     } finally {
       setAvatarUploading(false);
@@ -135,8 +147,9 @@ export default function SettingsPage() {
       await deleteAvatar();
       await refreshUser();
       showToast('Foto de perfil eliminada', 'success');
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Error al eliminar la imagen';
+    } catch (err) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      const msg = e.response?.data?.detail || 'Error al eliminar la imagen';
       showToast(msg, 'error');
     } finally {
       setAvatarUploading(false);
@@ -162,15 +175,16 @@ export default function SettingsPage() {
       await changePassword({ current_password: pwForm.current, new_password: pwForm.next });
       setPwMsg({ type: 'ok', text: 'Contraseña actualizada correctamente.' });
       setPwForm({ current: '', next: '', confirm: '' });
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Error al cambiar la contraseña.';
+    } catch (err) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      const msg = e.response?.data?.detail || 'Error al cambiar la contraseña.';
       setPwMsg({ type: 'err', text: msg });
     } finally {
       setPwLoading(false);
     }
   }
 
-  const TABS: { id: TabId; icon: any; label: string }[] = [
+  const TABS: { id: TabId; icon: LucideIcon; label: string }[] = [
     { id: 'profile',       icon: User,         label: 'Mi Perfil'           },
     { id: 'notifications', icon: Bell,       label: 'Notificaciones'      },
     { id: 'language',      icon: Globe,       label: 'Idioma y Región'     },
@@ -464,6 +478,25 @@ export default function SettingsPage() {
                 </div>
               </Card>
 
+              {/* ── Correo Saliente ── */}
+              <Card title="Correo Saliente">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      Envías desde Calzado J&R
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Los correos salen desde <strong className="text-gray-700 dark:text-gray-300">{mailStatus?.sender_email || 'la cuenta del sistema'}</strong> y al responder el cliente te escribe directo a{' '}
+                      <strong className="text-blue-600 dark:text-blue-400">{user?.email}</strong>.
+                      Sin configuración, rápido para todos.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
               <Card title="Sesión y Acceso">
                 <div className="space-y-6">
                   <div className="space-y-2">
@@ -476,7 +509,7 @@ export default function SettingsPage() {
                       options={['15', '30', '60', '120', '240']}
                       display={v => `${v} minutos`}
                     />
-                    <p className="text-xs text-gray-400">La sesión se cerrará automáticamente tras este tiempo sin actividad.</p>
+                    <p className="text-xs text-gray-400">La sesión permanecerá activa hasta que cierres sesión.</p>
                   </div>
 
                   <div className="pt-4 border-t border-gray-100 dark:border-slate-800">
@@ -588,7 +621,7 @@ function InfoField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SettingsTab({ icon: Icon, label, active, onClick }: { icon: any; label: string; active: boolean; onClick: () => void }) {
+function SettingsTab({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -628,7 +661,7 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
 
 function ToggleSetting({
   title, desc, icon: Icon, enabled, onToggle,
-}: { title: string; desc: string; icon: any; enabled: boolean; onToggle: () => void }) {
+}: { title: string; desc: string; icon: LucideIcon; enabled: boolean; onToggle: () => void }) {
   return (
     <div className="flex items-center justify-between gap-4 group">
       <div className="flex gap-4 items-start">

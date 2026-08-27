@@ -629,17 +629,11 @@ function OrderDetailView({
     }
   };
 
-  const canStartProduction = order.state === 'pendiente';
   const canCancel          = order.state === 'pendiente';
   const canDelete          = order.state === 'cancelado';
   const canRestore         = order.state === 'cancelado';
-  const isEverythingInStock = order.details.length > 0 && order.details.every(d => (d.stock_available ?? 0) >= d.amount);
   
-  // Verificar si hay tareas de producción activas (si el producto fue fabricado)
-  const hasProductionTasks = currentTasks && currentTasks.length > 0;
-  
-  // "Completar desde Inventario" solo para pendiente SIN tareas de producción Y con stock
-  const canCompleteFromStock = canStartProduction && !hasProductionTasks && isEverythingInStock;
+
 
   // Agrupar por product_id para cálculos globales
   const groups = order.details.reduce<Record<string, typeof order.details>>((acc, d) => {
@@ -1748,17 +1742,7 @@ function OrderDetailView({
                   Agregar Producto
                 </button>
               )}
-              {/* Despachar directamente si hay stock total (SOLO para pendientes SIN fabricación) */}
-              {canCompleteFromStock && (
-                <button
-                  onClick={() => onStatusChange(order.id, 'completado')}
-                  disabled={isUpdating}
-                  className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 text-sm shadow-md border border-green-500"
-                >
-                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                  Completar desde Inventario
-                </button>
-              )}
+
 
 
 
