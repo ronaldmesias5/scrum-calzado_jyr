@@ -88,3 +88,26 @@ class ClientIncidenceResponse(BaseModel):
 class ClientIncidenceListResponse(BaseModel):
     incidences: list[ClientIncidenceResponse]
     total: int = 0
+
+
+class ClientSharedIncidenceResponse(BaseModel):
+    """Incidencia compartida por el jefe (report_shares con report_type='incidence')."""
+
+    id: str
+    title: str
+    message: Optional[str] = None
+    product_name: Optional[str] = None
+    size: Optional[str] = None
+    colour: Optional[str] = None
+    quantity: Optional[int] = None
+    incident_type: Optional[str] = None
+    defect: Optional[str] = None
+    order_id: Optional[str] = None
+    shared_by_name: Optional[str] = None
+    is_read: bool = False
+    created_at: Optional[str] = None
+
+
+class ClientSharedIncidenceListResponse(BaseModel):
+    items: list[ClientSharedIncidenceResponse]
+    total: int = 0

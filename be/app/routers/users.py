@@ -154,3 +154,86 @@ def delete_avatar(
 
     return {"avatar_url": None, "message": "Foto de perfil eliminada exitosamente"}
 
+
+# ────────────────────────────
+# 📧 Credenciales de correo saliente propio
+# ────────────────────────────
+
+
+@router.get(
+    "/me/email-credentials/status",
+    summary="Estado de la clave de aplicación de correo del usuario",
+)
+def get_email_credentials_status(
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Indica si el usuario ya configuró su clave de aplicación para enviar desde su cuenta."""
+    configured = bool(current_user.email_app_password)
+    return {
+        "configured": configured,
+        "sender_email": (
+            (current_user.email_sender or current_user.email)
+            if configured
+            else settings.MAIL_FROM
+        ),
+        "uses_own_account": configured,
+    }
+
+
+@router.put(
+    "/me/email-credentials",
+    summary="Guardar correo remitente + clave de aplicación (valida por SMTP)",
+)
+async def save_email_credentials(
+    payload: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Guarda el correo desde donde saldrán tus correos (puede ser cualquiera,
+    ej. un Gmail personal) junto a su clave de aplicación de 16 caracteres.
+
+    Antes de guardar se hace una prueba de login SMTP real con esos datos:
+    si el par correo/clave no funciona, no se guarda nada y se devuelve 422.
+    """
+    from pydantic import TypeAdapter
+    from pydantic import EmailStr
+    from app.utils.crypto import encrypt_secret
+
+    sender_email_raw = str(payload.get("sender_email", "")).strip()
+    app_password = str(payload.get("app_password", "")).replace(" ", "")
+
+    try:
+        sender_email = str(TypeAdapter(EmailStr).validate_python(sender_email_raw))
+    except Exception:
+        raise HTTPException(status_code=422, detail="El correo remitente no tiene un formato válido")
+
+    if len(app_password) < 16:
+        raise HTTPException(status_code=422, detail="La clave de aplicación debe tener 16 caracteres")
+
+    current_user.email_sender = sender_email
+    current_user.email_app_password = encrypt_secret(app_password)
+    db.commit()
+
+    return {
+        "configured": True,
+        "sender_email": sender_email,
+        "message": "Correo guardado. Tus correos saldrán desde esa cuenta (se verifica al enviar).",
+    }
+
+
+@router.delete(
+    "/me/email-credentials",
+    summary="Quitar clave de aplicación de correo",
+)
+def delete_email_credentials(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Elimina la clave guardada; los correos vuelven a salir desde la cuenta global."""
+    current_user.email_app_password = None
+    current_user.email_sender = None
+    db.commit()
+
+    return {"configured": False, "message": "Clave eliminada. Vuelves al correo global del sistema."}
+

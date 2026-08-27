@@ -136,6 +136,25 @@ export const solveIncident = (id: string) =>
   api.patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/solve`).then(r => r.data);
 
 // ─────────────────────────────────────────
+// COMPARTIR INCIDENCIA AL CLIENTE
+// ─────────────────────────────────────────
+
+export interface ShareIncidenceRequest {
+  target_client_id?: string;
+  to_email?: string;
+  message?: string;
+}
+
+export interface ShareIncidenceResponse {
+  shared_internally: boolean;
+  email_sent: boolean;
+  detail: string;
+}
+
+export const shareIncident = (id: string, data: ShareIncidenceRequest) =>
+  api.post<ShareIncidenceResponse>(`/api/v1/scrap/losses/${id}/share`, data).then(r => r.data);
+
+// ─────────────────────────────────────────
 // STOCK DE RECUPERABLES
 // ─────────────────────────────────────────
 

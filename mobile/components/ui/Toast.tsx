@@ -60,10 +60,7 @@ function ToastItem({
   }, []);
 
   return (
-    <Animated.View
-      style={{ opacity, pointerEvents: 'auto' }}
-      className="mb-2"
-    >
+    <Animated.View style={{ opacity }} className="mb-2">
       <Pressable
         onPress={() => onDismiss(toast.id)}
         className={`${BG_MAP[toast.type]} flex-row items-center gap-3 rounded-2xl px-5 py-3 shadow-2xl`}
@@ -93,17 +90,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast container — rendered via transparent Modal so it appears ABOVE other Modals */}
-      <Modal transparent animationType="none" statusBarTranslucent>
-        <View
-          style={{ pointerEvents: 'none', paddingTop: (insets.top || (Platform.OS === 'ios' ? 54 : 48)) + 8 }}
-          className="absolute left-0 right-0 z-[9999] items-center px-4"
-        >
-          {toasts.map((toast) => (
-            <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
-          ))}
-        </View>
-      </Modal>
+      {toasts.length > 0 && (
+        <Modal transparent animationType="none" statusBarTranslucent>
+          <View
+            style={{ paddingTop: (insets.top || (Platform.OS === 'ios' ? 54 : 48)) + 8 }}
+            className="absolute left-0 right-0 z-[9999] items-center px-4"
+          >
+            {toasts.map((toast) => (
+              <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
+            ))}
+          </View>
+        </Modal>
+      )}
     </ToastContext.Provider>
   );
 }

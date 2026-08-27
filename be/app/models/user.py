@@ -24,7 +24,7 @@ Descripción: Modelo ORM SQLAlchemy para la tabla `users` en PostgreSQL.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -155,6 +155,25 @@ class User(Base):
 
     avatar_url: Mapped[str | None] = mapped_column(
         String(500),
+        nullable=True,
+    )
+
+    # ────────────────────────────
+    # 📧 Correo saliente propio
+    # ────────────────────────────
+
+    # Clave de aplicación de correo del propio usuario (cifrada con SECRET_KEY).
+    # Permite enviar correos desde SU cuenta (From = su email) al compartir
+    # incidencias u otras acciones. Null = usa la cuenta global del sistema.
+    email_app_password: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    # Correo remitente elegido por el usuario (puede ser externo a su email de login).
+    # Solo se usa junto a email_app_password; si es NULL se usa su email de login.
+    email_sender: Mapped[str | None] = mapped_column(
+        String(255),
         nullable=True,
     )
 
@@ -291,4 +310,3 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"User(id={self.id}, email={self.email}, is_active={self.is_active})"
-
