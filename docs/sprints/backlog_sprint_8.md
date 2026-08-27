@@ -112,7 +112,7 @@ def get_global_sales(
 
 - `be/app/modules/admin/reports_router.py` — `get_global_sales()` (líneas 816-859)
 - `be/app/modules/admin/reports_schemas.py` — `SalesGlobalReport`, `SalesWeeklyMetric`
-- `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx` — Interfaz de reportes con métricas de ventas
+- `fe/src/pages/admin/ReportsPage.tsx` — Interfaz de reportes con métricas de ventas
 
 ## Cambios Técnicos
 

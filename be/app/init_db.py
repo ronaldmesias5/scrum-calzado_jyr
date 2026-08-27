@@ -27,17 +27,18 @@ import os
 from alembic.config import Config
 from alembic.command import upgrade as alembic_upgrade
 from sqlalchemy.orm import Session
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def run_migrations(db_url: str) -> None:
+def run_migrations(db_url: str, raise_on_error: bool = False) -> bool:
     """
     Ejecuta todas las migraciones pendientes de Alembic.
     
     Args:
         db_url: URL de conexión a la base de datos (ej: postgresql://user:pass@host/db)
+        raise_on_error: si es True, re-lanza la excepción en lugar de devolver False.
+            Útil en tests/CI para que el error SQL real no quede oculto.
     """
     try:
         logger.info("🔄 Ejecutando migraciones Alembic...")
@@ -45,7 +46,6 @@ def run_migrations(db_url: str) -> None:
         # Alembic está en /app/alembic dentro del contenedor
         # y en be/alembic en desarrollo local
         # Nota: alembic.ini está en el directorio PADRE de alembic/ (be/ o /app/)
-        import sys
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_dir)  # be/
         parent_root = os.path.dirname(project_root)  # scrum/
@@ -82,6 +82,8 @@ def run_migrations(db_url: str) -> None:
         
     except Exception as e:
         logger.warning(f"⚠️  Error ejecutando migraciones: {str(e)}")
+        if raise_on_error:
+            raise
         # No lanzar excepción para permitir que el servidor continúe
         return False
 

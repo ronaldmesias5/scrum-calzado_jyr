@@ -44,7 +44,7 @@
 - `be/app/modules/admin/catalog_schemas.py` — Schemas `BrandCreateRequest`, `BrandResponse`, `StyleCreateRequest`, `StyleResponse`
 - `be/app/models/brand.py` — Modelo `Brand` con `deleted_at` para soft-delete
 - `be/app/models/style.py` — Modelo `Style` con `deleted_at` para soft-delete
-- `fe/src/modules/dashboard-jefe/pages/CatalogPage.tsx` — Interfaz de gestión de marcas y estilos
+- `fe/src/pages/admin/CatalogPage.tsx` — Interfaz de gestión de marcas y estilos
 
 ## HU-009: Catálogo Visitante
 
@@ -78,7 +78,7 @@
 
 - `be/app/modules/catalog/router.py` — 7 endpoints públicos del catálogo (294 líneas total)
 - `be/app/modules/catalog/schemas.py` — Schemas de respuesta: `CategoriesListResponse`, `StylesListResponse`, `StyleInventoryResponse`, `BrandsListResponse`, `ProductsListResponse`, `ProductDetailResponse`
-- `fe/src/modules/landing/pages/CatalogPage.tsx` — Página pública del catálogo en el módulo landing
+- `fe/src/pages/public/CatalogPage.tsx` — Página pública del catálogo en el módulo landing
 
 ## Cambios Técnicos
 

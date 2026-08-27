@@ -60,7 +60,7 @@
   - Solo afecta tareas con status `completado`
   - Retorna conteo de tareas actualizadas
 
-**Frontend — `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx`:**
+**Frontend — `fe/src/pages/admin/ReportsPage.tsx`:**
 
 - Sección "Generador de Reportes" con opción "Empleado"
 - Selector de cargo seguido de selector de empleado
@@ -122,7 +122,7 @@
 
 - `GET /reports/shared` (líneas 751+): reportes compartidos por el jefe
 
-**Frontend — `fe/src/modules/dashboard-jefe/pages/EmployeeReportsPage.tsx`:**
+**Frontend — `fe/src/pages/admin/EmployeeReportsPage.tsx`:**
 - 555 líneas, página completa "Reportes"
 - Sección "Mi Rendimiento" con KPIs en tarjetas de colores (verde/azul/ámbar)
 - Desglose por proceso con tarjetas por tipo (corte, guarnición, soladura, emplantillado)
@@ -157,12 +157,12 @@
 - `be/app/modules/dashboard_empleado/schemas.py` — Schemas: `MyPerformanceResponse`, `MyPerformanceTaskBreakdown`, `MyTasksReportResponse`, `MyTaskDetail`
 
 **Archivos modificados en el frontend:**
-- `fe/src/modules/dashboard-empleado/pages/EmployeeReportsPage.tsx` — Nueva página (555 líneas)
-- `fe/src/modules/dashboard-empleado/services/employeeApi.ts` — Llamadas `getMyPerformance()`, `getMyTasksReport()`, `getSharedReports()`, `getSharedReportDetail()`
-- `fe/src/modules/dashboard-empleado/utils/reportsUtils.ts` — Funciones `exportMyTasksPDF()`, `exportPerformancePDF()`
-- `fe/src/modules/dashboard-empleado/types/employee.ts` — Tipos para reportes
-- `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx` — Sección empleados en generador de reportes
-- `fe/src/modules/dashboard-jefe/utils/reportsUtils.ts` — `exportEmployeePDF()`
+- `fe/src/pages/employee/EmployeeReportsPage.tsx` — Nueva página (555 líneas)
+- `fe/src/services/employeeApi.ts` — Llamadas `getMyPerformance()`, `getMyTasksReport()`, `getSharedReports()`, `getSharedReportDetail()`
+- `fe/src/features/employee/utils/reportsUtils.ts` — Funciones `exportMyTasksPDF()`, `exportPerformancePDF()`
+- `fe/src/types/employee.ts` — Tipos para reportes
+- `fe/src/pages/admin/ReportsPage.tsx` — Sección empleados en generador de reportes
+- `fe/src/features/admin/utils/reportsUtils.ts` — `exportEmployeePDF()`
 
 ## Logros
 

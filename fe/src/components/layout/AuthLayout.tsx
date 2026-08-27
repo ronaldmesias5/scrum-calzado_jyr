@@ -25,10 +25,10 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { LanguageSwitcher } from "@/components/atoms/LanguageSwitcher";
+import { ThemeToggle } from "@/components/atoms/ThemeToggle";
 import { useHeaderAnimation } from "@/hooks/useHeaderAnimation";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { Breadcrumbs } from "@/components/atoms/Breadcrumbs";
 
 interface AuthLayoutProps {
   children: React.ReactNode;

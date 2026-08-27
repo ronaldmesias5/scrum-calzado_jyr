@@ -16,7 +16,6 @@ Limites por endpoint:
 import os
 import time
 from collections import defaultdict
-from typing import Callable
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware

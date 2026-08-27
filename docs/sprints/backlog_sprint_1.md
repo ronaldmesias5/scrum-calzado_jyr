@@ -42,8 +42,8 @@ Registro de nuevos usuarios (clientes) en el sistema. El usuario proporciona nom
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/modules/landing/auth/RegisterPage.tsx` | Formulario de registro con todos los campos requeridos. Validación en cliente. Redirige a confirmación tras éxito. |
-| `fe/src/services/authApi.ts` | Llamada `POST /auth/register` con los datos del formulario |
+| `fe/src/features/auth/components/molecules/RegisterForm.tsx` | Formulario de registro con todos los campos requeridos. Validación en cliente. Redirige a confirmación tras éxito. |
+| `fe/src/services/authService.ts` | Llamada `POST /auth/register` con los datos del formulario |
 
 ### Flujo
 1. Usuario completa formulario de registro (nombre, email, contraseña, tipo/número documento, teléfono, dirección)
@@ -91,10 +91,10 @@ Autenticación de usuarios mediante JWT con access y refresh tokens almacenados 
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/modules/auth/pages/LoginPage.tsx` | Formulario de inicio de sesión con email y contraseña. Manejo de errores (credenciales inválidas, cuenta inactiva). |
-| `fe/src/services/authApi.ts` | `POST /auth/login` con `withCredentials: true` para enviar/recibir cookies |
-| `fe/src/store/authStore.ts` | Zustand store: `login()`, `logout()`, `checkAuth()`. Persiste estado de autenticación. Redirige según rol. |
-| `fe/src/components/auth/ProtectedRoute.tsx` | Componente wrapper que verifica autenticación y rol antes de renderizar rutas protegidas |
+| `fe/src/pages/auth/LoginPage.tsx` | Formulario de inicio de sesión con email y contraseña. Manejo de errores (credenciales inválidas, cuenta inactiva). |
+| `fe/src/services/authService.ts` | `POST /auth/login` con `withCredentials: true` para enviar/recibir cookies |
+| `fe/src/store/AuthContext.tsx` | Zustand store: `login()`, `logout()`, `checkAuth()`. Persiste estado de autenticación. Redirige según rol. |
+| `fe/src/app/ProtectedRoute.tsx` | Componente wrapper que verifica autenticación y rol antes de renderizar rutas protegidas |
 
 ### Flujo
 1. Usuario ingresa email y contraseña en `LoginPage.tsx`

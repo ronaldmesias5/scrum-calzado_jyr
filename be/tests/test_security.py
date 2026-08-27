@@ -3,11 +3,9 @@ Archivo: be/tests/test_security.py
 Descripción: Tests unitarios para el módulo de seguridad (hashing, JWT).
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 
 from app.utils.security import hash_password, verify_password, create_access_token, decode_token
-from app.core.config import settings
 
 
 class TestPasswordHashing:
@@ -69,18 +67,16 @@ class TestJWT:
         assert "exp" in payload
 
     def test_decode_expired_token(self):
-        """Token expirado debe lanzar excepción."""
+        """Token expirado debe retornar None."""
         token = create_access_token(
             data={"sub": "test@test.com"},
             expires_delta=timedelta(seconds=-1)  # Ya expiró
         )
-        with pytest.raises(Exception):
-            decode_token(token)
+        assert decode_token(token) is None
 
     def test_decode_invalid_token(self):
-        """Token malformado debe lanzar excepción."""
-        with pytest.raises(Exception):
-            decode_token("not.a.valid.token")
+        """Token malformado debe retornar None."""
+        assert decode_token("not.a.valid.token") is None
 
     def test_token_contains_expiration(self):
         """El token debe contener fecha de expiración."""

@@ -7,10 +7,11 @@ Solo incluye información que un agente NO inferiría fácilmente de los archivo
 
 ## Arquitectura general
 
-Monorepo con 3 módulos:
+Monorepo con 4 módulos:
 - `be/` — Backend Python 3.12+ (FastAPI + SQLAlchemy + Alembic + PostgreSQL)
 - `fe/` — Frontend TypeScript (React 19 + Vite + TailwindCSS 4)
 - `db/` — Solo scripts de bootstrap PostgreSQL (`init.sql`: extensiones, no esquema)
+- `mobile/` — App móvil (Expo SDK 54 + React Native 0.81 + NativeWind + expo-router 6)
 
 **El esquema de BD lo crean las migraciones Alembic al arrancar el backend**, no `db/init/`. El orden real es: `init.sql` (extensiones) → Alembic `init_db.py` (tablas/esquema) → seed data.
 
@@ -78,6 +79,17 @@ cd fe && npx tsc -b               # TypeScript strict mode
 cd fe && pnpm build               # ejecuta tsc -b && vite build
 ```
 
+### App móvil
+```bash
+cd mobile
+pnpm install                      # NUNCA npm ni yarn
+pnpm start                        # expo start (Metro)
+pnpm typecheck                    # tsc --noEmit
+pnpm lint                         # expo lint
+```
+- **pnpm es OBLIGATORIO** para mobile también.
+- La app móvil consume el backend FastAPI (`be/`) con JWT. Ver `mobile/AGENTS.md` para detalles.
+
 ---
 
 ## Base de datos y migraciones
@@ -126,28 +138,55 @@ be/app/modules/
 
 ### Frontend — import alias `@`
 ```typescript
-import { Button } from "@/components/ui/Button"   // @ = fe/src/
+import { Button } from "@/components/atoms/Button"   // @ = fe/src/
 ```
 Usar **siempre** `@/` para imports internos, nunca rutas relativas largas.
 
-### Frontend — módulos
+### Frontend — estructura feature-based
+Cada feature organiza sus componentes con **Atomic Design** dentro de `components/{atoms,molecules,organisms}/`. Los átomos globales viven en `fe/src/components/atoms/`.
 ```
-fe/src/modules/
-├── auth/                 # Login, Register, Password Reset (7 páginas)
-├── dashboard-jefe/       # Panel admin completo (14 páginas)
-├── dashboard-empleado/   # Panel empleado (6 páginas + utils + context)
-│   ├── pages/            # DashboardPage, TasksPage, AvailableTasksPage,
-│   │                     # IncidencesPage, EmployeeReportsPage, EmployeeSettingsPage
-│   ├── components/layout/ # EmployeeLayout, EmployeeSidebar
-│   ├── context/          # EmployeeBadgeCountsContext (tareas, disponibles, incidencias)
-│   ├── services/         # employeeApi.ts
-│   ├── types/            # employee.ts
-│   └── utils/            # reportsUtils.ts (exportPerformancePDF)
-├── dashboard-cliente/    # Panel cliente (2 páginas)
-│   ├── pages/            # DashboardPage, OrdersPage
-│   ├── components/layout/ # ClientLayout, ClientSidebar
-│   └── services/         # clientApi.ts
-└── landing/              # Landing page pública + catálogo
+fe/src/
+├── app/                  # Entry points (App.tsx, main.tsx, i18n.ts, ProtectedRoute, RoleProtectedRoute)
+├── assets/               # Recursos estáticos
+├── components/
+│   ├── atoms/            # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
+│   └── layout/           # Layouts globales (AppLayout, AuthLayout…)
+├── features/             # Features de negocio (Atomic Design por feature)
+│   ├── admin/            # Panel admin (14 páginas)
+│   │   ├── components/
+│   │   │   ├── atoms/    # StatCard, StatusBadgeComponent
+│   │   │   ├── molecules/  # SummarySizer, TaskCard, CreateUserForm, modales (DeleteConfirmModal,
+│   │   │   │              #   StatusConfirmModal, ImageViewerModal, AdjustInventoryModal,
+│   │   │   │              #   AdjustManufacturedModal, ContactClientModal, EditProductModal,
+│   │   │   │              #   LossFormModal, ProductCreateModal, ProductEditModal,
+│   │   │   │              #   ViewManufacturedModal, BrandFormModal, InventoryFormModal,
+│   │   │   │              #   ProductFormModal, StyleFormModal)
+│   │   │   └── organisms/  # OrderFormModal, home/ (AlertsPanel, AvailableTasksPanel…), layout/ (AdminHeader,
+│   │   │                  #   AdminLayout, AdminSidebar, NotificationsPanel)
+│   │   └── utils/        # reportsUtils.ts
+│   ├── auth/             # Login, Register, Password Reset
+│   │   └── components/   # molecules/ (LoginForm, RegisterForm…), organisms/ (AuthModals)
+│   ├── client/           # Panel cliente
+│   │   └── components/   # molecules/ (WholesaleCatalogFilters, WholesaleProductCard), organisms/ (ClientLayout, ClientSidebar)
+│   ├── employee/         # Panel empleado
+│   │   ├── components/   # molecules/ (EmployeeValeModal), organisms/ (EmployeeLayout, EmployeeSidebar)
+│   │   └── utils/        # reportsUtils.ts (exportPerformancePDF)
+│   └── landing/         # Landing page pública + catálogo
+│       ├── components/   # atoms/ (WhatsAppButton), molecules/ (ProductCard, CatalogFilters), organisms/ (LandingHeader…)
+│       └── config/      # whatsappConfig.ts
+├── pages/                # Páginas enrutables
+│   ├── admin/            # 14 páginas del panel admin
+│   ├── auth/             # 7 páginas (login, register, password reset…)
+│   ├── client/           # 3 páginas (DashboardPage, OrdersPage, WholesaleCatalogPage)
+│   ├── employee/         # 6 páginas (Dashboard, Tasks, AvailableTasks, Incidences, Reports, Settings)
+│   └── public/           # 2 páginas (LandingPage, ReactivationPage)
+├── hooks/                # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
+├── services/             # Servicios de API globales (adminApi, authService, ordersApi, employeeApi, clientApi…)
+├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
+├── types/                # Tipos TypeScript compartidos (auth, orders, products, tasks…)
+├── utils/                # Utilidades (format, routing…)
+├── styles/               # Estilos globales (TailwindCSS)
+└── locales/              # Traducciones (en, es)
 ```
 
 ---
@@ -177,21 +216,23 @@ fe/src/modules/
 
 12. **Avatar upload**: Los avatares se almacenan en `/uploads/` (misma infraestructura que imágenes de producto). El backend sirve estos archivos estáticamente. La URL incluye `?v=timestamp` para cache-busting. Formato de archivo: `avatar_{user_id}.ext`.
 
-13. **Dashboard Empleado**: Módulo `fe/src/modules/dashboard-empleado/` con 6 páginas. Las preferencias del empleado se almacenan en localStorage con prefijo `emp_` para evitar colisiones con las del admin.
+13. **Dashboard Empleado**: Feature `fe/src/features/employee/` con 6 páginas en `fe/src/pages/employee/`. Las preferencias del empleado se almacenan en localStorage con prefijo `emp_` para evitar colisiones con las del admin.
 
-14. **Dashboard Cliente**: Módulo `fe/src/modules/dashboard-cliente/` con 2 páginas (DashboardPage, OrdersPage).
+14. **Dashboard Cliente**: Feature `fe/src/features/client/` con 2 páginas en `fe/src/pages/client/` (DashboardPage, OrdersPage).
 
-15. **PDF export**: Usa `jspdf` + `jspdf-autotable`. La función `sanitizeFilename()` elimina caracteres prohibidos por Windows (`<>:"/\|?*`) de los nombres de archivo. Hay implementaciones separadas en `reportsUtils.ts` de cada dashboard.
+15. **PDF export**: Usa `jspdf` + `jspdf-autotable`. La función `sanitizeFilename()` elimina caracteres prohibidos por Windows (`<>:"/\|?*`) de los nombres de archivo. Hay implementaciones separadas en `features/admin/utils/reportsUtils.ts` y `features/employee/utils/reportsUtils.ts`.
+
+16. **App móvil**: `mobile/` es una app Expo SDK 54 que consume la misma API del backend. En desarrollo, Metro web corre en `http://localhost:8081` — asegúrate de que CORS en `be/app/main.py` incluya ese origen. Ver `mobile/AGENTS.md` para stack completo, gotchas y plan de fases.
 
 ## Patrones de frontend implementados
 
-### Modal base (`fe/src/components/ui/Modal.tsx`)
+### Modal base (`fe/src/components/atoms/Modal.tsx`)
 - Usa `createPortal`, `role="dialog"`, `aria-modal="true"`, focus trap, Escape handler
 - Variantes de tamaño: `sm`, `md`, `lg`, `xl`, `full`
 - Variantes de color: `default`, `danger`
 - **NUNCA** crear un modal manualmente — usar `<Modal>` + `useModalDialog` hook
 
-### PageTransition (`fe/src/components/ui/PageTransition.tsx`)
+### PageTransition (`fe/src/components/atoms/PageTransition.tsx`)
 - Envuelve `<Outlet />` en `AdminLayout.tsx`
 - Aplica `animate-in fade-in slide-in-from-top-4 duration-500` en cada navegación
 - Usa `key={location.pathname}` para re-triggerear animación

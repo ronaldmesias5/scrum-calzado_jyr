@@ -19,7 +19,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import base64
 
-from app.core.config import settings
+from app.config import settings
 
 logger = logging.getLogger("app")
 
@@ -38,17 +38,50 @@ def _build_mail_message(
     return msg
 
 
-async def _send_email(to_email: str, subject: str, html_body: str) -> None:
-    """Envía un email vía SMTP. Siempre imprime un resumen en consola."""
+async def _send_email(
+    to_email: str,
+    subject: str,
+    html_body: str,
+    smtp_overrides: dict | None = None,
+    reply_to: str | None = None,
+) -> bool:
+    """Envía un email vía SMTP. Retorna True si se envió, False si falló.
+
+    Buenas prácticas: un solo SMTP global autenticado (From del sistema);
+    las respuestas se enrutan al rol con el header estándar `Reply-To`.
+    `smtp_overrides` queda como opt-in para envío desde cuenta propia.
+    """
+    overrides = smtp_overrides or {}
+    username = overrides.get("username") or settings.MAIL_USERNAME
+    password = overrides.get("password") or settings.MAIL_PASSWORD
+    from_email = overrides.get("from_email") or settings.MAIL_FROM
+    from_name = overrides.get("from_name") or settings.MAIL_FROM_NAME
+
     print("=" * 60)
     print(f"📧 Email a: {to_email}")
-    print(f"   Asunto: {subject}")
+    print(f"   De: {from_name} <{from_email}>")
+    if reply_to:
+        print(f"   Reply-To: {reply_to}")
+    print(f"   Servidor: {settings.MAIL_SERVER}:{settings.MAIL_PORT}")
     print("=" * 60)
 
     try:
         from aiosmtplib import SMTP
 
         message = _build_mail_message(to_email, subject, html_body)
+        # Remitente real (puede ser la cuenta del usuario autenticado)
+        real_from = f"{from_name} <{from_email}>"
+        if "From" in message:
+            message.replace_header("From", real_from)
+        else:
+            message["From"] = real_from
+
+        # Enrutar respuestas al rol que accionó (RFC 5322 Reply-To)
+        if reply_to:
+            if "Reply-To" in message:
+                message.replace_header("Reply-To", reply_to)
+            else:
+                message["Reply-To"] = reply_to
 
         kwargs: dict = {
             "hostname": settings.MAIL_SERVER,
@@ -56,17 +89,22 @@ async def _send_email(to_email: str, subject: str, html_body: str) -> None:
             "use_tls": settings.MAIL_PORT == 465,
             "start_tls": settings.MAIL_PORT == 587,
         }
-        if settings.MAIL_USERNAME and settings.MAIL_PASSWORD:
-            kwargs["username"] = settings.MAIL_USERNAME
-            kwargs["password"] = settings.MAIL_PASSWORD
+        if username and password:
+            kwargs["username"] = username
+            kwargs["password"] = password
 
         async with SMTP(**kwargs) as smtp:
             await smtp.send_message(message)
 
         logger.info(f"Email enviado a {to_email} (asunto: {subject})")
+        return True
 
     except Exception as exc:
-        logger.error(f"Error al enviar email a {to_email}: {exc}")
+        logger.error(
+            f"Error al enviar email a {to_email} via {settings.MAIL_SERVER}:{settings.MAIL_PORT}: {exc}",
+            exc_info=True,
+        )
+        return False
 
 
 # ══════════════════════════════════════════
@@ -508,3 +546,89 @@ async def send_order_confirmation_email(
         subject="CALZADO J&R — Tu pedido ha sido registrado",
         html_body=html,
     )
+
+
+# ══════════════════════════════════════════
+# Email de incidencia compartida al cliente
+# ══════════════════════════════════════════
+
+INCIDENCE_SHARED_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#dc2626;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#fecaca;margin:4px 0 0;font-size:13px">Incidencia reportada en tu pedido</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{client_name}</strong>,</p>
+      <p style="font-size:15px;color:#333">{intro_line}</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0">
+        <table style="width:100%;font-size:14px">
+          {rows_html}
+        </table>
+      </div>
+      {message_block}
+      <p style="font-size:14px;color:#64748b">Nuestro equipo ya está gestionando esta incidencia. Puedes ver el detalle en tu dashboard.</p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="{login_url}" style="background:#dc2626;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">Ver mis incidencias</a>
+      </div>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+async def send_incidence_shared_email(
+    client_email: str,
+    client_name: str,
+    rows: list[tuple[str, str]],
+    jefe_message: str | None,
+    smtp_overrides: dict | None = None,
+    reply_to: str | None = None,
+) -> None:
+    """Envía al cliente el correo con el detalle de una incidencia compartida por el jefe."""
+    login_url = f"{settings.FRONTEND_URL}/dashboard/client/incidences"
+    intro = (
+        "Te informamos que se registró una incidencia relacionada con tu pedido:"
+        if not jefe_message
+        else "El equipo de producción compartió contigo la siguiente incidencia:"
+    )
+    message_block = (
+        ""
+        if not jefe_message
+        else (
+            '<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:8px;'
+            'padding:16px;margin:20px 0"><p style="margin:0;font-size:14px;color:#7f1d1d">'
+            f'<strong>Mensaje del equipo:</strong><br>{jefe_message}</p></div>'
+        )
+    )
+    rows_html = "".join(
+        f'<tr><td style="color:#64748b;padding:4px 0">{label}:</td>'
+        f'<td style="font-weight:bold;color:#1e293b">{value}</td></tr>'
+        for label, value in rows
+        if value
+    )
+    html = INCIDENCE_SHARED_HTML.format(
+        client_name=client_name,
+        intro_line=intro,
+        rows_html=rows_html,
+        message_block=message_block,
+        login_url=login_url,
+    )
+    sent = await _send_email(
+        to_email=client_email,
+        subject="CALZADO J&R — Incidencia reportada en tu pedido",
+        html_body=html,
+        smtp_overrides=smtp_overrides,
+        reply_to=reply_to,
+    )
+    if not sent:
+        raise RuntimeError(
+            f"Fallo SMTP hacia {settings.MAIL_SERVER}:{settings.MAIL_PORT} "
+            f"(revisa MAIL_SERVER en .env o la clave de aplicación del usuario)"
+        )

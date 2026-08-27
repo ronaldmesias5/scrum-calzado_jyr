@@ -38,7 +38,7 @@
 - Dependencia: `_require_jefe` para restringir acceso solo al jefe
 - Modelos implicados: `Incidence`, `IncidenceStatus`, `Task`, `User`
 
-**Frontend — `fe/src/modules/dashboard-jefe/pages/AlertsPage.tsx`:**
+**Frontend — `fe/src/pages/admin/AlertsPage.tsx`:**
 - 125 líneas, página completa "Centro de Alertas"
 - Renderiza tarjetas con 4 variantes de color según `type`: `warning` (naranja), `info` (azul), `success` (verde), `error` (rojo)
 - Íconos: `AlertTriangle`, `Info`, `CheckCircle2` según el tipo
@@ -94,7 +94,7 @@
 - Filtro temporal con parámetro `days` o `start_date`/`end_date` opcionales
 - KPIs combinan datos de `Order`, `Task`, `Inventory` y `Incidence`
 
-**Frontend — `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx`:**
+**Frontend — `fe/src/pages/admin/ReportsPage.tsx`:**
 - 1485 líneas, página con 2 tabs: "Dashboard General" y "Generador de Reportes"
 - Dashboard General: KPIs, ventas por categoría (barras de progreso), top productos (con imagen), top empleados por cargo, top clientes
 - Generador de Reportes: selector por tipo (empleado, cliente, producción, ventas)
@@ -127,13 +127,13 @@
 - `be/app/models/report_share.py` — Modelo `ReportShare` para reportes compartidos
 
 **Archivos creados/modificados en el frontend:**
-- `fe/src/modules/dashboard-jefe/pages/AlertsPage.tsx` — Página de alertas (125 líneas)
-- `fe/src/modules/dashboard-jefe/pages/ReportsPage.tsx` — Página de reportes (1485 líneas)
-- `fe/src/modules/dashboard-jefe/services/dashboardService.ts` — Llamada `getAlerts()`
-- `fe/src/modules/dashboard-jefe/services/reportsApi.ts` — Llamadas a todos los endpoints de reportes
-- `fe/src/modules/dashboard-jefe/utils/reportsUtils.ts` — Funciones de exportación PDF
-- `fe/src/modules/dashboard-jefe/types/dashboard.ts` — Tipo `Alert`
-- `fe/src/modules/dashboard-jefe/components/TaskCard.tsx` — Componente de tarjeta de tarea para reportes
+- `fe/src/pages/admin/AlertsPage.tsx` — Página de alertas (125 líneas)
+- `fe/src/pages/admin/ReportsPage.tsx` — Página de reportes (1485 líneas)
+- `fe/src/services/dashboardService.ts` — Llamada `getAlerts()`
+- `fe/src/services/reportsApi.ts` — Llamadas a todos los endpoints de reportes
+- `fe/src/features/admin/utils/reportsUtils.ts` — Funciones de exportación PDF
+- `fe/src/types/dashboard.ts` — Tipo `Alert`
+- `fe/src/features/admin/components/molecules/TaskCard.tsx` — Componente de tarjeta de tarea para reportes
 
 ## Logros
 

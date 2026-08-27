@@ -6,7 +6,6 @@ Create Date: 2026-04-14 01:50:00.000000
 
 """
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '010_add_color'

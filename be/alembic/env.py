@@ -28,8 +28,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.core.config import settings
-from app.core.database import Base
+from app.config import settings
+from app.database import Base
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 📦 Importar TODOS los modelos para que Alembic los detecte automáticamente
@@ -80,8 +80,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Sobreescribir la URL de la BD con la configuración de Pydantic Settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Usar la URL de la BD: la que pase el caller (ej. tests) o, si no,
+# la de Pydantic Settings. NO sobreescribir si ya viene seteada.
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 target_metadata = Base.metadata
 
@@ -112,6 +114,9 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            # Cada migración en su propia transacción: evita "unsafe use of new
+            # value" de enums cuando una migración agrega un valor y otra lo usa.
+            transaction_per_migration=True,
         )
 
         with context.begin_transaction():
