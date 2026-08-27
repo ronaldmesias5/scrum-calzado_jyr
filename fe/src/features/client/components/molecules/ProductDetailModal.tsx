@@ -324,7 +324,7 @@ export function ProductDetailModal({
               No hay tallas disponibles para este producto.
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {sizes.map(({ size }) => {
                 const quantity = quantities[size] ?? 0;
                 return (
@@ -338,7 +338,7 @@ export function ProductDetailModal({
                   >
                     <div className="flex items-baseline justify-between gap-1">
                       <span
-                        className={`text-lg font-black tabular-nums transition-colors sm:text-xl ${
+                        className={`shrink-0 whitespace-nowrap text-base font-black leading-none tabular-nums transition-colors sm:text-lg ${
                           quantity > 0
                             ? "text-blue-700 dark:text-blue-300"
                             : "text-gray-900 dark:text-white"
@@ -367,7 +367,7 @@ export function ProductDetailModal({
                         min="0"
                         value={quantity}
                         onChange={(event) => updateQuantity(size, Number(event.target.value))}
-                        className="w-full min-w-0 bg-transparent text-center text-sm font-extrabold tabular-nums text-gray-900 outline-none dark:text-white"
+                        className="min-w-[2rem] w-full bg-transparent px-0.5 text-center text-sm font-extrabold tabular-nums text-gray-900 outline-none [appearance:textfield] dark:text-white [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         aria-label={`Cantidad talla ${size}`}
                       />
                       <button

@@ -1023,7 +1023,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 bg-gray-50/50 dark:bg-slate-800/80 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-inner">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 bg-gray-50/50 dark:bg-slate-800/80 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-inner">
                         {availableSizes.map((size) => (
                           <div key={size} className="flex flex-col gap-1.5">
                             <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase text-center">Talla {size}</label>
@@ -1033,7 +1033,7 @@ export default function OrderFormModal({ isOpen, onClose, onSuccess, editOrder, 
                               placeholder="0" 
                               value={sizeAmounts[size] || ''} 
                               onChange={(e) => handleSizeAmountChange(size, e.target.value)} 
-                              className={`w-full px-3 py-2.5 rounded-xl text-xs font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm ${
+                              className={`w-full min-w-[2rem] px-2 py-2.5 rounded-xl text-xs font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm ${
                                 (parseInt(sizeAmounts[size] || '0') > 0)
                                   ? 'bg-white dark:bg-slate-700 border-2 border-orange-500 text-orange-600 dark:text-orange-400 scale-105 z-10' 
                                   : 'bg-white dark:bg-slate-800 border border-transparent text-gray-900 dark:text-white'
