@@ -176,7 +176,7 @@ export default function SummarySizer({ categoryName, initialItems, onChange }: S
       </div>
 
       {/* Grid de Inputs de Tallas */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-3 rounded-xl">
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-6 gap-2 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-3 rounded-xl">
         {availableSizes.map((size) => {
           const val = parseInt(sizeAmounts[size] || '0');
           const hasValue = val > 0;
@@ -189,7 +189,7 @@ export default function SummarySizer({ categoryName, initialItems, onChange }: S
                 placeholder="0" 
                 value={val || ''} 
                 onChange={(e) => handleSizeAmountChange(size, e.target.value)} 
-                className={`w-full px-1 py-1.5 rounded-lg text-xs font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm ${
+                className={`w-full min-w-[2rem] px-1 py-1.5 rounded-lg text-xs font-black text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm ${
                   hasValue
                     ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 border' 
                     : 'bg-gray-50 dark:bg-slate-800 border-transparent text-gray-900 dark:text-white border'
