@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock del API de auth
-vi.mock('@/modules/auth/services/api', () => ({
+vi.mock('@/services/authService', () => ({
   loginUser: vi.fn(),
   registerUser: vi.fn(),
   logoutUser: vi.fn(),

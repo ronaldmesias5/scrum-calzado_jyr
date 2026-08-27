@@ -5,30 +5,19 @@ Descripción: Punto de entrada de la aplicación FastAPI — configura y arranca
 ¿Impacto? Este es el archivo que Uvicorn ejecuta. Sin él, no hay servidor.
 """
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
-
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from app.core.config import settings
-from app.core.database import engine, Base, SessionLocal
-from app.modules.auth.router import router as auth_router
-from app.modules.users.router import router as users_router
-from app.modules.admin.router import router as admin_router
-from app.modules.admin.catalog_router import router as admin_catalog_router
-from app.modules.type_document.router import router as type_document_router
-from app.modules.dashboard_jefe.router import router as dashboard_jefe_router
-from app.modules.orders.router import router as orders_router
-from app.modules.catalog.router import router as catalog_router
-from app.modules.admin.reports_router import router as reports_router
-from app.modules.supplies.router import router as supplies_router
-from app.modules.dashboard_empleado.router import router as dashboard_empleado_router
-from app.modules.client.router import router as client_router
-from app.modules.notifications.router import router as notifications_router
-from app.modules.scrap.router import router as scrap_router
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.config import settings
+from app.database import SessionLocal
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -36,7 +25,38 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
 # Importar modelos para que SQLAlchemy los registre en Base.metadata
-from app.models import role, user, password_reset_token, type_document, order, category, brand, style, product, supplies, product_supplies, scrap  # noqa: F401
+from app.models import (  # noqa: F401
+    brand,
+    category,
+    order,
+    password_reset_token,
+    product,
+    product_supplies,
+    role,
+    scrap,
+    style,
+    supplies,
+    type_document,
+    user,
+)
+from app.routers.auth import router as auth_router
+from app.routers.catalog_brands import router as catalog_brands_router
+from app.routers.catalog_inventory import router as catalog_inventory_router
+from app.routers.catalog_products import router as catalog_products_router
+from app.routers.catalog import router as catalog_router
+from app.routers.catalog_styles import router as catalog_styles_router
+from app.routers.client import router as client_router
+from app.routers.dashboard_empleado import router as dashboard_empleado_router
+from app.routers.dashboard_jefe import router as dashboard_jefe_router
+from app.routers.notifications import router as notifications_router
+from app.routers.orders import router as orders_router
+from app.routers.orders_tasks import router as orders_tasks_router
+from app.routers.reports import router as reports_router
+from app.routers.scrap import router as scrap_router
+from app.routers.supplies import router as supplies_router
+from app.routers.type_document import router as type_document_router
+from app.routers.admin import router as admin_router
+from app.routers.users import router as users_router
 
 
 @asynccontextmanager
@@ -72,7 +92,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         from app.init.seed_data import seed_all
         seed_all(db)
     except Exception as e:
-        print(f"⚠️  Error en verificación de datos iniciales: {str(e)}")
+        print(f"⚠️  Error en verificación de datos iniciales: {e!s}")
     finally:
         db.close()
     
@@ -113,16 +133,35 @@ app.add_middleware(ErrorHandlerMiddleware)
 
 # CORSMiddleware debe ser el último (el más externo) para manejar OPTIONS correctamente
 app.add_middleware(CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+    allow_origins=[
+        settings.FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:8081",  # Expo Metro web (app móvil)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+# ────────────────────────────
+# 🧯 Errores de validación (sin exponer detalles internos en producción)
+# ────────────────────────────
+# FastAPI maneja RequestValidationError ANTES de que llegue al middleware,
+# así que registramos un handler explícito para controlar la respuesta.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    content = {"detail": "Los datos enviados son incorrectos"}
+    if settings.ENVIRONMENT != "production":
+        content["errors"] = jsonable_encoder(exc.errors())
+    return JSONResponse(status_code=422, content=content)
+
 # ────────────────────────────
 # � Archivos estáticos (imágenes de productos)
 # ────────────────────────────
-_uploads_path = Path("/app/uploads")
+_uploads_path = Path(settings.UPLOAD_DIR) if settings.UPLOAD_DIR else Path(__file__).resolve().parent.parent / "uploads"
 _uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_uploads_path)), name="uploads")
 
@@ -133,10 +172,14 @@ app.mount("/uploads", StaticFiles(directory=str(_uploads_path)), name="uploads")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
-app.include_router(admin_catalog_router)
+app.include_router(catalog_brands_router)
+app.include_router(catalog_styles_router)
+app.include_router(catalog_products_router)
+app.include_router(catalog_inventory_router)
 app.include_router(type_document_router)
 app.include_router(dashboard_jefe_router)
 app.include_router(orders_router)
+app.include_router(orders_tasks_router)
 app.include_router(reports_router)
 app.include_router(catalog_router)
 app.include_router(supplies_router)
@@ -174,8 +217,9 @@ async def health_check() -> dict[str, str]:
 # ────────────────────────────
 # 📍 Endpoint para servir imágenes (con CORS explícito)
 # ────────────────────────────
+
 from fastapi.responses import FileResponse
-import os
+
 
 @app.get(
     "/api/v1/uploads/{file_path:path}",
@@ -185,10 +229,10 @@ import os
 )
 async def serve_image(file_path: str):
     """Sirve una imagen desde el directorio de uploads con CORS explícito."""
-    file_location = Path(f"/app/uploads/{file_path}")
+    file_location = _uploads_path / file_path
     
     # Seguridad: prevenir path traversal
-    if not file_location.resolve().is_relative_to(Path("/app/uploads").resolve()):
+    if not file_location.resolve().is_relative_to(_uploads_path.resolve()):
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     if not file_location.exists():

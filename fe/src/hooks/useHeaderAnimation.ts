@@ -1,16 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Hook personalizado para manejar animaciones de entrada suave del header
  * Proporciona clases de animación escalonada para elementos dentro del header
  */
 export function useHeaderAnimation() {
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    // Trigger animation when component mounts
-    setIsAnimating(true);
-  }, []);
+  const [isAnimating] = useState(true);
 
   return {
     isAnimating,

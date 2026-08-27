@@ -45,19 +45,25 @@ scrum/
 │
 ├── fe/                          # ⚛️ Frontend - React 19 + TypeScript (Vite + pnpm)
 │   ├── src/
-│   │   ├── components/          # Componentes UI reutilizables
-│   │   │   └── ui/              # Modal, PageTransition, Breadcrumbs, etc.
-│   │   ├── modules/             # 📦 Módulos funcionales
-│   │   │   ├── auth/            # Login, Register, Password (5 páginas)
-│   │   │   ├── dashboard-jefe/  # Panel admin completo (14 páginas)
-│   │   │   ├── dashboard-empleado/  # Panel empleado (6 páginas + context + vales)
-│   │   │   ├── dashboard-cliente/   # Panel cliente (2 páginas)
-│   │   │   └── landing/         # Landing page + catálogo público (2 páginas)
-│   │   ├── hooks/               # useAuth, useHeaderAnimation, useModalDialog
-│   │   ├── context/             # AuthContext, ThemeProvider, RoleGuard, WebSocketProvider
-│   │   ├── modules/dashboard-jefe/context/      # BadgeCountsContext (pedidos, usuarios, incidencias)
-│   │   ├── modules/dashboard-empleado/context/  # EmployeeBadgeCountsContext (tareas, incidencias)
-│   │   └── types/               # Tipado estricto (espejo del backend)
+│   │   ├── app/                  # Entry points (App.tsx, main.tsx, i18n.ts, ProtectedRoute, RoleProtectedRoute)
+│   │   ├── assets/               # Recursos estáticos
+│   │   ├── components/           # Componentes UI reutilizables
+│   │   │   ├── atoms/            # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
+│   │   │   └── layout/           # Layouts globales (AppLayout, AuthLayout…)
+│   │   ├── features/             # Features de negocio (Atomic Design por feature)
+│   │   │   ├── admin/            # Panel admin (14 páginas) — components/{atoms,molecules,organisms}, utils/reportsUtils.ts
+│   │   │   ├── auth/             # Login, Register, Password Reset — components/{molecules,organisms}
+│   │   │   ├── client/           # Panel cliente — components/{molecules,organisms}
+│   │   │   ├── employee/         # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
+│   │   │   └── landing/          # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
+│   │   ├── pages/                # Páginas enrutables: admin(14), auth(7), client(3), employee(6), public(2)
+│   │   ├── hooks/                # Hooks reutilizables
+│   │   ├── services/             # Servicios de API globales
+│   │   ├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
+│   │   ├── types/                # Tipos TypeScript compartidos
+│   │   ├── utils/                # Utilidades
+│   │   ├── styles/               # Estilos globales (TailwindCSS)
+│   │   └── locales/              # Traducciones (en, es)
 │   ├── package.json             # pnpm (nunca npm/yarn)
 │   └── vite.config.ts           # Proxy API, polling, aliases
 │

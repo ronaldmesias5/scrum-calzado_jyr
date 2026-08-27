@@ -41,8 +41,8 @@ El administrador/jefe puede revisar usuarios pendientes de validación (registra
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/modules/dashboard-jefe/pages/UsersManagementPage.tsx` | Panel de gestión de usuarios con pestaña "Pendientes" que lista usuarios no validados. Botones "Aprobar" y "Rechazar" con confirmación. Modal de motivo de rechazo. |
-| `fe/src/modules/dashboard-jefe/services/adminApi.ts` | `getPendingUsers()`, `validateUser(id)`, `rejectUser(id, reason)` |
+| `fe/src/pages/admin/UsersManagementPage.tsx` | Panel de gestión de usuarios con pestaña "Pendientes" que lista usuarios no validados. Botones "Aprobar" y "Rechazar" con confirmación. Modal de motivo de rechazo. |
+| `fe/src/services/adminApi.ts` | `getPendingUsers()`, `validateUser(id)`, `rejectUser(id, reason)` |
 
 ### Flujo de Aprobación
 1. Admin/jefe navega a `UsersManagementPage` → pestaña "Pendientes"
@@ -93,9 +93,9 @@ Los usuarios pueden solicitar un restablecimiento de contraseña si la olvidan. 
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/modules/auth/pages/ForgotPasswordPage.tsx` | Formulario que solicita email. Muestra mensaje de confirmación genérico tras envío. |
-| `fe/src/modules/auth/pages/ResetPasswordPage.tsx` | Formulario con nueva contraseña + confirmación. Lee token de la URL (`/auth/reset-password?token=...`). |
-| `fe/src/services/authApi.ts` | `forgotPassword(email)`, `resetPassword(token, newPassword)` |
+| `fe/src/pages/auth/ForgotPasswordPage.tsx` | Formulario que solicita email. Muestra mensaje de confirmación genérico tras envío. |
+| `fe/src/pages/auth/ResetPasswordPage.tsx` | Formulario con nueva contraseña + confirmación. Lee token de la URL (`/auth/reset-password?token=...`). |
+| `fe/src/services/authService.ts` | `forgotPassword(email)`, `resetPassword(token, newPassword)` |
 
 ### Flujo
 1. Usuario hace clic en "¿Olvidaste tu contraseña?" en la página de login

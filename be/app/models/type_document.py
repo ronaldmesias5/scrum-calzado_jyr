@@ -26,7 +26,7 @@ from sqlalchemy import String, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.database import Base
 
 
 class TypeDocument(Base):

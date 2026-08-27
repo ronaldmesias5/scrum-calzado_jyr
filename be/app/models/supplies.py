@@ -7,14 +7,13 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, DateTime, Integer, Numeric, Column, func
+from sqlalchemy import String, Text, DateTime, Numeric, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.database import Base
 
 if TYPE_CHECKING:
-    from app.models.supplies_movement import SuppliesMovement
     from app.models.product_supplies import ProductSupply
 
 

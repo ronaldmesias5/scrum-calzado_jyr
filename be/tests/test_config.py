@@ -4,9 +4,8 @@ Descripción: Tests para validación de configuración (Pydantic Settings).
 """
 
 import pytest
-from pydantic import ValidationError
 
-from app.core.config import Settings
+from app.config import Settings
 
 
 class TestSettingsValidation:
@@ -69,6 +68,7 @@ class TestSettingsValidation:
             MAIL_USERNAME="test@test.com",
             MAIL_PASSWORD="pass",
             MAIL_SERVER="smtp.test.com",
+            ENVIRONMENT="development",
         )
         assert settings.ALGORITHM == "HS256"
         assert settings.ACCESS_TOKEN_EXPIRE_MINUTES == 15

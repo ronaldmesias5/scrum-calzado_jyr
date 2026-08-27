@@ -65,10 +65,10 @@ El inventario se gestiona dentro del producto: cada producto tiene múltiples re
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/modules/dashboard-jefe/pages/CatalogPage.tsx` | Página principal de gestión de catálogo. Tabla de productos con búsqueda y filtros. Modal de creación/edición. |
-| `fe/src/modules/dashboard-jefe/components/ProductFormModal.tsx` | Modal con formulario completo: datos generales, tallas, colores, cantidades, imágenes. |
-| `fe/src/modules/dashboard-jefe/services/adminApi.ts` | `getProducts()`, `createProduct()`, `updateProduct()`, `deleteProduct()`, `toggleProductState()`, `uploadProductImage()` |
-| `fe/src/modules/landing/pages/CatalogPage.tsx` | Catálogo público visible para clientes no autenticados |
+| `fe/src/pages/admin/CatalogPage.tsx` | Página principal de gestión de catálogo. Tabla de productos con búsqueda y filtros. Modal de creación/edición. |
+| `fe/src/features/admin/components/molecules/ProductFormModal.tsx` | Modal con formulario completo: datos generales, tallas, colores, cantidades, imágenes. |
+| `fe/src/services/adminApi.ts` | `getProducts()`, `createProduct()`, `updateProduct()`, `deleteProduct()`, `toggleProductState()`, `uploadProductImage()` |
+| `fe/src/pages/public/CatalogPage.tsx` | Catálogo público visible para clientes no autenticados |
 
 ### Datos Semilla
 El catálogo se siembra automáticamente al iniciar el backend con **65 productos** de calzado (zapatillas, botas, sandalias, etc.) con marcas, categorías y estilos predefinidos.
@@ -111,7 +111,7 @@ HU-007 es parcialmente dependiente de HU-006 porque las categorías son un atrib
 
 ### Recomendación para completar HU-007
 1. **Backend**: Agregar endpoints CRUD en `be/app/modules/admin/catalog_router.py` (o mejor, en un nuevo archivo separado siguiendo el patrón 4-capas)
-2. **Frontend**: Crear página `CategoryManagementPage.tsx` en `fe/src/modules/dashboard-jefe/pages/` con tabla CRUD
+2. **Frontend**: Crear página `CategoryManagementPage.tsx` en `fe/src/pages/admin/` con tabla CRUD
 3. **Seeder**: Ya existen categorías iniciales, pero agregar opción de crear más desde admin
 4. **Navegación**: Agregar enlace en el sidebar del dashboard de administración
 

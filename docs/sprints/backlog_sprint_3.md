@@ -47,8 +47,8 @@ Los usuarios cuya cuenta ha sido desactivada pueden solicitar su reactivación. 
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/modules/auth/pages/ReactivationPage.tsx` | Formulario público donde el usuario ingresa email y motivo de reactivación. Muestra mensaje de éxito tras enviar. |
-| `fe/src/modules/dashboard-jefe/pages/UsersManagementPage.tsx` | Pestaña "Reactivaciones" que lista tickets pendientes con botones Aprobar/Rechazar. Modal de motivo de rechazo. |
+| `fe/src/pages/auth/ReactivationPage.tsx` | Formulario público donde el usuario ingresa email y motivo de reactivación. Muestra mensaje de éxito tras enviar. |
+| `fe/src/pages/admin/UsersManagementPage.tsx` | Pestaña "Reactivaciones" que lista tickets pendientes con botones Aprobar/Rechazar. Modal de motivo de rechazo. |
 
 ### Flujo
 1. Usuario con cuenta desactivada ingresa a `/auth/reactivation`
@@ -122,10 +122,10 @@ def get_unread_count(db, user_id):
 
 | Archivo | Rol |
 |---------|-----|
-| `fe/src/components/notifications/NotificationBell.tsx` | Icono de campana en navbar con badge del contador de no leídas. Dropdown con lista de notificaciones. |
-| `fe/src/components/notifications/NotificationList.tsx` | Lista renderizada de notificaciones con icono por tipo (info/warning/success/error). Botones "Mark read" individual y "Mark all read". |
-| `fe/src/services/notificationsApi.ts` | Funciones para todos los endpoints REST. |
-| `fe/src/hooks/useNotifications.ts` | Hook que gestiona: polling del contador, conexión WebSocket, estado de notificaciones. |
+| `fe/src/features/admin/components/organisms/NotificationsPanel.tsx` | Icono de campana en navbar con badge del contador de no leídas. Dropdown con lista de notificaciones. |
+| `fe/src/features/admin/components/organisms/NotificationsPanel.tsx` | Lista renderizada de notificaciones con icono por tipo (info/warning/success/error). Botones "Mark read" individual y "Mark all read". |
+| `fe/src/services/notificationApi.ts` | Funciones para todos los endpoints REST. |
+| `fe/src/hooks/useNotificationWebSocket.ts` | Hook que gestiona: polling del contador, conexión WebSocket, estado de notificaciones. |
 
 ### Integración con otros módulos
 - **Auth**: notificación al activar/rechazar cuenta, al reactivar cuenta

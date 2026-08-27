@@ -85,7 +85,7 @@ Máquina de estados para reparar calzado defectuoso y reincorporarlo al inventar
 | `be/app/modules/scrap/schemas.py` | Schemas: DefectCode, Incident, RepairRequest, ScrapStock |
 | `be/app/models/scrap.py` | Modelos: `Scrap`, `DefectCode` |
 | `be/alembic/versions/XXX_scrap_tables.py` | Migración para tablas de scrap |
-| `fe/src/modules/dashboard-jefe/pages/LossesPage.tsx` | Frontend con tabla, filtros y acciones |
+| `fe/src/pages/admin/LossesPage.tsx` | Frontend con tabla, filtros y acciones |
 
 ### Tipos de incidente
 

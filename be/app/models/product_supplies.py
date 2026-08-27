@@ -10,11 +10,11 @@ Descripción: Modelo ORM para la tabla product_supplies (vinculación de product
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Integer, Numeric, DateTime, ForeignKey, UniqueConstraint, func
+from sqlalchemy import Numeric, DateTime, ForeignKey, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.database import Base
 
 
 class ProductSupply(Base):

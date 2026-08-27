@@ -60,7 +60,7 @@
     - `brand_name` (de `Brand.name_brand`)
     - `image_url`, `size`, `colour`, `amount`, `state`
 
-**Frontend — `fe/src/modules/dashboard-cliente/pages/OrdersPage.tsx`:**
+**Frontend — `fe/src/pages/client/OrdersPage.tsx`:**
 - 232 líneas, página completa "Mis Pedidos"
 - Tabla responsive con columnas: N° Pedido, Fecha, Total Pares, Estado, Acción
 - Búsqueda por ID de pedido con campo de texto e ícono de lupa
@@ -120,7 +120,7 @@
   - Cada incidencia incluye: id, task_id, type_incidence, description, state, report_date, created_at
   - Try/except para manejar errores silenciosamente
 
-**Frontend — `fe/src/modules/dashboard-empleado/pages/IncidencesPage.tsx`:**
+**Frontend — `fe/src/pages/employee/IncidencesPage.tsx`:**
 - 188 líneas, página "Incidencias"
 - Filtros: selector de estado (Todos/Pendiente/En Progreso/Resuelto/Cancelado), búsqueda por texto
 - Tarjetas de incidencia con:
@@ -165,12 +165,12 @@
 - `be/app/modules/dashboard_empleado/router.py` — Endpoint `GET /incidences` (líneas 208-258)
 
 **Archivos creados/modificados en el frontend:**
-- `fe/src/modules/dashboard-cliente/pages/OrdersPage.tsx` — Nueva página (232 líneas)
-- `fe/src/modules/dashboard-cliente/services/clientApi.ts` — Llamadas `getMyOrders()`, `getMyOrderDetail()`
-- `fe/src/modules/dashboard-cliente/types/client.ts` — Tipos `ClientOrder`, `ClientOrderDetailItem`
-- `fe/src/modules/dashboard-empleado/pages/IncidencesPage.tsx` — Nueva página (188 líneas)
-- `fe/src/modules/dashboard-empleado/services/employeeApi.ts` — Llamada `getEmployeeIncidences()`
-- `fe/src/modules/dashboard-empleado/types/employee.ts` — Tipo `EmployeeIncidence`
+- `fe/src/pages/client/OrdersPage.tsx` — Nueva página (232 líneas)
+- `fe/src/services/clientApi.ts` — Llamadas `getMyOrders()`, `getMyOrderDetail()`
+- `fe/src/types/index.ts` — Tipos `ClientOrder`, `ClientOrderDetailItem`
+- `fe/src/pages/employee/IncidencesPage.tsx` — Nueva página (188 líneas)
+- `fe/src/services/employeeApi.ts` — Llamada `getEmployeeIncidences()`
+- `fe/src/types/employee.ts` — Tipo `EmployeeIncidence`
 
 ## Logros
 
