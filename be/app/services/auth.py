@@ -153,18 +153,10 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
                 detail="Tu contraseña temporal ha expirado. Solicita una nueva invitación.",
             )
 
-        if login_data.remember_me:
-            access_token = create_access_token(
-                data={"sub": user.email, "version": user.session_version},
-                expires_delta=timedelta(days=30),
-            )
-            refresh_token = create_refresh_token(
-                data={"sub": user.email, "version": user.session_version},
-                expires_delta=timedelta(days=90),
-            )
-        else:
-            access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
-            refresh_token = create_refresh_token(data={"sub": user.email, "version": user.session_version})
+        access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
+        refresh_token = create_refresh_token(
+            data={"sub": user.email, "version": user.session_version},
+        )
 
         audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
 

@@ -22,7 +22,7 @@
  *                App.tsx (wrap con <AuthProvider>), hooks/useAuth.ts
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import * as authApi from "@/services/authService";
 import { AuthContext } from "@/store/authContextDef";
@@ -35,9 +35,6 @@ import type {
   ResetPasswordRequest,
   UserResponse,
 } from "@/types/auth";
-
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
-const INACTIVITY_CHECK_INTERVAL = 30_000; // cada 30s
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -52,8 +49,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const isAuthenticated = !!user && !!accessToken;
-
-  const lastActivityRef = useRef(Date.now());
 
   const STORAGE_KEY_ACCESS = "access_token";
   const STORAGE_KEY_REFRESH = "refresh_token";
@@ -104,32 +99,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     verifySession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // ─── Inactivity timer ────────────────────────────────────────
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const updateActivity = () => {
-      lastActivityRef.current = Date.now();
-    };
-
-    const checkInactivity = () => {
-      const elapsed = Date.now() - lastActivityRef.current;
-      if (elapsed >= INACTIVITY_LIMIT) {
-        clearAuth();
-      }
-    };
-
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
-    events.forEach((ev) => window.addEventListener(ev, updateActivity));
-
-    const interval = setInterval(checkInactivity, INACTIVITY_CHECK_INTERVAL);
-
-    return () => {
-      events.forEach((ev) => window.removeEventListener(ev, updateActivity));
-      clearInterval(interval);
-    };
-  }, [isAuthenticated, clearAuth]);
 
   // ─── Sincronizar con eventos del interceptor axios ──────────
   useEffect(() => {
