@@ -19,6 +19,8 @@ from app.schemas.client import (
     ClientIncidenceCreateRequest,
     ClientIncidenceResponse,
     ClientIncidenceListResponse,
+    ClientSharedIncidenceResponse,
+    ClientSharedIncidenceListResponse,
 )
 from app.schemas.orders import OrderCreateRequest
 
@@ -269,3 +271,53 @@ def list_my_incidences(
         incidences=[_incidence_to_client_response(p) for p in items],
         total=len(items),
     )
+
+
+@router.get("/incidences/shared", response_model=ClientSharedIncidenceListResponse)
+def list_shared_incidences(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientSharedIncidenceListResponse:
+    """Incidencias que el jefe compartió con este cliente (report_shares type='incidence')."""
+    from app.models.report_share import ReportShare
+
+    rows = (
+        db.execute(
+            select(ReportShare)
+            .where(
+                ReportShare.target_user_id == current_user.id,
+                ReportShare.report_type == "incidence",
+                ReportShare.deleted_at.is_(None),
+            )
+            .order_by(desc(ReportShare.created_at))
+        )
+        .scalars()
+        .all()
+    )
+
+    params: dict
+    items: list[ClientSharedIncidenceResponse] = []
+    for r in rows:
+        params = r.parameters or {}
+        shared_by_name = None
+        if r.shared_by is not None:
+            shared_by_name = f"{r.shared_by.name_user} {r.shared_by.last_name}".strip()
+        items.append(
+            ClientSharedIncidenceResponse(
+                id=str(r.id),
+                title=r.report_title,
+                message=r.message,
+                product_name=params.get("product_name"),
+                size=params.get("size"),
+                colour=params.get("colour"),
+                quantity=params.get("quantity"),
+                incident_type=params.get("incident_type"),
+                defect=params.get("defect"),
+                order_id=params.get("order_id"),
+                shared_by_name=shared_by_name,
+                is_read=r.is_read,
+                created_at=r.created_at.isoformat() if r.created_at else None,
+            )
+        )
+
+    return ClientSharedIncidenceListResponse(items=items, total=len(items))

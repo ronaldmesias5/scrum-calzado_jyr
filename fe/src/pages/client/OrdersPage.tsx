@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package2, Eye, Search } from 'lucide-react';
+import { ShoppingBag, Package2, ArrowRight, Search } from 'lucide-react';
 import { getMyOrders, getMyOrderDetail, type ClientOrder } from '@/services/clientApi';
+import { resolveImageUrl } from '@/services/wholesaleCatalogApi';
 import Modal from '@/components/atoms/Modal';
 import Pagination from '@/components/atoms/Pagination';
 
@@ -139,7 +140,7 @@ export default function OrdersPage() {
                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Fecha</th>
                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Pares</th>
                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado</th>
-                  <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acción</th>
+                  <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Detalle</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
@@ -161,13 +162,13 @@ export default function OrdersPage() {
                           {status.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => handleViewDetail(order.id)}
-                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all active:scale-95 shadow-sm"
                           title="Ver detalle"
                         >
-                          <Eye size={14} />
+                          <ArrowRight className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -228,9 +229,14 @@ export default function OrdersPage() {
                   <div key={group.product_id} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-3">
                       {group.image_url ? (
-                        <img src={group.image_url} alt={group.product_name || ''} className="w-12 h-12 rounded-lg object-cover" />
+                        <img
+                          src={resolveImageUrl(group.image_url)}
+                          alt={group.product_name || 'Imagen del producto'}
+                          className="h-12 w-12 shrink-0 rounded-lg object-contain"
+                          loading="lazy"
+                        />
                       ) : (
-                        <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-800">
                           <Package2 size={18} className="text-gray-400" />
                         </div>
                       )}

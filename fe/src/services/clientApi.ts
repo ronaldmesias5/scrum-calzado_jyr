@@ -121,3 +121,24 @@ export async function createMyIncidence(data: ClientIncidenceCreateRequest): Pro
   const res = await api.post('/api/v1/client/incidences', data);
   return res.data;
 }
+
+export interface ClientSharedIncidence {
+  id: string;
+  title: string;
+  message: string | null;
+  product_name: string | null;
+  size: string | null;
+  colour: string | null;
+  quantity: number | null;
+  incident_type: string | null;
+  defect: string | null;
+  order_id: string | null;
+  shared_by_name: string | null;
+  is_read: boolean;
+  created_at: string | null;
+}
+
+export async function getSharedIncidences(): Promise<{ items: ClientSharedIncidence[]; total: number }> {
+  const res = await api.get('/api/v1/client/incidences/shared');
+  return res.data;
+}

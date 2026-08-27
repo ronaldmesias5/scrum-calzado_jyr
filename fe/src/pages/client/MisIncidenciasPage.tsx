@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, MessageSquareWarning, Plus, Package2, Loader2 } from 'lucide-react';
+import { AlertTriangle, MessageSquareWarning, Plus, Package2, Loader2, Share2 } from 'lucide-react';
 import Modal from '@/components/atoms/Modal';
 import { useToast } from '@/store/ToastContext';
 import {
   getMyIncidences,
   createMyIncidence,
   getMyOrders,
+  getSharedIncidences,
   type ClientIncidence,
   type ClientOrder,
   type ClientOrderDetailItem,
+  type ClientSharedIncidence,
 } from '@/services/clientApi';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -43,6 +45,21 @@ export default function MisIncidenciasPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const [shared, setShared] = useState<ClientSharedIncidence[]>([]);
+  const [sharedLoading, setSharedLoading] = useState(true);
+
+  useEffect(() => {
+    getSharedIncidences()
+      .then((data) => setShared(data.items))
+      .catch(() => setShared([]))
+      .finally(() => setSharedLoading(false));
+    const refresh = () => {
+      getSharedIncidences().then((data) => setShared(data.items)).catch(() => {});
+    };
+    window.addEventListener('incidences-updated', refresh);
+    return () => window.removeEventListener('incidences-updated', refresh);
   }, []);
 
   useEffect(() => {
@@ -104,9 +121,10 @@ export default function MisIncidenciasPage() {
       showToast('Reclamo enviado. El jefe lo revisará y decidirá.', 'success');
       setReportOpen(false);
       await loadIncidences();
-    } catch (e: any) {
+    } catch (e) {
+      const err = e as { response?: { data?: { detail?: string } }; message?: string };
       showToast(
-        'Error al reportar la incidencia: ' + (e?.response?.data?.detail || e?.message || 'Desconocido'),
+        'Error al reportar la incidencia: ' + (err.response?.data?.detail || err.message || 'Desconocido'),
         'error',
       );
     } finally {
@@ -138,6 +156,60 @@ export default function MisIncidenciasPage() {
           <Plus size={16} /> Reportar incidencia
         </button>
       </div>
+
+      {/* ── Compartidas por J&R ── */}
+      {!sharedLoading && shared.length > 0 && (
+        <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-2.5 mb-3">
+            <Share2 size={16} className="text-blue-600 dark:text-blue-400" />
+            <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-gray-900 dark:text-white">
+              Compartidas por J&R
+            </h2>
+            <span className="rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+              {shared.length} {shared.length === 1 ? 'incidencia' : 'incidencias'}
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {shared.map((s) => {
+              const isNew = !s.is_read;
+              return (
+                <article
+                  key={s.id}
+                  className={`relative rounded-2xl border p-4 shadow-sm transition-all ${
+                    isNew
+                      ? 'border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/30'
+                      : 'border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800'
+                  }`}
+                >
+                  {isNew && (
+                    <span className="absolute top-3 right-3 rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white">
+                      Nuevo
+                    </span>
+                  )}
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                    {s.title}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-slate-300">
+                    {s.product_name && <span><strong>Producto:</strong> {s.product_name}</span>}
+                    {s.size && <span><strong>Talla:</strong> {s.size}</span>}
+                    {s.quantity != null && <span><strong>Cant.:</strong> {s.quantity}</span>}
+                    {s.defect && <span><strong>Defecto:</strong> {s.defect}</span>}
+                    {s.order_id && <span className="font-mono">#{s.order_id.slice(0, 8)}</span>}
+                  </div>
+                  {s.message && (
+                    <p className="mt-2.5 rounded-lg border-l-4 border-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs text-red-800 dark:text-red-300">
+                      <strong>Mensaje del equipo:</strong> {s.message}
+                    </p>
+                  )}
+                  <p className="mt-2 text-[10px] text-gray-400 dark:text-slate-500">
+                    Compartida por {s.shared_by_name || 'J&R'} · {formatDate(s.created_at)}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (

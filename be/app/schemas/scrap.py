@@ -2,7 +2,8 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
 
 
 class DefectCodeResponse(BaseModel):
@@ -119,3 +120,24 @@ class ScrapStockResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     model_config = {"from_attributes": True}
+
+
+# ────────────────────────────
+# Compartir incidencia al cliente (interno + correo)
+# ────────────────────────────
+
+
+class ShareIncidenceRequest(BaseModel):
+    """Comparte una incidencia registrada con el cliente de su pedido y/o un correo."""
+
+    target_client_id: uuid.UUID | None = Field(
+        None, description="Cliente que verá la incidencia en su dashboard. Si se omite se usa el cliente del pedido vinculado."
+    )
+    to_email: EmailStr | None = Field(None, description="Correo destino opcional.")
+    message: str | None = Field(None, max_length=1000, description="Mensaje del jefe para el cliente.")
+
+
+class ShareIncidenceResponse(BaseModel):
+    shared_internally: bool
+    email_sent: bool
+    detail: str

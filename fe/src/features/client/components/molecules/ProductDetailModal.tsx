@@ -131,6 +131,10 @@ export function ProductDetailModal({
       showToast("Selecciona al menos una talla para continuar", "warning");
       return;
     }
+    if (estimatedDate && estimatedDate < todayIso) {
+      showToast("La fecha estimada no puede ser anterior a hoy", "error");
+      return;
+    }
 
     sizes.forEach(({ size }) => {
       const amount = quantities[size] ?? 0;
@@ -151,7 +155,7 @@ export function ProductDetailModal({
     return `${day}/${month}/${year}`;
   };
 
-  const todayIso = new Date().toISOString().split("T")[0];
+  const todayIso = new Date().toLocaleDateString("en-CA");
 
   const presetClass = (presetId: string) =>
     `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-all duration-200 ${
@@ -228,7 +232,14 @@ export function ProductDetailModal({
                 type="date"
                 value={estimatedDate}
                 min={todayIso}
-                onChange={(event) => setEstimatedDate(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value && value < todayIso) {
+                    showToast("Solo puedes elegir hoy o fechas futuras", "warning");
+                    return;
+                  }
+                  setEstimatedDate(value);
+                }}
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:[color-scheme:dark]"
               />
               <span className="text-[10px] text-slate-400 dark:text-slate-500">Opcional</span>

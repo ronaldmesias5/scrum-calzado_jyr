@@ -101,6 +101,31 @@ export async function deleteAvatar(): Promise<{ avatar_url: null; message: strin
 }
 
 // ────────────────────────────────────────────────
+// 📧 Correo saliente propio (clave de aplicación)
+// ────────────────────────────────────────────────
+
+export interface EmailCredentialsStatus {
+  configured: boolean;
+  sender_email: string;
+  uses_own_account: boolean;
+}
+
+export async function getEmailCredentialsStatus(): Promise<EmailCredentialsStatus> {
+  const response = await api.get(`${USERS_PREFIX}/me/email-credentials/status`);
+  return response.data;
+}
+
+export async function saveEmailCredentials(senderEmail: string, appPassword: string): Promise<{ configured: boolean; sender_email?: string; message: string }> {
+  const response = await api.put(`${USERS_PREFIX}/me/email-credentials`, { sender_email: senderEmail, app_password: appPassword });
+  return response.data;
+}
+
+export async function deleteEmailCredentials(): Promise<{ configured: boolean; message: string }> {
+  const response = await api.delete(`${USERS_PREFIX}/me/email-credentials`);
+  return response.data;
+}
+
+// ────────────────────────────────────────────────
 // Reactivación de cuenta (RF-005) — público
 // ────────────────────────────────────────────────
 

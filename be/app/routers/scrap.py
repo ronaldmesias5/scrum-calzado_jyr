@@ -11,6 +11,7 @@ Endpoints:
   PATCH  /api/v1/scrap/losses/{loss_id}/approve     — aprobar (backwards compat)
   PATCH  /api/v1/scrap/losses/{loss_id}/reject      — rechazar (backwards compat)
   PATCH  /api/v1/scrap/losses/{loss_id}/solve       — solucionar incidencia (falla/faltante)
+  POST   /api/v1/scrap/losses/{loss_id}/share       — compartir incidencia al cliente y/o correo
   GET    /api/v1/scrap/stock                        — listar stock de scrap
 """
 
@@ -22,6 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user, _require_admin_or_jefe
+from app.config import settings
 from app.models.user import User
 from app.schemas.scrap import (
     DefectCodeResponse,
@@ -31,6 +33,8 @@ from app.schemas.scrap import (
     IncidentListResponse,
     RepairRequest,
     ScrapStockResponse,
+    ShareIncidenceRequest,
+    ShareIncidenceResponse,
 )
 from app.controllers.scrap import (
     get_defect_codes,
@@ -242,6 +246,157 @@ def reject_loss_endpoint(
         return IncidentResponse.model_validate(loss_record)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# ────────────────────────────
+# Compartir incidencia al cliente (dashboard + correo)
+# ────────────────────────────
+
+
+@router.post("/losses/{loss_id}/share", response_model=ShareIncidenceResponse)
+async def share_incidence(
+    loss_id: uuid.UUID,
+    data: ShareIncidenceRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ShareIncidenceResponse:
+    """
+    Comparte una incidencia con el cliente:
+    - Interno: crea un ReportShare visible en el dashboard del cliente.
+    - Correo: envía email con el detalle (y mensaje del jefe si lo escribió).
+    Si no se especifica target_client_id y la incidencia tiene pedido, se usa el cliente del pedido.
+    """
+    from app.models.report_share import ReportShare
+    from app.models.order import Order
+    from app.utils.email import send_incidence_shared_email
+
+    _ensure_admin_or_jefe(current_user)
+
+    incident = get_incident_by_id(db, loss_id)
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incidencia no encontrada")
+
+    if data.target_client_id is None and data.to_email is None and not incident.order_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Debes indicar el cliente o un correo para compartir.",
+        )
+
+    # Resolver cliente destino
+    client: User | None = None
+    if data.target_client_id is not None:
+        client = db.get(User, data.target_client_id)
+        if not client or client.deleted_at is not None:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    elif incident.order_id:
+        order = db.get(Order, incident.order_id)
+        if order is not None:
+            client = db.get(User, order.customer_id)
+
+    shared_internally = False
+    email_sent = False
+    detail_parts: list[str] = []
+
+    product_name = incident.product.name_product if incident.product else "Producto"
+    defect_label = (
+        incident.defect_code.name
+        if incident.defect_code
+        else (incident.description or "Sin descripción")
+    )
+
+    rows: list[tuple[str, str]] = [
+        ("Producto", product_name),
+        ("Talla", incident.size or ""),
+        ("Color", (incident.colour or "").title() if incident.colour else ""),
+        ("Cantidad", f"{int(incident.quantity)} pares" if incident.quantity else ""),
+        ("Tipo", INCIDENT_TYPE_ES.get(incident.incident_type, incident.incident_type)),
+        ("Defecto", defect_label),
+        (
+            "Pedido",
+            f"#{str(incident.order_id)[:8]}" if incident.order_id else "",
+        ),
+    ]
+
+    # 1) Share interno → dashboard del cliente
+    if client is not None:
+        share = ReportShare(
+            shared_by_id=current_user.id,
+            target_user_id=client.id,
+            report_type="incidence",
+            report_title=f"Incidencia · {product_name} · Talla {incident.size or '—'}",
+            message=data.message,
+            parameters={
+                "loss_id": str(incident.id),
+                "product_name": product_name,
+                "size": incident.size,
+                "colour": incident.colour,
+                "quantity": int(incident.quantity) if incident.quantity else None,
+                "incident_type": incident.incident_type,
+                "defect": defect_label,
+                "order_id": str(incident.order_id) if incident.order_id else None,
+                "category": incident.incidence_category,
+            },
+        )
+        db.add(share)
+        db.commit()
+        shared_internally = True
+        detail_parts.append(f"visible para {client.email}")
+
+        try:
+            from app.utils.ws_manager import ws_manager
+
+            await ws_manager.broadcast_to_user(
+                str(client.id),
+                {
+                    "type": "incidence_shared",
+                    "title": "Nueva incidencia compartida",
+                    "message": f"{product_name} — {defect_label}",
+                },
+            )
+        except Exception as exc:  # WS es best-effort
+            print(f"[share] WS notify falló: {exc}")
+
+    # 2) Correo: central único + Reply-To del rol que comparte (0 configuración, buenas prácticas)
+    to_email = str(data.to_email) if data.to_email else (client.email if client else None)
+    if to_email:
+        to_name = (
+            f"{client.name_user} {client.last_name}".strip()
+            if client is not None
+            else to_email.split("@")[0]
+        )
+        try:
+            await send_incidence_shared_email(
+                client_email=to_email,
+                client_name=to_name,
+                rows=rows,
+                jefe_message=(data.message or None),
+                reply_to=current_user.email,
+            )
+            email_sent = True
+            detail_parts.append(f"correo enviado a {to_email} · responde a {current_user.email}")
+        except Exception as exc:
+            print(f"[share] Email falló a {to_email}: {exc}")
+            detail_parts.append(f"correo NO enviado a {to_email} (revisa logs del servidor)")
+
+    if not detail_parts:
+        raise HTTPException(status_code=400, detail="No se pudo compartir la incidencia.")
+
+    return ShareIncidenceResponse(
+        shared_internally=shared_internally,
+        email_sent=email_sent,
+        detail=" · ".join(detail_parts),
+    )
+
+
+INCIDENT_TYPE_ES = {
+    "perdida": "Pérdida",
+    "en_reparacion": "En reparación",
+    "reparado": "Reparado",
+    "devuelto": "Devuelto",
+    "falla": "Falla de maquinaria",
+    "faltante": "Faltante de insumo",
+    "solucionado": "Solucionado",
+}
 
 
 # ────────────────────────────
