@@ -629,7 +629,6 @@ function OrderDetailView({
     }
   };
 
-  const canStartProduction = order.state === 'pendiente';
   const canCancel          = order.state === 'pendiente';
   const canDelete          = order.state === 'cancelado';
   const canRestore         = order.state === 'cancelado';
