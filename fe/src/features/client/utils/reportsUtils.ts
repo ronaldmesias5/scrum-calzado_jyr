@@ -167,6 +167,7 @@ export async function exportMyOrdersPDF(
       if (!order?.items?.length) continue;
       for (let i = 0; i < order.items.length; i++) {
         const item = order.items[i];
+        if (!item) continue;
         allRows.push([
           i === 0 ? (order.id?.substring(0, 8) || '—') : '',
           i === 0 ? formatDate(order.created_at) : '',
