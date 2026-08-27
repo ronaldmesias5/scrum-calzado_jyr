@@ -23,7 +23,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user, _require_admin_or_jefe
-from app.config import settings
 from app.models.user import User
 from app.schemas.scrap import (
     DefectCodeResponse,
