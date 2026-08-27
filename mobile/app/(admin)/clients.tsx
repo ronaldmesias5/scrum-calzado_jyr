@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
+import { useToast } from '@/components/ui/Toast';
 import {
   createClient,
   deleteUser,
@@ -330,6 +331,7 @@ export default function ClientsScreen() {
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const {
     data: clients,
@@ -368,7 +370,7 @@ export default function ClientsScreen() {
     onSuccess: () => {
       invalidateUsers();
       setCreateOpen(false);
-      Alert.alert('Listo', 'Cliente creado. Se envió un correo con las credenciales.');
+      showToast('Cliente creado. Se envió un correo con las credenciales.', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -379,7 +381,7 @@ export default function ClientsScreen() {
     onSuccess: () => {
       invalidateUsers();
       setEditUser(null);
-      Alert.alert('Listo', 'Cliente actualizado');
+      showToast('Cliente actualizado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -389,7 +391,7 @@ export default function ClientsScreen() {
     onSuccess: () => {
       invalidateUsers();
       setDeleteTarget(null);
-      Alert.alert('Listo', 'Cliente eliminado');
+      showToast('Cliente eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });

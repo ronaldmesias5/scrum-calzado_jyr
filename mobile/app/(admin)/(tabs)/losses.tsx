@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
+import { useToast } from '@/components/ui/Toast';
 import { catalogService } from '@/services/catalogService';
 import { listSupplies } from '@/services/suppliesService';
 import {
@@ -284,6 +285,7 @@ function IncidentDetailSheet({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [repairDest, setRepairDest] = useState<'stock' | 'reserva' | 'customer_return'>('stock');
 
   const invalidate = () => {
@@ -297,7 +299,7 @@ function IncidentDetailSheet({
     onSuccess: () => {
       invalidate();
       onClose();
-      Alert.alert('Aprobada', 'La incidencia fue aprobada.');
+      showToast('La incidencia fue aprobada', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });
@@ -307,7 +309,7 @@ function IncidentDetailSheet({
     onSuccess: () => {
       invalidate();
       onClose();
-      Alert.alert('Rechazada', 'La incidencia fue rechazada.');
+      showToast('La incidencia fue rechazada', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });
@@ -317,7 +319,7 @@ function IncidentDetailSheet({
     onSuccess: () => {
       invalidate();
       onClose();
-      Alert.alert('Reparada', 'La incidencia fue marcada como reparada.');
+      showToast('La incidencia fue marcada como reparada', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });
@@ -327,7 +329,7 @@ function IncidentDetailSheet({
     onSuccess: () => {
       invalidate();
       onClose();
-      Alert.alert('Resuelta', 'La incidencia fue resuelta.');
+      showToast('La incidencia fue resuelta', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });
@@ -467,6 +469,7 @@ function CreateIncidentModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [category, setCategory] = useState<IncidenceCategory>('producto');
   const [product, setProduct] = useState<Product | null>(null);
   const [supply, setSupply] = useState<Supply | null>(null);
@@ -532,7 +535,7 @@ function CreateIncidentModal({
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       resetForm();
       onClose();
-      Alert.alert('Registrada', 'La incidencia fue registrada.');
+      showToast('La incidencia fue registrada', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });
@@ -882,6 +885,7 @@ function CreateIncidentModal({
 
 export default function AdminLossesScreen() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>('registro');
   const [typeFilter, setTypeFilter] = useState<IncidentType | ''>('');
   const [selectedIncident, setSelectedIncident] = useState<LossRecord | null>(null);
@@ -920,7 +924,7 @@ export default function AdminLossesScreen() {
       queryClient.invalidateQueries({ queryKey: ['pending-incidences'] });
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       setPendingToApprove(null);
-      Alert.alert('Aprobada', 'La incidencia pendiente fue aprobada.');
+      showToast('La incidencia pendiente fue aprobada', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });
@@ -930,7 +934,7 @@ export default function AdminLossesScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-incidences'] });
       setPendingToApprove(null);
-      Alert.alert('Rechazada', 'La incidencia pendiente fue rechazada.');
+      showToast('La incidencia pendiente fue rechazada', 'success');
     },
     onError: (err: Error) => Alert.alert('Error', getErrorMessage(err)),
   });

@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
+import { useToast } from '@/components/ui/Toast';
 import {
   approveReactivationTicket,
   deleteUser,
@@ -333,6 +334,7 @@ export default function UsersScreen() {
     onConfirm: (value: string) => Promise<void>;
   } | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const {
     data: pendingData,
@@ -391,7 +393,7 @@ export default function UsersScreen() {
     mutationFn: (id: string) => validateUser(id),
     onSuccess: () => {
       invalidateUsers();
-      Alert.alert('Listo', 'Usuario aprobado');
+      showToast('Usuario aprobado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -402,7 +404,7 @@ export default function UsersScreen() {
     onSuccess: () => {
       invalidateUsers();
       setPrompt(null);
-      Alert.alert('Listo', 'Usuario rechazado');
+      showToast('Usuario rechazado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -411,7 +413,7 @@ export default function UsersScreen() {
     mutationFn: (id: string) => renewInvitation(id),
     onSuccess: () => {
       invalidateUsers();
-      Alert.alert('Listo', 'Invitación renovada. Se envió un correo con las nuevas credenciales.');
+      showToast('Invitación renovada. Se envió un correo con las nuevas credenciales.', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -420,7 +422,7 @@ export default function UsersScreen() {
     mutationFn: (id: string) => forcePasswordChange(id),
     onSuccess: () => {
       invalidateUsers();
-      Alert.alert('Listo', 'Se forzará el cambio de contraseña en el próximo inicio de sesión');
+      showToast('Se forzará el cambio de contraseña en el próximo inicio de sesión', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -430,7 +432,7 @@ export default function UsersScreen() {
     onSuccess: () => {
       invalidateUsers();
       setDeleteTarget(null);
-      Alert.alert('Listo', 'Usuario eliminado');
+      showToast('Usuario eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -441,7 +443,7 @@ export default function UsersScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reactivation-tickets'] });
       setPrompt(null);
-      Alert.alert('Listo', 'Solicitud de reactivación aprobada');
+      showToast('Solicitud de reactivación aprobada', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -452,7 +454,7 @@ export default function UsersScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reactivation-tickets'] });
       setPrompt(null);
-      Alert.alert('Listo', 'Solicitud de reactivación rechazada');
+      showToast('Solicitud de reactivación rechazada', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });

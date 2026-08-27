@@ -10,6 +10,7 @@ import '../global.css';
 
 import { WebSocketProvider } from '@/components/admin/WebSocketProvider';
 import { Loading } from '@/components/ui/Loading';
+import { ToastProvider } from '@/components/ui/Toast';
 import { useAuthStore } from '@/store/auth';
 
 const queryClient = new QueryClient({
@@ -37,20 +38,22 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <WebSocketProvider />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor: colorScheme === 'dark' ? '#020617' : '#f9fafb',
-            },
-          }}
-        >
-          <Stack.Screen name="login" />
-          <Stack.Screen name="forgot-password" />
-          <Stack.Screen name="(admin)" />
-        </Stack>
-        <StatusBar style="auto" />
+        <ToastProvider>
+          <WebSocketProvider />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: {
+                backgroundColor: colorScheme === 'dark' ? '#020617' : '#f9fafb',
+              },
+            }}
+          >
+            <Stack.Screen name="login" />
+            <Stack.Screen name="forgot-password" />
+            <Stack.Screen name="(admin)" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ToastProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

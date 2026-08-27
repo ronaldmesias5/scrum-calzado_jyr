@@ -33,7 +33,6 @@ export default function AdminLayout() {
         <Stack.Screen name="order-detail" />
         <Stack.Screen name="catalog" />
         <Stack.Screen name="catalog-manage" />
-        <Stack.Screen name="catalog-edit" />
         <Stack.Screen name="inventory" />
         <Stack.Screen name="insumos" />
         <Stack.Screen name="tasks" />

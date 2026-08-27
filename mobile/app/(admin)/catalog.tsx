@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AppHeader } from '@/components/ui/AppHeader';
+import { useToast } from '@/components/ui/Toast';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DeleteConfirmModal } from '@/components/admin/DeleteConfirmModal';
@@ -114,6 +115,7 @@ export default function CatalogScreen() {
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const {
     data,
@@ -150,17 +152,21 @@ export default function CatalogScreen() {
 
   const toggleMutation = useMutation({
     mutationFn: (id: string) => catalogService.toggleProductState(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
-    onError: (e: Error) => alert(e.message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      showToast('Estado del producto actualizado', 'success');
+    },
+    onError: (e: Error) => showToast(e.message, 'error'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => catalogService.deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      showToast('Producto eliminado', 'success');
       setDeleteProduct(null);
     },
-    onError: (e: Error) => alert(e.message),
+    onError: (e: Error) => showToast(e.message, 'error'),
   });
 
   return (

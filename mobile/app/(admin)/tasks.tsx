@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
+import { useToast } from '@/components/ui/Toast';
 import { listAllUsers } from '@/services/adminService';
 import { ordersService } from '@/services/ordersService';
 import type { ProductionTask } from '@/types/orders';
@@ -294,6 +295,7 @@ function AssignEmployeeModal({
 export default function TasksScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -337,7 +339,7 @@ export default function TasksScreen() {
       ordersService.updateTaskStatus(taskId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
-      Alert.alert('Listo', 'Estado de la tarea actualizado');
+      showToast('Estado de la tarea actualizado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -348,7 +350,7 @@ export default function TasksScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
       setAssignTarget(null);
-      Alert.alert('Listo', 'Empleado asignado correctamente');
+      showToast('Empleado asignado correctamente', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });

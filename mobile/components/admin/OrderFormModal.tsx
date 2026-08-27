@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Loading } from '@/components/ui/Loading';
+import { useToast } from '@/components/ui/Toast';
 import { ordersService } from '@/services/ordersService';
 import { listClients, type AdminUser } from '@/services/adminService';
 import { catalogService } from '@/services/catalogService';
@@ -58,6 +59,7 @@ export function OrderFormModal({
   addProductMode = false,
 }: OrderFormModalProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const isEditMode = !!orderId && !!editProductId;
   const isAddToOrder = !!orderId && addProductMode && !editProductId;
 
@@ -141,7 +143,7 @@ export function OrderFormModal({
   // ─── Mutations ────────────────────────────────────────────
 
   const createMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (overrideItems?: LineItem[]) => {
       if (isEditMode) {
         if (!orderId || !editProductId || !orderDetails) return;
         const editedLines = lineItems.map((item) => ({
@@ -164,14 +166,15 @@ export function OrderFormModal({
         });
       } else if (isAddToOrder) {
         if (!orderId || !orderDetails) return;
-        if (lineItems.length === 0) throw new Error('Agrega al menos un producto');
+        const items = overrideItems ?? lineItems;
+        if (items.length === 0) throw new Error('Agrega al menos un producto');
         const existingLines = orderDetails.map((d) => ({
           product_id: d.product_id,
           size: d.size,
           colour: d.colour ?? undefined,
           amount: d.amount,
         }));
-        const newLines = lineItems.map((item) => ({
+        const newLines = items.map((item) => ({
           product_id: item.product_id,
           size: item.size,
           colour: item.colour || undefined,
@@ -207,9 +210,21 @@ export function OrderFormModal({
       if (isEditMode || isAddToOrder) {
         queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
       }
-      resetForm();
-      onClose();
-      onSuccess?.();
+      if (isAddToOrder) {
+        // Stay open, reset only line items and cascade for next product
+        setLineItems([]);
+        setSelectedProduct(null);
+        setSizeAmounts({});
+        setActivePreset(null);
+        setSelectedCategory('');
+        setSelectedBrand('');
+        setSelectedStyle('');
+        showToast('Producto agregado al pedido', 'success');
+      } else {
+        resetForm();
+        onClose();
+        onSuccess?.();
+      }
     },
     onError: (err: Error) => {
       Alert.alert('Error', getErrorMessage(err));
@@ -446,10 +461,16 @@ export function OrderFormModal({
       Alert.alert('Sin tallas', 'Ingresa al menos una cantidad mayor a 0');
       return;
     }
-    setLineItems((prev) => [...prev, ...newItems]);
-    setSelectedProduct(null);
-    setSizeAmounts({});
-    setActivePreset(null);
+    if (isAddToOrder) {
+      // Add to order immediately — pass items directly to mutation
+      createMutation.mutate(newItems);
+    } else {
+      // Create mode or edit mode — add to lineItems for later submission
+      setLineItems((prev) => [...prev, ...newItems]);
+      setSelectedProduct(null);
+      setSizeAmounts({});
+      setActivePreset(null);
+    }
   };
 
   // ─── Dropdown component ───────────────────────────────────
@@ -1024,8 +1045,10 @@ export function OrderFormModal({
               {/* Actions */}
               <View className="flex-row gap-2">
                 <Button
-                  title="Agregar al Pedido"
+                  title={createMutation.isPending ? 'Agregando...' : 'Agregar al Pedido'}
                   onPress={confirmProductSizes}
+                  disabled={createMutation.isPending}
+                  loading={createMutation.isPending}
                   className="flex-1"
                 />
                 <Button
@@ -1144,7 +1167,7 @@ export function OrderFormModal({
                       ? 'Guardar cambios'
                       : 'Crear pedido'
               }
-              onPress={() => createMutation.mutate()}
+              onPress={() => createMutation.mutate(undefined)}
               disabled={
                 createMutation.isPending ||
                 (!isEditMode && !isAddToOrder && !selectedClient) ||

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AppHeader } from '@/components/ui/AppHeader';
+import { useToast } from '@/components/ui/Toast';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -19,6 +20,7 @@ type Tab = 'brands' | 'styles' | 'categories';
 export default function CatalogManageScreen() {
   const [tab, setTab] = useState<Tab>('brands');
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // ─── Brands ─────────────────────────────────────────────
   const brands = useQuery({
@@ -38,7 +40,7 @@ export default function CatalogManageScreen() {
         : catalogService.createBrand(vars.name, vars.description),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
-      Alert.alert('Listo', 'Marca guardada');
+      showToast('Marca guardada', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', e.message),
   });
@@ -48,7 +50,7 @@ export default function CatalogManageScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       setDeleteBrand(null);
-      Alert.alert('Listo', 'Marca eliminada');
+      showToast('Marca eliminada', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', e.message),
   });
@@ -71,7 +73,7 @@ export default function CatalogManageScreen() {
         : catalogService.createStyle(vars.name, vars.brandId, vars.description),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-styles'] });
-      Alert.alert('Listo', 'Estilo guardado');
+      showToast('Estilo guardado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', e.message),
   });
@@ -81,7 +83,7 @@ export default function CatalogManageScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-styles'] });
       setDeleteStyle(null);
-      Alert.alert('Listo', 'Estilo eliminado');
+      showToast('Estilo eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', e.message),
   });

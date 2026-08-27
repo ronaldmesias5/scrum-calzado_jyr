@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AppHeader } from '@/components/ui/AppHeader';
+import { useToast } from '@/components/ui/Toast';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -89,6 +90,7 @@ export default function InventoryScreen() {
   });
   const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const {
     data: inventory,
@@ -117,7 +119,7 @@ export default function InventoryScreen() {
       catalogService.createOrUpdateInventory(vars.productId, vars.size, vars.quantity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      Alert.alert('Listo', 'Inventario actualizado');
+      showToast('Inventario actualizado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', e.message),
   });
@@ -127,7 +129,7 @@ export default function InventoryScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       setDeleteItem(null);
-      Alert.alert('Listo', 'Registro eliminado');
+      showToast('Registro eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', e.message),
   });

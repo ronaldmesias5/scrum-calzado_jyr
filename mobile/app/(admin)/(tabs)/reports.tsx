@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import {
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -23,6 +22,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
 import { StatCard } from '@/components/ui/StatCard';
+import { useToast } from '@/components/ui/Toast';
 import { listAllUsers, listClients } from '@/services/adminService';
 import {
   getCustomerReport,
@@ -468,6 +468,7 @@ function SalesReportView({ report }: { report: SalesReport }) {
 }
 
 function GeneradorTab() {
+  const { showToast } = useToast();
   const [reportType, setReportType] = useState<ReportType>('empleado');
   const [role, setRole] = useState<string>('cortador');
   const [employeeId, setEmployeeId] = useState<string>('all');
@@ -688,7 +689,7 @@ function GeneradorTab() {
           title="Exportar PDF"
           variant="outline"
           className="mt-3"
-          onPress={() => Alert.alert('PDF', 'Próximamente')}
+          onPress={() => showToast('Próximamente', 'info')}
         />
       )}
 

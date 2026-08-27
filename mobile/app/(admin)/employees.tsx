@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
+import { useToast } from '@/components/ui/Toast';
 import {
   createEmployee,
   deleteUser,
@@ -359,6 +360,7 @@ export default function EmployeesScreen() {
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const {
     data: employees,
@@ -397,7 +399,7 @@ export default function EmployeesScreen() {
     onSuccess: () => {
       invalidateUsers();
       setCreateOpen(false);
-      Alert.alert('Listo', 'Empleado creado. Se envió un correo con las credenciales.');
+      showToast('Empleado creado. Se envió un correo con las credenciales.', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -408,7 +410,7 @@ export default function EmployeesScreen() {
     onSuccess: () => {
       invalidateUsers();
       setEditUser(null);
-      Alert.alert('Listo', 'Empleado actualizado');
+      showToast('Empleado actualizado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -418,7 +420,7 @@ export default function EmployeesScreen() {
     onSuccess: () => {
       invalidateUsers();
       setDeleteTarget(null);
-      Alert.alert('Listo', 'Empleado eliminado');
+      showToast('Empleado eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });

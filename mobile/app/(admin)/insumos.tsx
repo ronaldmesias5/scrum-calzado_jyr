@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 import { catalogService } from '@/services/catalogService';
 import {
   createSupply,
@@ -521,6 +522,7 @@ function LinkProductModal({ visible, supply, onClose, onLinked }: LinkProductMod
   const [selectedProductId, setSelectedProductId] = useState('');
   const [qtyText, setQtyText] = useState('');
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const productsQuery = useQuery({
     queryKey: ['admin-products', 'link'],
@@ -542,7 +544,7 @@ function LinkProductModal({ visible, supply, onClose, onLinked }: LinkProductMod
       queryClient.invalidateQueries({ queryKey: ['supplies'] });
       setSelectedProductId('');
       setQtyText('');
-      Alert.alert('Listo', 'Insumo vinculado al producto');
+      showToast('Insumo vinculado al producto', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -552,7 +554,7 @@ function LinkProductModal({ visible, supply, onClose, onLinked }: LinkProductMod
       unlinkSupplyFromProduct(productId, supplyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplies'] });
-      Alert.alert('Listo', 'Vínculo eliminado');
+      showToast('Vínculo eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -703,6 +705,7 @@ export default function InsumosScreen() {
   const [linkTarget, setLinkTarget] = useState<Supply | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Supply | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const categoriesQuery = useQuery<SupplyCategory[]>({
     queryKey: ['supply-categories'],
@@ -778,7 +781,7 @@ export default function InsumosScreen() {
     onSuccess: () => {
       invalidateSupplies();
       setFormModal({ open: false });
-      Alert.alert('Listo', 'Insumo creado correctamente');
+      showToast('Insumo creado correctamente', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -789,7 +792,7 @@ export default function InsumosScreen() {
     onSuccess: () => {
       invalidateSupplies();
       setFormModal({ open: false });
-      Alert.alert('Listo', 'Insumo actualizado correctamente');
+      showToast('Insumo actualizado correctamente', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -799,7 +802,7 @@ export default function InsumosScreen() {
     onSuccess: () => {
       invalidateSupplies();
       setDeleteTarget(null);
-      Alert.alert('Listo', 'Insumo eliminado');
+      showToast('Insumo eliminado', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
@@ -809,7 +812,7 @@ export default function InsumosScreen() {
     onSuccess: () => {
       invalidateSupplies();
       setCategoryModal(false);
-      Alert.alert('Listo', 'Categoría creada');
+      showToast('Categoría creada', 'success');
     },
     onError: (e: Error) => Alert.alert('Error', getErrorMessage(e)),
   });
