@@ -7,10 +7,11 @@ Solo incluye información que un agente NO inferiría fácilmente de los archivo
 
 ## Arquitectura general
 
-Monorepo con 3 módulos:
+Monorepo con 4 módulos:
 - `be/` — Backend Python 3.12+ (FastAPI + SQLAlchemy + Alembic + PostgreSQL)
 - `fe/` — Frontend TypeScript (React 19 + Vite + TailwindCSS 4)
 - `db/` — Solo scripts de bootstrap PostgreSQL (`init.sql`: extensiones, no esquema)
+- `mobile/` — App móvil (Expo SDK 54 + React Native 0.81 + NativeWind + expo-router 6)
 
 **El esquema de BD lo crean las migraciones Alembic al arrancar el backend**, no `db/init/`. El orden real es: `init.sql` (extensiones) → Alembic `init_db.py` (tablas/esquema) → seed data.
 
@@ -77,6 +78,17 @@ cd fe && npx tsc -b               # TypeScript strict mode
 # Frontend: typecheck + build
 cd fe && pnpm build               # ejecuta tsc -b && vite build
 ```
+
+### App móvil
+```bash
+cd mobile
+pnpm install                      # NUNCA npm ni yarn
+pnpm start                        # expo start (Metro)
+pnpm typecheck                    # tsc --noEmit
+pnpm lint                         # expo lint
+```
+- **pnpm es OBLIGATORIO** para mobile también.
+- La app móvil consume el backend FastAPI (`be/`) con JWT. Ver `mobile/AGENTS.md` para detalles.
 
 ---
 
@@ -209,6 +221,8 @@ fe/src/
 14. **Dashboard Cliente**: Feature `fe/src/features/client/` con 2 páginas en `fe/src/pages/client/` (DashboardPage, OrdersPage).
 
 15. **PDF export**: Usa `jspdf` + `jspdf-autotable`. La función `sanitizeFilename()` elimina caracteres prohibidos por Windows (`<>:"/\|?*`) de los nombres de archivo. Hay implementaciones separadas en `features/admin/utils/reportsUtils.ts` y `features/employee/utils/reportsUtils.ts`.
+
+16. **App móvil**: `mobile/` es una app Expo SDK 54 que consume la misma API del backend. En desarrollo, Metro web corre en `http://localhost:8081` — asegúrate de que CORS en `be/app/main.py` incluya ese origen. Ver `mobile/AGENTS.md` para stack completo, gotchas y plan de fases.
 
 ## Patrones de frontend implementados
 

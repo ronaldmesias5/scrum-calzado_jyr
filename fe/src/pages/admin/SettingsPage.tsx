@@ -509,7 +509,7 @@ export default function SettingsPage() {
                       options={['15', '30', '60', '120', '240']}
                       display={v => `${v} minutos`}
                     />
-                    <p className="text-xs text-gray-400">La sesión se cerrará automáticamente tras este tiempo sin actividad.</p>
+                    <p className="text-xs text-gray-400">La sesión permanecerá activa hasta que cierres sesión.</p>
                   </div>
 
                   <div className="pt-4 border-t border-gray-100 dark:border-slate-800">
