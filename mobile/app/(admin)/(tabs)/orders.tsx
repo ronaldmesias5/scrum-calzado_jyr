@@ -21,77 +21,6 @@ import { ordersService } from '@/services/ordersService';
 import type { Order, OrderListResponse, OrderStatus } from '@/types/orders';
 import { cn } from '@/utils/cn';
 
-const STATUS_ICONS: Record<OrderStatus, keyof typeof Ionicons.glyphMap> = {
-  pendiente: 'time-outline',
-  en_progreso: 'construct-outline',
-  completado: 'checkmark-circle-outline',
-  entregado: 'checkmark-done-outline',
-  cancelado: 'close-circle-outline',
-};
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  pendiente: '#eab308',
-  en_progreso: '#3b82f6',
-  completado: '#22c55e',
-  entregado: '#a855f7',
-  cancelado: '#ef4444',
-};
-
-function SummaryCards({ statusFilter, onFilterSelect }: {
-  statusFilter: OrderStatus | '';
-  onFilterSelect: (s: OrderStatus | '') => void;
-}) {
-  const statuses: OrderStatus[] = ['pendiente', 'en_progreso', 'completado', 'entregado', 'cancelado'];
-
-  return (
-    <View className="flex-row flex-wrap gap-2 px-4 pb-3">
-      <Pressable
-        onPress={() => onFilterSelect('')}
-        className={cn(
-          'flex-1 min-w-[60px] items-center rounded-xl p-3',
-          statusFilter === '' ? 'bg-primary dark:bg-primary-light' : 'bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800',
-        )}
-      >
-        <Ionicons
-          name="list"
-          size={18}
-          color={statusFilter === '' ? '#ffffff' : '#64748b'}
-        />
-        <Text className={cn(
-          'mt-1 text-xs font-bold',
-          statusFilter === '' ? 'text-white' : 'text-gray-600 dark:text-gray-300',
-        )}>Todos</Text>
-      </Pressable>
-
-      {statuses.map((s) => (
-        <Pressable
-          key={s}
-          onPress={() => onFilterSelect(s)}
-          className={cn(
-            'flex-1 min-w-[60px] items-center rounded-xl p-3',
-            statusFilter === s
-              ? 'border-2'
-              : 'bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800',
-          )}
-          style={statusFilter === s ? { borderColor: STATUS_COLORS[s] } : undefined}
-        >
-          <Ionicons
-            name={STATUS_ICONS[s]}
-            size={18}
-            color={statusFilter === s ? STATUS_COLORS[s] : '#64748b'}
-          />
-          <Text className={cn(
-            'mt-1 text-xs font-bold capitalize',
-            statusFilter === s
-              ? 'text-gray-900 dark:text-white'
-              : 'text-gray-600 dark:text-gray-300',
-          )}>{s.replace('_', ' ')}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 const STATUS_OPTIONS: { value: OrderStatus | ''; label: string }[] = [
   { value: '', label: 'Todos' },
   { value: 'pendiente', label: 'Pendiente' },
@@ -203,11 +132,6 @@ export default function AdminOrdersScreen() {
   return (
     <View className="flex-1 bg-gray-50 dark:bg-slate-950">
       <AppHeader title="Pedidos" />
-
-      <SummaryCards
-        statusFilter={selectedStatus}
-        onFilterSelect={setSelectedStatus}
-      />
 
       <View className="px-4 pb-3 pt-2">
         <View className="mb-3 flex-row items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900">
