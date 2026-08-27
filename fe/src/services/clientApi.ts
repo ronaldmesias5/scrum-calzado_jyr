@@ -112,6 +112,41 @@ export async function getMyOrdersSummary(): Promise<ClientOrderSummaryResponse> 
   return res.data;
 }
 
+export interface ClientOrderItemSummary {
+  product_id: string;
+  product_name: string;
+  image_url: string | null;
+  amount: number;
+  category_name: string | null;
+  colour: string | null;
+}
+
+export interface ClientOrderSummary {
+  id: string;
+  total_pairs: number;
+  total_price: number;
+  state: string;
+  created_at: string;
+  items: ClientOrderItemSummary[];
+}
+
+export interface ClientAllOrdersReport {
+  user_id: string;
+  name: string;
+  total_orders: number;
+  total_pairs: number;
+  total_spent: number;
+  orders: ClientOrderSummary[];
+}
+
+export async function getAllMyOrders(startDate?: string, endDate?: string): Promise<ClientAllOrdersReport> {
+  const params: Record<string, string> = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  const res = await api.get<ClientAllOrdersReport>('/api/v1/client/orders/all', { params });
+  return res.data;
+}
+
 export async function getMyIncidences(): Promise<ClientIncidenceListResponse> {
   const res = await api.get('/api/v1/client/incidences');
   return res.data;

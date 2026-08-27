@@ -1,5 +1,6 @@
 import uuid
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, desc, func
@@ -21,6 +22,7 @@ from app.schemas.client import (
     ClientIncidenceListResponse,
 )
 from app.schemas.orders import OrderCreateRequest
+from app.schemas.reports import OrderSummary, OrderItemSummary, CustomerReportResponse
 
 router = APIRouter(
     prefix="/api/v1/client",
@@ -122,6 +124,77 @@ def get_my_orders_summary(
         by_state.setdefault(estado.value, 0)
 
     return ClientOrderSummaryResponse(total=total, by_state=by_state)
+
+
+def _build_order_items(details: list) -> list:
+    """Agrupa OrderDetails por (product_id, colour) — replica de reports.py"""
+    items_map = {}
+    for detail in details:
+        key = (detail.product_id, detail.colour or "")
+        if key not in items_map:
+            p_name = "Producto Desconocido"
+            p_img = None
+            cat_name = None
+            if detail.product:
+                p_name = getattr(detail.product, 'name_product', "Producto Desconocido")
+                p_img = getattr(detail.product, 'image_url', None)
+                if detail.product.category:
+                    cat_name = getattr(detail.product.category, 'name_category', None)
+            items_map[key] = OrderItemSummary(
+                product_id=detail.product_id,
+                product_name=p_name,
+                image_url=p_img,
+                amount=0,
+                category_name=cat_name,
+                colour=detail.colour or None,
+            )
+        items_map[key].amount += (detail.amount or 0)
+    return list(items_map.values())
+
+
+@router.get("/orders/all", response_model=CustomerReportResponse)
+def get_all_my_orders(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+) -> CustomerReportResponse:
+    """Retorna todos los pedidos del cliente con detalles para generar reporte PDF."""
+    query = select(Order).where(Order.customer_id == current_user.id)
+
+    if start_date:
+        query = query.where(Order.created_at >= start_date)
+    if end_date:
+        query = query.where(Order.created_at <= end_date)
+
+    query = query.order_by(desc(Order.created_at))
+    orders = db.execute(query).scalars().all()
+
+    total_orders = len(orders)
+    total_pairs = sum((o.total_pairs or 0) for o in orders)
+    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders)
+
+    orders_list = []
+    for o in orders:
+        orders_list.append(OrderSummary(
+            id=o.id,
+            total_pairs=o.total_pairs or 0,
+            total_price=0.0,
+            state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
+            created_at=o.created_at,
+            items=_build_order_items(o.details or []),
+        ))
+
+    customer_name = f"{current_user.name_user} {current_user.last_name}".strip()
+
+    return CustomerReportResponse(
+        user_id=current_user.id,
+        name=customer_name or current_user.email,
+        total_orders=total_orders,
+        total_pairs=int(total_pairs),
+        total_spent=float(total_spent),
+        orders=orders_list,
+    )
 
 
 @router.post("/orders", response_model=ClientOrderResponse, status_code=status.HTTP_201_CREATED)
