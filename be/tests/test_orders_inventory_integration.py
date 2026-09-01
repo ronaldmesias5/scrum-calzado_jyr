@@ -53,10 +53,17 @@ def _create_client_user(db_session) -> User:
     return user
 
 
+def _csrf_headers(client, base_headers: dict) -> dict:
+    token = client.cookies.get("csrf_token")
+    if token:
+        return {**base_headers, "X-CSRF-Token": token}
+    return base_headers
+
+
 def _create_order(client, jefe_headers, customer_id, product_id, size, amount) -> dict:
     response = client.post(
         "/api/v1/admin/orders",
-        headers=jefe_headers,
+        headers=_csrf_headers(client, jefe_headers),
         json={
             "customer_id": str(customer_id),
             "total_pairs": amount,
@@ -78,7 +85,7 @@ def _create_order(client, jefe_headers, customer_id, product_id, size, amount) -
 def _change_status(client, jefe_headers, order_id, state) -> dict:
     response = client.patch(
         f"/api/v1/admin/orders/{order_id}/status",
-        headers=jefe_headers,
+        headers=_csrf_headers(client, jefe_headers),
         json={"state": state},
     )
     assert response.status_code == 200, response.text
@@ -185,6 +192,7 @@ def test_non_jefe_cannot_update_order_status(db_session, client, jefe_headers):
     )
     assert login.status_code == 200, login.text
     headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    headers = _csrf_headers(client, headers)
 
     response = client.patch(
         f"/api/v1/admin/orders/{order['id']}/status",
