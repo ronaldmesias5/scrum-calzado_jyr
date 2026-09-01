@@ -18,19 +18,23 @@ interface ViewManufacturedModalProps {
 // Tallas según categoría
 const getSizesByCategory = (category: string | undefined): number[] => {
   if (!category) return [];
-  
+
   const categoryLower = category.toLowerCase();
-  
+
   if (categoryLower === 'infantil') {
     return [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
   } else if (categoryLower === 'dama' || categoryLower === 'caballero') {
     return [33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43];
   }
-  
+
   return [];
 };
 
-export default function ViewManufacturedModal({ isOpen, product, onClose }: ViewManufacturedModalProps) {
+export default function ViewManufacturedModal({
+  isOpen,
+  product,
+  onClose
+}: ViewManufacturedModalProps) {
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [totalReserved, setTotalReserved] = useState(0);
@@ -44,7 +48,7 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
           const response = await api.get(
             `/api/v1/admin/catalog/products/${product.id}/inventory-by-size`
           );
-          
+
           setInventory(response.data.inventory || []);
           setTotalReserved(response.data.total_reserved || 0);
         } catch (err) {
@@ -67,7 +71,9 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
   const sizes = getSizesByCategory(product.category_name);
 
   // Crear un map de size -> reserved para búsqueda rápida
-  const sizeMap = Object.fromEntries(inventory.map(item => [item.size, item.reserved]));
+  const sizeMap = Object.fromEntries(
+    inventory.map((item) => [item.size, item.reserved])
+  );
 
   return (
     <Modal
@@ -80,7 +86,10 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
       <div className="flex flex-col h-full">
         {/* Header decoration */}
         <div className="px-6 py-2 mb-2">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name} • {product.color || 'Sin color'}</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {product.name} • {product.brand_name} •{' '}
+            {product.color || 'Sin color'}
+          </p>
         </div>
 
         {/* Body */}
@@ -89,7 +98,9 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">Cargando pares...</p>
+                <p className="text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">
+                  Cargando pares...
+                </p>
               </div>
             </div>
           ) : (
@@ -97,13 +108,16 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
               {/* Resumen */}
               <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4 mb-8 transition-colors">
                 <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                  Total de Pares Fabricados: <span className="text-2xl">{totalReserved}</span>
+                  Total de Pares Fabricados:{' '}
+                  <span className="text-2xl">{totalReserved}</span>
                 </p>
               </div>
 
               {totalReserved === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400 font-bold">No hay pares fabricados aún</p>
+                  <p className="text-gray-500 dark:text-gray-400 font-bold">
+                    No hay pares fabricados aún
+                  </p>
                 </div>
               ) : (
                 <>
@@ -113,7 +127,7 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
                       Distribución por Talla
                     </label>
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-                      {sizes.map(size => {
+                      {sizes.map((size) => {
                         const quantity = sizeMap[size] || 0;
                         return (
                           <div
@@ -127,11 +141,13 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
                             <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
                               T. {size}
                             </p>
-                            <p className={`text-2xl font-black ${
-                              quantity > 0
-                                ? 'text-emerald-700 dark:text-emerald-300'
-                                : 'text-gray-400 dark:text-gray-600'
-                            }`}>
+                            <p
+                              className={`text-2xl font-black ${
+                                quantity > 0
+                                  ? 'text-emerald-700 dark:text-emerald-300'
+                                  : 'text-gray-400 dark:text-gray-600'
+                              }`}
+                            >
                               {quantity}
                             </p>
                           </div>
@@ -143,7 +159,9 @@ export default function ViewManufacturedModal({ isOpen, product, onClose }: View
                   {/* Info */}
                   <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
                     <p className="text-xs text-blue-800 dark:text-blue-200 font-medium">
-                      <span className="font-bold">Nota:</span> Estos pares entran cuando el pedido se marca como "Completado" y se descargan cuando se marca como "Entregado al Cliente".
+                      <span className="font-bold">Nota:</span> Estos pares
+                      entran cuando el pedido se marca como "Completado" y se
+                      descargan cuando se marca como "Entregado al Cliente".
                     </p>
                   </div>
                 </>

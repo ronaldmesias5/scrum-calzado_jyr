@@ -18,11 +18,11 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
                               │ HTTP/HTTPS (JWT)
                     Backend (FastAPI + Python)
                       - REST API asincrónica
-                      - 8 routers modulares
+                      - 21 routers modulares
                       - Middleware (auth, CORS)
                               │ SQL/TCP
                     PostgreSQL 17
-                      - 22 tablas + audit columns
+                      - 24 tablas + audit columns
 ```
 
 ---
@@ -36,7 +36,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Python** | 3.12-slim | Runtime principal del servidor |
 | **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
 | **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
-| **Alembic** | 1.14.0 | Sistema de migraciones de BD (27 migraciones) |
+| **Alembic** | 1.14.0 | Sistema de migraciones de BD (42 migraciones) |
 | **Pydantic** | 2.0+ | Validación y serialización de datos |
 | **PyJWT (python-jose)** | 3.3+ | Creación y validación de JWT tokens |
 | **bcrypt / passlib** | 4.0+ | Hash criptográfico de contraseñas |
@@ -126,20 +126,26 @@ scrum/
 │   │   │   ├── vale.py, password_reset_token.py
 │   │   │   └── ...
 │   │   │
-│   │   ├── modules/            # 8 módulos feature-based
-│   │   │   ├── auth/           # Autenticación JWT (router, schemas, service)
-│   │   │   ├── admin/          # Catálogo admin + reportes (router, catalog_router, reports_router)
-│   │   │   ├── catalog/        # Catálogo público
-│   │   │   ├── dashboard_jefe/ # Dashboard principal (router, schemas)
-│   │   │   ├── orders/         # Pedidos + producción
-│   │   │   ├── supplies/       # Insumos
-│   │   │   ├── type_document/  # Tipos de documento
-│   │   │   └── users/          # CRUD usuarios
+│   │   ├── routers/             # 21 routers FastAPI (endpoint definitions)
+│   │   │   ├── auth.py          # Autenticación JWT
+│   │   │   ├── admin.py         # Catálogo admin + reportes + usuarios
+│   │   │   ├── catalog*.py      # Catálogo público (5 routers)
+│   │   │   ├── dashboard_*.py   # Dashboards jefe/empleado (5 routers)
+│   │   │   ├── orders*.py       # Pedidos + producción (3 routers)
+│   │   │   ├── client.py        # Dashboard cliente
+│   │   │   ├── scrap.py         # Incidencias
+│   │   │   ├── supplies.py      # Insumos
+│   │   │   ├── reports.py       # Reportes admin
+│   │   │   ├── notifications.py # Notificaciones WebSocket
+│   │   │   ├── type_document.py # Tipos de documento
+│   │   │   └── users.py         # CRUD usuarios
+│   │   │
+│   │   ├── controllers/         # 14 controllers (business logic delegation)
+│   │   ├── services/            # 8 services (domain logic)
+│   │   ├── schemas/             # 13 esquemas Pydantic (request/response)
+│   │   ├── middleware/          # Rate limiting, error handling, security headers
 │   │   │
 │   │   ├── utils/              # Utilidades compartidas
-│   │   │   ├── security.py
-│   │   │   ├── email.py
-│   │   │   └── sanitizer.py
 │   │   │
 │   │   ├── init/               # Seed data
 │   │   │   ├── init_db_simple.py
@@ -148,7 +154,7 @@ scrum/
 │   │   ├── init_db.py          # Auto-migraciones + seed al arrancar
 │   │   └── main.py             # Punto de entrada FastAPI
 │   │
-│   ├── alembic/versions/       # 27 migraciones progresivas
+│   ├── alembic/versions/       # 42 migraciones progresivas
 │   ├── scripts/                # Utilidades standalone
 │   │   ├── create_admin.py     # Crear admin fuera de API
 │   │   └── heal_line_groups.py # Reparar line_group duplicados
@@ -251,26 +257,38 @@ scrum/
 
 ## Arquitectura Modular - Backend y Frontend
 
-### Backend (Feature-Based Modules)
+### Backend (Capas por funcionalidad)
 
-El backend tiene **8 módulos** organizados por feature. Cada módulo expone su propio router FastAPI registrado en `main.py`:
+El backend tiene **21 routers** organizados por funcionalidad. La estructura usa capas (routers → controllers → services):
 
-| Módulo | Ruta base | Propósito |
+| Router | Ruta base | Propósito |
 |--------|----------|-----------|
 | **auth** | `/api/v1/auth` | Login, registro, refresh token, cambio/recuperación de contraseña |
-| **admin** | `/api/v1/admin` | CRUD catálogo (productos, marcas, estilos, categorías) + reportes |
+| **admin** | `/api/v1/admin` | CRUD usuarios, reportes, gestión de clientes/empleados |
 | **catalog** | `/api/v1/catalog` | Catálogo público (productos visibles sin auth) |
+| **catalog_products** | `/api/v1/admin/catalog` | CRUD productos (admin) |
+| **catalog_brands** | `/api/v1/admin/brands` | CRUD marcas (admin) |
+| **catalog_styles** | `/api/v1/admin/styles` | CRUD estilos (admin) |
+| **catalog_inventory** | `/api/v1/admin/inventory` | Gestión inventario (admin) |
 | **dashboard_jefe** | `/api/v1/dashboard` | Métricas, stats, resúmenes del dashboard principal |
-| **orders** | `/api/v1/orders` | Pedidos, producción, seguimiento de estados |
+| **dashboard_empleado** | `/api/v1/dashboard/employee` | Métricas del empleado |
+| **dashboard_empleado_tasks** | `/api/v1/dashboard/employee/tasks` | Tareas del empleado |
+| **dashboard_empleado_metrics** | `/api/v1/dashboard/employee/metrics` | Métricas del empleado |
+| **dashboard_empleado_incidences** | `/api/v1/dashboard/employee/incidences` | Incidencias del empleado |
+| **orders** | `/api/v1/orders` | Pedidos CRUD |
+| **orders_tasks** | `/api/v1/orders/tasks` | Tareas de producción |
+| **client** | `/api/v1/client` | Dashboard cliente y pedidos |
 | **supplies** | `/api/v1/supplies` | Gestión de insumos y movimientos |
+| **scrap** | `/api/v1/scrap` | Incidencias (scrap, pérdidas, pendientes) |
+| **reports** | `/api/v1/admin/reports` | Reportes (dashboard, empleados, clientes, producción) |
+| **notifications** | `/api/v1/notifications` | Notificaciones en tiempo real (WebSocket) |
 | **type_document** | `/api/v1/type-documents` | Tipos de documento (catálogo) |
 | **users** | `/api/v1/users` | CRUD de usuarios del sistema |
 
-**Patrón por módulo (simplificado):**
+**Patrón por capa:**
 ```
-be/app/modules/{nombre}/
-├── router.py       # Endpoints FastAPI (Router APIRouter)
-├── schemas.py      # Schemas Pydantic (request/response)
+be/app/{capa}/
+├── {nombre}.py       # Endpoints FastAPI (routers) o lógica de negocio (services)
 └── service.py      # Lógica de negocio (opcional, algunos inyectan directo)
 ```
 
@@ -352,7 +370,7 @@ Tailwind v4 se configura mediante la directiva `@theme` directamente en `index.c
 ### 7. Auto-migraciones + seed al arrancar
 
 El backend ejecuta automáticamente en `init_db.py`:
-1. Migraciones Alembic pendientes (`alembic upgrade head`) — 27 migraciones
+1. Migraciones Alembic pendientes (`alembic upgrade head`) — 42 migraciones
 2. Datos semilla (roles, tipos documento, catálogo 65 productos, usuarios de prueba)
 
 **No ejecutar `alembic upgrade head` manualmente** a menos que se esté depurando.

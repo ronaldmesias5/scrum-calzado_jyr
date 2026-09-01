@@ -34,7 +34,7 @@ export default function EmployeeIncidencesPage() {
   const [newObservations, setNewObservations] = useState('');
   const [supplyInputMode, setSupplyInputMode] = useState<'select' | 'type'>('select');
   const [newCustomSupplyName, setNewCustomSupplyName] = useState('');
-  const [supplies, setSupplies] = useState<{ id: string; name_supplies: string }[]>([]);
+  const [supplies, setSupplies] = useState<{ id: string; name: string; name_supplies?: string }[]>([]);
   const [creating, setCreating] = useState(false);
   const [productIncidences, setProductIncidences] = useState<ProductIncidence[]>([]);
   const [productLoading, setProductLoading] = useState(false);
@@ -112,8 +112,13 @@ export default function EmployeeIncidencesPage() {
     setSupplyInputMode('select');
     setNewCustomSupplyName('');
     if (category === 'insumo') {
-      try { const res = await api.get('/api/v1/supplies'); setSupplies(Array.isArray(res.data?.items) ? res.data.items : []); }
-      catch (e) { console.error('Error al cargar insumos:', e); setSupplies([]); }
+      try {
+        const res = await api.get('/api/v1/supplies');
+        const items = Array.isArray(res.data?.items) ? res.data.items : [];
+        setSupplies(items);
+        if (items.length === 0) setSupplyInputMode('type');
+      }
+      catch (e) { console.error('Error al cargar insumos:', e); setSupplies([]); setSupplyInputMode('type'); }
     }
   };
 
@@ -285,7 +290,14 @@ export default function EmployeeIncidencesPage() {
                     <button type="button" onClick={() => { setSupplyInputMode('type'); setNewSupplyId(''); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${supplyInputMode === 'type' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'}`}>Escribir</button>
                   </div>
                   {supplyInputMode === 'select' ? (
-                    <select value={newSupplyId} onChange={(e) => setNewSupplyId(e.target.value)} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm"><option value="">Seleccionar insumo...</option>{supplies.map((s) => (<option key={s.id} value={s.id}>{s.name_supplies}</option>))}</select>
+                    supplies.length === 0 ? (
+                      <div className="w-full px-3 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                        <AlertTriangle size={14} />
+                        No hay insumos registrados. Cambie a &quot;Escribir&quot; para reportar uno nuevo.
+                      </div>
+                    ) : (
+                      <select value={newSupplyId} onChange={(e) => setNewSupplyId(e.target.value)} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm"><option value="">Seleccionar insumo...</option>{supplies.map((s) => (<option key={s.id} value={s.id}>{(s as any).name ?? s.name_supplies}</option>))}</select>
+                    )
                   ) : (
                     <input type="text" value={newCustomSupplyName} onChange={(e) => setNewCustomSupplyName(e.target.value)} placeholder="Nombre del insumo" className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm" />
                   )}

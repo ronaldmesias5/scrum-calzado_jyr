@@ -4,12 +4,27 @@ import { ReportIncidenceModal } from '@/features/client/components/molecules/Rep
 import { getMyIncidences, type ClientIncidence } from '@/services/clientApi';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: 'Pendiente', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
-  approved: { label: 'Aprobada', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
-  rejected: { label: 'Rechazada', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  pending: {
+    label: 'Pendiente',
+    color:
+      'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+  },
+  approved: {
+    label: 'Aprobada',
+    color:
+      'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+  },
+  rejected: {
+    label: 'Rechazada',
+    color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+  }
 };
 
-const DEFAULT_STATUS = { label: 'Pendiente', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' };
+const DEFAULT_STATUS = {
+  label: 'Pendiente',
+  color:
+    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+};
 
 export default function MisIncidenciasPage() {
   const [incidences, setIncidences] = useState<ClientIncidence[]>([]);
@@ -33,7 +48,11 @@ export default function MisIncidenciasPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -45,7 +64,8 @@ export default function MisIncidenciasPage() {
             Mis Incidencias
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Reporta productos defectuosos o con problemas de tus pedidos entregados
+            Reporta productos defectuosos o con problemas de tus pedidos
+            entregados
           </p>
         </div>
         <button
@@ -64,11 +84,17 @@ export default function MisIncidenciasPage() {
         ) : incidences.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-4">
             <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
-              <MessageSquareWarning size={28} className="text-gray-300 dark:text-gray-600" />
+              <MessageSquareWarning
+                size={28}
+                className="text-gray-300 dark:text-gray-600"
+              />
             </div>
-            <p className="text-gray-500 dark:text-gray-400 font-bold">No has reportado incidencias</p>
+            <p className="text-gray-500 dark:text-gray-400 font-bold">
+              No has reportado incidencias
+            </p>
             <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm">
-              Si algún producto de un pedido entregado llegó defectuoso, repórtalo aquí y el jefe lo revisará.
+              Si algún producto de un pedido entregado llegó defectuoso,
+              repórtalo aquí y el jefe lo revisará.
             </p>
           </div>
         ) : (
@@ -76,43 +102,79 @@ export default function MisIncidenciasPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Producto</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pedido</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Talla</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Defecto</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Cant.</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Fecha</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Producto
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Pedido
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Talla
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Defecto
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Cant.
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Estado
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Fecha
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                 {incidences.map((inc) => {
                   const status = STATUS_MAP[inc.status] || DEFAULT_STATUS;
                   return (
-                    <tr key={inc.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr
+                      key={inc.id}
+                      className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                    >
                       <td className="px-4 py-3">
-                        <p className="font-bold text-gray-900 dark:text-white">{inc.product_name || 'Producto'}</p>
+                        <p className="font-bold text-gray-900 dark:text-white">
+                          {inc.product_name || 'Producto'}
+                        </p>
                         {inc.observations && (
-                          <p className="text-[11px] text-gray-400 dark:text-gray-500 italic mt-0.5">"{inc.observations}"</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 italic mt-0.5">
+                            "{inc.observations}"
+                          </p>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">#{inc.order_number || '—'}</span>
+                        <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+                          #{inc.order_number || '—'}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{inc.size}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">
-                        {inc.defect_name || inc.defect_code || inc.description || '—'}
+                        {inc.size}
                       </td>
-                      <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{inc.quantity}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">
+                        {inc.defect_name ||
+                          inc.defect_code ||
+                          inc.description ||
+                          '—'}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">
+                        {inc.quantity}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${status.color}`}>
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${status.color}`}
+                        >
                           {status.label}
                         </span>
                         {inc.reviewed_by_name && (
-                          <p className="text-[10px] text-gray-400 mt-0.5">por {inc.reviewed_by_name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            por {inc.reviewed_by_name}
+                          </p>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{formatDate(inc.created_at)}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                        {formatDate(inc.created_at)}
+                      </td>
                     </tr>
                   );
                 })}

@@ -6,7 +6,7 @@ const COLORS = {
   primary: [30, 64, 175] as [number, number, number],
   gray: [107, 114, 128] as [number, number, number],
   lightGray: [243, 244, 246] as [number, number, number],
-  green: [22, 163, 74] as [number, number, number],
+  green: [22, 163, 74] as [number, number, number]
 };
 
 function sanitizeFilename(name: string): string {
@@ -19,13 +19,20 @@ function sanitizeFilename(name: string): string {
 
 function formatDate(iso?: string): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
 }
 
 function formatDateTime(): string {
   return new Date().toLocaleString('es-CO', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 }
 
@@ -39,18 +46,30 @@ async function loadLogoBase64(): Promise<string | null> {
           canvas.width = 35;
           canvas.height = 35;
           const ctx = canvas.getContext('2d');
-          if (!ctx) { resolve(null); return; }
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
           ctx.drawImage(img, 0, 0, 35, 35);
           resolve(canvas.toDataURL('image/png'));
-        } catch { resolve(null); }
+        } catch {
+          resolve(null);
+        }
       };
       img.onerror = () => resolve(null);
       img.src = '/logo.png';
     });
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-function addHeader(doc: jsPDF, title: string, subtitle?: string, logoBase64?: string | null) {
+function addHeader(
+  doc: jsPDF,
+  title: string,
+  subtitle?: string,
+  logoBase64?: string | null
+) {
   const genStr = `Generado: ${formatDateTime()}`;
   if (logoBase64) {
     doc.setFillColor(...COLORS.primary);
@@ -105,7 +124,7 @@ function addFooter(doc: jsPDF) {
     doc.text(
       `CALZADO J&R — Reporte generado el ${formatDate(new Date().toISOString())} — Página ${i} de ${pageCount}`,
       14,
-      290,
+      290
     );
   }
 }
@@ -115,19 +134,20 @@ const STATUS_LABELS: Record<string, string> = {
   en_progreso: 'En Progreso',
   completado: 'Completado',
   entregado: 'Entregado',
-  cancelado: 'Cancelado',
+  cancelado: 'Cancelado'
 };
 
 export async function exportMyOrdersPDF(
   data: ClientAllOrdersReport,
   startDate?: string,
-  endDate?: string,
+  endDate?: string
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const reportTitle = 'Mis Pedidos — Reporte';
-  const subtitle = startDate && endDate
-    ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
-    : undefined;
+  const subtitle =
+    startDate && endDate
+      ? `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`
+      : undefined;
 
   const logo = await loadLogoBase64();
   addHeader(doc, reportTitle, subtitle, logo);
@@ -143,7 +163,12 @@ export async function exportMyOrdersPDF(
     doc.setTextColor(80, 80, 80);
     doc.text(text, x, y);
   }
-  function sv(text: string, x: number, y: number, color: [number, number, number]) {
+  function sv(
+    text: string,
+    x: number,
+    y: number,
+    color: [number, number, number]
+  ) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...color);
@@ -169,13 +194,15 @@ export async function exportMyOrdersPDF(
         const item = order.items[i];
         if (!item) continue;
         allRows.push([
-          i === 0 ? (order.id?.substring(0, 8) || '—') : '',
+          i === 0 ? order.id?.substring(0, 8) || '—' : '',
           i === 0 ? formatDate(order.created_at) : '',
           item.product_name || '—',
           item.category_name || '—',
           item.colour || '—',
           String(item.amount),
-          i === 0 ? (STATUS_LABELS[order.state] || order.state || '').toUpperCase() : '',
+          i === 0
+            ? (STATUS_LABELS[order.state] || order.state || '').toUpperCase()
+            : ''
         ]);
         rowGroups.push(g);
       }
@@ -183,20 +210,36 @@ export async function exportMyOrdersPDF(
 
     autoTable(doc, {
       startY: tableStartY,
-      head: [['ID Pedido', 'Fecha', 'Producto', 'Categoría', 'Color', 'Cant.', 'Estado']],
+      head: [
+        [
+          'ID Pedido',
+          'Fecha',
+          'Producto',
+          'Categoría',
+          'Color',
+          'Cant.',
+          'Estado'
+        ]
+      ],
       body: allRows,
       theme: 'grid',
-      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      headStyles: {
+        fillColor: COLORS.primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8
+      },
       bodyStyles: { fontSize: 7 },
       margin: { left: 10, right: 10 },
       didParseCell(cellData) {
         if (cellData.section === 'body') {
           const groupIdx = rowGroups[cellData.row.index];
           if (groupIdx !== undefined) {
-            cellData.cell.styles.fillColor = groupIdx % 2 === 0 ? [255, 255, 255] : [245, 247, 250];
+            cellData.cell.styles.fillColor =
+              groupIdx % 2 === 0 ? [255, 255, 255] : [245, 247, 250];
           }
         }
-      },
+      }
     });
   } else {
     doc.setTextColor(...COLORS.gray);

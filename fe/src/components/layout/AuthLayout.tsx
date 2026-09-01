@@ -1,20 +1,20 @@
 /**
  * Archivo: fe/src/components/layout/AuthLayout.tsx
  * Descripción: Layout para páginas de autenticación (login, register, forgot, reset).
- * 
+ *
  * ¿Qué?
  *   Layout con:
  *   - Header: Logo (h-16 w-16) + botón "Iniciar sesión" (#1e40af, btn-pulse)
  *   - Main: Card centrado, max-w-md, border #1e40af, sombra suave
  *   - Props: title (h2), subtitle (opcional), children (form content)
  *   - Footer: Texto CALZADO J&R, sin navegación
- * 
+ *
  * ¿Para qué?
  *   - Consistencia visual en TODAS las páginas auth (mismo header/footer)
  *   - Centrar formularios (login, register, forgot, reset)
  *   - Branding claro (logo azul prominente)
  *   - Separar layout auth de layout dashboard (diferentes estéticas)
- * 
+ *
  * ¿Impacto?
  *   CRÍTICO — LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage
  *   TODAS dependen de este layout.
@@ -23,12 +23,12 @@
  *                modules/auth/pages/*.tsx (todas las páginas auth)
  */
 
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/atoms/LanguageSwitcher";
-import { ThemeToggle } from "@/components/atoms/ThemeToggle";
-import { useHeaderAnimation } from "@/hooks/useHeaderAnimation";
-import { Breadcrumbs } from "@/components/atoms/Breadcrumbs";
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/atoms/LanguageSwitcher';
+import { ThemeToggle } from '@/components/atoms/ThemeToggle';
+import { useHeaderAnimation } from '@/hooks/useHeaderAnimation';
+import { Breadcrumbs } from '@/components/atoms/Breadcrumbs';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -37,14 +37,22 @@ interface AuthLayoutProps {
   wide?: boolean;
 }
 
-export function AuthLayout({ children, title, subtitle, wide }: AuthLayoutProps) {
+export function AuthLayout({
+  children,
+  title,
+  subtitle,
+  wide
+}: AuthLayoutProps) {
   const { t } = useTranslation();
-  const { getHeaderClasses, getLogoClasses, getButtonsClasses } = useHeaderAnimation();
+  const { getHeaderClasses, getLogoClasses, getButtonsClasses } =
+    useHeaderAnimation();
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
       {/* Header con logo y controles de idioma/tema */}
-      <header className={`border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 ${getHeaderClasses()}`}>
+      <header
+        className={`border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 ${getHeaderClasses()}`}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           <Link to="/" className={`flex items-center ${getLogoClasses()}`}>
             <img
@@ -77,12 +85,20 @@ export function AuthLayout({ children, title, subtitle, wide }: AuthLayoutProps)
       {/* Contenido principal centrado */}
       {/* ════════════════════════════════════════ */}
       <main className="flex flex-1 items-center justify-center px-4 py-8">
-        <div className={`w-full ${wide ? "max-w-4xl" : "max-w-md"}`}>
-          <div className={`rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-shadow duration-300 ${wide ? "p-6" : "p-8"}`}>
-            <div className={`border-b border-gray-100 dark:border-slate-800 ${wide ? "mb-4 pb-3" : "mb-8 pb-4"}`}>
-              <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{title}</h2>
+        <div className={`w-full ${wide ? 'max-w-4xl' : 'max-w-md'}`}>
+          <div
+            className={`rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-shadow duration-300 ${wide ? 'p-6' : 'p-8'}`}
+          >
+            <div
+              className={`border-b border-gray-100 dark:border-slate-800 ${wide ? 'mb-4 pb-3' : 'mb-8 pb-4'}`}
+            >
+              <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                {title}
+              </h2>
               {subtitle && (
-                <p className="mt-2 text-base text-gray-500 dark:text-gray-400 font-medium">{subtitle}</p>
+                <p className="mt-2 text-base text-gray-500 dark:text-gray-400 font-medium">
+                  {subtitle}
+                </p>
               )}
             </div>
             {children}
@@ -95,7 +111,8 @@ export function AuthLayout({ children, title, subtitle, wide }: AuthLayoutProps)
           {t('landing.hero.title')} - {t('landing.hero.subtitle')}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-medium">
-          {t('landing.footer.location')} | {t('landing.footer.phone')} | {t('landing.footer.copyright')}
+          {t('landing.footer.location')} | {t('landing.footer.phone')} |{' '}
+          {t('landing.footer.copyright')}
         </p>
       </footer>
     </div>

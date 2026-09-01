@@ -4,14 +4,16 @@ interface CTAFinalSectionProps {
   onRegisterClick?: () => void;
 }
 
-export default function CTAFinalSection({ onRegisterClick }: CTAFinalSectionProps) {
+export default function CTAFinalSection({
+  onRegisterClick
+}: CTAFinalSectionProps) {
   const { t } = useTranslation();
 
   return (
     <section className="py-24 bg-blue-900 dark:bg-slate-950 text-white text-center transition-colors duration-500 overflow-hidden relative">
       {/* Decorative pulse element */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-      
+
       <div className="relative z-10 max-w-3xl mx-auto px-6">
         <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">
           {t('landing.ctaFinal.title')}

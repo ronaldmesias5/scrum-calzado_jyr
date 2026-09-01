@@ -15,7 +15,7 @@ export default function ProductCard({
   brandName,
   styleName,
   categoryName,
-  onOrderClick,
+  onOrderClick
 }: ProductCardProps) {
   const navigate = useNavigate();
 
@@ -63,7 +63,7 @@ export default function ProductCard({
             <Package className="w-24 h-24 text-gray-300 dark:text-slate-600" />
           </div>
         )}
-        
+
         {/* Badge de marca */}
         {brandName && (
           <div className="absolute left-4 top-4 rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg dark:bg-blue-500">
@@ -132,10 +132,10 @@ export default function ProductCard({
             className="text-blue-600 dark:text-blue-400 font-semibold hover:underline transition-all"
           >
             inicia sesión
-          </button>
-          {' '}(venta al por mayor).
+          </button>{' '}
+          (venta al por mayor).
         </p>
       </div>
-      </article>
+    </article>
   );
 }

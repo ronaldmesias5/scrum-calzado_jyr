@@ -3,16 +3,16 @@
  * Props: onSuccess (called after successful login), onSwitchToRegister, onSwitchToForgot.
  */
 
-import { useState } from "react";
-import { Mail, Lock, Send } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { useToast } from "@/store/ToastContext";
-import { getDashboardRoute } from "@/utils/routing";
-import { requestNewInvitation } from "@/services/authService";
+import { useState } from 'react';
+import { Mail, Lock, Send } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { useToast } from '@/store/ToastContext';
+import { getDashboardRoute } from '@/utils/routing';
+import { requestNewInvitation } from '@/services/authService';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -21,15 +21,23 @@ interface LoginFormProps {
   onSwitchToReactivation?: () => void;
 }
 
-export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onSwitchToReactivation }: LoginFormProps) {
+export function LoginForm({
+  onSuccess,
+  onSwitchToRegister,
+  onSwitchToForgot,
+  onSwitchToReactivation
+}: LoginFormProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const { showToast } = useToast();
 
-  const rememberedEmail = localStorage.getItem("remembered_email") || "";
-  const [formData, setFormData] = useState({ email: rememberedEmail, password: "" });
+  const rememberedEmail = localStorage.getItem('remembered_email') || '';
+  const [formData, setFormData] = useState({
+    email: rememberedEmail,
+    password: ''
+  });
   const [rememberMe, setRememberMe] = useState(!!rememberedEmail);
   const [isLoading, setIsLoading] = useState(false);
   const [invitationExpired, setInvitationExpired] = useState(false);
@@ -44,10 +52,16 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
     setRequestingNew(true);
     try {
       await requestNewInvitation(formData.email);
-      showToast("Se ha enviado una nueva invitación a tu correo electrónico.", "success");
+      showToast(
+        'Se ha enviado una nueva invitación a tu correo electrónico.',
+        'success'
+      );
       setInvitationExpired(false);
     } catch {
-      showToast("No se pudo procesar la solicitud. Verifica tu correo.", "error");
+      showToast(
+        'No se pudo procesar la solicitud. Verifica tu correo.',
+        'error'
+      );
     } finally {
       setRequestingNew(false);
     }
@@ -61,14 +75,14 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
       const userData = await login({ ...formData, remember_me: rememberMe });
 
       if (rememberMe) {
-        localStorage.setItem("remembered_email", formData.email);
+        localStorage.setItem('remembered_email', formData.email);
       } else {
-        localStorage.removeItem("remembered_email");
+        localStorage.removeItem('remembered_email');
       }
 
       if (userData?.must_change_password) {
         onSuccess?.();
-        navigate("/change-password", { replace: true });
+        navigate('/change-password', { replace: true });
         return;
       }
 
@@ -76,12 +90,15 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
       onSuccess?.();
       navigate(dashboardRoute, { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al iniciar sesión";
-      const isExpired = message.toLowerCase().includes("expirado") || message.toLowerCase().includes("invitación");
+      const message =
+        err instanceof Error ? err.message : 'Error al iniciar sesión';
+      const isExpired =
+        message.toLowerCase().includes('expirado') ||
+        message.toLowerCase().includes('invitación');
       if (isExpired) {
         setInvitationExpired(true);
       }
-      showToast(message, "error");
+      showToast(message, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +115,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
           placeholder="correo@ejemplo.com"
           autoComplete="email"
           autoFocus
+          required
           icon={<Mail className="h-5 w-5" />}
           onChange={handleChange}
         />
@@ -109,6 +127,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
           value={formData.password}
           placeholder="••••••••"
           autoComplete="current-password"
+          required
           icon={<Lock className="h-5 w-5" />}
           onChange={handleChange}
         />
@@ -121,7 +140,9 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
             />
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t('auth.rememberMe')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+              {t('auth.rememberMe')}
+            </span>
           </label>
           <button
             type="button"
@@ -132,7 +153,12 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
           </button>
         </div>
 
-        <Button type="submit" fullWidth isLoading={isLoading} className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all">
+        <Button
+          type="submit"
+          fullWidth
+          isLoading={isLoading}
+          className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all"
+        >
           {t('common.login')}
         </Button>
       </form>
@@ -140,7 +166,8 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
       {invitationExpired && (
         <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-center">
           <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-3">
-            Tu contraseña temporal ha expirado. Solicita una nueva invitación a tu correo.
+            Tu contraseña temporal ha expirado. Solicita una nueva invitación a
+            tu correo.
           </p>
           <button
             type="button"
@@ -161,7 +188,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
       )}
 
       <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-        {t('auth.noAccountPhrase') || "¿No tienes cuenta?"}{" "}
+        {t('auth.noAccountPhrase') || '¿No tienes cuenta?'}{' '}
         <button
           type="button"
           onClick={onSwitchToRegister}
@@ -172,7 +199,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, onSwitchToForgot, onS
       </p>
 
       <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-        ¿Tu cuenta fue suspendida?{" "}
+        ¿Tu cuenta fue suspendida?{' '}
         <button
           type="button"
           onClick={onSwitchToReactivation}

@@ -15,6 +15,7 @@ Endpoints:
   GET    /api/v1/scrap/stock                        — listar stock de scrap
 """
 
+import logging
 import uuid
 from datetime import datetime
 from typing import Annotated
@@ -56,6 +57,8 @@ from app.schemas.dashboard_empleado import (
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_admin_or_jefe(current_user: User) -> None:
@@ -353,7 +356,7 @@ async def share_incidence(
                 },
             )
         except Exception as exc:  # WS es best-effort
-            print(f"[share] WS notify falló: {exc}")
+            logger.warning(f"[share] WS notify falló: {exc}")
 
     # 2) Correo: central único + Reply-To del rol que comparte (0 configuración, buenas prácticas)
     to_email = str(data.to_email) if data.to_email else (client.email if client else None)
@@ -374,7 +377,7 @@ async def share_incidence(
             email_sent = True
             detail_parts.append(f"correo enviado a {to_email} · responde a {current_user.email}")
         except Exception as exc:
-            print(f"[share] Email falló a {to_email}: {exc}")
+            logger.error(f"[share] Email falló a {to_email}: {exc}")
             detail_parts.append(f"correo NO enviado a {to_email} (revisa logs del servidor)")
 
     if not detail_parts:

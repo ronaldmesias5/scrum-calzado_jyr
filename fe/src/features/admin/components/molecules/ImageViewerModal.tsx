@@ -11,7 +11,7 @@ export default function ImageViewerModal({
   isOpen,
   imageUrl,
   productName,
-  onClose,
+  onClose
 }: ImageViewerModalProps) {
   if (!isOpen || !imageUrl) return null;
 
@@ -24,7 +24,6 @@ export default function ImageViewerModal({
       className="max-h-[90vh]"
     >
       <div className="flex flex-col h-full">
-
         {/* Imagen */}
         <div className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-10 bg-gray-50/50 dark:bg-black/20 custom-scrollbar">
           <img

@@ -159,6 +159,58 @@ def create_customer_pending_incidence(
     db.add(pending)
     db.commit()
     db.refresh(pending)
+
+    # Notificar a todos los jefes en paralelo (best-effort, no bloquea la creación)
+    try:
+        from app.models.notifications import Notification, NotificationType
+        from app.models.user import User
+        from app.models.role import Role
+
+        jefe_role = db.execute(select(Role).where(Role.name_role == "admin")).scalar_one_or_none()
+        jefes = db.execute(
+            select(User).where(
+                ((User.role_id == jefe_role.id) if jefe_role else False)
+                | (User.occupation == "jefe")
+            )
+        ).scalars().all()
+        reporter = db.get(User, customer_id)
+        reporter_name = f"{reporter.name_user} {reporter.last_name}".strip() if reporter else "Cliente"
+        for jefe in jefes:
+            if jefe.id == customer_id:
+                continue
+            notif = Notification(
+                user_id=jefe.id,
+                title_notification="Nuevo reclamo de cliente",
+                message_notification=f"{reporter_name} reportó una incidencia en el pedido #{str(order.id)[:8]} — {detail.product_id} talla {size}",
+                type_notification=NotificationType.error,
+                order_id=order.id,
+                link_url="/dashboard/admin/losses?tab=pending",
+                created_by=customer_id,
+            )
+            db.add(notif)
+        db.commit()
+        # WS push best-effort
+        try:
+            from app.utils.ws_manager import ws_manager
+            import asyncio
+
+            for jefe in jefes:
+                if jefe.id == customer_id:
+                    continue
+                try:
+                    asyncio.run(
+                        ws_manager.broadcast_to_user(
+                            str(jefe.id),
+                            {"type": "new_incidence", "title": "Reclamo de cliente", "order_id": str(order.id)},
+                        )
+                    )
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    except Exception:
+        pass
+
     return pending
 
 
@@ -194,6 +246,8 @@ def get_all_pending_incidences(
         select(PendingProductIncidence)
         .options(
             selectinload(PendingProductIncidence.employee),
+            selectinload(PendingProductIncidence.customer),
+            selectinload(PendingProductIncidence.order),
             selectinload(PendingProductIncidence.task),
             selectinload(PendingProductIncidence.product),
             selectinload(PendingProductIncidence.defect_code),

@@ -5,5 +5,5 @@ export const WHATSAPP_CONFIG = {
   // Mensaje predeterminado
   defaultMessage: 'Hola, tengo una consulta sobre los productos de Calzado J&R',
   // Contacto/nombre
-  contactName: 'Calzado J&R',
+  contactName: 'Calzado J&R'
 };

@@ -3,6 +3,7 @@ Archivo: be/app/routers/dashboard_empleado_incidences.py
 Descripción: Endpoints de incidencias del panel del empleado.
 """
 
+import logging
 import uuid
 from typing import Annotated
 
@@ -30,6 +31,8 @@ router = APIRouter(
     prefix="/api/v1/dashboard/employee",
     tags=["dashboard-empleado"],
 )
+
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -81,7 +84,7 @@ def get_my_incidences(
             total=len(incidences),
         )
     except Exception as e:
-        print(f"Error en get_my_incidences: {e}")
+        logger.exception("Error en get_my_incidences")
         raise HTTPException(
             status_code=500,
             detail="Error al obtener incidencias. Intente nuevamente.",

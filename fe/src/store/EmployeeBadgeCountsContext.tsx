@@ -2,12 +2,18 @@
  * EmployeeBadgeCountsContext — conteos para badges del sidebar de empleado.
  * Polling cada 30s desde endpoints del empleado.
  */
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback
+} from 'react';
 import {
   getEmployeeTasks,
   getAvailableTasks,
   getEmployeeIncidences,
-  getProductIncidences,
+  getProductIncidences
 } from '../services/employeeApi';
 
 export interface EmployeeBadgeCounts {
@@ -23,14 +29,18 @@ interface ContextValue {
 
 const EmployeeBadgeCountsContext = createContext<ContextValue>({
   counts: { tareasPendientes: 0, tareasDisponibles: 0, incidencias: 0 },
-  refresh: () => {},
+  refresh: () => {}
 });
 
-export function EmployeeBadgeCountsProvider({ children }: { children: React.ReactNode }) {
+export function EmployeeBadgeCountsProvider({
+  children
+}: {
+  children: React.ReactNode;
+}) {
   const [counts, setCounts] = useState<EmployeeBadgeCounts>({
     tareasPendientes: 0,
     tareasDisponibles: 0,
-    incidencias: 0,
+    incidencias: 0
   });
 
   const refresh = useCallback(async () => {
@@ -39,7 +49,7 @@ export function EmployeeBadgeCountsProvider({ children }: { children: React.Reac
         getEmployeeTasks(),
         getAvailableTasks(),
         getEmployeeIncidences({ state: 'abierta' }),
-        getProductIncidences(),
+        getProductIncidences()
       ]);
 
       let tareasPendientes = 0;
@@ -61,7 +71,7 @@ export function EmployeeBadgeCountsProvider({ children }: { children: React.Reac
         const productInc = results[3].value;
         if (Array.isArray(productInc.incidences)) {
           incidencias += productInc.incidences.filter(
-            (i: { status?: string }) => i.status === 'pending',
+            (i: { status?: string }) => i.status === 'pending'
           ).length;
         } else {
           incidencias += productInc.total ?? 0;

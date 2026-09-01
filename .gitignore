@@ -20,6 +20,7 @@ build/
 
 # IDE
 .vscode/settings.json
+.vscode/*.code-workspace
 .idea/
 *.swp
 *.swo
@@ -47,6 +48,23 @@ htmlcov/
 
 # Docker
 docker-compose.override.yml
+
+# Uploads (archivos de usuario, no del código)
+uploads/
+be/uploads/
+
+# Database dumps / backups
+*.dump
+*.bak
+
+# Postman environments (credenciales locales)
+test/back/*.postman_environment/
+
+# test/ se SUBE a git (scripts Selenium, SQL y guías son útiles para el equipo)
+!test/
+
+# Checklists / documentos locales del SENA
+Lista de Chequeo*
 
 # Project specific
 GUIA_GIT.md

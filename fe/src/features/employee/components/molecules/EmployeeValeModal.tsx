@@ -1,13 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  XCircle, Package, Scissors, PenTool, Hammer, Sparkles,
-  User, Loader2, CheckCircle, CheckCircle2,
+  XCircle,
+  Package,
+  Scissors,
+  PenTool,
+  Hammer,
+  Sparkles,
+  User,
+  Loader2,
+  CheckCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { getTaskVale, updateEmployeeTaskStatus } from '@/services/employeeApi';
 import type { ValeResponse } from '@/types/employee';
 import { useToast } from '@/store/ToastContext';
 import { formatCOP } from '@/utils/format';
+import { API_URL } from '@/services/config';
 
 interface Props {
   taskId: string;
@@ -15,10 +24,31 @@ interface Props {
 }
 
 const STAGES = [
-  { key: 'corte',        label: 'Corte',        icon: Scissors, color: 'border-amber-500 bg-amber-50/50 dark:bg-amber-900/10' },
-  { key: 'guarnicion',   label: 'Guarnicion',   icon: PenTool,  color: 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' },
-  { key: 'soladura',     label: 'Soladura',     icon: Hammer,   color: 'border-purple-500 bg-purple-50/50 dark:bg-purple-900/10' },
-  { key: 'emplantillado',label: 'Emplantillado', icon: Sparkles, color: 'border-green-500 border-green-500 bg-green-50/50 dark:bg-green-900/10' },
+  {
+    key: 'corte',
+    label: 'Corte',
+    icon: Scissors,
+    color: 'border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+  },
+  {
+    key: 'guarnicion',
+    label: 'Guarnicion',
+    icon: PenTool,
+    color: 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10'
+  },
+  {
+    key: 'soladura',
+    label: 'Soladura',
+    icon: Hammer,
+    color: 'border-purple-500 bg-purple-50/50 dark:bg-purple-900/10'
+  },
+  {
+    key: 'emplantillado',
+    label: 'Emplantillado',
+    icon: Sparkles,
+    color:
+      'border-green-500 border-green-500 bg-green-50/50 dark:bg-green-900/10'
+  }
 ];
 
 export default function EmployeeValeModal({ taskId, onClose }: Props) {
@@ -40,14 +70,19 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
       setObservations(obs);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      showToast(err?.response?.data?.detail || 'Error al cargar el vale', 'error');
+      showToast(
+        err?.response?.data?.detail || 'Error al cargar el vale',
+        'error'
+      );
       onClose();
     } finally {
       setLoading(false);
     }
   }, [taskId]);
 
-  useEffect(() => { loadVale(); }, [loadVale]);
+  useEffect(() => {
+    loadVale();
+  }, [loadVale]);
 
   const handleUpdateStatus = async (tId: string, newStatus: string) => {
     setStatusUpdating(tId);
@@ -58,7 +93,10 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
       loadVale();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      showToast(err?.response?.data?.detail || 'Error al actualizar estado', 'error');
+      showToast(
+        err?.response?.data?.detail || 'Error al actualizar estado',
+        'error'
+      );
     } finally {
       setStatusUpdating(null);
     }
@@ -83,7 +121,6 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 transition-all duration-500 flex flex-col max-w-4xl w-full max-h-[90vh]">
-
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -92,37 +129,64 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
             </div>
             <div>
               <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
-                VALE <span className="text-red-600 text-[16px] font-black">Nº {vale.vale_number || 'TBD'}</span>
+                VALE{' '}
+                <span className="text-red-600 text-[16px] font-black">
+                  Nº {vale.vale_number || 'TBD'}
+                </span>
               </h2>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{vale.product_name}</p>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                {vale.product_name}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all text-red-500">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all text-red-500"
+          >
             <XCircle className="w-6 h-6" />
           </button>
         </div>
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8 min-h-0">
-
           {/* ── Encabezado CALZADO J&R ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm gap-6">
             <div className="flex items-center gap-6">
-              <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain drop-shadow-md" />
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="w-16 h-16 object-contain drop-shadow-md"
+              />
               <div className="h-10 w-[2px] bg-gray-100 dark:bg-slate-800 hidden sm:block" />
               <div>
-                <h1 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">CALZADO J&R</h1>
-                <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-[0.2em] mt-1">SISTEMA DE PRODUCCION</p>
+                <h1 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">
+                  CALZADO J&R
+                </h1>
+                <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-[0.2em] mt-1">
+                  SISTEMA DE PRODUCCION
+                </p>
               </div>
             </div>
             <div className="flex gap-8 text-right">
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vale Nº</p>
-                <p className="text-lg font-black text-red-600">{vale.vale_number ? `# ${vale.vale_number}` : '# -'}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  Vale Nº
+                </p>
+                <p className="text-lg font-black text-red-600">
+                  {vale.vale_number ? `# ${vale.vale_number}` : '# -'}
+                </p>
               </div>
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</p>
-                <p className="text-lg font-black text-gray-800 dark:text-gray-200">{new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  Fecha
+                </p>
+                <p className="text-lg font-black text-gray-800 dark:text-gray-200">
+                  {new Date().toLocaleDateString('es-CO', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </p>
               </div>
             </div>
           </div>
@@ -133,7 +197,11 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
               <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-800 shadow-inner flex-shrink-0 flex items-center justify-center">
                 {vale.product_image ? (
                   <img
-                    src={vale.product_image.startsWith('http') ? vale.product_image : `http://localhost:8000${vale.product_image}`}
+                    src={
+                      vale.product_image.startsWith('http')
+                        ? vale.product_image
+                        : `${API_URL}${vale.product_image}`
+                    }
                     alt={vale.product_name || ''}
                     className="w-full h-full object-cover"
                   />
@@ -142,20 +210,34 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                 )}
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Detalle del Pedido</p>
-                <h4 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">{vale.product_name}</h4>
+                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                  Detalle del Pedido
+                </p>
+                <h4 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">
+                  {vale.product_name}
+                </h4>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
-                    Cliente: <span className="text-gray-900 dark:text-white uppercase">{vale.customer_name} {vale.customer_last_name}</span>
+                    Cliente:{' '}
+                    <span className="text-gray-900 dark:text-white uppercase">
+                      {vale.customer_name} {vale.customer_last_name}
+                    </span>
                   </p>
                   <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
-                    Cantidad: <span className="text-blue-600 dark:text-blue-400">{vale.total_pairs} pares</span>
+                    Cantidad:{' '}
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {vale.total_pairs} pares
+                    </span>
                   </p>
                 </div>
                 {myTask?.observation && (
                   <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl">
-                    <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase mb-1">Mi Observacion:</p>
-                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{myTask.observation}</p>
+                    <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase mb-1">
+                      Mi Observacion:
+                    </p>
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                      {myTask.observation}
+                    </p>
                   </div>
                 )}
               </div>
@@ -165,21 +247,37 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
           {/* ── Sizing Table ── */}
           <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="bg-gray-50 dark:bg-slate-800/50 px-6 py-2 border-b border-gray-100 dark:border-slate-800">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Numeracion y Cantidades</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                Numeracion y Cantidades
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <tbody>
                   <tr className="border-b border-gray-50 dark:border-slate-800/50">
-                    <td className="px-4 py-2 bg-gray-50/30 dark:bg-slate-800/20 text-[10px] font-black text-gray-400 uppercase tracking-tighter border-r border-gray-100 dark:border-slate-800">Talla</td>
+                    <td className="px-4 py-2 bg-gray-50/30 dark:bg-slate-800/20 text-[10px] font-black text-gray-400 uppercase tracking-tighter border-r border-gray-100 dark:border-slate-800">
+                      Talla
+                    </td>
                     {vale.details.map((d, i) => (
-                      <td key={i} className="px-4 py-2 text-center text-[11px] font-black text-blue-600 dark:text-blue-400 border-r border-gray-50 dark:border-slate-800 last:border-0">{d.size}</td>
+                      <td
+                        key={i}
+                        className="px-4 py-2 text-center text-[11px] font-black text-blue-600 dark:text-blue-400 border-r border-gray-50 dark:border-slate-800 last:border-0"
+                      >
+                        {d.size}
+                      </td>
                     ))}
                   </tr>
                   <tr>
-                    <td className="px-4 py-2 bg-gray-50/30 dark:bg-slate-800/20 text-[10px] font-black text-gray-400 uppercase tracking-tighter border-r border-gray-100 dark:border-slate-800">Cant.</td>
+                    <td className="px-4 py-2 bg-gray-50/30 dark:bg-slate-800/20 text-[10px] font-black text-gray-400 uppercase tracking-tighter border-r border-gray-100 dark:border-slate-800">
+                      Cant.
+                    </td>
                     {vale.details.map((d, i) => (
-                      <td key={i} className="px-4 py-2 text-center text-xs font-black text-gray-900 dark:text-white border-r border-gray-50 dark:border-slate-800 last:border-0">{d.amount}</td>
+                      <td
+                        key={i}
+                        className="px-4 py-2 text-center text-xs font-black text-gray-900 dark:text-white border-r border-gray-50 dark:border-slate-800 last:border-0"
+                      >
+                        {d.amount}
+                      </td>
                     ))}
                   </tr>
                 </tbody>
@@ -190,8 +288,12 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
           {/* ── Task Stage Cards ── */}
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
-              <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">Modulos de Produccion</h3>
-              <span className="text-[10px] font-bold text-gray-400 italic">Etapas del proceso</span>
+              <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">
+                Modulos de Produccion
+              </h3>
+              <span className="text-[10px] font-bold text-gray-400 italic">
+                Etapas del proceso
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {STAGES.map((stage) => {
@@ -201,20 +303,30 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
 
                 if (!task) {
                   return (
-                    <div key={stage.key} className={`p-6 rounded-[2rem] border-2 transition-all shadow-sm ${stage.color} opacity-40`}>
+                    <div
+                      key={stage.key}
+                      className={`p-6 rounded-[2rem] border-2 transition-all shadow-sm ${stage.color} opacity-40`}
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm border border-black/5 dark:border-white/5">
                           <StageIcon className="w-5 h-5 text-gray-400" />
                         </div>
-                        <h5 className="text-base font-black text-gray-400 uppercase tracking-tight">{stage.label}</h5>
+                        <h5 className="text-base font-black text-gray-400 uppercase tracking-tight">
+                          {stage.label}
+                        </h5>
                       </div>
-                      <p className="text-[9px] font-bold text-gray-400 mt-3 ml-13">Sin asignar</p>
+                      <p className="text-[9px] font-bold text-gray-400 mt-3 ml-13">
+                        Sin asignar
+                      </p>
                     </div>
                   );
                 }
 
                 return (
-                  <div key={stage.key} className={`p-6 rounded-[2rem] border-2 transition-all shadow-sm ${stage.color}`}>
+                  <div
+                    key={stage.key}
+                    className={`p-6 rounded-[2rem] border-2 transition-all shadow-sm ${stage.color}`}
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm border border-black/5 dark:border-white/5 relative">
@@ -226,16 +338,27 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                           )}
                         </div>
                         <div>
-                          <h5 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">{stage.label}</h5>
-                          {isMine && <p className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">Mi Tarea</p>}
-                          {task.status === 'completado' && <p className="text-[9px] font-bold text-green-600 uppercase tracking-tighter">Tarea Completada</p>}
+                          <h5 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                            {stage.label}
+                          </h5>
+                          {isMine && (
+                            <p className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">
+                              Mi Tarea
+                            </p>
+                          )}
+                          {task.status === 'completado' && (
+                            <p className="text-[9px] font-bold text-green-600 uppercase tracking-tighter">
+                              Tarea Completada
+                            </p>
+                          )}
                           {isMine && task.price_per_dozen > 0 && (
                             <div className="mt-1 flex flex-col">
                               <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400">
                                 {formatCOP(task.price_per_dozen)} / docena
                               </p>
                               <p className="text-[10px] font-black text-green-700 dark:text-green-400">
-                                Total: {formatCOP(task.total_cost)} ({task.amount} pares)
+                                Total: {formatCOP(task.total_cost)} (
+                                {task.amount} pares)
                               </p>
                             </div>
                           )}
@@ -254,19 +377,27 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                               <User size={16} className="text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-0.5">Responsable</p>
+                              <p className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-0.5">
+                                Responsable
+                              </p>
                               <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none truncate">
                                 {task.assigned_user_name || 'Asignado'}
                               </p>
                             </div>
-                            <div className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 ${
-                              task.status === 'completado'
-                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
+                            <div
+                              className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 ${
+                                task.status === 'completado'
+                                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
+                                  : task.status === 'pendiente'
+                                    ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400'
+                                    : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                              }`}
+                            >
+                              {task.status === 'completado'
+                                ? 'Hecho'
                                 : task.status === 'pendiente'
-                                ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400'
-                                : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                            }`}>
-                              {task.status === 'completado' ? 'Hecho' : task.status === 'pendiente' ? 'Pendiente' : 'Activo'}
+                                  ? 'Pendiente'
+                                  : 'Activo'}
                             </div>
                           </div>
 
@@ -280,12 +411,16 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                               ) : (
                                 <select
                                   value={task.status}
-                                  onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
+                                  onChange={(e) =>
+                                    handleUpdateStatus(task.id, e.target.value)
+                                  }
                                   disabled={statusUpdating === task.id}
                                   className="w-full text-[10px] font-black uppercase bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg py-1.5 px-2 outline-none cursor-pointer disabled:opacity-50 transition-colors"
                                 >
                                   <option value="pendiente">Pendiente</option>
-                                  <option value="en_progreso">En Progreso</option>
+                                  <option value="en_progreso">
+                                    En Progreso
+                                  </option>
                                   <option value="completado">Completado</option>
                                 </select>
                               )}
@@ -297,22 +432,35 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                                 </label>
                                 <textarea
                                   value={observations[task.id] || ''}
-                                  onChange={(e) => setObservations((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                  onChange={(e) =>
+                                    setObservations((prev) => ({
+                                      ...prev,
+                                      [task.id]: e.target.value
+                                    }))
+                                  }
                                   placeholder="Ej: Faltaron insumos..."
                                   rows={2}
                                   maxLength={500}
                                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all resize-none placeholder:text-gray-400"
                                 />
-                                <span className="text-[10px] text-gray-400 text-right block mt-0.5">{(observations[task.id] || '').length}/500</span>
-                                <p className="text-[9px] text-blue-500 font-medium italic">La observación se guarda al cambiar el estado</p>
+                                <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+                                  {(observations[task.id] || '').length}/500
+                                </span>
+                                <p className="text-[9px] text-blue-500 font-medium italic">
+                                  La observación se guarda al cambiar el estado
+                                </p>
                               </div>
                             </div>
                           ) : task.observation ? (
                             /* Other task's observation (read-only) */
                             <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                               <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/50">
-                                <p className="text-[9px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-1">Observacion</p>
-                                <p className="text-xs text-amber-800 dark:text-amber-200">{task.observation}</p>
+                                <p className="text-[9px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-1">
+                                  Observacion
+                                </p>
+                                <p className="text-xs text-amber-800 dark:text-amber-200">
+                                  {task.observation}
+                                </p>
                               </div>
                             </div>
                           ) : null}
@@ -323,13 +471,19 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                             <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
                               <User size={16} className="text-gray-400" />
                             </div>
-                            <p className="text-[10px] font-black uppercase text-gray-400">Sin Asignar</p>
-                            <div className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase ${
-                              task.status === 'completado'
-                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
-                                : 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400'
-                            }`}>
-                              {task.status === 'completado' ? 'Hecho' : 'Pendiente'}
+                            <p className="text-[10px] font-black uppercase text-gray-400">
+                              Sin Asignar
+                            </p>
+                            <div
+                              className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase ${
+                                task.status === 'completado'
+                                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
+                                  : 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400'
+                              }`}
+                            >
+                              {task.status === 'completado'
+                                ? 'Hecho'
+                                : 'Pendiente'}
                             </div>
                           </div>
                         </div>
@@ -340,7 +494,6 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
               })}
             </div>
           </div>
-
         </div>
       </div>
     </div>,

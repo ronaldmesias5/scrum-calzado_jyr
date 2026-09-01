@@ -7,7 +7,7 @@ import {
   Package,
   ShoppingBag,
   Wrench,
-  Box,
+  Box
 } from 'lucide-react';
 import { useToast } from '@/store/ToastContext';
 import Modal from '@/components/atoms/Modal';
@@ -18,7 +18,7 @@ import {
   SupplyItem,
   type IncidenceCategory,
   type IncidentType,
-  type IncidentCreateRequest,
+  type IncidentCreateRequest
 } from '@/services/lossService';
 import {
   listProducts,
@@ -27,7 +27,7 @@ import {
   resolveImageUrl,
   type Product,
   type Category,
-  type Brand,
+  type Brand
 } from '@/services/catalogService';
 
 // ─────────────────────────────────────────
@@ -82,13 +82,14 @@ interface GroupedProduct {
 const INCIDENT_TYPE_OPTIONS: { value: IncidentType; label: string }[] = [
   { value: 'perdida', label: 'Pérdida' },
   { value: 'en_reparacion', label: 'En Reparación' },
-  { value: 'devuelto', label: 'Devuelto' },
+  { value: 'devuelto', label: 'Devuelto' }
 ];
 
-const MODE_OPTIONS: { value: FormMode; label: string; icon: typeof Package }[] = [
-  { value: 'linked', label: 'Vincular a Pedido', icon: ShoppingBag },
-  { value: 'independent', label: 'Registro Independiente', icon: Package },
-];
+const MODE_OPTIONS: { value: FormMode; label: string; icon: typeof Package }[] =
+  [
+    { value: 'linked', label: 'Vincular a Pedido', icon: ShoppingBag },
+    { value: 'independent', label: 'Registro Independiente', icon: Package }
+  ];
 
 const CATEGORY_OPTIONS: {
   value: IncidenceCategory;
@@ -97,17 +98,27 @@ const CATEGORY_OPTIONS: {
   activeColor: string;
 }[] = [
   { value: 'producto', label: 'Producto', icon: Package, activeColor: 'blue' },
-  { value: 'maquinaria', label: 'Maquinaria', icon: Wrench, activeColor: 'orange' },
-  { value: 'insumo', label: 'Insumo', icon: Box, activeColor: 'green' },
+  {
+    value: 'maquinaria',
+    label: 'Maquinaria',
+    icon: Wrench,
+    activeColor: 'orange'
+  },
+  { value: 'insumo', label: 'Insumo', icon: Box, activeColor: 'green' }
 ];
 
 // ─────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────
 
-export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormModalProps) {
+export default function LossFormModal({
+  isOpen,
+  onClose,
+  onSuccess
+}: LossFormModalProps) {
   // ── Incidence Category ──
-  const [incidenceCategory, setIncidenceCategory] = useState<IncidenceCategory>('producto');
+  const [incidenceCategory, setIncidenceCategory] =
+    useState<IncidenceCategory>('producto');
 
   // ── Mode (only for producto) ──
   const [formMode, setFormMode] = useState<FormMode>('linked');
@@ -121,7 +132,9 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   const [showVale, setShowVale] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [activeDetailId, setActiveDetailId] = useState('');
-  const [rowQuantities, setRowQuantities] = useState<Record<string, number>>({});
+  const [rowQuantities, setRowQuantities] = useState<Record<string, number>>(
+    {}
+  );
 
   // ── Mode B: independent ──
   const [categories, setCategories] = useState<Category[]>([]);
@@ -130,7 +143,8 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [independentProducts, setIndependentProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [selectedIndependentProductId, setSelectedIndependentProductId] = useState('');
+  const [selectedIndependentProductId, setSelectedIndependentProductId] =
+    useState('');
 
   // ── Common ──
   const [loading, setLoading] = useState(false);
@@ -152,7 +166,9 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   const [machineryName, setMachineryName] = useState('');
   const [supplies, setSupplies] = useState<SupplyItem[]>([]);
   const [selectedSupplyId, setSelectedSupplyId] = useState('');
-  const [supplyInputMode, setSupplyInputMode] = useState<'select' | 'type'>('select');
+  const [supplyInputMode, setSupplyInputMode] = useState<'select' | 'type'>(
+    'select'
+  );
   const [customSupplyName, setCustomSupplyName] = useState('');
   const [supplyDropdownOpen, setSupplyDropdownOpen] = useState(false);
   const supplyDropdownRef = useRef<HTMLDivElement>(null);
@@ -164,7 +180,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
 
   const groupedProducts = useMemo<GroupedProduct[]>(() => {
     const map = new Map<string, OrderDetailItem[]>();
-    orderDetails.forEach(d => {
+    orderDetails.forEach((d) => {
       const existing = map.get(d.product_id);
       if (existing) {
         existing.push(d);
@@ -180,23 +196,29 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
       styleName: details[0]!.style_name ?? '',
       imageUrl: details[0]!.image_url,
       totalPairs: details.reduce((sum, d) => sum + d.amount, 0),
-      details,
+      details
     }));
   }, [orderDetails]);
 
   const selectedProductDetails = useMemo(() => {
     if (!selectedProductId) return [];
-    return orderDetails.filter(d => d.product_id === selectedProductId);
+    return orderDetails.filter((d) => d.product_id === selectedProductId);
   }, [orderDetails, selectedProductId]);
 
   const selectedIndependentProduct = useMemo(() => {
     if (!selectedIndependentProductId) return null;
-    return independentProducts.find(p => p.id === selectedIndependentProductId) ?? null;
+    return (
+      independentProducts.find((p) => p.id === selectedIndependentProductId) ??
+      null
+    );
   }, [selectedIndependentProductId, independentProducts]);
 
   // ── Click-outside handler for custom supply dropdown ──
   const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (supplyDropdownRef.current && !supplyDropdownRef.current.contains(e.target as Node)) {
+    if (
+      supplyDropdownRef.current &&
+      !supplyDropdownRef.current.contains(e.target as Node)
+    ) {
       setSupplyDropdownOpen(false);
     }
   }, []);
@@ -287,7 +309,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         const [catsResult, brdsResult, suppsResult] = await Promise.allSettled([
           listCategories(),
           listBrands(),
-          getSupplies(),
+          getSupplies()
         ]);
         if (catsResult.status === 'fulfilled') setCategories(catsResult.value);
         if (brdsResult.status === 'fulfilled') setBrands(brdsResult.value);
@@ -317,7 +339,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
       setLoadingOrders(true);
       try {
         const res = await api.get('/api/v1/admin/orders', {
-          params: { page: 1, page_size: 100 },
+          params: { page: 1, page_size: 100 }
         });
         const items: OrderSummary[] = res.data.items ?? res.data ?? [];
         setOrders(items);
@@ -328,7 +350,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           e.response?.status === 403
             ? 'Se requieren permisos de jefe para cargar los pedidos'
             : 'Error al cargar los pedidos',
-          'error',
+          'error'
         );
       } finally {
         setLoadingOrders(false);
@@ -358,7 +380,12 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         const details: OrderDetailItem[] = res.data.details ?? [];
         setOrderDetails(details);
       } catch (err) {
-        console.error('Error loading order details:', err);
+        const e = err as { response?: { status?: number } };
+        if (e.response?.status === 401) {
+          showToast('Sesión expirada, recargue e inicie sesión de nuevo', 'error');
+        } else {
+          console.error('Error loading order details:', err);
+        }
         setOrderDetails([]);
       } finally {
         setLoadingOrderDetails(false);
@@ -423,9 +450,13 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
     setQuantity(q);
   };
 
-  const handleRowQuantityChange = (detailId: string, value: number, detail: OrderDetailItem) => {
+  const handleRowQuantityChange = (
+    detailId: string,
+    value: number,
+    detail: OrderDetailItem
+  ) => {
     const clamped = Math.max(0, Math.min(value, detail.amount));
-    setRowQuantities(prev => ({ ...prev, [detailId]: clamped }));
+    setRowQuantities((prev) => ({ ...prev, [detailId]: clamped }));
     // Sync form quantity if this is the active row
     if (activeDetailId === detailId) {
       setQuantity(clamped);
@@ -443,13 +474,22 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-      if (incidenceCategory === 'producto') {
-        // ── Existing validation for producto ──
-        if (!productId || !size || !description.trim() || !quantity || quantity <= 0) {
-          showToast('Todos los campos obligatorios deben estar diligenciados', 'error');
-          return;
-        }
-        if (quantity < 1) {
+    if (incidenceCategory === 'producto') {
+      // ── Existing validation for producto ──
+      if (
+        !productId ||
+        !size ||
+        !description.trim() ||
+        !quantity ||
+        quantity <= 0
+      ) {
+        showToast(
+          'Todos los campos obligatorios deben estar diligenciados',
+          'error'
+        );
+        return;
+      }
+      if (quantity < 1) {
         showToast('La cantidad debe ser al menos 1', 'error');
         return;
       }
@@ -487,21 +527,23 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           observations: observations || undefined,
           order_id: selectedOrderId || undefined,
           order_detail_id: orderDetailId || undefined,
-          line_group: lineGroup,
+          line_group: lineGroup
         };
       } else if (incidenceCategory === 'maquinaria') {
         payload = {
           incidence_category: 'maquinaria',
           machinery_name: machineryName.trim(),
           observations: observations || undefined,
-          quantity: 1,
+          quantity: 1
         };
       } else {
         payload = {
           incidence_category: 'insumo',
-          ...(supplyInputMode === 'select' ? { supply_id: selectedSupplyId } : { custom_supply_name: customSupplyName.trim() }),
+          ...(supplyInputMode === 'select'
+            ? { supply_id: selectedSupplyId }
+            : { custom_supply_name: customSupplyName.trim() }),
           observations: observations || undefined,
-          quantity: 1,
+          quantity: 1
         };
       }
 
@@ -538,7 +580,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
 
   const renderCategoryToggle = () => (
     <div className="flex gap-2 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl">
-      {CATEGORY_OPTIONS.map(opt => {
+      {CATEGORY_OPTIONS.map((opt) => {
         const Icon = opt.icon;
         const active = incidenceCategory === opt.value;
         return (
@@ -562,7 +604,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
 
   const renderModeToggle = () => (
     <div className="flex gap-2 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl">
-      {MODE_OPTIONS.map(opt => {
+      {MODE_OPTIONS.map((opt) => {
         const Icon = opt.icon;
         const active = formMode === opt.value;
         return (
@@ -627,7 +669,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
               </tr>
             </thead>
             <tbody>
-              {orderDetails.map(d => (
+              {orderDetails.map((d) => (
                 <tr
                   key={d.id}
                   className="border-b border-gray-100 dark:border-slate-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
@@ -635,9 +677,15 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium">
                     {d.product_name ?? '—'}
                   </td>
-                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">{d.size}</td>
-                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">{d.amount}</td>
-                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">{d.colour ?? '—'}</td>
+                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">
+                    {d.size}
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">
+                    {d.amount}
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 dark:text-gray-400">
+                    {d.colour ?? '—'}
+                  </td>
                   <td className="px-4 py-2">
                     <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                       {d.state ?? 'en_progreso'}
@@ -669,24 +717,30 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
             ) : (
               <select
                 value={selectedOrderId}
-                onChange={e => handleOrderChange(e.target.value)}
+                onChange={(e) => handleOrderChange(e.target.value)}
                 className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
               >
                 <option value="">
-                  {orders.length === 0 ? 'No hay pedidos registrados' : 'Seleccionar pedido'}
+                  {orders.length === 0
+                    ? 'No hay pedidos registrados'
+                    : 'Seleccionar pedido'}
                 </option>
-                {orders.map(o => (
+                {orders.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.customer_name ?? 'Cliente'} — {o.total_pairs ?? '?'} pares — #
-                    {o.id.slice(0, 8)}
+                    {o.customer_name ?? 'Cliente'} — {o.total_pairs ?? '?'}{' '}
+                    pares — #{o.id.slice(0, 8)}
                   </option>
                 ))}
               </select>
-              )}
+            )}
           </div>
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowVale(prev => !prev); }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowVale((prev) => !prev);
+            }}
             disabled={!selectedOrderId}
             className="px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
@@ -716,7 +770,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {groupedProducts.map(gp => {
+              {groupedProducts.map((gp) => {
                 const isSelected = selectedProductId === gp.productId;
                 return (
                   <button
@@ -806,7 +860,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                 </tr>
               </thead>
               <tbody>
-                {selectedProductDetails.map(d => {
+                {selectedProductDetails.map((d) => {
                   const isActive = activeDetailId === d.id;
                   return (
                     <tr
@@ -835,11 +889,11 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                             value={rowQuantities[d.id] ?? ''}
                             placeholder="0"
                             onFocus={() => handleRowFocus(d)}
-                            onChange={e =>
+                            onChange={(e) =>
                               handleRowQuantityChange(
                                 d.id,
                                 parseInt(e.target.value) || 0,
-                                d,
+                                d
                               )
                             }
                             className={`w-20 px-2 py-1.5 border rounded-lg text-sm outline-none transition-colors ${
@@ -897,11 +951,11 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
             </label>
             <select
               value={selectedCategoryId}
-              onChange={e => setSelectedCategoryId(e.target.value)}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
               className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas las categorías</option>
-              {categories.map(c => (
+              {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -916,11 +970,11 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
             </label>
             <select
               value={selectedBrandId}
-              onChange={e => setSelectedBrandId(e.target.value)}
+              onChange={(e) => setSelectedBrandId(e.target.value)}
               className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas las marcas</option>
-              {brands.map(b => (
+              {brands.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
@@ -942,12 +996,12 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           ) : (
             <select
               value={selectedIndependentProductId}
-              onChange={e => handleIndependentProductChange(e.target.value)}
+              onChange={(e) => handleIndependentProductChange(e.target.value)}
               className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
               required
             >
               <option value="">Seleccionar producto</option>
-              {independentProducts.map(p => (
+              {independentProducts.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} — {p.brand_name}
                 </option>
@@ -983,7 +1037,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                 <input
                   type="text"
                   value={size}
-                  onChange={e => setSize(e.target.value)}
+                  onChange={(e) => setSize(e.target.value)}
                   placeholder="Ej: 38"
                   className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
                   required
@@ -997,10 +1051,10 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                   type="number"
                   min="1"
                   value={quantity}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setQuantity(val === '' ? '' : (parseInt(val) || 1));
-                    }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setQuantity(val === '' ? '' : parseInt(val) || 1);
+                  }}
                   className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
                   required
                 />
@@ -1014,14 +1068,14 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
 
   const renderCommonSection = () => (
     <div className="space-y-5 border-t border-gray-100 dark:border-slate-800 pt-5">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 isolate">
         {/* Incident Type */}
-        <div>
+        <div className="relative">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
             Tipo de Incidencia <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-3">
-            {INCIDENT_TYPE_OPTIONS.map(opt => (
+            {INCIDENT_TYPE_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all text-sm font-bold ${
@@ -1056,20 +1110,22 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         </div>
 
         {/* Description — free-text defect description */}
-        <div>
+        <div className="relative">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
             Descripción del defecto <span className="text-red-500">*</span>
           </label>
           <textarea
             value={description}
-            onChange={e => setDescription(e.target.value)}
+            onChange={(e) => setDescription(e.target.value)}
             rows={3}
             maxLength={500}
             placeholder="Describe el defecto encontrado (ej: 'despegue de suela', 'costura rota', 'mala terminación')"
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
             required
           />
-          <span className="text-[10px] text-gray-400 text-right block mt-0.5">{description.length}/500</span>
+          <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+            {description.length}/500
+          </span>
         </div>
       </div>
 
@@ -1080,13 +1136,15 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           </label>
           <textarea
             value={reason}
-            onChange={e => setReason(e.target.value)}
+            onChange={(e) => setReason(e.target.value)}
             rows={3}
             maxLength={500}
             placeholder="Motivo de la incidencia..."
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
           />
-          <span className="text-[10px] text-gray-400 text-right block mt-0.5">{reason.length}/500</span>
+          <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+            {reason.length}/500
+          </span>
         </div>
         <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -1094,13 +1152,15 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           </label>
           <textarea
             value={observations}
-            onChange={e => setObservations(e.target.value)}
+            onChange={(e) => setObservations(e.target.value)}
             rows={3}
             maxLength={500}
             placeholder="Observaciones adicionales..."
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors resize-none"
           />
-          <span className="text-[10px] text-gray-400 text-right block mt-0.5">{observations.length}/500</span>
+          <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+            {observations.length}/500
+          </span>
         </div>
       </div>
     </div>
@@ -1119,7 +1179,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         <input
           type="text"
           value={machineryName}
-          onChange={e => setMachineryName(e.target.value)}
+          onChange={(e) => setMachineryName(e.target.value)}
           placeholder="Ej: Prensa hidráulica"
           className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm transition-colors"
           required
@@ -1131,13 +1191,15 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         </label>
         <textarea
           value={observations}
-          onChange={e => setObservations(e.target.value)}
+          onChange={(e) => setObservations(e.target.value)}
           rows={3}
           maxLength={500}
           placeholder="Describa el daño o incidencia..."
           className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-sm transition-colors resize-none"
         />
-        <span className="text-[10px] text-gray-400 text-right block mt-0.5">{observations.length}/500</span>
+        <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+          {observations.length}/500
+        </span>
       </div>
     </div>
   );
@@ -1156,7 +1218,10 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         <div className="flex gap-2 mb-3">
           <button
             type="button"
-            onClick={() => { setSupplyInputMode('select'); setCustomSupplyName(''); }}
+            onClick={() => {
+              setSupplyInputMode('select');
+              setCustomSupplyName('');
+            }}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               supplyInputMode === 'select'
                 ? 'bg-green-600 text-white'
@@ -1167,7 +1232,10 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           </button>
           <button
             type="button"
-            onClick={() => { setSupplyInputMode('type'); setSelectedSupplyId(''); }}
+            onClick={() => {
+              setSupplyInputMode('type');
+              setSelectedSupplyId('');
+            }}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               supplyInputMode === 'type'
                 ? 'bg-green-600 text-white'
@@ -1185,30 +1253,41 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
               onClick={() => setSupplyDropdownOpen(!supplyDropdownOpen)}
               className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm transition-colors text-left flex items-center gap-2"
             >
-              {selectedSupplyId ? (
-                (() => {
-                  const sel = supplies.find(s => s.id === selectedSupplyId);
-                  return (
-                    <>
-                      <span className="flex-1">{sel?.name || 'Seleccionar insumo'}</span>
-                      {sel?.color && <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{sel.color}</span>}
-                    </>
-                  );
-                })()
-              ) : (
-                'Seleccionar insumo'
-              )}
+              {selectedSupplyId
+                ? (() => {
+                    const sel = supplies.find((s) => s.id === selectedSupplyId);
+                    return (
+                      <>
+                        <span className="flex-1">
+                          {sel?.name || 'Seleccionar insumo'}
+                        </span>
+                        {sel?.color && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">
+                            {sel.color}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()
+                : 'Seleccionar insumo'}
             </button>
             {supplyDropdownOpen && (
               <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                {supplies.map(s => (
+                {supplies.map((s) => (
                   <div
                     key={s.id}
-                    onClick={() => { setSelectedSupplyId(s.id); setSupplyDropdownOpen(false); }}
+                    onClick={() => {
+                      setSelectedSupplyId(s.id);
+                      setSupplyDropdownOpen(false);
+                    }}
                     className="px-3 py-2.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 text-sm text-gray-900 dark:text-gray-100"
                   >
                     <span className="flex-1">{s.name}</span>
-                    {s.color && <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{s.color}</span>}
+                    {s.color && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">
+                        {s.color}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1218,7 +1297,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
           <input
             type="text"
             value={customSupplyName}
-            onChange={e => setCustomSupplyName(e.target.value)}
+            onChange={(e) => setCustomSupplyName(e.target.value)}
             placeholder="Nombre del insumo"
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm transition-colors"
             required
@@ -1231,13 +1310,15 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         </label>
         <textarea
           value={observations}
-          onChange={e => setObservations(e.target.value)}
+          onChange={(e) => setObservations(e.target.value)}
           rows={3}
           maxLength={500}
           placeholder="Describa el daño o incidencia..."
           className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm transition-colors resize-none"
         />
-        <span className="text-[10px] text-gray-400 text-right block mt-0.5">{observations.length}/500</span>
+        <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+          {observations.length}/500
+        </span>
       </div>
     </div>
   );
@@ -1247,7 +1328,12 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
   // ─────────────────────────────────────────
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" title="Registrar Incidencia">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      title="Registrar Incidencia"
+    >
       <div className="p-6 space-y-5">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -1264,15 +1350,22 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
                 {renderModeToggle()}
 
                 {/* Mode-specific content */}
-                {formMode === 'linked' ? renderLinkedMode() : renderIndependentMode()}
+                {formMode === 'linked'
+                  ? renderLinkedMode()
+                  : renderIndependentMode()}
 
                 {/* Common Section — solo después de producto + cantidad */}
                 {(() => {
                   if (formMode === 'linked') {
-                    return selectedProductId && activeDetailId ? renderCommonSection() : null;
+                    return selectedProductId && activeDetailId
+                      ? renderCommonSection()
+                      : null;
                   }
                   // independent
-                  return selectedIndependentProductId && size && quantity && quantity > 0
+                  return selectedIndependentProductId &&
+                    size &&
+                    quantity &&
+                    quantity > 0
                     ? renderCommonSection()
                     : null;
                 })()}

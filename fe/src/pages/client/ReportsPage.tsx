@@ -1,24 +1,70 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  BarChart3, ShoppingBag, Clock, Zap, CheckCircle, CheckCircle2, XCircle, Loader2,
-  FileText, Calendar, Download, Filter
+  BarChart3,
+  ShoppingBag,
+  Clock,
+  Zap,
+  CheckCircle,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  FileText,
+  Calendar,
+  Download,
+  Filter
 } from 'lucide-react';
 import {
-  getMyOrdersSummary, getAllMyOrders,
-  type ClientOrderSummaryResponse, type ClientAllOrdersReport
+  getMyOrdersSummary,
+  getAllMyOrders,
+  type ClientOrderSummaryResponse,
+  type ClientAllOrdersReport
 } from '@/services/clientApi';
 import { exportMyOrdersPDF } from '@/features/client/utils/reportsUtils';
 import { useAuth } from '@/hooks/useAuth';
 import StatCard from '@/features/admin/components/atoms/StatCard';
 
-const ORDER_STATES = ['pendiente', 'en_progreso', 'completado', 'entregado', 'cancelado'] as const;
+const ORDER_STATES = [
+  'pendiente',
+  'en_progreso',
+  'completado',
+  'entregado',
+  'cancelado'
+] as const;
 
-const STATE_CONFIG: Record<(typeof ORDER_STATES)[number], { label: string; color: string; bar: string; icon: typeof Clock }> = {
-  pendiente: { label: 'Pendientes', color: 'text-gray-600 dark:text-gray-300', bar: 'bg-gray-400 dark:bg-gray-500', icon: Clock },
-  en_progreso: { label: 'En Progreso', color: 'text-blue-600 dark:text-blue-400', bar: 'bg-blue-500', icon: Zap },
-  completado: { label: 'Completados', color: 'text-green-600 dark:text-green-400', bar: 'bg-green-500', icon: CheckCircle },
-  entregado: { label: 'Entregados', color: 'text-purple-600 dark:text-purple-400', bar: 'bg-purple-500', icon: CheckCircle2 },
-  cancelado: { label: 'Cancelados', color: 'text-red-600 dark:text-red-400', bar: 'bg-red-500', icon: XCircle },
+const STATE_CONFIG: Record<
+  (typeof ORDER_STATES)[number],
+  { label: string; color: string; bar: string; icon: typeof Clock }
+> = {
+  pendiente: {
+    label: 'Pendientes',
+    color: 'text-gray-600 dark:text-gray-300',
+    bar: 'bg-gray-400 dark:bg-gray-500',
+    icon: Clock
+  },
+  en_progreso: {
+    label: 'En Progreso',
+    color: 'text-blue-600 dark:text-blue-400',
+    bar: 'bg-blue-500',
+    icon: Zap
+  },
+  completado: {
+    label: 'Completados',
+    color: 'text-green-600 dark:text-green-400',
+    bar: 'bg-green-500',
+    icon: CheckCircle
+  },
+  entregado: {
+    label: 'Entregados',
+    color: 'text-purple-600 dark:text-purple-400',
+    bar: 'bg-purple-500',
+    icon: CheckCircle2
+  },
+  cancelado: {
+    label: 'Cancelados',
+    color: 'text-red-600 dark:text-red-400',
+    bar: 'bg-red-500',
+    icon: XCircle
+  }
 };
 
 type TabType = 'summary' | 'generator';
@@ -26,17 +72,25 @@ type TabType = 'summary' | 'generator';
 export default function ReportsPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<TabType>('summary');
-  const [summary, setSummary] = useState<ClientOrderSummaryResponse | null>(null);
+  const [summary, setSummary] = useState<ClientOrderSummaryResponse | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
-  const [reportData, setReportData] = useState<ClientAllOrdersReport | null>(null);
+  const [reportData, setReportData] = useState<ClientAllOrdersReport | null>(
+    null
+  );
   const [reportLoading, setReportLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
+  const [dateFilter, setDateFilter] = useState<
+    'all' | 'today' | 'week' | 'month' | 'custom'
+  >('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportError, setReportError] = useState<string | null>(null);
-  const [stateFilter, setStateFilter] = useState<'all' | (typeof ORDER_STATES)[number]>('all');
+  const [stateFilter, setStateFilter] = useState<
+    'all' | (typeof ORDER_STATES)[number]
+  >('all');
 
   const displayName = useMemo(() => {
     if (reportData?.name) return reportData.name;
@@ -51,9 +105,14 @@ export default function ReportsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const maxCount = Math.max(1, ...(summary ? ORDER_STATES.map((s) => summary.by_state[s] || 0) : [1]));
+  const maxCount = Math.max(
+    1,
+    ...(summary ? ORDER_STATES.map((s) => summary.by_state[s] || 0) : [1])
+  );
 
-  const getDateRange = (filter?: typeof dateFilter): { start?: string; end?: string } => {
+  const getDateRange = (
+    filter?: typeof dateFilter
+  ): { start?: string; end?: string } => {
     const f = filter ?? dateFilter;
     const now = new Date();
     const fmt = (d: Date) => d.toISOString().split('T')[0];
@@ -87,7 +146,9 @@ export default function ReportsPage() {
       setReportData(data);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
-      setReportError(`No se pudieron cargar los datos del reporte: ${errorMsg}`);
+      setReportError(
+        `No se pudieron cargar los datos del reporte: ${errorMsg}`
+      );
     } finally {
       setReportLoading(false);
     }
@@ -104,7 +165,7 @@ export default function ReportsPage() {
   const filteredOrders = useMemo(() => {
     if (!reportData) return [];
     if (stateFilter === 'all') return reportData.orders;
-    return reportData.orders.filter(o => o.state === stateFilter);
+    return reportData.orders.filter((o) => o.state === stateFilter);
   }, [reportData, stateFilter]);
 
   const filteredTotalPairs = useMemo(
@@ -117,7 +178,15 @@ export default function ReportsPage() {
     setGeneratingPdf(true);
     try {
       const range = getDateRange();
-      const filtered = stateFilter === 'all' ? reportData : { ...reportData, orders: filteredOrders, total_orders: filteredOrders.length, total_pairs: filteredTotalPairs };
+      const filtered =
+        stateFilter === 'all'
+          ? reportData
+          : {
+              ...reportData,
+              orders: filteredOrders,
+              total_orders: filteredOrders.length,
+              total_pairs: filteredTotalPairs
+            };
       await exportMyOrdersPDF(filtered, range.start, range.end);
     } catch {
       setReportError('Error al generar el PDF.');
@@ -167,11 +236,13 @@ export default function ReportsPage() {
       </div>
 
       {/* Tab: Summary */}
-      {tab === 'summary' && (
-        loading ? (
+      {tab === 'summary' &&
+        (loading ? (
           <div className="flex items-center justify-center py-20 gap-3">
             <Loader2 className="w-6 h-6 animate-spin text-violet-600 dark:text-violet-400" />
-            <p className="text-gray-600 dark:text-gray-400 font-medium">Cargando reporte...</p>
+            <p className="text-gray-600 dark:text-gray-400 font-medium">
+              Cargando reporte...
+            </p>
           </div>
         ) : summary ? (
           <>
@@ -186,11 +257,15 @@ export default function ReportsPage() {
                     value={count}
                     icon={<cfg.icon size={28} />}
                     color={
-                      state === 'pendiente' ? 'yellow'
-                        : state === 'en_progreso' ? 'blue'
-                        : state === 'completado' ? 'green'
-                        : state === 'entregado' ? 'purple'
-                        : 'red'
+                      state === 'pendiente'
+                        ? 'yellow'
+                        : state === 'en_progreso'
+                          ? 'blue'
+                          : state === 'completado'
+                            ? 'green'
+                            : state === 'entregado'
+                              ? 'purple'
+                              : 'red'
                     }
                   />
                 );
@@ -206,7 +281,9 @@ export default function ReportsPage() {
               <div className="p-6 space-y-5">
                 {summary.total === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400 font-bold">Aún no tienes pedidos</p>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold">
+                      Aún no tienes pedidos
+                    </p>
                     <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                       Cuando realices pedidos, aquí verás el resumen por estado.
                     </p>
@@ -219,7 +296,9 @@ export default function ReportsPage() {
                     const pct = Math.round((count / maxCount) * 100);
                     return (
                       <div key={state} className="flex items-center gap-4">
-                        <div className={`w-28 shrink-0 text-sm font-bold ${cfg.color}`}>
+                        <div
+                          className={`w-28 shrink-0 text-sm font-bold ${cfg.color}`}
+                        >
                           <span className="inline-flex items-center gap-1.5">
                             <cfg.icon size={14} />
                             {cfg.label}
@@ -239,9 +318,14 @@ export default function ReportsPage() {
                   })
                 )}
                 <div className="border-t border-gray-200 dark:border-slate-800 pt-4 flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Total de pedidos</span>
+                  <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                    Total de pedidos
+                  </span>
                   <span className="inline-flex items-center gap-2 font-black text-lg text-gray-900 dark:text-white">
-                    <ShoppingBag size={18} className="text-violet-600 dark:text-violet-400" />
+                    <ShoppingBag
+                      size={18}
+                      className="text-violet-600 dark:text-violet-400"
+                    />
                     {summary.total}
                   </span>
                 </div>
@@ -254,8 +338,7 @@ export default function ReportsPage() {
               No se pudieron cargar los reportes. Intenta de nuevo más tarde.
             </p>
           </div>
-        )
-      )}
+        ))}
 
       {/* Tab: Generator */}
       {tab === 'generator' && (
@@ -272,8 +355,8 @@ export default function ReportsPage() {
                 { value: 'today' as const, label: 'Hoy' },
                 { value: 'week' as const, label: 'Última Semana' },
                 { value: 'month' as const, label: 'Último Mes' },
-                { value: 'custom' as const, label: 'Personalizado' },
-              ].map(opt => (
+                { value: 'custom' as const, label: 'Personalizado' }
+              ].map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setDateFilter(opt.value)}
@@ -291,7 +374,9 @@ export default function ReportsPage() {
               <div className="flex flex-wrap gap-3 mt-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-500" />
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Desde:</label>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Desde:
+                  </label>
                   <input
                     type="date"
                     value={startDate}
@@ -300,7 +385,9 @@ export default function ReportsPage() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Hasta:</label>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Hasta:
+                  </label>
                   <input
                     type="date"
                     value={endDate}
@@ -316,7 +403,11 @@ export default function ReportsPage() {
                 disabled={reportLoading}
                 className="mt-4 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-md"
               >
-                {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Filter className="w-4 h-4" />}
+                {reportLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Filter className="w-4 h-4" />
+                )}
                 {reportLoading ? 'Cargando...' : 'Generar Reporte'}
               </button>
             )}
@@ -341,7 +432,11 @@ export default function ReportsPage() {
                   disabled={generatingPdf}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-md"
                 >
-                  {generatingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {generatingPdf ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
                   {generatingPdf ? 'Generando...' : 'Exportar PDF'}
                 </button>
               </div>
@@ -350,16 +445,28 @@ export default function ReportsPage() {
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-4 border border-violet-200 dark:border-violet-800/50">
-                    <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Total Pedidos</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">{filteredOrders.length}</p>
+                    <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">
+                      Total Pedidos
+                    </p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">
+                      {filteredOrders.length}
+                    </p>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800/50">
-                    <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">Total Pares</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">{filteredTotalPairs}</p>
+                    <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                      Total Pares
+                    </p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">
+                      {filteredTotalPairs}
+                    </p>
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800/50">
-                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Cliente</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white mt-1 truncate">{displayName}</p>
+                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                      Cliente
+                    </p>
+                    <p className="text-lg font-black text-gray-900 dark:text-white mt-1 truncate">
+                      {displayName}
+                    </p>
                   </div>
                 </div>
 
@@ -377,7 +484,9 @@ export default function ReportsPage() {
                   </button>
                   {ORDER_STATES.map((state) => {
                     const cfg = STATE_CONFIG[state];
-                    const count = reportData.orders.filter(o => o.state === state).length;
+                    const count = reportData.orders.filter(
+                      (o) => o.state === state
+                    ).length;
                     if (count === 0) return null;
                     return (
                       <button
@@ -399,20 +508,36 @@ export default function ReportsPage() {
                 {/* Orders Table */}
                 {filteredOrders.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400 font-bold">No hay pedidos en este período</p>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold">
+                      No hay pedidos en este período
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-slate-800">
-                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">ID</th>
-                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">Fecha</th>
-                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">Producto</th>
-                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">Categoría</th>
-                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">Color</th>
-                          <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-400">Cant.</th>
-                          <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-400">Estado</th>
+                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            ID
+                          </th>
+                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            Fecha
+                          </th>
+                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            Producto
+                          </th>
+                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            Categoría
+                          </th>
+                          <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            Color
+                          </th>
+                          <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            Cant.
+                          </th>
+                          <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-400">
+                            Estado
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -423,30 +548,55 @@ export default function ReportsPage() {
                               className="border-b border-gray-100 dark:border-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors"
                             >
                               <td className="py-3 px-4 font-mono text-xs text-gray-500">
-                                {idx === 0 ? order.id.substring(0, 8) + '...' : ''}
+                                {idx === 0
+                                  ? order.id.substring(0, 8) + '...'
+                                  : ''}
                               </td>
                               <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
-                                {idx === 0 ? new Date(order.created_at).toLocaleDateString('es-CO') : ''}
+                                {idx === 0
+                                  ? new Date(
+                                      order.created_at
+                                    ).toLocaleDateString('es-CO')
+                                  : ''}
                               </td>
-                              <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{item.product_name}</td>
-                              <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{item.category_name || '—'}</td>
-                              <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{item.colour || '—'}</td>
-                              <td className="py-3 px-4 text-center font-bold text-gray-900 dark:text-white">{item.amount}</td>
+                              <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">
+                                {item.product_name}
+                              </td>
+                              <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                                {item.category_name || '—'}
+                              </td>
+                              <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                                {item.colour || '—'}
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-gray-900 dark:text-white">
+                                {item.amount}
+                              </td>
                               <td className="py-3 px-4 text-center">
                                 {idx === 0 && (
-                                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
-                                    order.state === 'entregado' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                    : order.state === 'completado' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                    : order.state === 'en_progreso' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                    : order.state === 'cancelado' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                                  }`}>
-                                    {order.state === 'pendiente' ? 'Pendiente'
-                                      : order.state === 'en_progreso' ? 'En Progreso'
-                                      : order.state === 'completado' ? 'Completado'
-                                      : order.state === 'entregado' ? 'Entregado'
-                                      : order.state === 'cancelado' ? 'Cancelado'
-                                      : order.state}
+                                  <span
+                                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
+                                      order.state === 'entregado'
+                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                        : order.state === 'completado'
+                                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                          : order.state === 'en_progreso'
+                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                            : order.state === 'cancelado'
+                                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                              : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}
+                                  >
+                                    {order.state === 'pendiente'
+                                      ? 'Pendiente'
+                                      : order.state === 'en_progreso'
+                                        ? 'En Progreso'
+                                        : order.state === 'completado'
+                                          ? 'Completado'
+                                          : order.state === 'entregado'
+                                            ? 'Entregado'
+                                            : order.state === 'cancelado'
+                                              ? 'Cancelado'
+                                              : order.state}
                                   </span>
                                 )}
                               </td>

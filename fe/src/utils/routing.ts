@@ -4,11 +4,11 @@
  * ¿Para qué? Centralizar la lógica de navegación para evitar duplicados.
  */
 
-import type { UserResponse } from "@/types/auth";
+import type { UserResponse } from '@/types/auth';
 
 /**
  * Determina la ruta del dashboard según el rol y ocupación del usuario.
- * 
+ *
  * Lógica:
  * - Admin: /dashboard/admin
  * - Jefe (employee + occupation='jefe'): /dashboard/admin
@@ -18,34 +18,34 @@ import type { UserResponse } from "@/types/auth";
  */
 export function getDashboardRoute(user: UserResponse | null): string {
   if (!user || !user.role_name) {
-    return "/";
+    return '/';
   }
 
   const role = user.role_name;
   const occupation = user.occupation;
 
   // Admin siempre va al dashboard administrativo
-  if (role === "admin") {
-    return "/dashboard/admin";
+  if (role === 'admin') {
+    return '/dashboard/admin';
   }
 
   // Jefe (employee con occupation='jefe') va al dashboard administrativo
-  if (role === "employee" && occupation === "jefe") {
-    return "/dashboard/admin";
+  if (role === 'employee' && occupation === 'jefe') {
+    return '/dashboard/admin';
   }
 
   // Otros empleados van a su dashboard de tareas
-  if (role === "employee") {
-    return "/dashboard/employee";
+  if (role === 'employee') {
+    return '/dashboard/employee';
   }
 
   // Clientes van a su dashboard de catálogo y pedidos
-  if (role === "client") {
-    return "/dashboard/client";
+  if (role === 'client') {
+    return '/dashboard/client';
   }
 
   // Fallback para roles desconocidos
-  return "/dashboard";
+  return '/dashboard';
 }
 
 /**
@@ -53,27 +53,27 @@ export function getDashboardRoute(user: UserResponse | null): string {
  */
 export function getDashboardTitle(user: UserResponse | null): string {
   if (!user || !user.role_name) {
-    return "Dashboard";
+    return 'Dashboard';
   }
 
   const role = user.role_name;
   const occupation = user.occupation;
 
-  if (role === "admin") {
-    return "Panel Administrativo";
+  if (role === 'admin') {
+    return 'Panel Administrativo';
   }
 
-  if (role === "employee" && occupation === "jefe") {
-    return "Panel de Jefe";
+  if (role === 'employee' && occupation === 'jefe') {
+    return 'Panel de Jefe';
   }
 
-  if (role === "employee") {
-    return "Panel de Empleado";
+  if (role === 'employee') {
+    return 'Panel de Empleado';
   }
 
-  if (role === "client") {
-    return "Panel de Cliente";
+  if (role === 'client') {
+    return 'Panel de Cliente';
   }
 
-  return "Dashboard";
+  return 'Dashboard';
 }

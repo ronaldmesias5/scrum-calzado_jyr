@@ -15,7 +15,7 @@ export default function DeleteConfirmModal({
   product,
   loading,
   onConfirm,
-  onCancel,
+  onCancel
 }: DeleteConfirmModalProps) {
   if (!isOpen || !product) return null;
 
@@ -29,40 +29,65 @@ export default function DeleteConfirmModal({
       <div className="flex flex-col">
         {/* Header decoration (since title is in base Modal) */}
         <div className="bg-red-50 dark:bg-red-900/10 px-6 py-2 mb-4 border-b border-red-100 dark:border-red-900/20">
-          <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest">Acción irreversible</p>
+          <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest">
+            Acción irreversible
+          </p>
         </div>
 
         {/* Body with Product Details */}
         <div className="p-6 space-y-4 bg-white dark:bg-slate-900">
           <div className="bg-gray-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-gray-100 dark:border-slate-800 transition-all relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-10"><Trash2 size={48} className="text-gray-400" /></div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-black uppercase tracking-widest mb-4">Detalles del Producto</p>
+            <div className="absolute top-0 right-0 p-3 opacity-10">
+              <Trash2 size={48} className="text-gray-400" />
+            </div>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-black uppercase tracking-widest mb-4">
+              Detalles del Producto
+            </p>
             <div className="space-y-4 relative z-10">
               <div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-0.5">Referencia</p>
-                <p className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{product.style_name || product.name}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-0.5">
+                  Referencia
+                </p>
+                <p className="font-bold text-gray-900 dark:text-white text-lg leading-tight">
+                  {product.style_name || product.name}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-1">
                 <div>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-0.5">Categoría</p>
-                  <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">{product.category_name}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-0.5">
+                    Categoría
+                  </p>
+                  <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">
+                    {product.category_name}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-0.5">Marca</p>
-                  <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">{product.brand_name}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-0.5">
+                    Marca
+                  </p>
+                  <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">
+                    {product.brand_name}
+                  </p>
                 </div>
               </div>
               <div className="pt-2 border-t border-gray-100 dark:border-slate-700/50">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-1">ID del Sistema</p>
-                <p className="font-mono text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded inline-block">{product.id}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight mb-1">
+                  ID del Sistema
+                </p>
+                <p className="font-mono text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded inline-block">
+                  {product.id}
+                </p>
               </div>
             </div>
           </div>
 
           <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-xl p-4 transition-colors">
             <p className="text-sm text-red-800 dark:text-red-200 font-medium flex gap-2">
-              <span className="font-bold flex-shrink-0">⚠️</span> 
-              <span>Se eliminarán todos los datos asociados, incluyendo inventario y configuraciones de tallas.</span>
+              <span className="font-bold flex-shrink-0">⚠️</span>
+              <span>
+                Se eliminarán todos los datos asociados, incluyendo inventario y
+                configuraciones de tallas.
+              </span>
             </p>
           </div>
         </div>

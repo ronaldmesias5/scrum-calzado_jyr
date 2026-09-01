@@ -138,4 +138,8 @@ def jefe_headers(client) -> dict[str, str]:
         json={"email": "ronald.jefe@gmail.com", "password": "Test123456!"},
     )
     assert response.status_code == 200, response.text
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    csrf = client.cookies.get("csrf_token") or response.cookies.get("csrf_token")
+    headers: dict[str, str] = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    if csrf:
+        headers["X-CSRF-Token"] = csrf
+    return headers

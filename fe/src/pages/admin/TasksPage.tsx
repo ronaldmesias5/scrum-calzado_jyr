@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 // TasksPage - production task dashboard for jefe
-import { 
-  CheckSquare,
-  Search, X, RefreshCw
-} from 'lucide-react';
-import { getAllProductionTasks, ProductionTask, updateProductionTaskStatus, assignTaskEmployee } from '@/services/ordersApi';
+import { CheckSquare, Search, X, RefreshCw } from 'lucide-react';
+import {
+  getAllProductionTasks,
+  ProductionTask,
+  updateProductionTaskStatus,
+  assignTaskEmployee
+} from '@/services/ordersApi';
 import { getAllUsers } from '@/services/adminApi';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
 import type { UserResponse } from '@/types/auth';
@@ -24,7 +26,9 @@ export default function ProductionTaskDashboard() {
   const [statusFilter, setStatusFilter] = useState('');
   const { showToast } = useToast();
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
-  const [employees, setEmployees] = useState<{id: string; name: string; occupation: string}[]>([]);
+  const [employees, setEmployees] = useState<
+    { id: string; name: string; occupation: string }[]
+  >([]);
 
   // Cargar lista de empleados para poder asignarlos a tareas pendientes
   const loadEmployees = useCallback(async () => {
@@ -33,13 +37,15 @@ export default function ProductionTaskDashboard() {
       const filtered = users.filter(
         (u: UserResponse) =>
           u.occupation &&
-          ['cortador', 'guarnecedor', 'solador', 'emplantillador'].includes(u.occupation)
+          ['cortador', 'guarnecedor', 'solador', 'emplantillador'].includes(
+            u.occupation
+          )
       );
       setEmployees(
         filtered.map((u: UserResponse) => ({
           id: u.id,
           name: `${u.name} ${u.last_name}`.toUpperCase(),
-          occupation: u.occupation || '',
+          occupation: u.occupation || ''
         }))
       );
     } catch (e) {
@@ -63,7 +69,9 @@ export default function ProductionTaskDashboard() {
     try {
       setUpdatingTaskId(taskId);
       await updateProductionTaskStatus(taskId, newStatus);
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      );
       showToast(`Tarea actualizada a ${newStatus}`);
     } catch (e) {
       console.error(e);
@@ -77,7 +85,7 @@ export default function ProductionTaskDashboard() {
     try {
       setUpdatingTaskId(taskId);
       const updatedTask = await assignTaskEmployee(taskId, employeeId);
-      setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
       showToast('Empleado asignado correctamente');
     } catch (e) {
       console.error(e);
@@ -95,29 +103,32 @@ export default function ProductionTaskDashboard() {
 
   // Obtener empleados únicos para cada cargo (deduplicar por ID)
   const employeesByRole = Object.fromEntries(
-    ['corte', 'guarnicion', 'soladura', 'emplantillado'].map(role => [
+    ['corte', 'guarnicion', 'soladura', 'emplantillado'].map((role) => [
       role,
       Array.from(
         new Map(
           tasks
-            .filter(t => t.type === role)
-            .map(t => [t.assigned_to, { id: t.assigned_to, name: t.assigned_user_name }])
+            .filter((t) => t.type === role)
+            .map((t) => [
+              t.assigned_to,
+              { id: t.assigned_to, name: t.assigned_user_name }
+            ])
         ).values()
       )
-        .filter(e => e.name)
-        .sort((a, b) => ((a.name && b.name) ? a.name.localeCompare(b.name) : 0))
+        .filter((e) => e.name)
+        .sort((a, b) => (a.name && b.name ? a.name.localeCompare(b.name) : 0))
     ])
   );
 
   // Orden secuencial de etapas de producción
   const STAGE_ORDER = ['corte', 'guarnicion', 'soladura', 'emplantillado'];
-  
+
   // Mapeo de tipo de tarea → occupation del empleado
   const TYPE_TO_OCCUPATION: Record<string, string> = {
     corte: 'cortador',
     guarnicion: 'guarnecedor',
     soladura: 'solador',
-    emplantillado: 'emplantillador',
+    emplantillado: 'emplantillador'
   };
 
   // Determina si una tarea está bloqueada (su etapa predecesora en el mismo vale no está completada)
@@ -126,20 +137,27 @@ export default function ProductionTaskDashboard() {
     if (stageIndex <= 0) return false; // corte nunca está bloqueado
     const predecessorType = STAGE_ORDER[stageIndex - 1];
     const predecessor = tasks.find(
-      t => t.order_id === task.order_id && t.product_id === task.product_id && t.type === predecessorType
+      (t) =>
+        t.order_id === task.order_id &&
+        t.product_id === task.product_id &&
+        t.type === predecessorType
     );
     return !predecessor || predecessor.status !== 'completado';
   };
 
   // Frontend Filtering
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = !searchQuery || 
-      task.assigned_user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      !searchQuery ||
+      task.assigned_user_name
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       task.vale_number?.toString().includes(searchQuery);
-    
+
     const matchesCargo = !cargoFilter || task.type === cargoFilter;
-    const matchesEmployee = !employeeFilter || task.assigned_user_name === employeeFilter;
-    
+    const matchesEmployee =
+      !employeeFilter || task.assigned_user_name === employeeFilter;
+
     // Handle status filter: match directly against task.status
     let matchesStatus = true;
     if (statusFilter) {
@@ -161,12 +179,12 @@ export default function ProductionTaskDashboard() {
             Supervisa el avance de los vales en tiempo real
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3 w-full xl:w-auto">
-          <button 
+          <button
             onClick={loadTasks}
             className="px-6 py-4 bg-blue-600 dark:bg-blue-700 text-white rounded-2xl hover:bg-blue-700 font-black uppercase text-xs flex items-center gap-3 transition-none"
-            style={{animation: 'none', filter: 'none'}}
+            style={{ animation: 'none', filter: 'none' }}
           >
             <RefreshCw className="w-5 h-5 text-blue-100" />
             Actualizar
@@ -176,7 +194,7 @@ export default function ProductionTaskDashboard() {
 
       {/* Bar de Filtros - Cargo, Empleado, Búsqueda */}
       <div className="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-3 stagger-reveal">
-        <select 
+        <select
           value={cargoFilter}
           onChange={(e) => {
             setCargoFilter(e.target.value);
@@ -191,20 +209,27 @@ export default function ProductionTaskDashboard() {
           <option value="emplantillado">Emplantillador</option>
         </select>
 
-        {cargoFilter && (employeesByRole[cargoFilter as keyof typeof employeesByRole]?.length ?? 0) > 0 && (
-          <select 
-            value={employeeFilter}
-            onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20 border border-transparent rounded-xl text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 outline-none appearance-none cursor-pointer hover:border-gray-200 dark:hover:border-slate-700 transition-all flex-shrink-0 min-w-max"
-          >
-            <option value="">Todos los Empleados</option>
-            {(employeesByRole[cargoFilter as keyof typeof employeesByRole] || []).map(emp => (
-              <option key={emp.id} value={emp.name || ""}>{(emp.name || "").toUpperCase()}</option>
-            ))}
-          </select>
-        )}
+        {cargoFilter &&
+          (employeesByRole[cargoFilter as keyof typeof employeesByRole]
+            ?.length ?? 0) > 0 && (
+            <select
+              value={employeeFilter}
+              onChange={(e) => setEmployeeFilter(e.target.value)}
+              className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20 border border-transparent rounded-xl text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 outline-none appearance-none cursor-pointer hover:border-gray-200 dark:hover:border-slate-700 transition-all flex-shrink-0 min-w-max"
+            >
+              <option value="">Todos los Empleados</option>
+              {(
+                employeesByRole[cargoFilter as keyof typeof employeesByRole] ||
+                []
+              ).map((emp) => (
+                <option key={emp.id} value={emp.name || ''}>
+                  {(emp.name || '').toUpperCase()}
+                </option>
+              ))}
+            </select>
+          )}
 
-        <select 
+        <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-3 bg-gray-50/50 dark:bg-slate-800/20 border border-transparent rounded-xl text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 outline-none appearance-none cursor-pointer hover:border-gray-200 dark:hover:border-slate-700 transition-all flex-shrink-0 min-w-max"
@@ -219,24 +244,32 @@ export default function ProductionTaskDashboard() {
 
         <div className="relative flex-1 group min-w-0">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors flex-shrink-0" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Buscar por nº vale..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-9 py-3 bg-gray-50/50 dark:bg-slate-800/20 border border-transparent focus:border-blue-500/50 dark:focus:border-blue-500/30 rounded-xl text-sm font-bold text-gray-800 dark:text-gray-200 outline-none transition-all placeholder:text-gray-400"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-500 flex-shrink-0">
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-500 flex-shrink-0"
+            >
               <X size={14} />
             </button>
           )}
         </div>
-        
-        <button 
-          onClick={() => { setSearchQuery(''); setCargoFilter(''); setEmployeeFilter(''); setStatusFilter(''); }}
+
+        <button
+          onClick={() => {
+            setSearchQuery('');
+            setCargoFilter('');
+            setEmployeeFilter('');
+            setStatusFilter('');
+          }}
           className="px-6 py-3 bg-red-600 dark:bg-red-700 text-white rounded-xl text-xs font-black uppercase hover:bg-red-700 dark:hover:bg-red-800 whitespace-nowrap flex-shrink-0 transition-none"
-          style={{animation: 'none', filter: 'none'}}
+          style={{ animation: 'none', filter: 'none' }}
         >
           <X className="w-3 h-3 mr-1" /> Limpiar
         </button>
@@ -244,33 +277,57 @@ export default function ProductionTaskDashboard() {
 
       {/* Contador de Tareas */}
       <div className="text-sm text-gray-600 dark:text-gray-400 font-bold stagger-reveal">
-        Mostrando <span className="text-blue-600 dark:text-blue-400 font-black">{filteredTasks.length}</span> de <span className="text-gray-900 dark:text-white font-black">{tasks.length}</span> tareas
+        Mostrando{' '}
+        <span className="text-blue-600 dark:text-blue-400 font-black">
+          {filteredTasks.length}
+        </span>{' '}
+        de{' '}
+        <span className="text-gray-900 dark:text-white font-black">
+          {tasks.length}
+        </span>{' '}
+        tareas
       </div>
 
       {/* Grid de Cards Sueltas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 stagger-reveal">
         {loading ? (
           Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-gray-50 dark:bg-slate-800/40 h-48 rounded-2xl animate-pulse" />
+            <div
+              key={i}
+              className="bg-gray-50 dark:bg-slate-800/40 h-48 rounded-2xl animate-pulse"
+            />
           ))
         ) : filteredTasks.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center text-gray-400 p-12 text-center bg-gray-50/50 dark:bg-slate-800/10 border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-3xl">
             <CheckSquare className="w-16 h-16 mb-4 opacity-20" />
-            <p className="text-lg font-black uppercase tracking-widest opacity-40">Sin tareas</p>
-            <p className="text-sm mt-2 font-medium opacity-60">No se encontraron tareas con los filtros actuales</p>
+            <p className="text-lg font-black uppercase tracking-widest opacity-40">
+              Sin tareas
+            </p>
+            <p className="text-sm mt-2 font-medium opacity-60">
+              No se encontraron tareas con los filtros actuales
+            </p>
           </div>
         ) : (
           filteredTasks.map((task: ProductionTask) => (
-            <TaskCard 
+            <TaskCard
               key={task.id}
               task={task}
-              isEditable={!['completado', 'pagado', 'cancelado'].includes(task.status) && !isTaskBlocked(task)}
+              isEditable={
+                !['completado', 'pagado', 'cancelado'].includes(task.status) &&
+                !isTaskBlocked(task)
+              }
               isBlocked={isTaskBlocked(task)}
               onUpdateStatus={handleUpdateTaskStatus}
               updatingTaskId={updatingTaskId}
-              onViewOrder={(orderId, productId) => navigate(`/dashboard/admin/orders?order=${orderId}&product=${productId}&line_group=${task.line_group ?? 0}`)}
+              onViewOrder={(orderId, productId) =>
+                navigate(
+                  `/dashboard/admin/orders?order=${orderId}&product=${productId}&line_group=${task.line_group ?? 0}`
+                )
+              }
               onAssignEmployee={handleAssignEmployee}
-              employees={employees.filter(e => e.occupation === TYPE_TO_OCCUPATION[task.type])}
+              employees={employees.filter(
+                (e) => e.occupation === TYPE_TO_OCCUPATION[task.type]
+              )}
             />
           ))
         )}
@@ -278,4 +335,3 @@ export default function ProductionTaskDashboard() {
     </div>
   );
 }
-

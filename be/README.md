@@ -6,7 +6,7 @@ Backend FastAPI para el sistema de gestión de calzado.
 
 - Python 3.12+
 - FastAPI 0.115+
-- SQLAlchemy 2.0 + Alembic (27 migraciones)
+- SQLAlchemy 2.0 + Alembic (42 migraciones)
 - PostgreSQL 17
 - JWT (python-jose) + Bcrypt
 - uv (gestor de dependencias)
@@ -15,24 +15,16 @@ Backend FastAPI para el sistema de gestión de calzado.
 
 ```
 be/app/
-├── core/          # Configuración, base de datos, seguridad
-├── init_db.py     # Auto-migraciones + seed al arrancar
-├── models/        # Modelos SQLAlchemy (22 tablas)
-├── modules/       # 8 módulos funcionales
-│   ├── admin/     # Catálogo admin, reportes, gestión usuarios
-│   ├── auth/      # Login, registro, JWT, logout global
-│   ├── catalog/   # Catálogo público
-│   ├── dashboard_jefe/  # Métricas del dashboard
-│   ├── orders/    # Pedidos, producción, vales
-│   ├── supplies/  # Insumos y movimientos
-│   ├── type_document/  # Tipos de documento
-│   └── users/     # CRUD usuarios + avatar upload (POST/DELETE /me/avatar)
-├── utils/         # Email SMTP, sanitizado, seguridad
-└── main.py        # Punto de entrada
+├── routers/         # 21 routers FastAPI (endpoint definitions)
+├── controllers/     # 14 controllers (business logic delegation)
+├── services/        # 8 services (domain logic)
+├── models/          # 23 modelos SQLAlchemy
+├── schemas/         # 13 esquemas Pydantic (request/response)
+├── middleware/      # Rate limiting, error handling, security headers
+├── utils/           # Email SMTP, seguridad, crypto
+├── init_db.py       # Auto-migraciones + seed al arrancar
+└── main.py          # Punto de entrada
 ```
-
-Cada módulo tiene: `router.py`, `controller.py` (o directo), `service.py`, `repository.py`.
-Modelos están centralizados en `be/app/models/`, NO dentro de cada módulo.
 
 ## Comandos
 
@@ -65,5 +57,5 @@ http://localhost:8000/docs
 ## Seed automático
 
 Al arrancar el backend, `init_db.py` ejecuta:
-1. `alembic upgrade head` — 27 migraciones
+1. `alembic upgrade head` — 42 migraciones
 2. Datos semilla: roles (3), tipos de documento, 65 productos, usuarios de prueba

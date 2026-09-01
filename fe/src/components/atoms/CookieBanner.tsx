@@ -1,14 +1,14 @@
 /**
  * Archivo: components/ui/CookieBanner.tsx
  * Descripción: Banner de cookies premium para consentimiento global.
- * 
+ *
  * ¿Qué? Banner persistente para gestionar el consentimiento de cookies (GDPR/Privacidad).
  * ¿Para qué? Cumplir con normativas de privacidad y centralizar el aviso global de la app.
  * ¿Impacto? Evita intrusión repetitiva y garantiza que el usuario acepte las políticas antes de navegar.
  */
 
-import { X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface CookieBannerProps {
   onAcceptAll: () => void;
@@ -19,13 +19,13 @@ interface CookieBannerProps {
 export function CookieBanner({
   onAcceptAll,
   onAcceptNecessary,
-  onShowPolicy,
+  onShowPolicy
 }: CookieBannerProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     // Usamos el mismo key que antes para consistencia
-    const cookieConsent = localStorage.getItem("calzado_jyr_cookie_consent");
+    const cookieConsent = localStorage.getItem('calzado_jyr_cookie_consent');
     if (!cookieConsent) {
       // Pequeño delay para que no aparezca de golpe
       const timer = setTimeout(() => setIsVisible(true), 1000);
@@ -34,21 +34,27 @@ export function CookieBanner({
   }, []);
 
   const handleAcceptAll = () => {
-    localStorage.setItem("calzado_jyr_cookie_consent", JSON.stringify({
-      all: true,
-      necessary: true,
-      timestamp: new Date().toISOString(),
-    }));
+    localStorage.setItem(
+      'calzado_jyr_cookie_consent',
+      JSON.stringify({
+        all: true,
+        necessary: true,
+        timestamp: new Date().toISOString()
+      })
+    );
     onAcceptAll();
     setIsVisible(false);
   };
 
   const handleAcceptNecessary = () => {
-    localStorage.setItem("calzado_jyr_cookie_consent", JSON.stringify({
-      all: false,
-      necessary: true,
-      timestamp: new Date().toISOString(),
-    }));
+    localStorage.setItem(
+      'calzado_jyr_cookie_consent',
+      JSON.stringify({
+        all: false,
+        necessary: true,
+        timestamp: new Date().toISOString()
+      })
+    );
     onAcceptNecessary();
     setIsVisible(false);
   };
@@ -64,14 +70,18 @@ export function CookieBanner({
               Valoramos tu privacidad
             </h3>
             <p className="text-[13px] text-gray-500 leading-relaxed">
-              Utilizamos cookies para mejorar tu experiencia de navegación, ofrecerte contenido personalizado y analizar nuestro tráfico. Al hacer clic en "Aceptar todas", consientes el uso de todas las cookies. Lee nuestra{" "}
+              Utilizamos cookies para mejorar tu experiencia de navegación,
+              ofrecerte contenido personalizado y analizar nuestro tráfico. Al
+              hacer clic en "Aceptar todas", consientes el uso de todas las
+              cookies. Lee nuestra{' '}
               <button
                 type="button"
                 onClick={onShowPolicy}
                 className="text-[#1e40af] font-semibold hover:underline"
               >
                 Política de Cookies
-              </button>.
+              </button>
+              .
             </p>
           </div>
 
@@ -97,7 +107,7 @@ export function CookieBanner({
             >
               Aceptar todas
             </button>
-            
+
             <button
               type="button"
               onClick={() => setIsVisible(false)}

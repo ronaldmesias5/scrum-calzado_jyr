@@ -4,8 +4,8 @@
  * ¿Para qué? Permitir acceso solo a usuarios con ciertos roles/ocupaciones (ej: admin, jefe).
  */
 
-import { Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
@@ -15,12 +15,12 @@ interface RoleProtectedRouteProps {
 
 /**
  * Protege rutas por rol y/o ocupación.
- * 
+ *
  * Lógica:
  * - Si allowedRoles incluye "admin" y el usuario es admin → acceso permitido
  * - Si allowedRoles incluye "employee" y allowedOccupations incluye la ocupación del usuario → acceso permitido
  * - Si allowedRoles incluye el rol del usuario y no hay restricción de ocupación → acceso permitido
- * 
+ *
  * Ejemplos:
  * - Solo admin: <RoleProtectedRoute allowedRoles={["admin"]}>...</RoleProtectedRoute>
  * - Admin o Jefe: <RoleProtectedRoute allowedRoles={["admin", "employee"]} allowedOccupations={["jefe"]}>...</RoleProtectedRoute>
@@ -29,7 +29,7 @@ interface RoleProtectedRouteProps {
 export function RoleProtectedRoute({
   children,
   allowedRoles,
-  allowedOccupations,
+  allowedOccupations
 }: RoleProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
 
@@ -53,19 +53,19 @@ export function RoleProtectedRoute({
     return <>{children}</>;
   }
 
-  const userRole = user?.role_name || "";
-  const userOccupation = user?.occupation || "";
+  const userRole = user?.role_name || '';
+  const userOccupation = user?.occupation || '';
 
   // Verificar acceso
   let hasAccess = false;
 
   // 1. Administrador siempre puede acceder si está en allowedRoles
-  if (allowedRoles?.includes("admin") && userRole === "admin") {
+  if (allowedRoles?.includes('admin') && userRole === 'admin') {
     hasAccess = true;
   }
 
   // 2. Si es empleado, verificar ocupación si está especificada
-  if (allowedRoles?.includes("employee") && userRole === "employee") {
+  if (allowedRoles?.includes('employee') && userRole === 'employee') {
     if (allowedOccupations && allowedOccupations.length > 0) {
       // Si hay restricción de ocupación, verificar que coincida
       hasAccess = allowedOccupations.includes(userOccupation);
@@ -76,7 +76,11 @@ export function RoleProtectedRoute({
   }
 
   // 3. Otros roles (client, etc)
-  if (allowedRoles?.includes(userRole) && userRole !== "employee" && userRole !== "admin") {
+  if (
+    allowedRoles?.includes(userRole) &&
+    userRole !== 'employee' &&
+    userRole !== 'admin'
+  ) {
     hasAccess = true;
   }
 

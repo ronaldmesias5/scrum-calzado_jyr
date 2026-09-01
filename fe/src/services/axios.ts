@@ -1,11 +1,17 @@
-import axios from "axios";
-import { API_CONFIG } from "./config";
+import axios from 'axios';
+import { API_CONFIG } from './config';
+
+// ─── CSRF Token Helper ────────────────────────────────────────
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
 
 const api = axios.create({
   baseURL: API_CONFIG.baseURL,
-  headers: { "Content-Type": "application/json" },
+  headers: { 'Content-Type': 'application/json' },
   timeout: API_CONFIG.timeout,
-  withCredentials: true,
+  withCredentials: true
 });
 
 // ─── Estado para refresh token ─────────────────────────────────
@@ -27,40 +33,58 @@ function processQueue(error: unknown, token: string | null = null) {
 }
 
 function forceLogout() {
-  const hasToken = sessionStorage.getItem("access_token") || localStorage.getItem("access_token");
+  const hasToken =
+    sessionStorage.getItem('access_token') ||
+    localStorage.getItem('access_token');
   if (!hasToken) return;
-  sessionStorage.removeItem("access_token");
-  sessionStorage.removeItem("refresh_token");
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  window.dispatchEvent(new CustomEvent("auth:logout"));
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('refresh_token');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  window.dispatchEvent(new CustomEvent('auth:logout'));
 }
 
 function handleHttpError(error: unknown) {
-  const err = error as { response?: { status: number; data: { detail: unknown } }; request?: unknown; message?: string };
+  const err = error as {
+    response?: { status: number; data: { detail: unknown } };
+    request?: unknown;
+    message?: string;
+  };
   if (err.response) {
     const data = err.response.data;
     if (err.response.status === 422 && Array.isArray(data.detail)) {
-      err.message = data.detail.map((e: { msg: string }) => e.msg).join(". ");
-    } else if (typeof data.detail === "string") {
+      err.message = data.detail.map((e: { msg: string }) => e.msg).join('. ');
+    } else if (typeof data.detail === 'string') {
       err.message = data.detail;
     }
   } else if (err.request) {
-    err.message = "No se pudo conectar con el servidor";
+    err.message = 'No se pudo conectar con el servidor';
   }
   return Promise.reject(error);
 }
 
-// ─── Request: inyecta token ────────────────────────────────────
+// ─── Request: inyecta token + CSRF ─────────────────────────────
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem("access_token") || localStorage.getItem("access_token");
+    const token =
+      sessionStorage.getItem('access_token') ||
+      localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Inyectar CSRF token en métodos de mutación (POST, PUT, PATCH, DELETE)
+    const method = (config.method || '').toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 // ─── Response: refresh automático en 401 ──────────────────────
@@ -74,7 +98,10 @@ api.interceptors.response.use(
     }
 
     // No reintentar si falló el propio refresh
-    if (typeof originalRequest.url === "string" && originalRequest.url.includes("/auth/refresh")) {
+    if (
+      typeof originalRequest.url === 'string' &&
+      originalRequest.url.includes('/auth/refresh')
+    ) {
       forceLogout();
       return Promise.reject(error);
     }
@@ -93,25 +120,27 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const storedRefreshToken = sessionStorage.getItem("refresh_token") || localStorage.getItem("refresh_token");
+    const storedRefreshToken =
+      sessionStorage.getItem('refresh_token') ||
+      localStorage.getItem('refresh_token');
     if (!storedRefreshToken) {
       isRefreshing = false;
       return handleHttpError(error);
     }
 
-    const isPersisted = !!localStorage.getItem("refresh_token");
+    const isPersisted = !!localStorage.getItem('refresh_token');
 
     try {
       const response = await axios.post(
         `${API_CONFIG.baseURL}/api/v1/auth/refresh`,
-        { refresh_token: storedRefreshToken },
+        { refresh_token: storedRefreshToken }
       );
 
       const { access_token, refresh_token } = response.data;
       const storage = isPersisted ? localStorage : sessionStorage;
-      storage.setItem("access_token", access_token);
-      storage.setItem("refresh_token", refresh_token);
-      window.dispatchEvent(new CustomEvent("auth:token-refreshed"));
+      storage.setItem('access_token', access_token);
+      storage.setItem('refresh_token', refresh_token);
+      window.dispatchEvent(new CustomEvent('auth:token-refreshed'));
 
       processQueue(null, access_token);
       originalRequest.headers.Authorization = `Bearer ${access_token}`;
@@ -123,7 +152,7 @@ api.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  },
+  }
 );
 
 export default api;

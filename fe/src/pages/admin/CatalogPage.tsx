@@ -1,6 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Package, Filter, Search, Layers, Maximize2 } from 'lucide-react';
-import { Product, listProducts, updateProduct, deleteProduct, createProduct, listBrands, listStyles, listCategories, createStyle, uploadProductImage, resolveImageUrl, toggleProductState } from '@/services/catalogService';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Eye,
+  EyeOff,
+  Package,
+  Filter,
+  Search,
+  Layers,
+  Maximize2
+} from 'lucide-react';
+import {
+  Product,
+  listProducts,
+  updateProduct,
+  deleteProduct,
+  createProduct,
+  listBrands,
+  listStyles,
+  listCategories,
+  createStyle,
+  uploadProductImage,
+  resolveImageUrl,
+  toggleProductState
+} from '@/services/catalogService';
 import ProductEditModal from '@/features/admin/components/molecules/ProductEditModal';
 import ProductCreateModal from '@/features/admin/components/molecules/ProductCreateModal';
 import DeleteConfirmModal from '@/features/admin/components/molecules/DeleteConfirmModal';
@@ -62,12 +86,12 @@ export default function CatalogPage() {
       const [categories, brands, styles] = await Promise.all([
         listCategories(),
         listBrands(),
-        listStyles(),
+        listStyles()
       ]);
 
-      setCategoryList(categories.map(c => c.name));
-      setBrandList(brands.map(b => b.name));
-      setStyleList(styles.map(s => s.name));
+      setCategoryList(categories.map((c) => c.name));
+      setBrandList(brands.map((b) => b.name));
+      setStyleList(styles.map((s) => s.name));
     } catch (error) {
       console.error('Error loading filter options:', error);
     }
@@ -84,7 +108,7 @@ export default function CatalogPage() {
     try {
       // Recargar el producto específico para obtener todos los datos actualizados
       const result = await listProducts({ category_id: product.category_id });
-      const fullProduct = result.products.find(p => p.id === product.id);
+      const fullProduct = result.products.find((p) => p.id === product.id);
       if (fullProduct) {
         setEditingProduct(fullProduct);
       } else {
@@ -110,7 +134,11 @@ export default function CatalogPage() {
   };
 
   // Guardar cambios del producto
-  const handleSaveProduct = async (updatedData: Partial<Product>, imageFile?: File, supplyLinks?: Record<string, number>) => {
+  const handleSaveProduct = async (
+    updatedData: Partial<Product>,
+    imageFile?: File,
+    supplyLinks?: Record<string, number>
+  ) => {
     if (!editingProduct) return;
 
     try {
@@ -118,16 +146,19 @@ export default function CatalogPage() {
       const [brands, styles, categories] = await Promise.all([
         listBrands(),
         listStyles(),
-        listCategories(),
+        listCategories()
       ]);
 
-      const brandName = (updatedData as any).brand_name || editingProduct.brand_name;
-      const styleName = (updatedData as any).style_name || editingProduct.style_name;
-      const categoryName = (updatedData as any).category_name || editingProduct.category_name;
+      const brandName =
+        (updatedData as any).brand_name || editingProduct.brand_name;
+      const styleName =
+        (updatedData as any).style_name || editingProduct.style_name;
+      const categoryName =
+        (updatedData as any).category_name || editingProduct.category_name;
 
-      const brand = brands.find(b => b.name === brandName);
-      const style = styles.find(s => s.name === styleName);
-      const category = categories.find(c => c.name === categoryName);
+      const brand = brands.find((b) => b.name === brandName);
+      const style = styles.find((s) => s.name === styleName);
+      const category = categories.find((c) => c.name === categoryName);
 
       const brand_id = brand?.id || editingProduct.brand_id;
       const style_id = style?.id || editingProduct.style_id;
@@ -142,7 +173,8 @@ export default function CatalogPage() {
         style_id,
         category_id,
         insufficient_threshold: editingProduct.insufficient_threshold || 12,
-        task_prices: (updatedData as any).task_prices ?? editingProduct.task_prices ?? {},
+        task_prices:
+          (updatedData as any).task_prices ?? editingProduct.task_prices ?? {}
       };
 
       await updateProduct(editingProduct.id, dataToSend);
@@ -162,20 +194,24 @@ export default function CatalogPage() {
       // 4) Sincronizar Insumos
       if (supplyLinks) {
         try {
-          const { checkProductSupplies, linkSupplyToProduct, unlinkSupplyFromProduct } = await import('@/services/suppliesService');
-          
+          const {
+            checkProductSupplies,
+            linkSupplyToProduct,
+            unlinkSupplyFromProduct
+          } = await import('@/services/suppliesService');
+
           // Obtener actuales para saber qué desvincular
           const currentRes = await checkProductSupplies(editingProduct.id);
-          const currentIds = currentRes.supplies.map(s => s.supply_id);
+          const currentIds = currentRes.supplies.map((s) => s.supply_id);
           const newIds = Object.keys(supplyLinks);
-          
+
           // Eliminar los que ya no están
           for (const oldId of currentIds) {
             if (!newIds.includes(oldId)) {
               await unlinkSupplyFromProduct(editingProduct.id, oldId);
             }
           }
-          
+
           // Vincular o actualizar todos los seleccionados
           for (const [supplyId, qty] of Object.entries(supplyLinks)) {
             await linkSupplyToProduct(editingProduct.id, supplyId, qty);
@@ -198,7 +234,11 @@ export default function CatalogPage() {
   };
 
   // Crear nuevo producto
-  const handleCreateProduct = async (productData: any, imageFile?: File, supplyLinks?: Record<string, number>) => {
+  const handleCreateProduct = async (
+    productData: any,
+    imageFile?: File,
+    supplyLinks?: Record<string, number>
+  ) => {
     try {
       // 1. Obtener la marca primeroencias
       const brands = await listBrands();
@@ -206,9 +246,11 @@ export default function CatalogPage() {
       const categories = await listCategories();
 
       // Buscar los IDs por nombre
-      let brand = brands.find(b => b.name === productData.brand_name);
-      let style = styles.find(s => s.name === productData.style_name);
-      const category = categories.find(c => c.name === productData.category_name);
+      let brand = brands.find((b) => b.name === productData.brand_name);
+      let style = styles.find((s) => s.name === productData.style_name);
+      const category = categories.find(
+        (c) => c.name === productData.category_name
+      );
 
       if (!brand) {
         showToast('Error: Marca no encontrada', 'error');
@@ -240,7 +282,7 @@ export default function CatalogPage() {
         productData.description,
         productData.color,
         undefined,
-        productData.task_prices,
+        productData.task_prices
       );
 
       // 2) Subir imagen por separado si hay una
@@ -252,11 +294,12 @@ export default function CatalogPage() {
           // No bloqueamos — el producto fue creado, solo falla la imagen
         }
       }
-      
+
       // 3) Vincular insumos
       if (supplyLinks && Object.keys(supplyLinks).length > 0 && newProduct.id) {
         try {
-          const { linkSupplyToProduct } = await import('@/services/suppliesService');
+          const { linkSupplyToProduct } =
+            await import('@/services/suppliesService');
           for (const [supplyId, qty] of Object.entries(supplyLinks)) {
             await linkSupplyToProduct(newProduct.id, supplyId, qty);
           }
@@ -272,7 +315,11 @@ export default function CatalogPage() {
     } catch (error: any) {
       console.error('Error creating product:', error);
       const detail = error?.response?.data?.detail;
-      showToast(detail || 'Error al crear el producto. Verifica que todos los datos sean válidos.', 'error');
+      showToast(
+        detail ||
+          'Error al crear el producto. Verifica que todos los datos sean válidos.',
+        'error'
+      );
     }
   };
 
@@ -289,7 +336,7 @@ export default function CatalogPage() {
     setIsDeleting(true);
     try {
       await deleteProduct(deletingProduct.id);
-      
+
       // Recargar productos
       await loadProducts();
       setIsDeleteModalOpen(false);
@@ -306,20 +353,26 @@ export default function CatalogPage() {
   // Extraer valores únicos para los filtros
   const categories = categoryList;
   const brands = brandList;
-  const colors = Array.from(new Set(products.map(p => p.color).filter(Boolean))) as string[];
+  const colors = Array.from(
+    new Set(products.map((p) => p.color).filter(Boolean))
+  ) as string[];
 
   // Obtener estilos filtrando por marca (si hay una seleccionada)
-  const styles = selectedBrand 
-    ? styleList.filter(s => {
+  const styles = selectedBrand
+    ? styleList.filter((s) => {
         // Filtrar estilos que pertenecen a la marca seleccionada
-        return products.some(p => p.style_name === s && p.brand_name === selectedBrand);
+        return products.some(
+          (p) => p.style_name === s && p.brand_name === selectedBrand
+        );
       })
     : styleList;
 
   // Si se selecciona una marca y el estilo actual no pertenece a esa marca, limpiar el estilo
   useEffect(() => {
     if (selectedBrand && selectedStyle) {
-      const styleBelongsToBrand = products.some(p => p.brand_name === selectedBrand && p.style_name === selectedStyle);
+      const styleBelongsToBrand = products.some(
+        (p) => p.brand_name === selectedBrand && p.style_name === selectedStyle
+      );
       if (!styleBelongsToBrand) {
         setSelectedStyle('');
       }
@@ -327,33 +380,57 @@ export default function CatalogPage() {
   }, [selectedBrand, selectedStyle, products]);
 
   // Filtrar productos
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = 
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || p.category_name === selectedCategory;
+    const matchesCategory =
+      !selectedCategory || p.category_name === selectedCategory;
     const matchesBrand = !selectedBrand || p.brand_name === selectedBrand;
     const matchesStyle = !selectedStyle || p.style_name === selectedStyle;
     const matchesColor = !selectedColor || p.color === selectedColor;
-    const matchesState = !selectedState || (selectedState === 'active' ? p.is_active : !p.is_active);
-    
-    return matchesSearch && matchesCategory && matchesBrand && matchesStyle && matchesColor && matchesState;
+    const matchesState =
+      !selectedState ||
+      (selectedState === 'active' ? p.is_active : !p.is_active);
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesBrand &&
+      matchesStyle &&
+      matchesColor &&
+      matchesState
+    );
   });
 
   // Calcular métricas (de todos los productos)
   const totalProducts = total;
-  const activeProducts = products.filter(p => p.is_active).length;
-  const inactiveProducts = products.filter(p => !p.is_active).length;
+  const activeProducts = products.filter((p) => p.is_active).length;
+  const inactiveProducts = products.filter((p) => !p.is_active).length;
 
   // Cargar productos cuando cambia página o filtros
   useEffect(() => {
     loadProducts();
-  }, [page, selectedCategory, selectedBrand, selectedStyle, selectedColor, selectedState]);
+  }, [
+    page,
+    selectedCategory,
+    selectedBrand,
+    selectedStyle,
+    selectedColor,
+    selectedState
+  ]);
 
   // Reiniciar página al cambiar filtros
   useEffect(() => {
     setPage(1);
-  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, selectedState, searchTerm]);
+  }, [
+    selectedCategory,
+    selectedBrand,
+    selectedStyle,
+    selectedColor,
+    selectedState,
+    searchTerm
+  ]);
 
   // Inicializar opciones de filtros
   useEffect(() => {
@@ -369,7 +446,9 @@ export default function CatalogPage() {
             <Layers className="w-8 h-8 text-orange-600" />
             Gestión de Catálogo
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">Administra todos los productos del catálogo • {total} en total</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">
+            Administra todos los productos del catálogo • {total} en total
+          </p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
@@ -422,47 +501,62 @@ export default function CatalogPage() {
               className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Marca */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Marca</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Marca
+            </label>
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
               className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todas</option>
-              {brands.map(brand => (
-                <option key={brand} value={brand}>{brand}</option>
+              {brands.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Estilo */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Estilo</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Estilo
+            </label>
             <select
               value={selectedStyle}
               onChange={(e) => setSelectedStyle(e.target.value)}
               className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
-              {styles.map(style => (
-                <option key={style} value={style}>{style}</option>
+              {styles.map((style) => (
+                <option key={style} value={style}>
+                  {style}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Producto (Búsqueda) */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Producto</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Producto
+            </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
                 type="text"
                 placeholder="Nombre, ID, ref..."
@@ -475,22 +569,28 @@ export default function CatalogPage() {
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Color</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Color
+            </label>
             <select
               value={selectedColor}
               onChange={(e) => setSelectedColor(e.target.value)}
               className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
             >
               <option value="">Todos</option>
-              {colors.map(color => (
-                <option key={color} value={color}>{color}</option>
+              {colors.map((color) => (
+                <option key={color} value={color}>
+                  {color}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Estado */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Estado</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Estado
+            </label>
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
@@ -504,7 +604,9 @@ export default function CatalogPage() {
 
           {/* Limpiar Filtros */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              &nbsp;
+            </label>
             <button
               onClick={() => {
                 setSelectedCategory('');
@@ -530,31 +632,51 @@ export default function CatalogPage() {
       ) : filteredProducts.length === 0 ? (
         <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-8 text-center shadow-sm">
           <Package className="mx-auto mb-2 text-gray-400" size={32} />
-          <p className="text-gray-500 dark:text-gray-400 font-medium">No se encontraron productos</p>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">
+            No se encontraron productos
+          </p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl overflow-x-auto shadow-sm transition-all duration-300">
           <table className="w-full text-sm min-w-max md:min-w-0">
             <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Producto</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoría</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Color</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                </tr>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Producto
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Categoría
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Color
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Stock
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
             </thead>
             <tbody>
               {filteredProducts.map((product) => (
-                <tr key={product.id} className="border-b border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                <tr
+                  key={product.id}
+                  className="border-b border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleViewImage(
-                          resolveImageUrl(product.image_url) || '/placeholder-product.png',
-                          product.name
-                        )}
+                        onClick={() =>
+                          handleViewImage(
+                            resolveImageUrl(product.image_url) ||
+                              '/placeholder-product.png',
+                            product.name
+                          )
+                        }
                         className="relative w-10 h-10 bg-gray-200 dark:bg-slate-700 rounded flex-shrink-0 overflow-hidden group cursor-pointer hover:shadow-lg transition-all"
                         title="Haz click para ver la imagen"
                       >
@@ -574,8 +696,13 @@ export default function CatalogPage() {
                         </div>
                       </button>
                       <div>
-                        <p className="font-bold text-gray-900 dark:text-white transition-colors">{product.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{product.style_name} · ID: {product.id.substring(0, 8)}</p>
+                        <p className="font-bold text-gray-900 dark:text-white transition-colors">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {product.style_name} · ID:{' '}
+                          {product.id.substring(0, 8)}
+                        </p>
                       </div>
                     </div>
                   </td>
@@ -586,7 +713,11 @@ export default function CatalogPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                      {product.color || <span className="text-gray-400 dark:text-gray-500">Sin color</span>}
+                      {product.color || (
+                        <span className="text-gray-400 dark:text-gray-500">
+                          Sin color
+                        </span>
+                      )}
                     </span>
                   </td>
                   <td className="px-4 py-2">
@@ -597,7 +728,11 @@ export default function CatalogPage() {
                   <td className="px-4 py-2">
                     <button
                       onClick={() => handleToggleState(product)}
-                      title={product.is_active ? 'Click para deshabilitar' : 'Click para habilitar'}
+                      title={
+                        product.is_active
+                          ? 'Click para deshabilitar'
+                          : 'Click para habilitar'
+                      }
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                         product.is_active
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
@@ -605,9 +740,13 @@ export default function CatalogPage() {
                       }`}
                     >
                       {product.is_active ? (
-                        <><Eye size={12} /> Habilitado</>
+                        <>
+                          <Eye size={12} /> Habilitado
+                        </>
                       ) : (
-                        <><EyeOff size={12} /> Deshabilitado</>
+                        <>
+                          <EyeOff size={12} /> Deshabilitado
+                        </>
                       )}
                     </button>
                   </td>
@@ -638,7 +777,11 @@ export default function CatalogPage() {
 
       {/* Paginación */}
       {!loading && filteredProducts.length > 0 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       )}
 
       {/* Modal de Edición */}

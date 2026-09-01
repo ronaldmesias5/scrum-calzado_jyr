@@ -4,11 +4,23 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  Users, Search, Edit2, Loader2, AlertCircle,
-  UserPlus, CheckCircle2, XCircle, Shield, ShieldOff
+import {
+  Users,
+  Search,
+  Edit2,
+  Loader2,
+  AlertCircle,
+  UserPlus,
+  CheckCircle2,
+  XCircle,
+  Shield,
+  ShieldOff
 } from 'lucide-react';
-import { getAllUsers, updateUser, type UpdateUserRequest } from '@/services/adminApi';
+import {
+  getAllUsers,
+  updateUser,
+  type UpdateUserRequest
+} from '@/services/adminApi';
 import { getTypeDocuments } from '@/services/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
 import CreateUserForm from '@/features/admin/components/molecules/CreateUserForm';
@@ -24,9 +36,11 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOccupation, setFilterOccupation] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  
+
   // Estado para el modal de edición
-  const [selectedEmployee, setSelectedEmployee] = useState<UserResponse | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<UserResponse | null>(
+    null
+  );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -35,7 +49,9 @@ export default function EmployeesPage() {
 
   // Estado para el modal de estado (activar/desactivar)
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [employeeToToggle, setEmployeeToToggle] = useState<UserResponse | null>(null);
+  const [employeeToToggle, setEmployeeToToggle] = useState<UserResponse | null>(
+    null
+  );
   const [isStatusLoading, setIsStatusLoading] = useState(false);
 
   const { user: currentUser } = useAuth();
@@ -54,13 +70,20 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     fetchEmployees();
-    getTypeDocuments().then(setTypeDocuments).catch(() => {});
+    getTypeDocuments()
+      .then(setTypeDocuments)
+      .catch(() => {});
   }, [fetchEmployees]);
 
-  const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = (emp.name + ' ' + emp.last_name + ' ' + emp.email).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesOccupation = filterOccupation === 'all' || emp.occupation === filterOccupation;
-    const matchesStatus = filterStatus === 'all' || (filterStatus === 'active' ? emp.is_active : !emp.is_active);
+  const filteredEmployees = employees.filter((emp) => {
+    const matchesSearch = (emp.name + ' ' + emp.last_name + ' ' + emp.email)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesOccupation =
+      filterOccupation === 'all' || emp.occupation === filterOccupation;
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'active' ? emp.is_active : !emp.is_active);
     return matchesSearch && matchesOccupation && matchesStatus;
   });
 
@@ -81,15 +104,21 @@ export default function EmployeesPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEmployee) return;
-    
+
     setIsUpdating(true);
     try {
-      const updated = await updateUser(selectedEmployee.id.toString(), editForm);
-      setEmployees(prev => prev.map(emp => emp.id === updated.id ? updated : emp));
+      const updated = await updateUser(
+        selectedEmployee.id.toString(),
+        editForm
+      );
+      setEmployees((prev) =>
+        prev.map((emp) => (emp.id === updated.id ? updated : emp))
+      );
       setIsEditModalOpen(false);
       showToast('Empleado actualizado correctamente', 'success');
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Error al actualizar el empleado.';
+      const msg =
+        err?.response?.data?.detail || 'Error al actualizar el empleado.';
       showToast(msg, 'error');
     } finally {
       setIsUpdating(false);
@@ -99,7 +128,10 @@ export default function EmployeesPage() {
   const toggleStatus = (emp: UserResponse) => {
     // Prevenir auto-desactivación
     if (currentUser && emp.id === currentUser.id) {
-      showToast('Por seguridad, no puedes desactivar tu propia cuenta de administrador.', 'error');
+      showToast(
+        'Por seguridad, no puedes desactivar tu propia cuenta de administrador.',
+        'error'
+      );
       return;
     }
     setEmployeeToToggle(emp);
@@ -108,17 +140,26 @@ export default function EmployeesPage() {
 
   const handleConfirmToggleStatus = async () => {
     if (!employeeToToggle) return;
-    
+
     setIsStatusLoading(true);
     const newStatus = !employeeToToggle.is_active;
-    
+
     try {
-      const updated = await updateUser(employeeToToggle.id.toString(), { is_active: newStatus });
-      setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+      const updated = await updateUser(employeeToToggle.id.toString(), {
+        is_active: newStatus
+      });
+      setEmployees((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e))
+      );
       setIsStatusModalOpen(false);
-      showToast(`Empleado ${newStatus ? 'activado' : 'desactivado'} correctamente`, 'success');
+      showToast(
+        `Empleado ${newStatus ? 'activado' : 'desactivado'} correctamente`,
+        'success'
+      );
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Error al cambiar el estado del empleado.';
+      const msg =
+        err?.response?.data?.detail ||
+        'Error al cambiar el estado del empleado.';
       showToast(msg, 'error');
     } finally {
       setIsStatusLoading(false);
@@ -161,7 +202,7 @@ export default function EmployeesPage() {
             className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>
-        
+
         <div>
           <select
             value={filterOccupation}
@@ -201,37 +242,61 @@ export default function EmployeesPage() {
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
             <p className="text-lg font-medium">No se encontraron empleados</p>
-            <p className="text-sm">Prueba con otros filtros o términos de búsqueda.</p>
+            <p className="text-sm">
+              Prueba con otros filtros o términos de búsqueda.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Empleado</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detalles</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Empleado
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Detalles
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr
+                    key={emp.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                  >
                     <td className="px-4 py-2">
-                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-inner transition-colors ${emp.is_active ? 'bg-blue-600' : 'bg-gray-400 dark:bg-slate-700'}`}>
-                          {emp.name[0]}{emp.last_name[0]}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-inner transition-colors ${emp.is_active ? 'bg-blue-600' : 'bg-gray-400 dark:bg-slate-700'}`}
+                        >
+                          {emp.name[0]}
+                          {emp.last_name[0]}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">{emp.name} {emp.last_name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{emp.email}</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">
+                            {emp.name} {emp.last_name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                            {emp.email}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-2">
                       <div className="space-y-0.5">
-                        <p className="text-xs text-gray-700 dark:text-gray-200 font-bold uppercase tracking-wider">{emp.occupation || 'Empleado'}</p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{emp.identity_document || 'S/D'}</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-200 font-bold uppercase tracking-wider">
+                          {emp.occupation || 'Empleado'}
+                        </p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                          {emp.identity_document || 'S/D'}
+                        </p>
                       </div>
                     </td>
                     <td className="px-4 py-2">
@@ -258,15 +323,25 @@ export default function EmployeesPage() {
                           onClick={() => toggleStatus(emp)}
                           disabled={currentUser?.id === emp.id}
                           className={`p-1.5 rounded-lg transition-colors ${
-                            currentUser?.id === emp.id 
-                              ? 'opacity-20 cursor-not-allowed' 
-                              : emp.is_active 
-                                ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
+                            currentUser?.id === emp.id
+                              ? 'opacity-20 cursor-not-allowed'
+                              : emp.is_active
+                                ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
                                 : 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
                           }`}
-                          title={currentUser?.id === emp.id ? 'No puedes desactivar tu propia cuenta' : (emp.is_active ? 'Desactivar cuenta' : 'Activar cuenta')}
+                          title={
+                            currentUser?.id === emp.id
+                              ? 'No puedes desactivar tu propia cuenta'
+                              : emp.is_active
+                                ? 'Desactivar cuenta'
+                                : 'Activar cuenta'
+                          }
                         >
-                          {emp.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                          {emp.is_active ? (
+                            <ShieldOff className="w-4 h-4" />
+                          ) : (
+                            <Shield className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -286,25 +361,35 @@ export default function EmployeesPage() {
           size="lg"
         >
           <div className="flex flex-col">
-            
-            <form onSubmit={handleUpdate} className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors">
+            <form
+              onSubmit={handleUpdate}
+              className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Nombre
+                  </label>
                   <input
                     type="text"
                     value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Apellido</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Apellido
+                  </label>
                   <input
                     type="text"
                     value={editForm.last_name}
-                    onChange={(e) => setEditForm({...editForm, last_name: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, last_name: e.target.value })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                     required
                   />
@@ -312,46 +397,78 @@ export default function EmployeesPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Teléfono</label>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                  Teléfono
+                </label>
                 <input
                   type="text"
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, phone: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Tipo Doc.</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Tipo Doc.
+                  </label>
                   <select
                     value={editForm.identity_document_type_id}
-                    onChange={(e) => setEditForm({...editForm, identity_document_type_id: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        identity_document_type_id: e.target.value
+                      })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                   >
-                    <option value="" className="dark:bg-slate-800">Seleccionar...</option>
-                    {typeDocuments.map(td => <option key={td.id} value={td.id} className="dark:bg-slate-800">{td.name}</option>)}
+                    <option value="" className="dark:bg-slate-800">
+                      Seleccionar...
+                    </option>
+                    {typeDocuments.map((td) => (
+                      <option
+                        key={td.id}
+                        value={td.id}
+                        className="dark:bg-slate-800"
+                      >
+                        {td.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nro. Documento</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Nro. Documento
+                  </label>
                   <input
                     type="text"
                     value={editForm.identity_document}
-                    onChange={(e) => setEditForm({...editForm, identity_document: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        identity_document: e.target.value
+                      })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Cargo / Ocupación</label>
-                  <select
-                    value={editForm.occupation}
-                    onChange={(e) => setEditForm({...editForm, occupation: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    required
-                  >
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                  Cargo / Ocupación
+                </label>
+                <select
+                  value={editForm.occupation}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, occupation: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                  required
+                >
                   <option value="jefe">Jefe</option>
                   <option value="cortador">Cortador</option>
                   <option value="guarnecedor">Guarnecedor</option>
@@ -390,9 +507,9 @@ export default function EmployeesPage() {
         >
           <div className="flex flex-col">
             <div className="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar bg-white dark:bg-slate-900 transition-colors">
-              <CreateUserForm 
-                userType="employee" 
-                typeDocuments={typeDocuments} 
+              <CreateUserForm
+                userType="employee"
+                typeDocuments={typeDocuments}
                 onSuccess={() => {
                   fetchEmployees();
                   // No cerramos el modal automáticamente por si quiere ver el mensaje de éxito

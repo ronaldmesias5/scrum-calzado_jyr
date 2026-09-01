@@ -7,6 +7,7 @@ crear, actualizar estado/detalles, eliminar.
 Las tareas de producción viven en tasks.py (mismo prefix y tag).
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
@@ -40,6 +41,8 @@ router = APIRouter(
     prefix="/api/v1/admin/orders",
     tags=["orders"],
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _trigger_notifications(*, db: Session, new_order, customer_check, settings) -> None:
@@ -200,8 +203,7 @@ def list_orders(
             items=[_order_to_response(order) for order in orders],
         )
     except Exception:
-        import traceback
-        traceback.print_exc()
+        logger.exception("Error al listar órdenes")
         # Retornar respuesta vacía en caso de error
         return OrderListResponse(total=0, page=page, page_size=page_size, total_pages=0, items=[])
 

@@ -61,7 +61,16 @@ Jefe:   ronald.jefe@gmail.com / Test123456!
 
 Fases completadas: **F0** (fundación: Expo 54 + NativeWind + alias `@/`), **F1** (auth: login,
 refresh JWT con SecureStore, rutas protegidas por rol), **F2** (navegación: bottom tabs + HubMenu
-overlay con 13 secciones del jefe), **F3** (inicio: StatCards reales + pedidos recientes + settings).
+overlay con 13 secciones del jefe), **F3** (inicio: StatCards reales + pedidos recientes + settings),
+**F4** (pedidos: listado con filtros/búsqueda/paginación, detalle con detalles+tasks, cambio de estado),
+**F5** (catálogo + inventario: listado productos con búsqueda, stock por talla, estados),
+**F6** (usuarios + empleados + clientes: crear, renovar invitación, estados),
+**F7** (reportes: los del web + PDF con `expo-print`),
+**F8** (incidencias + alertas: pérdidas, pendientes de aprobación, alertas),
+**F9** (insumos + tareas de producción),
+**F10** (dashboard empleado: 6 secciones del EmployeeSidebar),
+**F11** (dashboard cliente: 6 secciones del ClientSidebar),
+**F12** (notificaciones WebSocket con badges).
 El resto del roadmap está en `AGENTS.md`.
 
 ## Documentación

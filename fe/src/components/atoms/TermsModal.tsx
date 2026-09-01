@@ -4,7 +4,7 @@
  * ¿Para qué? Mostrar el texto legal al usuario antes de aceptar en el registro.
  */
 
-import Modal from "@/components/atoms/Modal";
+import Modal from '@/components/atoms/Modal';
 
 interface TermsModalProps {
   onClose: () => void;
@@ -19,7 +19,6 @@ export function TermsModal({ onClose }: TermsModalProps) {
       size="md"
     >
       <div className="flex flex-col">
-
         {/* Contenido con scroll */}
         <div className="max-h-[60vh] overflow-y-auto px-6 py-4 text-sm text-gray-600 space-y-4">
           <p className="text-xs text-gray-400">
@@ -44,8 +43,8 @@ export function TermsModal({ onClose }: TermsModalProps) {
             <p>
               El usuario es responsable de mantener la confidencialidad de su
               contraseña y de todas las actividades realizadas bajo su cuenta.
-              Deberá notificar de inmediato a CALZADO J&R sobre cualquier uso
-              no autorizado.
+              Deberá notificar de inmediato a CALZADO J&R sobre cualquier uso no
+              autorizado.
             </p>
           </section>
 
@@ -98,9 +97,7 @@ export function TermsModal({ onClose }: TermsModalProps) {
           </section>
 
           <section>
-            <h4 className="mb-1 font-semibold text-gray-800">
-              7. Contacto
-            </h4>
+            <h4 className="mb-1 font-semibold text-gray-800">7. Contacto</h4>
             <p>
               Para cualquier inquietud relacionada con estos términos, puede
               contactarnos en: <strong>contacto@calzadojyr.com</strong> o en

@@ -22,13 +22,13 @@ const SIZE_CLASSES: Record<string, string> = {
   lg: 'max-w-lg max-h-[85vh]',
   xl: 'max-w-xl max-h-[85vh]',
   '2xl': 'max-w-2xl max-h-[85vh]',
-  full: 'max-w-4xl max-h-[90vh]',
+  full: 'max-w-4xl max-h-[90vh]'
 };
 
 const OVERLAY_CLASSES: Record<string, string> = {
   blur: 'bg-black/40',
   dark: 'bg-black/80',
-  light: 'bg-black/40',
+  light: 'bg-black/40'
 };
 
 export default function Modal({
@@ -42,7 +42,7 @@ export default function Modal({
   showClose = true,
   className = '',
   initialFocus = true,
-  centered = false,
+  centered = false
 }: ModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -52,34 +52,31 @@ export default function Modal({
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onCloseRef.current();
-        return;
-      }
-      if (e.key === 'Tab' && containerRef.current) {
-        const focusable = containerRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0]!;
-        const last = focusable[focusable.length - 1]!;
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onCloseRef.current();
+      return;
+    }
+    if (e.key === 'Tab' && containerRef.current) {
+      const focusable = containerRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
         }
       }
-    },
-    []
-  );
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,9 +86,10 @@ export default function Modal({
 
       if (initialFocus && containerRef.current) {
         requestAnimationFrame(() => {
-          const firstFocusable = containerRef.current?.querySelector<HTMLElement>(
-            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          );
+          const firstFocusable =
+            containerRef.current?.querySelector<HTMLElement>(
+              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            );
           if (firstFocusable) firstFocusable.focus();
           else containerRef.current?.focus();
         });
@@ -115,7 +113,9 @@ export default function Modal({
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 
   return createPortal(
-    <div className={`fixed inset-0 z-[100] flex justify-center overflow-y-auto p-4 ${centered ? 'items-center' : 'items-start'}`}>
+    <div
+      className={`fixed inset-0 z-[100] flex justify-center overflow-y-auto p-4 ${centered ? 'items-center' : 'items-start'}`}
+    >
       <div
         className={`absolute inset-0 ${overlay} transition-all duration-300`}
         onClick={handleClose}
@@ -127,13 +127,16 @@ export default function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 my-8 ${className}`}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 my-8 flex flex-col overflow-hidden ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || showClose) && (
           <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-5 flex justify-between items-start rounded-t-2xl z-10 shrink-0">
             {title ? (
-              <h2 id={titleId} className="text-lg font-bold text-gray-900 dark:text-white">
+              <h2
+                id={titleId}
+                className="text-lg font-bold text-gray-900 dark:text-white"
+              >
                 {title}
               </h2>
             ) : (
@@ -150,7 +153,7 @@ export default function Modal({
             )}
           </div>
         )}
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto min-h-0 p-0">{children}</div>
       </div>
     </div>,
     document.body
