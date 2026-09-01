@@ -29,7 +29,10 @@ Descripción: Lógica de negocio (business logic) para autenticación.
   - app.utils.security (hashing, JWT)
 """
 
+import logging
+import time
 import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -56,6 +59,15 @@ from app.utils.security import (
     verify_password,
 )
 
+# In-memory login attempt tracker
+# Structure: {email: {"count": int, "locked_until": float}}
+_login_attempts: dict[str, dict] = defaultdict(lambda: {"count": 0, "locked_until": 0.0})
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_SECONDS = 900  # 15 minutes
+
+logger = logging.getLogger(__name__)
+
+
 def _redact_email(email: str) -> str:
     """user@example.com -> us***@example.com para privacidad en logs."""
     try:
@@ -63,12 +75,17 @@ def _redact_email(email: str) -> str:
         if len(parts) != 2: return "invalid-email"
         name, domain = parts
         return f"{name[:2]}***@{domain}"
-    except:
+    except Exception:
         return "redacted-error"
 
 
 async def register_user(db: Session, user_data: UserCreate) -> User:
-    """Registra un nuevo cliente. La cuenta queda activa inmediatamente (sin validación del jefe)."""
+    """Registra un nuevo cliente. La cuenta queda inactiva hasta verificar el email."""
+    import uuid
+    from datetime import timedelta
+    from app.models.email_verification_token import EmailVerificationToken
+    from app.utils.email import send_verification_email
+
     stmt = select(User).where(User.email == user_data.email)
     existing_user = db.execute(stmt).scalar_one_or_none()
 
@@ -109,14 +126,25 @@ async def register_user(db: Session, user_data: UserCreate) -> User:
     db.commit()
     db.refresh(new_user)
 
-    # Enviar email de confirmación de registro (no bloquea el registro)
+    # Generar token de verificación de email (expira en 24 horas)
     try:
-        await send_account_approved_email(
+        verification_token = str(uuid.uuid4())
+        token_record = EmailVerificationToken(
+            user_id=new_user.id,
+            token=verification_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+        )
+        db.add(token_record)
+        db.commit()
+
+        # Enviar email de verificación (no bloquea el registro)
+        await send_verification_email(
             email=new_user.email,
             name=f"{new_user.name_user} {new_user.last_name}",
+            token=verification_token,
         )
     except Exception as e:
-        audit_logger.warning(f"No se pudo enviar email de registro a {_redact_email(new_user.email)}: {e}")
+        audit_logger.warning(f"No se pudo enviar email de verificación a {_redact_email(new_user.email)}: {e}")
 
     return new_user
 
@@ -124,9 +152,31 @@ async def register_user(db: Session, user_data: UserCreate) -> User:
 def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
     """Autentica un usuario y retorna tokens JWT."""
     try:
+        email_lower = login_data.email.lower().strip()
+        attempt_info = _login_attempts[email_lower]
+        now = time.time()
+
+        if attempt_info["locked_until"] > now:
+            remaining = int(attempt_info["locked_until"] - now)
+            minutes = remaining // 60
+            seconds = remaining % 60
+            audit_logger.warning(f"Login bloqueado: {_redact_email(login_data.email)} (cuenta bloqueada, {minutes}m {seconds}s restantes)")
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en {minutes}m {seconds}s.",
+            )
+
         stmt = select(User).where(User.email == login_data.email)
         user = db.execute(stmt).scalar_one_or_none()
         if not user or not verify_password(login_data.password, user.hashed_password):
+            attempt_info["count"] += 1
+            if attempt_info["count"] >= MAX_LOGIN_ATTEMPTS:
+                attempt_info["locked_until"] = time.time() + LOCKOUT_DURATION_SECONDS
+                audit_logger.warning(f"Cuenta bloqueada: {_redact_email(login_data.email)} ({attempt_info['count']} intentos fallidos)")
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"Cuenta bloqueada por {MAX_LOGIN_ATTEMPTS} intentos fallidos. Intenta de nuevo en 15 minutos.",
+                )
             audit_logger.warning(f"Intento de login fallido: {_redact_email(login_data.email)} (credenciales incorrectas)")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -160,13 +210,15 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
 
         audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
 
+        # Resetear contador de intentos fallidos tras login exitoso
+        _login_attempts[email_lower] = {"count": 0, "locked_until": 0.0}
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
         )
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.exception("Error en login_user")
         raise e
 
 

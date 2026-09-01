@@ -28,7 +28,9 @@ export default function EmployeeLayout() {
   const isCollapsed = sidebarWidth < 100;
 
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, String(sidebarWidth)); } catch {}
+    try {
+      localStorage.setItem(LS_KEY, String(sidebarWidth));
+    } catch {}
   }, [sidebarWidth]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -41,7 +43,9 @@ export default function EmployeeLayout() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - startX;
-      setSidebarWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta)));
+      setSidebarWidth(
+        Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta))
+      );
     };
 
     const handleMouseUp = () => {
@@ -59,9 +63,10 @@ export default function EmployeeLayout() {
 
   return (
     <EmployeeBadgeCountsProvider>
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
-      <AdminHeader onMenuClick={toggleSidebar} />
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
+        <AdminHeader onMenuClick={toggleSidebar} />
 
+<<<<<<< HEAD
       <div className="flex flex-1 min-h-0 overflow-hidden relative">
         <EmployeeSidebar
           isOpen={isSidebarOpen}
@@ -70,10 +75,10 @@ export default function EmployeeLayout() {
           isCollapsed={isCollapsed}
         />
 
-        <div
-          onMouseDown={handleResizeMouseDown}
-          className="hidden lg:block w-1.5 cursor-col-resize bg-transparent hover:bg-blue-400/30 active:bg-blue-500/50 transition-colors flex-shrink-0"
-        />
+          <div
+            onMouseDown={handleResizeMouseDown}
+            className="hidden lg:block w-1.5 cursor-col-resize bg-transparent hover:bg-blue-400/30 active:bg-blue-500/50 transition-colors flex-shrink-0"
+          />
 
         <main id="main-content" className="flex min-h-0 min-w-0 flex-1 flex-col bg-gray-50 dark:bg-slate-950">
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 sm:px-8 pb-6">
@@ -85,7 +90,6 @@ export default function EmployeeLayout() {
             <DashboardFooter className="shrink-0 border-t border-gray-100 dark:border-slate-800/50" />
         </main>
       </div>
-    </div>
     </EmployeeBadgeCountsProvider>
   );
 }

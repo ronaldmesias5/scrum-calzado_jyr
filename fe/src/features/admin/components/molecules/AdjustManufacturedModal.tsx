@@ -10,7 +10,12 @@ interface AdjustManufacturedModalProps {
   onSave: (quantity: number) => Promise<void>;
 }
 
-export default function AdjustManufacturedModal({ isOpen, product, onClose, onSave }: AdjustManufacturedModalProps) {
+export default function AdjustManufacturedModal({
+  isOpen,
+  product,
+  onClose,
+  onSave
+}: AdjustManufacturedModalProps) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(0);
@@ -29,7 +34,10 @@ export default function AdjustManufacturedModal({ isOpen, product, onClose, onSa
       showToast('Pares fabricados actualizados correctamente', 'success');
     } catch (error) {
       console.error('Error saving manufactured pairs:', error);
-      const msg = error instanceof Error ? error.message : 'Error al guardar los pares fabricados';
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Error al guardar los pares fabricados';
       showToast(msg, 'error');
     } finally {
       setLoading(false);
@@ -48,19 +56,27 @@ export default function AdjustManufacturedModal({ isOpen, product, onClose, onSa
       <div className="flex flex-col">
         {/* Header decoration */}
         <div className="px-6 py-2 mb-2">
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{product.name} • {product.brand_name}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {product.name} • {product.brand_name}
+          </p>
         </div>
 
         {/* Body */}
         <div className="p-6 bg-white dark:bg-slate-900">
           <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4 mb-6 transition-colors">
             <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium">
-              <span className="font-bold">Ingresa el número total de pares fabricados</span> para este producto.
+              <span className="font-bold">
+                Ingresa el número total de pares fabricados
+              </span>{' '}
+              para este producto.
             </p>
           </div>
 
           <div>
-            <label htmlFor="quantity" className="block text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-3">
+            <label
+              htmlFor="quantity"
+              className="block text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-3"
+            >
               Pares Fabricados
             </label>
             <input
@@ -68,12 +84,18 @@ export default function AdjustManufacturedModal({ isOpen, product, onClose, onSa
               type="number"
               min="0"
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+              onChange={(e) =>
+                setQuantity(Math.max(0, parseInt(e.target.value) || 0))
+              }
               className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-2xl text-lg font-bold text-gray-900 dark:text-white focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
               placeholder="0"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-2">
-              Total actual: <span className="font-black text-emerald-600 dark:text-emerald-400">{quantity}</span> pares
+              Total actual:{' '}
+              <span className="font-black text-emerald-600 dark:text-emerald-400">
+                {quantity}
+              </span>{' '}
+              pares
             </p>
           </div>
         </div>

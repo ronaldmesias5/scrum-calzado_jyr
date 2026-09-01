@@ -9,30 +9,30 @@
  *   // Render <AuthModals /> in LandingPage
  */
 
-import { useState, useCallback } from "react";
-import Modal from "@/components/atoms/Modal";
-import { LoginForm } from "../molecules/LoginForm";
-import { RegisterForm } from "../molecules/RegisterForm";
-import { ForgotPasswordForm } from "../molecules/ForgotPasswordForm";
-import { ReactivationForm } from "../molecules/ReactivationForm";
-import { useTranslation } from "react-i18next";
-import { useToast } from "@/store/ToastContext";
+import { useState, useCallback } from 'react';
+import Modal from '@/components/atoms/Modal';
+import { LoginForm } from '../molecules/LoginForm';
+import { RegisterForm } from '../molecules/RegisterForm';
+import { ForgotPasswordForm } from '../molecules/ForgotPasswordForm';
+import { ReactivationForm } from '../molecules/ReactivationForm';
+import { useTranslation } from 'react-i18next';
+import { useToast } from '@/store/ToastContext';
 
-type AuthView = "login" | "register" | "forgot" | "reactivation";
+type AuthView = 'login' | 'register' | 'forgot' | 'reactivation';
 
 export function useAuthModals() {
   const [view, setView] = useState<AuthView | null>(null);
 
-  const openLogin = useCallback(() => setView("login"), []);
-  const openRegister = useCallback(() => setView("register"), []);
-  const openForgot = useCallback(() => setView("forgot"), []);
-  const openReactivation = useCallback(() => setView("reactivation"), []);
+  const openLogin = useCallback(() => setView('login'), []);
+  const openRegister = useCallback(() => setView('register'), []);
+  const openForgot = useCallback(() => setView('forgot'), []);
+  const openReactivation = useCallback(() => setView('reactivation'), []);
   const close = useCallback(() => setView(null), []);
 
-  const switchToLogin = useCallback(() => setView("login"), []);
-  const switchToRegister = useCallback(() => setView("register"), []);
-  const switchToForgot = useCallback(() => setView("forgot"), []);
-  const switchToReactivation = useCallback(() => setView("reactivation"), []);
+  const switchToLogin = useCallback(() => setView('login'), []);
+  const switchToRegister = useCallback(() => setView('register'), []);
+  const switchToForgot = useCallback(() => setView('forgot'), []);
+  const switchToReactivation = useCallback(() => setView('reactivation'), []);
 
   return {
     view,
@@ -44,7 +44,7 @@ export function useAuthModals() {
     switchToLogin,
     switchToRegister,
     switchToForgot,
-    switchToReactivation,
+    switchToReactivation
   };
 }
 
@@ -54,9 +54,9 @@ export function AuthModals({
   onSwitchToLogin,
   onSwitchToRegister,
   onSwitchToForgot,
-  onSwitchToReactivation,
+  onSwitchToReactivation
 }: {
-  view: "login" | "register" | "forgot" | "reactivation" | null;
+  view: 'login' | 'register' | 'forgot' | 'reactivation' | null;
   onClose: () => void;
   onSwitchToLogin: () => void;
   onSwitchToRegister: () => void;
@@ -68,14 +68,14 @@ export function AuthModals({
 
   const handleRegisterSuccess = useCallback(() => {
     onClose();
-    showToast("¡Registro exitoso! Ya puedes iniciar sesión.");
+    showToast('¡Registro exitoso! Ya puedes iniciar sesión.');
   }, [onClose, showToast]);
 
   return (
     <>
       {/* Login Modal */}
       <Modal
-        isOpen={view === "login"}
+        isOpen={view === 'login'}
         onClose={onClose}
         title={t('common.login')}
         size="md"
@@ -93,7 +93,7 @@ export function AuthModals({
 
       {/* Register Modal */}
       <Modal
-        isOpen={view === "register"}
+        isOpen={view === 'register'}
         onClose={onClose}
         title={t('common.register')}
         size="2xl"
@@ -109,7 +109,7 @@ export function AuthModals({
 
       {/* Forgot Password Modal */}
       <Modal
-        isOpen={view === "forgot"}
+        isOpen={view === 'forgot'}
         onClose={onClose}
         title="Recuperar contraseña"
         size="md"
@@ -122,7 +122,7 @@ export function AuthModals({
 
       {/* Reactivation Modal */}
       <Modal
-        isOpen={view === "reactivation"}
+        isOpen={view === 'reactivation'}
         onClose={onClose}
         title="Solicitar reactivación de cuenta"
         size="md"

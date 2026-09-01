@@ -48,7 +48,9 @@ export default function ClientLayout() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - startX;
-      setSidebarWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta)));
+      setSidebarWidth(
+        Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta))
+      );
     };
 
     const handleMouseUp = () => {
@@ -68,7 +70,11 @@ export default function ClientLayout() {
     <CartProvider>
       <BadgeCountsProvider>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
-          <AdminHeader onMenuClick={toggleSidebar} homePath="/dashboard/client" roleLabel="Cliente" />
+          <AdminHeader
+            onMenuClick={toggleSidebar}
+            homePath="/dashboard/client"
+            roleLabel="Cliente"
+          />
 
           <div className="flex flex-1 min-h-0 overflow-hidden relative">
             <ClientSidebar

@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Package, Search, X, RefreshCw,
-} from 'lucide-react';
+import { Package, Search, X, RefreshCw } from 'lucide-react';
 import { getAvailableTasks, claimTask } from '@/services/employeeApi';
 import type { AvailableTask } from '@/types/employee';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
@@ -9,7 +7,10 @@ import { ProductionTask } from '@/services/ordersApi';
 import EmployeeValeModal from '@/features/employee/components/molecules/EmployeeValeModal';
 import { useToast } from '@/store/ToastContext';
 
-const toProductionTask = (task: AvailableTask, extra?: Partial<ProductionTask>): ProductionTask => ({
+const toProductionTask = (
+  task: AvailableTask,
+  extra?: Partial<ProductionTask>
+): ProductionTask => ({
   id: task.id,
   order_id: task.order_id || '',
   product_id: task.product_id || '',
@@ -24,7 +25,7 @@ const toProductionTask = (task: AvailableTask, extra?: Partial<ProductionTask>):
   product_category: task.product_category || undefined,
   line_group: task.line_group,
   task_prices: task.task_prices,
-  ...extra,
+  ...extra
 });
 
 export default function AvailableTasksPage() {
@@ -68,9 +69,10 @@ export default function AvailableTasksPage() {
   };
 
   const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = !searchQuery
-      || task.vale_number?.toString().includes(searchQuery)
-      || task.product_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      !searchQuery ||
+      task.vale_number?.toString().includes(searchQuery) ||
+      task.product_name?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -84,7 +86,8 @@ export default function AvailableTasksPage() {
             Tareas Disponibles
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">
-            Tareas de produccion sin asignar. Reclama una para empezar a trabajar.
+            Tareas de produccion sin asignar. Reclama una para empezar a
+            trabajar.
           </p>
         </div>
         <button
@@ -99,9 +102,14 @@ export default function AvailableTasksPage() {
       <div className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
           <div className="relative lg:col-span-2">
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Buscar</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Buscar
+            </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
                 className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-colors"
                 placeholder="Buscar por vale o producto..."
@@ -109,7 +117,10 @@ export default function AvailableTasksPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-500">
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-500"
+                >
                   <X size={14} />
                 </button>
               )}
@@ -118,7 +129,9 @@ export default function AvailableTasksPage() {
 
           <div className="flex items-end">
             <button
-              onClick={() => { setSearchQuery(''); }}
+              onClick={() => {
+                setSearchQuery('');
+              }}
               className="w-full px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-xl text-xs font-bold uppercase hover:bg-red-700 dark:hover:bg-red-800 transition-all flex items-center justify-center gap-2"
             >
               <X size={14} /> Limpiar
@@ -131,7 +144,9 @@ export default function AvailableTasksPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Cargando...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            Cargando...
+          </p>
         </div>
       ) : filteredTasks.length === 0 ? (
         <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
@@ -140,7 +155,9 @@ export default function AvailableTasksPage() {
               <Package size={28} className="text-gray-300 dark:text-gray-600" />
             </div>
             <div>
-              <p className="text-gray-900 dark:text-white font-bold text-lg">Sin tareas disponibles</p>
+              <p className="text-gray-900 dark:text-white font-bold text-lg">
+                Sin tareas disponibles
+              </p>
               <p className="text-gray-500 dark:text-gray-400 mt-1">
                 {searchQuery
                   ? 'No hay tareas que coincidan con los filtros aplicados.'

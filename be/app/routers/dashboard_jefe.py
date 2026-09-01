@@ -19,6 +19,8 @@ Descripción: Router FastAPI con endpoints del panel de administración del jefe
                frontend modules/dashboard-jefe/services/api.ts
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -39,6 +41,8 @@ router = APIRouter(
     prefix="/api/v1/dashboard/admin",
     tags=["dashboard-jefe"],
 )
+
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -69,7 +73,7 @@ def get_recent_orders(
     try:
         return get_recent_orders_data(db)
     except Exception as e:
-        print(f"Error en get_recent_orders: {e}")
+        logger.exception("Error en get_recent_orders")
         raise HTTPException(
             status_code=500,
             detail="Error al obtener órdenes recientes. Intente nuevamente.",

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState } from 'react';
 
 interface ProductWithInventory {
   id: string;
@@ -31,7 +31,7 @@ interface CartContextValue {
     size: string,
     amount: number,
     estimatedDate?: string | null,
-    observations?: string | null,
+    observations?: string | null
   ) => void;
   removeItem: (uid: string) => void;
   clearCart: () => void;
@@ -44,7 +44,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 export const useCart = (): CartContextValue => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
 };
@@ -57,19 +57,26 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     size: string,
     amount: number,
     estimatedDate?: string | null,
-    observations?: string | null,
+    observations?: string | null
   ) => {
     if (amount <= 0) return;
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.productId === product.id);
+      const existingItem = prevCart.find(
+        (item) => item.productId === product.id
+      );
 
-      const newSizes = { ...(existingItem?.sizes || {}), [size]: (existingItem?.sizes[size] || 0) + amount };
+      const newSizes = {
+        ...(existingItem?.sizes || {}),
+        [size]: (existingItem?.sizes[size] || 0) + amount
+      };
 
       const availableBySize: Record<string, number> = {};
       if (product.sizes_inventory) {
-        product.sizes_inventory.forEach((inv: { size: string; available: number }) => {
-          availableBySize[inv.size] = inv.available;
-        });
+        product.sizes_inventory.forEach(
+          (inv: { size: string; available: number }) => {
+            availableBySize[inv.size] = inv.available;
+          }
+        );
       }
 
       if (existingItem) {
@@ -79,9 +86,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 ...item,
                 sizes: newSizes,
                 estimatedDate: estimatedDate ?? item.estimatedDate,
-                observations: observations ?? item.observations,
+                observations: observations ?? item.observations
               }
-            : item,
+            : item
         );
       } else {
         const newItem: CartItem = {
@@ -95,7 +102,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           sizes: newSizes,
           availableBySize: availableBySize,
           estimatedDate: estimatedDate ?? null,
-          observations: observations ?? null,
+          observations: observations ?? null
         };
         return [...prevCart, newItem];
       }
@@ -109,12 +116,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const clearCart = () => setCart([]);
 
   const getTotalPairs = () =>
-    cart.reduce((sum, item) => sum + Object.values(item.sizes).reduce((s, amt) => s + amt, 0), 0);
+    cart.reduce(
+      (sum, item) =>
+        sum + Object.values(item.sizes).reduce((s, amt) => s + amt, 0),
+      0
+    );
 
   const getItems = () => cart;
 
   return (
-    <CartContext.Provider value={{ cart, addItem, removeItem, clearCart, getTotalPairs, getItems }}>
+    <CartContext.Provider
+      value={{ cart, addItem, removeItem, clearCart, getTotalPairs, getItems }}
+    >
       {children}
     </CartContext.Provider>
   );

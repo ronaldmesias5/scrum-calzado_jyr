@@ -13,7 +13,7 @@ vi.mock('@/services/authService', () => ({
   getMe: vi.fn(),
   changePassword: vi.fn(),
   forgotPassword: vi.fn(),
-  resetPassword: vi.fn(),
+  resetPassword: vi.fn()
 }));
 
 describe('AuthContext', () => {

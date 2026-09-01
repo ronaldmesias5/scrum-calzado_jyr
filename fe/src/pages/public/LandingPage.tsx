@@ -14,10 +14,22 @@ import AsessoriaSection from '@/features/landing/components/organisms/AsessoriaS
 import WhyChooseUsSection from '@/features/landing/components/organisms/WhyChooseUsSection';
 import CTAFinalSection from '@/features/landing/components/organisms/CTAFinalSection';
 import WhatsAppButton from '@/features/landing/components/atoms/WhatsAppButton';
-import { AuthModals, useAuthModals } from '@/features/auth/components/organisms/AuthModals';
+import {
+  AuthModals,
+  useAuthModals
+} from '@/features/auth/components/organisms/AuthModals';
 
 export default function LandingPage() {
-  const { view, openLogin, openRegister, close, switchToLogin, switchToRegister, switchToForgot, switchToReactivation } = useAuthModals();
+  const {
+    view,
+    openLogin,
+    openRegister,
+    close,
+    switchToLogin,
+    switchToRegister,
+    switchToForgot,
+    switchToReactivation
+  } = useAuthModals();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Auto-open modal based on URL params (?login=true, ?register=true)

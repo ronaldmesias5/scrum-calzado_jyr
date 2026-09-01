@@ -1,7 +1,7 @@
 /**
  * Archivo: fe/src/modules/auth/services/api.ts
  * Descripción: Cliente HTTP para endpoints de autenticación del backend.
- * 
+ *
  * ¿Qué?
  *   Exporta 7 funciones async que llaman endpoints de backend:
  *   - registerUser(): POST /api/v1/auth/register
@@ -11,13 +11,13 @@
  *   - forgotPassword(): POST /api/v1/auth/forgot-password
  *   - resetPassword(): POST /api/v1/auth/reset-password
  *   - getMe(): GET /api/v1/users/me
- * 
+ *
  * ¿Para qué?
  *   - Encapsular lógica HTTP de auth (separación de capas)
  *   - Type safety con interfaces TypeScript (Request/Response)
  *   - Reutilizar en AuthContext, LoginPage, RegisterPage, etc.
  *   - Facilitar testing (mockear estas funciones)
- * 
+ *
  * ¿Impacto?
  *   CRÍTICO — AuthContext depende 100% de estas funciones.
  *   Modificar firmas rompe: context/AuthContext.tsx, hooks/useAuth.ts,
@@ -25,7 +25,7 @@
  *   Dependencias: api/axios.ts (instancia configurada), types/auth.ts
  */
 
-import api from "@/services/axios";
+import api from '@/services/axios';
 import type {
   ChangePasswordRequest,
   ForgotPasswordRequest,
@@ -35,11 +35,11 @@ import type {
   RegisterRequest,
   ResetPasswordRequest,
   TokenResponse,
-  UserResponse,
-} from "@/types/auth";
+  UserResponse
+} from '@/types/auth';
 
-const AUTH_PREFIX = "/api/v1/auth";
-const USERS_PREFIX = "/api/v1/users";
+const AUTH_PREFIX = '/api/v1/auth';
+const USERS_PREFIX = '/api/v1/users';
 
 export async function logoutUser(): Promise<MessageResponse> {
   const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/logout`);
@@ -51,8 +51,13 @@ export async function logoutAllDevices(): Promise<MessageResponse> {
   return response.data;
 }
 
-export async function registerUser(data: RegisterRequest): Promise<UserResponse> {
-  const response = await api.post<UserResponse>(`${AUTH_PREFIX}/register`, data);
+export async function registerUser(
+  data: RegisterRequest
+): Promise<UserResponse> {
+  const response = await api.post<UserResponse>(
+    `${AUTH_PREFIX}/register`,
+    data
+  );
   return response.data;
 }
 
@@ -61,23 +66,43 @@ export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
   return response.data;
 }
 
-export async function refreshToken(data: RefreshTokenRequest): Promise<TokenResponse> {
-  const response = await api.post<TokenResponse>(`${AUTH_PREFIX}/refresh`, data);
+export async function refreshToken(
+  data: RefreshTokenRequest
+): Promise<TokenResponse> {
+  const response = await api.post<TokenResponse>(
+    `${AUTH_PREFIX}/refresh`,
+    data
+  );
   return response.data;
 }
 
-export async function changePassword(data: ChangePasswordRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/change-password`, data);
+export async function changePassword(
+  data: ChangePasswordRequest
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
+    `${AUTH_PREFIX}/change-password`,
+    data
+  );
   return response.data;
 }
 
-export async function forgotPassword(data: ForgotPasswordRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/forgot-password`, data);
+export async function forgotPassword(
+  data: ForgotPasswordRequest
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
+    `${AUTH_PREFIX}/forgot-password`,
+    data
+  );
   return response.data;
 }
 
-export async function resetPassword(data: ResetPasswordRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/reset-password`, data);
+export async function resetPassword(
+  data: ResetPasswordRequest
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
+    `${AUTH_PREFIX}/reset-password`,
+    data
+  );
   return response.data;
 }
 
@@ -86,16 +111,21 @@ export async function getMe(): Promise<UserResponse> {
   return response.data;
 }
 
-export async function uploadAvatar(file: File): Promise<{ avatar_url: string; message: string }> {
+export async function uploadAvatar(
+  file: File
+): Promise<{ avatar_url: string; message: string }> {
   const formData = new FormData();
   formData.append('image', file);
   const response = await api.post(`${USERS_PREFIX}/me/avatar`, formData, {
-    headers: { 'Content-Type': undefined },
+    headers: { 'Content-Type': undefined }
   });
   return response.data;
 }
 
-export async function deleteAvatar(): Promise<{ avatar_url: null; message: string }> {
+export async function deleteAvatar(): Promise<{
+  avatar_url: null;
+  message: string;
+}> {
   const response = await api.delete(`${USERS_PREFIX}/me/avatar`);
   return response.data;
 }
@@ -115,12 +145,21 @@ export async function getEmailCredentialsStatus(): Promise<EmailCredentialsStatu
   return response.data;
 }
 
-export async function saveEmailCredentials(senderEmail: string, appPassword: string): Promise<{ configured: boolean; sender_email?: string; message: string }> {
-  const response = await api.put(`${USERS_PREFIX}/me/email-credentials`, { sender_email: senderEmail, app_password: appPassword });
+export async function saveEmailCredentials(
+  senderEmail: string,
+  appPassword: string
+): Promise<{ configured: boolean; sender_email?: string; message: string }> {
+  const response = await api.put(`${USERS_PREFIX}/me/email-credentials`, {
+    sender_email: senderEmail,
+    app_password: appPassword
+  });
   return response.data;
 }
 
-export async function deleteEmailCredentials(): Promise<{ configured: boolean; message: string }> {
+export async function deleteEmailCredentials(): Promise<{
+  configured: boolean;
+  message: string;
+}> {
   const response = await api.delete(`${USERS_PREFIX}/me/email-credentials`);
   return response.data;
 }
@@ -137,8 +176,13 @@ export interface ReactivationRequest {
   evidence_url?: string;
 }
 
-export async function requestReactivation(data: ReactivationRequest): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/request-reactivation`, data);
+export async function requestReactivation(
+  data: ReactivationRequest
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
+    `${AUTH_PREFIX}/request-reactivation`,
+    data
+  );
   return response.data;
 }
 
@@ -146,7 +190,51 @@ export async function requestReactivation(data: ReactivationRequest): Promise<Me
 // Solicitar nueva invitación (contraseña temporal expirada) — público
 // ────────────────────────────────────────────────
 
-export async function requestNewInvitation(email: string): Promise<MessageResponse> {
-  const response = await api.post<MessageResponse>(`${AUTH_PREFIX}/request-new-invitation`, { email });
+export async function requestNewInvitation(
+  email: string
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
+    `${AUTH_PREFIX}/request-new-invitation`,
+    { email }
+  );
+  return response.data;
+}
+
+// ────────────────────────────────────────────────
+// 🗑️ Eliminación de cuenta propia
+// ────────────────────────────────────────────────
+
+export async function deleteMyAccount(
+  password: string
+): Promise<MessageResponse> {
+  const response = await api.delete<MessageResponse>(`${USERS_PREFIX}/me`, {
+    data: { password }
+  });
+  return response.data;
+}
+
+// ────────────────────────────────────────────────
+// 📧 Verificación de email
+// ────────────────────────────────────────────────
+
+export async function verifyEmail(token: string): Promise<MessageResponse> {
+  const response = await api.get<MessageResponse>(
+    `${AUTH_PREFIX}/verify-email`,
+    {
+      params: { token }
+    }
+  );
+  return response.data;
+}
+
+export async function resendVerification(
+  email: string
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
+    `${AUTH_PREFIX}/resend-verification`,
+    {
+      email
+    }
+  );
   return response.data;
 }

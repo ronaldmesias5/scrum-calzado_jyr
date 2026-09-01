@@ -1,14 +1,25 @@
 import api from '@/services/axios';
-import type { EmployeeMetricsResponse, EmployeeTaskListResponse, EmployeeIncidenceListResponse, AvailableTaskListResponse, ValeResponse, GeneralIncidenceListResponse, GeneralIncidenceCreateRequest, ProductIncidenceListResponse, ProductIncidenceCreateRequest } from '../types/employee';
+import type {
+  EmployeeMetricsResponse,
+  EmployeeTaskListResponse,
+  EmployeeIncidenceListResponse,
+  AvailableTaskListResponse,
+  ValeResponse,
+  GeneralIncidenceListResponse,
+  GeneralIncidenceCreateRequest,
+  ProductIncidenceListResponse,
+  ProductIncidenceCreateRequest
+} from '../types/employee';
 
 /**
  * Obtener métricas del dashboard del empleado actual.
  * GET /api/v1/dashboard/employee/metrics
  */
-export const getEmployeeMetrics = async (): Promise<EmployeeMetricsResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/metrics');
-  return res.data;
-};
+export const getEmployeeMetrics =
+  async (): Promise<EmployeeMetricsResponse> => {
+    const res = await api.get('/api/v1/dashboard/employee/metrics');
+    return res.data;
+  };
 
 /**
  * Obtener tareas asignadas al empleado actual.
@@ -20,7 +31,7 @@ export const getEmployeeTasks = async (params?: {
 }): Promise<EmployeeTaskListResponse> => {
   const res = await api.get('/api/v1/dashboard/employee/tasks', {
     params: { ...params, _ts: Date.now() },
-    headers: { 'Cache-Control': 'no-cache' },
+    headers: { 'Cache-Control': 'no-cache' }
   });
   return res.data;
 };
@@ -32,7 +43,9 @@ export const getEmployeeTasks = async (params?: {
 export const getEmployeeIncidences = async (params?: {
   state?: string;
 }): Promise<EmployeeIncidenceListResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/incidences', { params });
+  const res = await api.get('/api/v1/dashboard/employee/incidences', {
+    params
+  });
   return res.data;
 };
 
@@ -40,20 +53,25 @@ export const getEmployeeIncidences = async (params?: {
  * Obtener tareas disponibles para reclamar según la ocupación del empleado.
  * GET /api/v1/dashboard/employee/available-tasks
  */
-export const getAvailableTasks = async (): Promise<AvailableTaskListResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/available-tasks', {
-    params: { _ts: Date.now() },
-    headers: { 'Cache-Control': 'no-cache' },
-  });
-  return res.data;
-};
+export const getAvailableTasks =
+  async (): Promise<AvailableTaskListResponse> => {
+    const res = await api.get('/api/v1/dashboard/employee/available-tasks', {
+      params: { _ts: Date.now() },
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    return res.data;
+  };
 
 /**
  * Reclamar una tarea disponible (asignarla al empleado actual).
  * POST /api/v1/dashboard/employee/tasks/{taskId}/claim
  */
-export const claimTask = async (taskId: string): Promise<{ success: boolean; message: string; task_id: string }> => {
-  const res = await api.post(`/api/v1/dashboard/employee/tasks/${taskId}/claim`);
+export const claimTask = async (
+  taskId: string
+): Promise<{ success: boolean; message: string; task_id: string }> => {
+  const res = await api.post(
+    `/api/v1/dashboard/employee/tasks/${taskId}/claim`
+  );
   return res.data;
 };
 
@@ -61,9 +79,14 @@ export const claimTask = async (taskId: string): Promise<{ success: boolean; mes
  * Actualizar el estado de una tarea (el empleado puede marcar su propia tarea como completada).
  * PATCH /api/v1/orders/tasks/{taskId}/status
  */
-export const updateEmployeeTaskStatus = async (taskId: string, status: string, observation?: string): Promise<void> => {
+export const updateEmployeeTaskStatus = async (
+  taskId: string,
+  status: string,
+  observation?: string
+): Promise<void> => {
   const body: Record<string, unknown> = { status };
-  if (observation !== undefined && observation !== '') body.observation = observation;
+  if (observation !== undefined && observation !== '')
+    body.observation = observation;
   await api.patch(`/api/v1/dashboard/employee/tasks/${taskId}/status`, body);
 };
 
@@ -71,8 +94,13 @@ export const updateEmployeeTaskStatus = async (taskId: string, status: string, o
  * Actualizar observación de una tarea.
  * PATCH /api/v1/dashboard/employee/tasks/{taskId}/observation
  */
-export const updateTaskObservation = async (taskId: string, observation: string): Promise<void> => {
-  await api.patch(`/api/v1/dashboard/employee/tasks/${taskId}/observation`, { observation });
+export const updateTaskObservation = async (
+  taskId: string,
+  observation: string
+): Promise<void> => {
+  await api.patch(`/api/v1/dashboard/employee/tasks/${taskId}/observation`, {
+    observation
+  });
 };
 
 /**
@@ -84,9 +112,7 @@ export const getTaskVale = async (taskId: string): Promise<ValeResponse> => {
   return res.data;
 };
 
-
 // ─── Reportes del empleado ─────────────────────────────────────────────────────
-
 
 export interface MyPerformanceResponse {
   total_tasks_completed: number;
@@ -126,7 +152,10 @@ export const getMyPerformance = async (params?: {
   start_date?: string;
   end_date?: string;
 }): Promise<MyPerformanceResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/report/my-performance', { params });
+  const res = await api.get(
+    '/api/v1/dashboard/employee/report/my-performance',
+    { params }
+  );
   return res.data;
 };
 
@@ -135,14 +164,16 @@ export const getSharedReports = async (): Promise<SharedReportListResponse> => {
   return res.data;
 };
 
-export const getSharedReportDetail = async (shareId: string): Promise<SharedReportDetailResponse> => {
-  const res = await api.get(`/api/v1/dashboard/employee/reports/shared/${shareId}`);
+export const getSharedReportDetail = async (
+  shareId: string
+): Promise<SharedReportDetailResponse> => {
+  const res = await api.get(
+    `/api/v1/dashboard/employee/reports/shared/${shareId}`
+  );
   return res.data;
 };
 
-
 // ─── Reporte detallado de tareas del empleado ──────────────────────────────────
-
 
 export interface MyTaskDetail {
   id: string;
@@ -172,32 +203,36 @@ export const getMyTasksReport = async (params?: {
   start_date?: string;
   end_date?: string;
 }): Promise<MyTasksReportResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/report/my-tasks', { params });
+  const res = await api.get('/api/v1/dashboard/employee/report/my-tasks', {
+    params
+  });
   return res.data;
 };
-
 
 // ─── Incidencias generales (maquinaria/insumo) ────────────────────────────────
 
-
-export const createGeneralIncidence = async (data: GeneralIncidenceCreateRequest): Promise<void> => {
+export const createGeneralIncidence = async (
+  data: GeneralIncidenceCreateRequest
+): Promise<void> => {
   await api.post('/api/v1/dashboard/employee/general-incidences', data);
 };
 
-export const getGeneralIncidences = async (): Promise<GeneralIncidenceListResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/general-incidences');
-  return res.data;
-};
-
+export const getGeneralIncidences =
+  async (): Promise<GeneralIncidenceListResponse> => {
+    const res = await api.get('/api/v1/dashboard/employee/general-incidences');
+    return res.data;
+  };
 
 // ─── Incidencias de producto (pendientes de aprobación) ────────────────────────
 
-
-export const createProductIncidence = async (data: ProductIncidenceCreateRequest): Promise<void> => {
+export const createProductIncidence = async (
+  data: ProductIncidenceCreateRequest
+): Promise<void> => {
   await api.post('/api/v1/dashboard/employee/product-incidences', data);
 };
 
-export const getProductIncidences = async (): Promise<ProductIncidenceListResponse> => {
-  const res = await api.get('/api/v1/dashboard/employee/product-incidences');
-  return res.data;
-};
+export const getProductIncidences =
+  async (): Promise<ProductIncidenceListResponse> => {
+    const res = await api.get('/api/v1/dashboard/employee/product-incidences');
+    return res.data;
+  };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   CalendarDays,
@@ -9,15 +9,15 @@ import {
   Package,
   Plus,
   RotateCcw,
-  ShoppingCart,
-} from "lucide-react";
-import Modal from "@/components/atoms/Modal";
-import { useCart } from "@/store/CartContext";
-import { useToast } from "@/store/ToastContext";
+  ShoppingCart
+} from 'lucide-react';
+import Modal from '@/components/atoms/Modal';
+import { useCart } from '@/store/CartContext';
+import { useToast } from '@/store/ToastContext';
 import {
   resolveImageUrl,
-  type WholesaleProduct,
-} from "@/services/wholesaleCatalogApi";
+  type WholesaleProduct
+} from '@/services/wholesaleCatalogApi';
 
 interface ProductDetailModalProps {
   isOpen: boolean;
@@ -27,18 +27,18 @@ interface ProductDetailModalProps {
 }
 
 const PRESETS = [
-  { id: "commercial", label: "Comercial", hint: "Escalera 1·2·3·3·2·1" },
-  { id: "2", label: "2 × talla", hint: "" },
-  { id: "3", label: "3 × talla", hint: "" },
-  { id: "4", label: "4 × talla", hint: "" },
-  { id: "5", label: "5 × talla", hint: "" },
+  { id: 'commercial', label: 'Comercial', hint: 'Escalera 1·2·3·3·2·1' },
+  { id: '2', label: '2 × talla', hint: '' },
+  { id: '3', label: '3 × talla', hint: '' },
+  { id: '4', label: '4 × talla', hint: '' },
+  { id: '5', label: '5 × talla', hint: '' }
 ];
 
 function StepHeader({
   step,
   title,
   subtitle,
-  right,
+  right
 }: {
   step: string;
   title: string;
@@ -56,7 +56,9 @@ function StepHeader({
             {title}
           </h4>
           {subtitle && (
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+              {subtitle}
+            </p>
           )}
         </div>
       </div>
@@ -69,28 +71,31 @@ export function ProductDetailModal({
   isOpen,
   onClose,
   product,
-  onAdded,
+  onAdded
 }: ProductDetailModalProps) {
   const { addItem } = useCart();
   const { showToast } = useToast();
   const [activePreset, setActivePreset] = useState<string | null>(null);
-  const sizeStart = product?.category_name.toLowerCase().includes("infantil") ? 21 : 33;
-  const sizeEnd = product?.category_name.toLowerCase().includes("infantil") ? 32 : 43;
-  const sizes = Array.from(
-    { length: sizeEnd - sizeStart + 1 },
-    (_, index) => ({ size: String(sizeStart + index) }),
-  );
+  const sizeStart = product?.category_name.toLowerCase().includes('infantil')
+    ? 21
+    : 33;
+  const sizeEnd = product?.category_name.toLowerCase().includes('infantil')
+    ? 32
+    : 43;
+  const sizes = Array.from({ length: sizeEnd - sizeStart + 1 }, (_, index) => ({
+    size: String(sizeStart + index)
+  }));
   const [quantities, setQuantities] = useState<Record<string, number>>(() =>
-    Object.fromEntries(sizes.map(({ size }) => [size, 0])),
+    Object.fromEntries(sizes.map(({ size }) => [size, 0]))
   );
-  const [estimatedDate, setEstimatedDate] = useState<string>("");
-  const [observations, setObservations] = useState<string>("");
+  const [estimatedDate, setEstimatedDate] = useState<string>('');
+  const [observations, setObservations] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
       setActivePreset(null);
-      setEstimatedDate("");
-      setObservations("");
+      setEstimatedDate('');
+      setObservations('');
       setQuantities(Object.fromEntries(sizes.map(({ size }) => [size, 0])));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,26 +103,31 @@ export function ProductDetailModal({
 
   if (!isOpen || !product || !product.name) return null;
 
-  const totalPairs = Object.values(quantities).reduce((sum, amount) => sum + amount, 0);
-  const activeSizes = Object.values(quantities).filter((amount) => amount > 0).length;
+  const totalPairs = Object.values(quantities).reduce(
+    (sum, amount) => sum + amount,
+    0
+  );
+  const activeSizes = Object.values(quantities).filter(
+    (amount) => amount > 0
+  ).length;
 
   const updateQuantity = (size: string, value: number) => {
     setActivePreset(null);
     setQuantities((current) => ({
       ...current,
-      [size]: Math.max(0, value),
+      [size]: Math.max(0, value)
     }));
   };
 
   const applyPreset = (preset: string) => {
     const nextQuantities: Record<string, number> = {};
-    if (preset === "commercial") {
+    if (preset === 'commercial') {
       const pattern = [1, 2, 3, 3, 2, 1];
       sizes.forEach(({ size }, index) => {
         nextQuantities[size] = pattern[index] ?? 0;
       });
     } else {
-      const amount = preset === "clear" ? 0 : Number(preset);
+      const amount = preset === 'clear' ? 0 : Number(preset);
       sizes.forEach(({ size }) => {
         nextQuantities[size] = amount;
       });
@@ -128,40 +138,46 @@ export function ProductDetailModal({
 
   const handleAddToCart = () => {
     if (totalPairs === 0) {
-      showToast("Selecciona al menos una talla para continuar", "warning");
+      showToast('Selecciona al menos una talla para continuar', 'warning');
       return;
     }
     if (estimatedDate && estimatedDate < todayIso) {
-      showToast("La fecha estimada no puede ser anterior a hoy", "error");
+      showToast('La fecha estimada no puede ser anterior a hoy', 'error');
       return;
     }
 
     sizes.forEach(({ size }) => {
       const amount = quantities[size] ?? 0;
       if (amount > 0)
-        addItem(product, size, amount, estimatedDate || null, observations.trim() || null);
+        addItem(
+          product,
+          size,
+          amount,
+          estimatedDate || null,
+          observations.trim() || null
+        );
     });
 
     showToast(
-      "Producto agregado al carrito. Puedes seguir agregando productos.",
-      "success",
+      'Producto agregado al carrito. Puedes seguir agregando productos.',
+      'success'
     );
     onAdded?.();
     onClose();
   };
 
   const formatDate = (iso: string) => {
-    const [year, month, day] = iso.split("-");
+    const [year, month, day] = iso.split('-');
     return `${day}/${month}/${year}`;
   };
 
-  const todayIso = new Date().toLocaleDateString("en-CA");
+  const todayIso = new Date().toLocaleDateString('en-CA');
 
   const presetClass = (presetId: string) =>
     `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-all duration-200 ${
       activePreset === presetId
-        ? "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/25"
-        : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400"
+        ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/25'
+        : 'border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400'
     }`;
 
   return (
@@ -216,7 +232,10 @@ export function ProductDetailModal({
         </div>
 
         {/* ── Paso 1 · Datos del pedido ────────────────── */}
-        <section className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: "60ms" }}>
+        <section
+          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '60ms' }}
+        >
           <StepHeader
             step="1"
             title="Datos del pedido"
@@ -235,14 +254,19 @@ export function ProductDetailModal({
                 onChange={(event) => {
                   const value = event.target.value;
                   if (value && value < todayIso) {
-                    showToast("Solo puedes elegir hoy o fechas futuras", "warning");
+                    showToast(
+                      'Solo puedes elegir hoy o fechas futuras',
+                      'warning'
+                    );
                     return;
                   }
                   setEstimatedDate(value);
                 }}
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:[color-scheme:dark]"
               />
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">Opcional</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                Opcional
+              </span>
             </label>
 
             <label className="flex flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition-colors focus-within:border-blue-500 sm:col-span-3 dark:border-slate-700 dark:bg-slate-800">
@@ -252,14 +276,16 @@ export function ProductDetailModal({
                   Comentarios o sugerencias
                 </span>
                 <span
-                  className={`text-[10px] font-bold ${observations.length > 450 ? "text-red-500" : "text-slate-400 dark:text-slate-500"}`}
+                  className={`text-[10px] font-bold ${observations.length > 450 ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`}
                 >
                   {observations.length}/500
                 </span>
               </span>
               <textarea
                 value={observations}
-                onChange={(event) => setObservations(event.target.value.slice(0, 500))}
+                onChange={(event) =>
+                  setObservations(event.target.value.slice(0, 500))
+                }
                 rows={3}
                 maxLength={500}
                 placeholder="Ej.: Prefiero suela blanca, costura reforzada en el talón..."
@@ -271,7 +297,10 @@ export function ProductDetailModal({
         </section>
 
         {/* ── Paso 2 · Distribución de pares ───────────── */}
-        <section className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: "120ms" }}>
+        <section
+          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '120ms' }}
+        >
           <StepHeader
             step="2"
             title="Distribución de pares"
@@ -280,11 +309,11 @@ export function ProductDetailModal({
               <span
                 className={`rounded-full px-3 py-1.5 text-sm font-extrabold tabular-nums transition-colors ${
                   totalPairs > 0
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
-                    : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
+                    : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                 }`}
               >
-                {totalPairs} {totalPairs === 1 ? "par" : "pares"}
+                {totalPairs} {totalPairs === 1 ? 'par' : 'pares'}
               </span>
             }
           />
@@ -309,7 +338,7 @@ export function ProductDetailModal({
                 ))}
                 <button
                   type="button"
-                  onClick={() => applyPreset("clear")}
+                  onClick={() => applyPreset('clear')}
                   className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-transparent px-2.5 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                 >
                   <RotateCcw className="h-3.5 w-3.5 shrink-0" />
@@ -332,16 +361,16 @@ export function ProductDetailModal({
                     key={size}
                     className={`min-w-0 overflow-hidden rounded-xl border p-2.5 transition-all duration-200 ${
                       quantity > 0
-                        ? "border-blue-500 bg-blue-50/80 shadow-md shadow-blue-600/10 dark:border-blue-500 dark:bg-blue-950/40"
-                        : "border-slate-200 bg-white hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-blue-700"
+                        ? 'border-blue-500 bg-blue-50/80 shadow-md shadow-blue-600/10 dark:border-blue-500 dark:bg-blue-950/40'
+                        : 'border-slate-200 bg-white hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-blue-700'
                     }`}
                   >
                     <div className="flex items-baseline justify-between gap-1">
                       <span
                         className={`shrink-0 whitespace-nowrap text-base font-black leading-none tabular-nums transition-colors sm:text-lg ${
                           quantity > 0
-                            ? "text-blue-700 dark:text-blue-300"
-                            : "text-gray-900 dark:text-white"
+                            ? 'text-blue-700 dark:text-blue-300'
+                            : 'text-gray-900 dark:text-white'
                         }`}
                       >
                         {size}
@@ -366,7 +395,9 @@ export function ProductDetailModal({
                         type="number"
                         min="0"
                         value={quantity}
-                        onChange={(event) => updateQuantity(size, Number(event.target.value))}
+                        onChange={(event) =>
+                          updateQuantity(size, Number(event.target.value))
+                        }
                         className="min-w-[2rem] w-full bg-transparent px-0.5 text-center text-sm font-extrabold tabular-nums text-gray-900 outline-none [appearance:textfield] dark:text-white [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         aria-label={`Cantidad talla ${size}`}
                       />
@@ -387,21 +418,24 @@ export function ProductDetailModal({
         </section>
 
         {/* ── Barra de acción ──────────────────────────── */}
-        <div className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-md duration-300 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800" style={{ animationDelay: "180ms" }}>
+        <div
+          className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-md duration-300 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800"
+          style={{ animationDelay: '180ms' }}
+        >
           <div className="flex items-center gap-3 text-sm">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
               <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </span>
             <div className="min-w-0">
               <p className="font-bold text-gray-900 dark:text-white">
-                {totalPairs} {totalPairs === 1 ? "par" : "pares"} en {activeSizes}{" "}
-                {activeSizes === 1 ? "talla" : "tallas"}
+                {totalPairs} {totalPairs === 1 ? 'par' : 'pares'} en{' '}
+                {activeSizes} {activeSizes === 1 ? 'talla' : 'tallas'}
               </p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 {estimatedDate
                   ? `Entrega estimada · ${formatDate(estimatedDate)}`
-                  : "Sin fecha de entrega definida"}
-                {observations.trim() && " · Con nota para fábrica"}
+                  : 'Sin fecha de entrega definida'}
+                {observations.trim() && ' · Con nota para fábrica'}
               </p>
             </div>
           </div>

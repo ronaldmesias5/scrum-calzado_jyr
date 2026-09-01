@@ -1,37 +1,67 @@
 import { useState, useEffect } from 'react';
-import { 
-  BarChart, TrendingUp, Package, ShoppingBag, 
-  Calendar, Users, Briefcase, Download, CheckCircle,
-  Award, Star, Activity, ExternalLink, Share2, Send, Loader2
+import {
+  BarChart,
+  TrendingUp,
+  Package,
+  ShoppingBag,
+  Calendar,
+  Users,
+  Briefcase,
+  Download,
+  CheckCircle,
+  Award,
+  Star,
+  Activity,
+  ExternalLink,
+  Share2,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/store/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
 import { formatCOP } from '@/utils/format';
 import Modal from '@/components/atoms/Modal';
-import { 
-  getDashboardReports, getEmployeeReport, getCustomerReport, 
-  getGlobalProduction, markTasksAsPaid,
-  getRoleReport, getAllCustomersReport, sendReportEmail, shareInternal,
-  DashboardReportResponse, EmployeeReportResponse, CustomerReportResponse,
-  ProductionGlobalReport, TaskDetail
+import {
+  getDashboardReports,
+  getEmployeeReport,
+  getCustomerReport,
+  getGlobalProduction,
+  markTasksAsPaid,
+  getRoleReport,
+  getAllCustomersReport,
+  sendReportEmail,
+  shareInternal,
+  DashboardReportResponse,
+  EmployeeReportResponse,
+  CustomerReportResponse,
+  ProductionGlobalReport,
+  TaskDetail
 } from '@/services/reportsApi';
-import { exportEmployeePDF, exportCustomerPDF, exportOrdersPDF, exportTasksPDF, exportDashboardPDF, exportProductionPDF } from '@/features/admin/utils/reportsUtils';
+import {
+  exportEmployeePDF,
+  exportCustomerPDF,
+  exportOrdersPDF,
+  exportTasksPDF,
+  exportDashboardPDF,
+  exportProductionPDF
+} from '@/features/admin/utils/reportsUtils';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
 import axios from '@/services/axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_URL } from '@/services/config';
 
 const PROCESS_DISPLAY: Record<string, string> = {
   cortador: 'Corte',
   guarnecedor: 'Guarnición',
   solador: 'Soladura',
-  emplantillador: 'Emplantillado',
+  emplantillador: 'Emplantillado'
 };
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'generator'>('dashboard');
-  
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'generator'>(
+    'dashboard'
+  );
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
@@ -96,17 +126,22 @@ function DashboardTab() {
   }, [days]);
 
   if (loading || !data) {
-    return <div className="animate-pulse space-y-6">
-      <div className="h-32 bg-gray-200 dark:bg-slate-800 rounded-3xl"></div>
-      <div className="grid grid-cols-2 gap-8"><div className="h-64 bg-gray-200 dark:bg-slate-800 rounded-3xl"></div><div className="h-64 bg-gray-200 dark:bg-slate-800 rounded-3xl"></div></div>
-    </div>;
+    return (
+      <div className="animate-pulse space-y-6">
+        <div className="h-32 bg-gray-200 dark:bg-slate-800 rounded-3xl"></div>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="h-64 bg-gray-200 dark:bg-slate-800 rounded-3xl"></div>
+          <div className="h-64 bg-gray-200 dark:bg-slate-800 rounded-3xl"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <select 
-          value={days} 
+        <select
+          value={days}
           onChange={(e) => setDays(Number(e.target.value))}
           className="bg-white dark:bg-slate-900 px-4 py-2.5 rounded-xl border border-gray-100 dark:border-slate-800 text-sm font-bold text-gray-700 dark:text-gray-300 shadow-sm outline-none"
         >
@@ -125,65 +160,138 @@ function DashboardTab() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPIItem label="Pedidos" value={data.kpis.total_orders} icon={ShoppingBag} color="text-blue-600" bgColor="bg-blue-50 dark:bg-blue-500/10" />
-        <KPIItem label="Pares Vendidos" value={data.kpis.total_pairs_sold} icon={Package} color="text-purple-600" bgColor="bg-purple-50 dark:bg-purple-500/10" />
-        <KPIItem label="Tareas Completadas" value={data.kpis.total_tasks_completed} icon={CheckCircle} color="text-green-600" bgColor="bg-green-50 dark:bg-green-500/10" />
-        <KPIItem label="Pares en Producción" value={data.kpis.pairs_in_production} icon={TrendingUp} color="text-orange-600" bgColor="bg-orange-50 dark:bg-orange-500/10" />
+        <KPIItem
+          label="Pedidos"
+          value={data.kpis.total_orders}
+          icon={ShoppingBag}
+          color="text-blue-600"
+          bgColor="bg-blue-50 dark:bg-blue-500/10"
+        />
+        <KPIItem
+          label="Pares Vendidos"
+          value={data.kpis.total_pairs_sold}
+          icon={Package}
+          color="text-purple-600"
+          bgColor="bg-purple-50 dark:bg-purple-500/10"
+        />
+        <KPIItem
+          label="Tareas Completadas"
+          value={data.kpis.total_tasks_completed}
+          icon={CheckCircle}
+          color="text-green-600"
+          bgColor="bg-green-50 dark:bg-green-500/10"
+        />
+        <KPIItem
+          label="Pares en Producción"
+          value={data.kpis.pairs_in_production}
+          icon={TrendingUp}
+          color="text-orange-600"
+          bgColor="bg-orange-50 dark:bg-orange-500/10"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-8 shadow-sm flex flex-col h-full">
-          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">Ventas por Categoría</h3>
+          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">
+            Ventas por Categoría
+          </h3>
           <div className="space-y-6">
-            {data.sales_by_category.length > 0 ? data.sales_by_category.map((cat, i) => (
-              <CategoryProgress key={i} label={cat.category_name} value={`${cat.pairs_sold} pares`} percentage={cat.percentage} color={i % 2 === 0 ? "bg-blue-500" : "bg-orange-500"} />
-            )) : <p className="text-sm text-gray-500">No hay datos</p>}
+            {data.sales_by_category.length > 0 ? (
+              data.sales_by_category.map((cat, i) => (
+                <CategoryProgress
+                  key={i}
+                  label={cat.category_name}
+                  value={`${cat.pairs_sold} pares`}
+                  percentage={cat.percentage}
+                  color={i % 2 === 0 ? 'bg-blue-500' : 'bg-orange-500'}
+                />
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No hay datos</p>
+            )}
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-8 shadow-sm flex flex-col">
-          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">Productos Más Vendidos</h3>
+          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">
+            Productos Más Vendidos
+          </h3>
           <div className="space-y-4">
-            {data.top_products.length > 0 ? data.top_products.map((prod) => (
-              <TopProductItem key={prod.product_id} name={prod.product_name} sales={`${prod.sales} pares`} image={prod.image_url} />
-            )) : <p className="text-sm text-gray-500">No hay datos</p>}
+            {data.top_products.length > 0 ? (
+              data.top_products.map((prod) => (
+                <TopProductItem
+                  key={prod.product_id}
+                  name={prod.product_name}
+                  sales={`${prod.sales} pares`}
+                  image={prod.image_url}
+                />
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No hay datos</p>
+            )}
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-8 shadow-sm flex flex-col">
-          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><Award className="w-5 h-5 text-yellow-500" /> Mejores Empleados por Cargo</h3>
+          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Award className="w-5 h-5 text-yellow-500" /> Mejores Empleados por
+            Cargo
+          </h3>
           <div className="space-y-4">
-            {data.top_employees && data.top_employees.length > 0 ? data.top_employees.map((emp) => (
-              <div key={emp.user_id} className="flex justify-between items-center p-3 rounded-2xl bg-gray-50 dark:bg-slate-800/50">
-                <div>
-                  <p className="font-bold text-gray-900 dark:text-white">{emp.name}</p>
-                  <p className="text-xs text-gray-500 font-medium uppercase">{emp.occupation}</p>
+            {data.top_employees && data.top_employees.length > 0 ? (
+              data.top_employees.map((emp) => (
+                <div
+                  key={emp.user_id}
+                  className="flex justify-between items-center p-3 rounded-2xl bg-gray-50 dark:bg-slate-800/50"
+                >
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">
+                      {emp.name}
+                    </p>
+                    <p className="text-xs text-gray-500 font-medium uppercase">
+                      {emp.occupation}
+                    </p>
+                  </div>
+                  <div className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-lg">
+                    {emp.completed_tasks} Tareas
+                  </div>
                 </div>
-                <div className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-lg">
-                  {emp.completed_tasks} Tareas
-                </div>
-              </div>
-            )) : <p className="text-sm text-gray-500">No hay datos</p>}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No hay datos</p>
+            )}
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-8 shadow-sm flex flex-col">
-          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><Star className="w-5 h-5 text-orange-500" /> Top Clientes</h3>
+          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Star className="w-5 h-5 text-orange-500" /> Top Clientes
+          </h3>
           <div className="space-y-4">
-            {data.top_customers && data.top_customers.length > 0 ? data.top_customers.map((cust) => (
-              <div key={cust.user_id} className="flex justify-between items-center p-3 rounded-2xl bg-gray-50 dark:bg-slate-800/50">
-                <div>
-                  <p className="font-bold text-gray-900 dark:text-white">{cust.name}</p>
-                  <p className="text-xs text-gray-500 font-medium">{cust.total_orders} pedidos</p>
+            {data.top_customers && data.top_customers.length > 0 ? (
+              data.top_customers.map((cust) => (
+                <div
+                  key={cust.user_id}
+                  className="flex justify-between items-center p-3 rounded-2xl bg-gray-50 dark:bg-slate-800/50"
+                >
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">
+                      {cust.name}
+                    </p>
+                    <p className="text-xs text-gray-500 font-medium">
+                      {cust.total_orders} pedidos
+                    </p>
+                  </div>
+                  <div className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-500/10 px-3 py-1 rounded-lg">
+                    {cust.total_pairs} Pares
+                  </div>
                 </div>
-                <div className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-500/10 px-3 py-1 rounded-lg">
-                  {cust.total_pairs} Pares
-                </div>
-              </div>
-            )) : <p className="text-sm text-gray-500">No hay datos</p>}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No hay datos</p>
+            )}
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -191,25 +299,32 @@ function DashboardTab() {
 
 function ReportGeneratorTab() {
   const navigate = useNavigate();
-  const [reportType, setReportType] = useState<'employee' | 'customer' | 'production' | 'sales' | null>(null);
-  
+  const [reportType, setReportType] = useState<
+    'employee' | 'customer' | 'production' | 'sales' | null
+  >(null);
+
   // Employee state
   const [roles, setRoles] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [employees, setEmployees] = useState<any[]>([]);
-  
+
   // Customer state
   const [customers, setCustomers] = useState<any[]>([]);
 
   // Selected User (Employee or Customer)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  
+
   // Reports
-  const [employeeReport, setEmployeeReport] = useState<EmployeeReportResponse | null>(null);
-  const [customerReport, setCustomerReport] = useState<CustomerReportResponse | null>(null);
-  const [productionReport, setProductionReport] = useState<ProductionGlobalReport | null>(null);
+  const [employeeReport, setEmployeeReport] =
+    useState<EmployeeReportResponse | null>(null);
+  const [customerReport, setCustomerReport] =
+    useState<CustomerReportResponse | null>(null);
+  const [productionReport, setProductionReport] =
+    useState<ProductionGlobalReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
-  const [datePreset, setDatePreset] = useState<'hoy' | 'semana' | 'mes' | 'custom'>('hoy');
+  const [datePreset, setDatePreset] = useState<
+    'hoy' | 'semana' | 'mes' | 'custom'
+  >('hoy');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
@@ -218,7 +333,7 @@ function ReportGeneratorTab() {
     if (datePreset === 'custom' && customStart && customEnd) {
       return {
         startDate: new Date(customStart).toISOString(),
-        endDate: new Date(customEnd + 'T23:59:59').toISOString(),
+        endDate: new Date(customEnd + 'T23:59:59').toISOString()
       };
     }
     let start: Date;
@@ -238,16 +353,29 @@ function ReportGeneratorTab() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [paidSuccess, setPaidSuccess] = useState<string | null>(null);
-  const [taskStatusFilter, setTaskStatusFilter] = useState<'all' | 'completado' | 'pagado'>('all');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'pendiente' | 'en_progreso' | 'completado' | 'entregado' | 'cancelado'>('all');
+  const [taskStatusFilter, setTaskStatusFilter] = useState<
+    'all' | 'completado' | 'pagado'
+  >('all');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<
+    | 'all'
+    | 'pendiente'
+    | 'en_progreso'
+    | 'completado'
+    | 'entregado'
+    | 'cancelado'
+  >('all');
   const [reportError, setReportError] = useState<string | null>(null);
   const [isRoleReport, setIsRoleReport] = useState(false);
   const [isAllCustomers, setIsAllCustomers] = useState(false);
 
   // Production tasks tab state
-  const [productionTab, setProductionTab] = useState<'orders' | 'tasks'>('orders');
+  const [productionTab, setProductionTab] = useState<'orders' | 'tasks'>(
+    'orders'
+  );
   const [prodTaskProcess, setProdTaskProcess] = useState<string>('all');
-  const [prodTaskStatusFilter, setProdTaskStatusFilter] = useState<'all' | 'completado' | 'pagado'>('all');
+  const [prodTaskStatusFilter, setProdTaskStatusFilter] = useState<
+    'all' | 'completado' | 'pagado'
+  >('all');
   const [productionTasks, setProductionTasks] = useState<TaskDetail[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
 
@@ -266,13 +394,19 @@ function ReportGeneratorTab() {
   useEffect(() => {
     async function loadLists() {
       if (reportType === 'employee') {
-        const res = await axios.get('/api/v1/admin/users', { params: { role: 'employee' } });
+        const res = await axios.get('/api/v1/admin/users', {
+          params: { role: 'employee' }
+        });
         const users = res.data;
-        const uniqueRoles = Array.from(new Set(users.map((u: any) => u.occupation).filter(Boolean))) as string[];
-        setRoles(uniqueRoles.filter(r => r.toLowerCase() !== 'jefe'));
+        const uniqueRoles = Array.from(
+          new Set(users.map((u: any) => u.occupation).filter(Boolean))
+        ) as string[];
+        setRoles(uniqueRoles.filter((r) => r.toLowerCase() !== 'jefe'));
         setEmployees(users);
       } else if (reportType === 'customer') {
-        const res = await axios.get('/api/v1/admin/users', { params: { role: 'client' } });
+        const res = await axios.get('/api/v1/admin/users', {
+          params: { role: 'client' }
+        });
         setCustomers(res.data);
       }
     }
@@ -293,37 +427,79 @@ function ReportGeneratorTab() {
 
         if (reportType === 'employee') {
           if (isRoleReport && selectedRole) {
-            const res = await getRoleReport(selectedRole, startDate, endDate, taskStatusFilter);
+            const res = await getRoleReport(
+              selectedRole,
+              startDate,
+              endDate,
+              taskStatusFilter
+            );
             setEmployeeReport(res);
           } else if (selectedUserId) {
-            const res = await getEmployeeReport(selectedUserId, startDate, endDate, taskStatusFilter);
+            const res = await getEmployeeReport(
+              selectedUserId,
+              startDate,
+              endDate,
+              taskStatusFilter
+            );
             setEmployeeReport(res);
           }
         } else if (reportType === 'customer') {
           if (isAllCustomers) {
-            const res = await getAllCustomersReport(startDate, endDate, orderStatusFilter);
+            const res = await getAllCustomersReport(
+              startDate,
+              endDate,
+              orderStatusFilter
+            );
             setCustomerReport(res);
           } else if (selectedUserId) {
-            const res = await getCustomerReport(selectedUserId, startDate, endDate);
+            const res = await getCustomerReport(
+              selectedUserId,
+              startDate,
+              endDate
+            );
             setCustomerReport(res);
           }
         } else if (reportType === 'production') {
           const { startDate, endDate } = getDateRange();
-          const res = await getGlobalProduction(0, startDate, endDate, orderStatusFilter);
+          const res = await getGlobalProduction(
+            0,
+            startDate,
+            endDate,
+            orderStatusFilter
+          );
           setProductionReport(res);
         }
       } catch (e: any) {
         console.error(e);
-        setReportError(e.response?.data?.detail || "Ocurrió un error al generar el reporte. Por favor reintenta.");
+        setReportError(
+          e.response?.data?.detail ||
+            'Ocurrió un error al generar el reporte. Por favor reintenta.'
+        );
       } finally {
         setLoadingReport(false);
       }
     }
-  
-  if (reportType === 'production' || reportType === 'sales' || selectedUserId || isRoleReport || isAllCustomers) {
-    generate();
-  }
-  }, [reportType, selectedUserId, datePreset, customStart, customEnd, isRoleReport, isAllCustomers, taskStatusFilter, orderStatusFilter]);
+
+    if (
+      reportType === 'production' ||
+      reportType === 'sales' ||
+      selectedUserId ||
+      isRoleReport ||
+      isAllCustomers
+    ) {
+      generate();
+    }
+  }, [
+    reportType,
+    selectedUserId,
+    datePreset,
+    customStart,
+    customEnd,
+    isRoleReport,
+    isAllCustomers,
+    taskStatusFilter,
+    orderStatusFilter
+  ]);
 
   // Fetch tasks when production tasks tab is active
   useEffect(() => {
@@ -332,15 +508,29 @@ function ReportGeneratorTab() {
       setTasksLoading(true);
       try {
         const { startDate, endDate } = getDateRange();
-        const roleNames = ['cortador', 'guarnecedor', 'solador', 'emplantillador'];
+        const roleNames = [
+          'cortador',
+          'guarnecedor',
+          'solador',
+          'emplantillador'
+        ];
         if (prodTaskProcess === 'all') {
           const results = await Promise.all(
-            roleNames.map(r => getRoleReport(r, startDate, endDate, prodTaskStatusFilter).catch(() => null))
+            roleNames.map((r) =>
+              getRoleReport(r, startDate, endDate, prodTaskStatusFilter).catch(
+                () => null
+              )
+            )
           );
-          const allTasks = results.flatMap(r => r?.tasks_list ?? []);
+          const allTasks = results.flatMap((r) => r?.tasks_list ?? []);
           setProductionTasks(allTasks);
         } else {
-          const res = await getRoleReport(prodTaskProcess, startDate, endDate, prodTaskStatusFilter);
+          const res = await getRoleReport(
+            prodTaskProcess,
+            startDate,
+            endDate,
+            prodTaskStatusFilter
+          );
           setProductionTasks(res?.tasks_list ?? []);
         }
       } catch (e) {
@@ -350,7 +540,15 @@ function ReportGeneratorTab() {
       }
     }
     loadTasks();
-  }, [reportType, productionTab, prodTaskProcess, prodTaskStatusFilter, datePreset, customStart, customEnd]);
+  }, [
+    reportType,
+    productionTab,
+    prodTaskProcess,
+    prodTaskStatusFilter,
+    datePreset,
+    customStart,
+    customEnd
+  ]);
 
   const resetAll = () => {
     setSelectedRole(null);
@@ -384,13 +582,27 @@ function ReportGeneratorTab() {
     let pdfFilename = '';
     try {
       if (shareModal.type === 'employee' && employeeReport) {
-        const pdf = await exportEmployeePDF(employeeReport, employeeReport.name, '', '', true);
+        const pdf = await exportEmployeePDF(
+          employeeReport,
+          employeeReport.name,
+          '',
+          '',
+          true
+        );
         if (pdf) {
           pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
           pdfFilename = `reporte-empleado-${employeeReport.name}.pdf`;
         }
       } else if (shareModal.type === 'customer' && customerReport) {
-        const pdf = await exportCustomerPDF(customerReport, isAllCustomers ? 'Reporte General de Cartera' : `Reporte de Cliente: ${customerReport.name}`, '', '', true);
+        const pdf = await exportCustomerPDF(
+          customerReport,
+          isAllCustomers
+            ? 'Reporte General de Cartera'
+            : `Reporte de Cliente: ${customerReport.name}`,
+          '',
+          '',
+          true
+        );
         if (pdf) {
           pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
           pdfFilename = `reporte-cliente-${customerReport.name}.pdf`;
@@ -400,15 +612,35 @@ function ReportGeneratorTab() {
         if (productionTab === 'orders') {
           const filtered = productionReport.orders;
           const totalOrders = filtered.length;
-          const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
-          const pdf = await exportOrdersPDF(filtered, totalOrders, totalPairs, sd, ed, true);
+          const totalPairs = filtered.reduce(
+            (sum, o) => sum + (o.total_pairs || 0),
+            0
+          );
+          const pdf = await exportOrdersPDF(
+            filtered,
+            totalOrders,
+            totalPairs,
+            sd,
+            ed,
+            true
+          );
           if (pdf) {
             pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
             pdfFilename = 'reporte-pedidos.pdf';
           }
         } else {
-          const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
-          const pdf = await exportTasksPDF(productionTasks, productionTasks.length, totalPairs, sd, ed, true);
+          const totalPairs = productionTasks.reduce(
+            (sum, t) => sum + (t.amount || 0),
+            0
+          );
+          const pdf = await exportTasksPDF(
+            productionTasks,
+            productionTasks.length,
+            totalPairs,
+            sd,
+            ed,
+            true
+          );
           if (pdf) {
             pdfBase64 = pdf.replace('data:application/pdf;base64,', '');
             pdfFilename = 'reporte-tareas.pdf';
@@ -427,9 +659,11 @@ function ReportGeneratorTab() {
           to_email: shareModal.to_email,
           to_name: shareModal.to_name || 'Usuario',
           subject: `Reporte: ${shareModal.type === 'employee' ? 'Empleado' : shareModal.type === 'customer' ? 'Cliente' : 'Producción'}`,
-          body_html: shareMessage || `Adjuntamos el reporte de ${shareModal.type === 'employee' ? 'empleado' : shareModal.type === 'customer' ? 'cliente' : 'producción'}.`,
+          body_html:
+            shareMessage ||
+            `Adjuntamos el reporte de ${shareModal.type === 'employee' ? 'empleado' : shareModal.type === 'customer' ? 'cliente' : 'producción'}.`,
           pdf_base64: pdfBase64,
-          pdf_filename: pdfFilename,
+          pdf_filename: pdfFilename
         });
       }
 
@@ -444,8 +678,8 @@ function ReportGeneratorTab() {
           parameters: {
             start_date: sd,
             end_date: ed,
-            employee_name: shareModal.to_name,
-          },
+            employee_name: shareModal.to_name
+          }
         });
       }
 
@@ -462,48 +696,68 @@ function ReportGeneratorTab() {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-8 shadow-sm">
-      
       {/* Selector Principal */}
       <div className="mb-10">
-        <label className="block text-sm font-bold text-gray-500 uppercase mb-4">1. Selecciona el Tipo de Reporte</label>
+        <label className="block text-sm font-bold text-gray-500 uppercase mb-4">
+          1. Selecciona el Tipo de Reporte
+        </label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <button 
+          <button
             onClick={() => handleTypeChange('employee')}
             className={`p-4 rounded-2xl border-2 text-left transition-all ${reportType === 'employee' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-100 dark:border-slate-700 hover:border-blue-200'}`}
           >
-            <Briefcase className={`w-6 h-6 mb-2 ${reportType === 'employee' ? 'text-blue-600' : 'text-gray-400'}`} />
-            <h4 className="font-bold text-gray-900 dark:text-white">Empleado Individual</h4>
-            <p className="text-xs text-gray-500 mt-1">Productividad y tareas completadas</p>
+            <Briefcase
+              className={`w-6 h-6 mb-2 ${reportType === 'employee' ? 'text-blue-600' : 'text-gray-400'}`}
+            />
+            <h4 className="font-bold text-gray-900 dark:text-white">
+              Empleado Individual
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              Productividad y tareas completadas
+            </p>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => handleTypeChange('customer')}
             className={`p-4 rounded-2xl border-2 text-left transition-all ${reportType === 'customer' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10' : 'border-gray-100 dark:border-slate-700 hover:border-orange-200'}`}
           >
-            <Users className={`w-6 h-6 mb-2 ${reportType === 'customer' ? 'text-orange-600' : 'text-gray-400'}`} />
-            <h4 className="font-bold text-gray-900 dark:text-white">Cliente Individual</h4>
-            <p className="text-xs text-gray-500 mt-1">Historial de compras y pedidos</p>
+            <Users
+              className={`w-6 h-6 mb-2 ${reportType === 'customer' ? 'text-orange-600' : 'text-gray-400'}`}
+            />
+            <h4 className="font-bold text-gray-900 dark:text-white">
+              Cliente Individual
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              Historial de compras y pedidos
+            </p>
           </button>
 
-          <button 
+          <button
             onClick={() => handleTypeChange('production')}
             className={`p-4 rounded-2xl border-2 text-left transition-all ${reportType === 'production' ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/10' : 'border-gray-100 dark:border-slate-700 hover:border-purple-200'}`}
           >
-            <Activity className={`w-6 h-6 mb-2 ${reportType === 'production' ? 'text-purple-600' : 'text-gray-400'}`} />
-            <h4 className="font-bold text-gray-900 dark:text-white">Producción y Ventas</h4>
-            <p className="text-xs text-gray-500 mt-1">Rendimiento global, ventas y fabricación</p>
+            <Activity
+              className={`w-6 h-6 mb-2 ${reportType === 'production' ? 'text-purple-600' : 'text-gray-400'}`}
+            />
+            <h4 className="font-bold text-gray-900 dark:text-white">
+              Producción y Ventas
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              Rendimiento global, ventas y fabricación
+            </p>
           </button>
-
         </div>
       </div>
 
       {/* Flujo Dinámico */}
       {reportType === 'employee' && !selectedUserId && (
         <div className="mb-10 animate-in fade-in slide-in-from-bottom-4">
-          <label className="block text-sm font-bold text-gray-500 uppercase mb-4">2. Selecciona un Cargo</label>
+          <label className="block text-sm font-bold text-gray-500 uppercase mb-4">
+            2. Selecciona un Cargo
+          </label>
           <div className="flex flex-wrap gap-3 mb-6">
-            {roles.map(role => (
-              <button 
+            {roles.map((role) => (
+              <button
                 key={role}
                 onClick={() => setSelectedRole(role)}
                 className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${selectedRole === role ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:border-blue-300'}`}
@@ -516,36 +770,45 @@ function ReportGeneratorTab() {
           {selectedRole && (
             <div className="animate-in fade-in slide-in-from-bottom-4">
               <div className="flex justify-between items-center mb-4">
-                <label className="block text-sm font-bold text-gray-500 uppercase tracking-tight">3. Selecciona un Empleado</label>
-                <button 
+                <label className="block text-sm font-bold text-gray-500 uppercase tracking-tight">
+                  3. Selecciona un Empleado
+                </label>
+                <button
                   onClick={() => {
                     setIsRoleReport(!isRoleReport);
                     setSelectedUserId(null);
                   }}
                   className={`px-4 py-1.5 rounded-full text-[10px] font-black transition-all border-2 ${isRoleReport ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-100' : 'bg-white border-purple-100 text-purple-600 hover:bg-purple-50 hover:border-purple-200'}`}
                 >
-                  {isRoleReport ? '✓ MOSTRANDO TODO EL CARGO' : 'VER TODO EL PERSONAL'}
+                  {isRoleReport
+                    ? '✓ MOSTRANDO TODO EL CARGO'
+                    : 'VER TODO EL PERSONAL'}
                 </button>
               </div>
               {!isRoleReport && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {employees.filter(e => e.occupation === selectedRole).map(emp => (
-                    <button 
-                      key={emp.id}
-                      onClick={() => {
-                        setIsRoleReport(false);
-                        setSelectedUserId(emp.id);
-                      }}
-                      className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${selectedUserId === emp.id && !isRoleReport ? 'border-blue-500 bg-blue-50' : 'border-gray-100 dark:border-slate-800 hover:border-blue-200 hover:bg-gray-50'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">
-                        {emp.name?.charAt(0)}{emp.last_name?.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-gray-900 dark:text-white truncate">{emp.name} {emp.last_name}</p>
-                      </div>
-                    </button>
-                  ))}
+                  {employees
+                    .filter((e) => e.occupation === selectedRole)
+                    .map((emp) => (
+                      <button
+                        key={emp.id}
+                        onClick={() => {
+                          setIsRoleReport(false);
+                          setSelectedUserId(emp.id);
+                        }}
+                        className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${selectedUserId === emp.id && !isRoleReport ? 'border-blue-500 bg-blue-50' : 'border-gray-100 dark:border-slate-800 hover:border-blue-200 hover:bg-gray-50'}`}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">
+                          {emp.name?.charAt(0)}
+                          {emp.last_name?.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-white truncate">
+                            {emp.name} {emp.last_name}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
@@ -556,21 +819,25 @@ function ReportGeneratorTab() {
       {reportType === 'customer' && !selectedUserId && (
         <div className="mb-10 animate-in fade-in slide-in-from-bottom-4">
           <div className="flex justify-between items-center mb-4">
-            <label className="block text-sm font-bold text-gray-500 uppercase tracking-tight">2. Selecciona un Cliente</label>
-            <button 
+            <label className="block text-sm font-bold text-gray-500 uppercase tracking-tight">
+              2. Selecciona un Cliente
+            </label>
+            <button
               onClick={() => {
                 setIsAllCustomers(!isAllCustomers);
                 setSelectedUserId(null);
               }}
               className={`px-4 py-1.5 rounded-full text-[10px] font-black transition-all border-2 ${isAllCustomers ? 'bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-100' : 'bg-white border-orange-100 text-orange-600 hover:bg-orange-50 hover:border-orange-200'}`}
             >
-              {isAllCustomers ? '✓ MOSTRANDO TODOS LOS CLIENTES' : 'VER TODOS LOS CLIENTES'}
+              {isAllCustomers
+                ? '✓ MOSTRANDO TODOS LOS CLIENTES'
+                : 'VER TODOS LOS CLIENTES'}
             </button>
           </div>
           {!isAllCustomers && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto pr-2">
-              {customers.map(cust => (
-                <button 
+              {customers.map((cust) => (
+                <button
                   key={cust.id}
                   onClick={() => {
                     setIsAllCustomers(false);
@@ -579,10 +846,13 @@ function ReportGeneratorTab() {
                   className="p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 text-left transition-all flex items-center gap-3"
                 >
                   <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold shrink-0">
-                    {cust.name?.charAt(0)}{cust.last_name?.charAt(0)}
+                    {cust.name?.charAt(0)}
+                    {cust.last_name?.charAt(0)}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-gray-900 dark:text-white truncate">{cust.name} {cust.last_name}</p>
+                    <p className="font-bold text-gray-900 dark:text-white truncate">
+                      {cust.name} {cust.last_name}
+                    </p>
                   </div>
                 </button>
               ))}
@@ -592,7 +862,10 @@ function ReportGeneratorTab() {
       )}
 
       {/* Selector de Fecha para Reportes */}
-      {(reportType === 'production' || reportType === 'sales' || ((reportType === 'employee' || reportType === 'customer') && (selectedUserId || isRoleReport || isAllCustomers))) && (
+      {(reportType === 'production' ||
+        reportType === 'sales' ||
+        ((reportType === 'employee' || reportType === 'customer') &&
+          (selectedUserId || isRoleReport || isAllCustomers))) && (
         <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl p-4">
           <label className="block text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" /> Rango de Tiempo
@@ -602,8 +875,8 @@ function ReportGeneratorTab() {
               { key: 'hoy', label: 'Hoy' },
               { key: 'semana', label: 'Esta Semana' },
               { key: 'mes', label: 'Este Mes' },
-              { key: 'custom', label: 'Personalizado' },
-            ].map(opt => (
+              { key: 'custom', label: 'Personalizado' }
+            ].map((opt) => (
               <button
                 key={opt.key}
                 onClick={() => setDatePreset(opt.key as typeof datePreset)}
@@ -620,42 +893,61 @@ function ReportGeneratorTab() {
           {datePreset === 'custom' && (
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-blue-600 uppercase">Desde</label>
+                <label className="text-xs font-bold text-blue-600 uppercase">
+                  Desde
+                </label>
                 <input
                   type="date"
                   value={customStart}
-                  onChange={e => setCustomStart(e.target.value)}
+                  onChange={(e) => setCustomStart(e.target.value)}
                   className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-blue-600 uppercase">Hasta</label>
+                <label className="text-xs font-bold text-blue-600 uppercase">
+                  Hasta
+                </label>
                 <input
                   type="date"
                   value={customEnd}
-                  onChange={e => setCustomEnd(e.target.value)}
+                  onChange={(e) => setCustomEnd(e.target.value)}
                   className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500"
                 />
               </div>
               {customStart && customEnd && (
-                <p className="text-xs font-medium text-blue-600 mt-4">El reporte se actualizará automáticamente.</p>
+                <p className="text-xs font-medium text-blue-600 mt-4">
+                  El reporte se actualizará automáticamente.
+                </p>
               )}
             </div>
           )}
         </div>
       )}
 
-
       {/* Resultados de Reportes */}
-      {loadingReport && <div className="text-center py-10"><div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div><p className="text-gray-500 font-medium uppercase text-[10px] tracking-widest">Generando reporte...</p></div>}
-      
+      {loadingReport && (
+        <div className="text-center py-10">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-500 font-medium uppercase text-[10px] tracking-widest">
+            Generando reporte...
+          </p>
+        </div>
+      )}
+
       {reportError && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 p-6 rounded-3xl text-center mb-8">
-          <p className="text-red-700 dark:text-red-400 font-bold mb-4">{reportError}</p>
-          <Button onClick={() => {
-            setReportError(null);
-            setLoadingReport(true);
-          }} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6">Reintentar</Button>
+          <p className="text-red-700 dark:text-red-400 font-bold mb-4">
+            {reportError}
+          </p>
+          <Button
+            onClick={() => {
+              setReportError(null);
+              setLoadingReport(true);
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6"
+          >
+            Reintentar
+          </Button>
         </div>
       )}
 
@@ -664,38 +956,65 @@ function ReportGeneratorTab() {
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center gap-4">
               <div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">{employeeReport.name}</h2>
-                <p className="text-sm font-bold text-blue-600 uppercase tracking-widest text-[10px]">Reporte de Rendimiento Individual</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                  {employeeReport.name}
+                </h2>
+                <p className="text-sm font-bold text-blue-600 uppercase tracking-widest text-[10px]">
+                  Reporte de Rendimiento Individual
+                </p>
               </div>
-              
+
               {/* Filtro de Estado movido arriba */}
               <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-2xl border border-gray-200 dark:border-slate-700 ml-4">
-                {(['all', 'completado', 'pagado'] as const).map(f => (
+                {(['all', 'completado', 'pagado'] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setTaskStatusFilter(f)}
                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                      taskStatusFilter === f 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                      taskStatusFilter === f
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    {f === 'all' ? 'Todas' : f === 'completado' ? 'Por Pagar' : 'Pagadas'}
+                    {f === 'all'
+                      ? 'Todas'
+                      : f === 'completado'
+                        ? 'Por Pagar'
+                        : 'Pagadas'}
                   </button>
                 ))}
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="secondary" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Empleado</Button>
-              <Button 
+              <Button
+                variant="secondary"
+                className="text-sm font-bold py-2"
+                onClick={() => setSelectedUserId(null)}
+              >
+                Cambiar Empleado
+              </Button>
+              <Button
                 onClick={() => {
                   const { startDate, endDate } = getDateRange();
                   if (employeeReport) {
-                    const tasksToExport = taskStatusFilter !== 'all'
-                      ? employeeReport.tasks_list.filter(t => t.status === taskStatusFilter)
-                      : employeeReport.tasks_list;
-                    const filteredData = { ...employeeReport, tasks_list: tasksToExport };
-                    exportEmployeePDF(filteredData, isRoleReport ? `Reporte de Cargo: ${selectedRole?.toUpperCase()}` : `Reporte de Empleado: ${employeeReport.name}`, startDate, endDate);
+                    const tasksToExport =
+                      taskStatusFilter !== 'all'
+                        ? employeeReport.tasks_list.filter(
+                            (t) => t.status === taskStatusFilter
+                          )
+                        : employeeReport.tasks_list;
+                    const filteredData = {
+                      ...employeeReport,
+                      tasks_list: tasksToExport
+                    };
+                    exportEmployeePDF(
+                      filteredData,
+                      isRoleReport
+                        ? `Reporte de Cargo: ${selectedRole?.toUpperCase()}`
+                        : `Reporte de Empleado: ${employeeReport.name}`,
+                      startDate,
+                      endDate
+                    );
                   }
                 }}
                 className="text-sm font-bold py-2"
@@ -705,13 +1024,15 @@ function ReportGeneratorTab() {
               <Button
                 onClick={() => {
                   if (!employeeReport) return;
-                  const emp = employees.find(e => e.id === employeeReport.user_id);
+                  const emp = employees.find(
+                    (e) => e.id === employeeReport.user_id
+                  );
                   setShareMessage('');
                   setShareModal({
                     type: 'employee',
                     to_email: emp?.email || '',
                     to_name: employeeReport.name,
-                    target_user_id: employeeReport.user_id,
+                    target_user_id: employeeReport.user_id
                   });
                 }}
                 variant="secondary"
@@ -724,10 +1045,18 @@ function ReportGeneratorTab() {
 
           {/* Estadísticas dinámicas según el filtro */}
           {(() => {
-            const filteredTasks = employeeReport.tasks_list.filter(t => taskStatusFilter === 'all' || t.status === taskStatusFilter);
+            const filteredTasks = employeeReport.tasks_list.filter(
+              (t) => taskStatusFilter === 'all' || t.status === taskStatusFilter
+            );
             const totalTasks = filteredTasks.length;
-            const totalPairs = filteredTasks.reduce((sum, t) => sum + t.amount, 0);
-            const totalEarnings = filteredTasks.reduce((sum, t) => sum + (t.task_total_price || 0), 0);
+            const totalPairs = filteredTasks.reduce(
+              (sum, t) => sum + t.amount,
+              0
+            );
+            const totalEarnings = filteredTasks.reduce(
+              (sum, t) => sum + (t.task_total_price || 0),
+              0
+            );
 
             return (
               <>
@@ -736,44 +1065,89 @@ function ReportGeneratorTab() {
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                       <CheckCircle className="w-12 h-12" />
                     </div>
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Tareas {taskStatusFilter === 'completado' ? 'Pendientes' : taskStatusFilter === 'pagado' ? 'Pagadas' : 'Totales'}</p>
-                    <p className="text-4xl font-black text-gray-900 dark:text-white">{totalTasks}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                      Tareas{' '}
+                      {taskStatusFilter === 'completado'
+                        ? 'Pendientes'
+                        : taskStatusFilter === 'pagado'
+                          ? 'Pagadas'
+                          : 'Totales'}
+                    </p>
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">
+                      {totalTasks}
+                    </p>
                   </div>
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                       <Package className="w-12 h-12" />
                     </div>
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares {taskStatusFilter === 'completado' ? 'por Liquidar' : taskStatusFilter === 'pagado' ? 'Liquidados' : 'Totales'}</p>
-                    <p className="text-4xl font-black text-gray-900 dark:text-white">{totalPairs}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                      Pares{' '}
+                      {taskStatusFilter === 'completado'
+                        ? 'por Liquidar'
+                        : taskStatusFilter === 'pagado'
+                          ? 'Liquidados'
+                          : 'Totales'}
+                    </p>
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">
+                      {totalPairs}
+                    </p>
                   </div>
                 </div>
 
                 {totalEarnings > 0 && (
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 mb-6 flex items-center justify-between">
-                    <span className="text-sm font-bold text-green-700 dark:text-green-400">Total Ganancias ({taskStatusFilter === 'all' ? 'todas las tareas' : taskStatusFilter})</span>
-                    <span className="text-xl font-black text-green-700 dark:text-green-400">{formatCOP(totalEarnings)}</span>
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                      Total Ganancias (
+                      {taskStatusFilter === 'all'
+                        ? 'todas las tareas'
+                        : taskStatusFilter}
+                      )
+                    </span>
+                    <span className="text-xl font-black text-green-700 dark:text-green-400">
+                      {formatCOP(totalEarnings)}
+                    </span>
                   </div>
                 )}
 
-                <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Desglose por Etapa</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">
+                  Desglose por Etapa
+                </h3>
                 <div className="space-y-3 mb-8">
                   {/* Desglose dinámico según filtro */}
                   {Object.entries(
-                    filteredTasks.reduce((acc, t) => {
-                      acc[t.process_name] = (acc[t.process_name] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).length > 0 ? Object.entries(
-                    filteredTasks.reduce((acc, t) => {
-                      acc[t.process_name] = (acc[t.process_name] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).map(([type, count]) => (
-                    <div key={type} className="flex justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 font-medium text-sm">
-                      <span className="uppercase font-bold">{type}</span>
-                      <span className="font-bold text-blue-600">{count} tareas</span>
-                    </div>
-                  )) : <p className="text-sm text-gray-500">No hay tareas en este estado.</p>}
+                    filteredTasks.reduce(
+                      (acc, t) => {
+                        acc[t.process_name] = (acc[t.process_name] || 0) + 1;
+                        return acc;
+                      },
+                      {} as Record<string, number>
+                    )
+                  ).length > 0 ? (
+                    Object.entries(
+                      filteredTasks.reduce(
+                        (acc, t) => {
+                          acc[t.process_name] = (acc[t.process_name] || 0) + 1;
+                          return acc;
+                        },
+                        {} as Record<string, number>
+                      )
+                    ).map(([type, count]) => (
+                      <div
+                        key={type}
+                        className="flex justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 font-medium text-sm"
+                      >
+                        <span className="uppercase font-bold">{type}</span>
+                        <span className="font-bold text-blue-600">
+                          {count} tareas
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No hay tareas en este estado.
+                    </p>
+                  )}
                 </div>
 
                 {/* Lista de tareas individuales */}
@@ -787,12 +1161,20 @@ function ReportGeneratorTab() {
                         {taskStatusFilter !== 'pagado' && (
                           <button
                             onClick={() => {
-                              const pendingIds = filteredTasks.filter(t => t.status === 'completado').map(t => t.id);
-                              setSelectedTaskIds(prev => prev.length === pendingIds.length ? [] : pendingIds);
+                              const pendingIds = filteredTasks
+                                .filter((t) => t.status === 'completado')
+                                .map((t) => t.id);
+                              setSelectedTaskIds((prev) =>
+                                prev.length === pendingIds.length
+                                  ? []
+                                  : pendingIds
+                              );
                             }}
                             className="text-xs font-bold text-blue-600 hover:underline"
                           >
-                            {selectedTaskIds.length > 0 ? 'Deseleccionar todo' : 'Seleccionar todas'}
+                            {selectedTaskIds.length > 0
+                              ? 'Deseleccionar todo'
+                              : 'Seleccionar todas'}
                           </button>
                         )}
                         {selectedTaskIds.length > 0 && (
@@ -801,14 +1183,21 @@ function ReportGeneratorTab() {
                             onClick={async () => {
                               setMarkingPaid(true);
                               try {
-                                const res = await markTasksAsPaid(selectedTaskIds);
-                                setPaidSuccess(`✅ ${res.updated_count} tarea(s) marcadas como pagadas`);
+                                const res =
+                                  await markTasksAsPaid(selectedTaskIds);
+                                setPaidSuccess(
+                                  `✅ ${res.updated_count} tarea(s) marcadas como pagadas`
+                                );
                                 setSelectedTaskIds([]);
                                 // Refrescar el reporte
                                 const { startDate, endDate } = getDateRange();
-                                const fresh = await getEmployeeReport(selectedUserId!, startDate, endDate);
+                                const fresh = await getEmployeeReport(
+                                  selectedUserId!,
+                                  startDate,
+                                  endDate
+                                );
                                 setEmployeeReport(fresh);
-                              } catch(e) {
+                              } catch (e) {
                                 console.error(e);
                               } finally {
                                 setMarkingPaid(false);
@@ -816,7 +1205,11 @@ function ReportGeneratorTab() {
                             }}
                             className="px-4 py-2 rounded-xl text-sm font-bold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                           >
-                            {markingPaid ? <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <CheckCircle className="w-4 h-4" />}
+                            {markingPaid ? (
+                              <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
                             Marcar {selectedTaskIds.length} como Pagadas
                           </button>
                         )}
@@ -830,13 +1223,15 @@ function ReportGeneratorTab() {
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[650px] overflow-y-auto pr-1 pb-4">
-                      {filteredTasks.map(task => {
+                      {filteredTasks.map((task) => {
                         const mappedTask = {
                           ...task,
                           type: task.process_name,
                           assigned_user_name: employeeReport.name,
                           total_pairs: task.amount,
-                          task_prices: { [task.process_name]: task.price_per_dozen },
+                          task_prices: {
+                            [task.process_name]: task.price_per_dozen
+                          },
                           vale_number: task.vale_number
                         } as any;
 
@@ -849,11 +1244,17 @@ function ReportGeneratorTab() {
                             selected={selectedTaskIds.includes(task.id)}
                             onSelect={(id) => {
                               if (task.status !== 'completado') return;
-                              setSelectedTaskIds(prev =>
-                                prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]
+                              setSelectedTaskIds((prev) =>
+                                prev.includes(id)
+                                  ? prev.filter((tid) => tid !== id)
+                                  : [...prev, id]
                               );
                             }}
-                            onViewOrder={(orderId, productId) => navigate(`/dashboard/admin/orders?order=${orderId}&product=${productId}`)}
+                            onViewOrder={(orderId, productId) =>
+                              navigate(
+                                `/dashboard/admin/orders?order=${orderId}&product=${productId}`
+                              )
+                            }
                           />
                         );
                       })}
@@ -864,7 +1265,6 @@ function ReportGeneratorTab() {
             );
           })()}
         </div>
-
       )}
 
       {customerReport && !loadingReport && (
@@ -872,33 +1272,64 @@ function ReportGeneratorTab() {
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center gap-4">
               <div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">{customerReport.name}</h2>
-                <p className="text-sm font-bold text-orange-600 uppercase tracking-widest text-[10px]">Historial de Compras</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                  {customerReport.name}
+                </h2>
+                <p className="text-sm font-bold text-orange-600 uppercase tracking-widest text-[10px]">
+                  Historial de Compras
+                </p>
               </div>
-              
+
               {/* Filtro de Estado Pedidos */}
               <div className="flex flex-wrap gap-1 ml-4">
-                {(['all', 'pendiente', 'en_progreso', 'completado', 'entregado', 'cancelado'] as const).map(f => (
+                {(
+                  [
+                    'all',
+                    'pendiente',
+                    'en_progreso',
+                    'completado',
+                    'entregado',
+                    'cancelado'
+                  ] as const
+                ).map((f) => (
                   <button
                     key={f}
                     onClick={() => setOrderStatusFilter(f)}
                     className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                      orderStatusFilter === f 
-                        ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30' 
+                      orderStatusFilter === f
+                        ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30'
                         : 'bg-white dark:bg-slate-900 text-gray-500 border border-gray-200 dark:border-slate-700 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    {f === 'all' ? 'Todos' : f === 'en_progreso' ? 'En Producción' : f.replace('_', ' ')}
+                    {f === 'all'
+                      ? 'Todos'
+                      : f === 'en_progreso'
+                        ? 'En Producción'
+                        : f.replace('_', ' ')}
                   </button>
                 ))}
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="secondary" className="text-sm font-bold py-2" onClick={() => setSelectedUserId(null)}>Cambiar Cliente</Button>
+              <Button
+                variant="secondary"
+                className="text-sm font-bold py-2"
+                onClick={() => setSelectedUserId(null)}
+              >
+                Cambiar Cliente
+              </Button>
               <Button
                 onClick={() => {
                   const { startDate, endDate } = getDateRange();
-                  customerReport && exportCustomerPDF(customerReport, isAllCustomers ? "Reporte General de Cartera" : `Reporte de Cliente: ${customerReport.name}`, startDate, endDate);
+                  customerReport &&
+                    exportCustomerPDF(
+                      customerReport,
+                      isAllCustomers
+                        ? 'Reporte General de Cartera'
+                        : `Reporte de Cliente: ${customerReport.name}`,
+                      startDate,
+                      endDate
+                    );
                 }}
                 className="text-sm font-bold py-2"
               >
@@ -907,12 +1338,14 @@ function ReportGeneratorTab() {
               <Button
                 onClick={() => {
                   if (!customerReport) return;
-                  const cust = customers.find(c => c.id === customerReport.user_id);
+                  const cust = customers.find(
+                    (c) => c.id === customerReport.user_id
+                  );
                   setShareMessage('');
                   setShareModal({
                     type: 'customer',
                     to_email: cust?.email || '',
-                    to_name: customerReport.name,
+                    to_name: customerReport.name
                   });
                 }}
                 variant="secondary"
@@ -924,9 +1357,15 @@ function ReportGeneratorTab() {
           </div>
 
           {(() => {
-            const filteredOrders = customerReport.orders.filter(o => orderStatusFilter === 'all' || o.state === orderStatusFilter);
+            const filteredOrders = customerReport.orders.filter(
+              (o) =>
+                orderStatusFilter === 'all' || o.state === orderStatusFilter
+            );
             const totalOrders = filteredOrders.length;
-            const totalPairs = filteredOrders.reduce((sum, o) => sum + o.total_pairs, 0);
+            const totalPairs = filteredOrders.reduce(
+              (sum, o) => sum + o.total_pairs,
+              0
+            );
 
             return (
               <>
@@ -935,77 +1374,140 @@ function ReportGeneratorTab() {
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                       <ShoppingBag className="w-12 h-12 text-orange-500" />
                     </div>
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pedidos {orderStatusFilter !== 'all' ? orderStatusFilter.replace('_', ' ') : 'Totales'}</p>
-                    <p className="text-4xl font-black text-gray-900 dark:text-white">{totalOrders}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                      Pedidos{' '}
+                      {orderStatusFilter !== 'all'
+                        ? orderStatusFilter.replace('_', ' ')
+                        : 'Totales'}
+                    </p>
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">
+                      {totalOrders}
+                    </p>
                   </div>
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                       <Package className="w-12 h-12 text-blue-500" />
                     </div>
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares {orderStatusFilter !== 'all' ? orderStatusFilter.replace('_', ' ') : 'Comprados'}</p>
-                    <p className="text-4xl font-black text-gray-900 dark:text-white">{totalPairs}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                      Pares{' '}
+                      {orderStatusFilter !== 'all'
+                        ? orderStatusFilter.replace('_', ' ')
+                        : 'Comprados'}
+                    </p>
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">
+                      {totalPairs}
+                    </p>
                   </div>
                 </div>
 
-                <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Listado de Pedidos</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">
+                  Listado de Pedidos
+                </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filteredOrders.length > 0 ? filteredOrders.map(o => (
-                    <div 
-                      key={o.id} 
-                      onClick={() => navigate(`/dashboard/admin/orders?order=${o.id}`)}
-                      className="cursor-pointer bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-900 transition-all flex items-center justify-between gap-4 group/card"
-                    >
-                      <div className="flex items-center gap-6 flex-1 min-w-0">
-                        <div className="shrink-0 w-24">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">ID PEDIDO</p>
-                          <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">#{o.id.toString().substring(0, 8)}</h4>
-                          <p className="text-[10px] text-gray-500 font-bold">{new Date(o.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })}</p>
+                  {filteredOrders.length > 0 ? (
+                    filteredOrders.map((o) => (
+                      <div
+                        key={o.id}
+                        onClick={() =>
+                          navigate(`/dashboard/admin/orders?order=${o.id}`)
+                        }
+                        className="cursor-pointer bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-900 transition-all flex items-center justify-between gap-4 group/card"
+                      >
+                        <div className="flex items-center gap-6 flex-1 min-w-0">
+                          <div className="shrink-0 w-24">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+                              ID PEDIDO
+                            </p>
+                            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">
+                              #{o.id.toString().substring(0, 8)}
+                            </h4>
+                            <p className="text-[10px] text-gray-500 font-bold">
+                              {new Date(o.created_at).toLocaleDateString(
+                                'es-CO',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: '2-digit'
+                                }
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                            {o.items &&
+                              o.items.map((p) => {
+                                const productImg =
+                                  p.image_url && !p.image_url.startsWith('http')
+                                    ? `${API_URL}${p.image_url}`
+                                    : p.image_url ||
+                                      'https://via.placeholder.com/150';
+                                return (
+                                  <div
+                                    key={p.product_id}
+                                    className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shrink-0"
+                                  >
+                                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
+                                      <img
+                                        src={productImg}
+                                        alt={p.product_name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate max-w-[80px]">
+                                        {p.product_name}
+                                      </p>
+                                      <p className="text-[9px] text-gray-500">
+                                        {p.amount} p
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                          {o.items && o.items.map(p => {
-                            const productImg = p.image_url && !p.image_url.startsWith('http') ? `${API_URL}${p.image_url}` : (p.image_url || "https://via.placeholder.com/150");
-                            return (
-                              <div key={p.product_id} className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shrink-0">
-                                <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
-                                  <img src={productImg} alt={p.product_name} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate max-w-[80px]">{p.product_name}</p>
-                                  <p className="text-[9px] text-gray-500">{p.amount} p</p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                        <div className="flex items-center gap-6 shrink-0">
+                          <div className="text-right">
+                            <span
+                              className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg border ${
+                                o.state === 'entregado'
+                                  ? 'bg-green-100 text-green-700 border-green-200'
+                                  : o.state === 'pendiente'
+                                    ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                    : o.state === 'en_progreso'
+                                      ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                      : 'bg-gray-100 text-gray-700 border-gray-200'
+                              }`}
+                            >
+                              {o.state === 'en_progreso'
+                                ? 'En Producción'
+                                : o.state.replace('_', ' ')}
+                            </span>
+                            <p className="text-xs font-black text-blue-600 mt-1">
+                              {o.total_pairs} pares
+                            </p>
+                          </div>
 
-                      <div className="flex items-center gap-6 shrink-0">
-                        <div className="text-right">
-                          <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg border ${
-                            o.state === 'entregado' ? 'bg-green-100 text-green-700 border-green-200' :
-                            o.state === 'pendiente' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                            o.state === 'en_progreso' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                            'bg-gray-100 text-gray-700 border-gray-200'
-                          }`}>
-                            {o.state === 'en_progreso' ? 'En Producción' : o.state.replace('_', ' ')}
-                          </span>
-                          <p className="text-xs font-black text-blue-600 mt-1">{o.total_pairs} pares</p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/dashboard/admin/orders?order=${o.id}`);
+                            }}
+                            className="w-10 h-10 bg-gray-900 dark:bg-slate-700 text-white rounded-xl group-hover/card:bg-blue-600 transition-colors flex items-center justify-center shadow-lg shadow-gray-900/20"
+                            title="Ver Detalle"
+                          >
+                            <ExternalLink size={16} />
+                          </button>
                         </div>
-                        
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/admin/orders?order=${o.id}`); }}
-                          className="w-10 h-10 bg-gray-900 dark:bg-slate-700 text-white rounded-xl group-hover/card:bg-blue-600 transition-colors flex items-center justify-center shadow-lg shadow-gray-900/20"
-                          title="Ver Detalle"
-                        >
-                          <ExternalLink size={16} />
-                        </button>
                       </div>
-                    </div>
-                  )) : (
+                    ))
+                  ) : (
                     <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
                       <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                      <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay pedidos en este estado</p>
+                      <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">
+                        No hay pedidos en este estado
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1020,8 +1522,12 @@ function ReportGeneratorTab() {
           {/* Tabs */}
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
             <div>
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Producción y Ventas</h2>
-              <p className="text-sm font-bold text-purple-600">Rendimiento y Volumen de Pedidos</p>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                Producción y Ventas
+              </h2>
+              <p className="text-sm font-bold text-purple-600">
+                Rendimiento y Volumen de Pedidos
+              </p>
             </div>
             <div className="flex gap-1 bg-gray-100 dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-700">
               <button
@@ -1045,7 +1551,9 @@ function ReportGeneratorTab() {
           <div className="flex flex-wrap items-center justify-between gap-6 mb-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
             {productionTab === 'orders' ? (
               <div className="flex flex-col gap-3 w-full lg:w-auto">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Filtrar por Estado de Pedido</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Filtrar por Estado de Pedido
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { label: 'Todos', value: 'all' },
@@ -1059,8 +1567,8 @@ function ReportGeneratorTab() {
                       key={s.value}
                       onClick={() => setOrderStatusFilter(s.value as any)}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${
-                        orderStatusFilter === s.value 
-                          ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none scale-105' 
+                        orderStatusFilter === s.value
+                          ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none scale-105'
                           : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-purple-200'
                       }`}
                     >
@@ -1071,14 +1579,16 @@ function ReportGeneratorTab() {
               </div>
             ) : (
               <div className="flex flex-col gap-3 w-full lg:w-auto">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Filtrar por Tipo de Proceso</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Filtrar por Tipo de Proceso
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { label: 'Todos', value: 'all' },
                     { label: 'Corte', value: 'cortador' },
                     { label: 'Guarnición', value: 'guarnecedor' },
                     { label: 'Soladura', value: 'solador' },
-                    { label: 'Emplantillado', value: 'emplantillador' },
+                    { label: 'Emplantillado', value: 'emplantillador' }
                   ].map((p) => (
                     <button
                       key={p.value}
@@ -1094,12 +1604,14 @@ function ReportGeneratorTab() {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 w-full">Estado de Tarea</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 w-full">
+                    Estado de Tarea
+                  </label>
                   <div className="flex gap-2">
                     {[
                       { label: 'Todas', value: 'all' },
                       { label: 'Completadas', value: 'completado' },
-                      { label: 'Pagadas', value: 'pagado' },
+                      { label: 'Pagadas', value: 'pagado' }
                     ].map((st) => (
                       <button
                         key={st.value}
@@ -1121,7 +1633,12 @@ function ReportGeneratorTab() {
               <Button
                 onClick={() => {
                   const { startDate, endDate } = getDateRange();
-                  exportProductionPDF(productionReport.orders, productionTasks, startDate, endDate);
+                  exportProductionPDF(
+                    productionReport.orders,
+                    productionTasks,
+                    startDate,
+                    endDate
+                  );
                 }}
                 className="text-sm font-bold py-2 w-full lg:w-auto"
               >
@@ -1133,18 +1650,37 @@ function ReportGeneratorTab() {
                   if (productionTab === 'orders') {
                     const filtered = productionReport.orders;
                     const totalOrders = filtered.length;
-                    const totalPairs = filtered.reduce((sum, o) => sum + (o.total_pairs || 0), 0);
-                    exportOrdersPDF(filtered, totalOrders, totalPairs, startDate, endDate);
+                    const totalPairs = filtered.reduce(
+                      (sum, o) => sum + (o.total_pairs || 0),
+                      0
+                    );
+                    exportOrdersPDF(
+                      filtered,
+                      totalOrders,
+                      totalPairs,
+                      startDate,
+                      endDate
+                    );
                   } else {
                     const totalTasks = productionTasks.length;
-                    const totalPairs = productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0);
-                    exportTasksPDF(productionTasks, totalTasks, totalPairs, startDate, endDate);
+                    const totalPairs = productionTasks.reduce(
+                      (sum, t) => sum + (t.amount || 0),
+                      0
+                    );
+                    exportTasksPDF(
+                      productionTasks,
+                      totalTasks,
+                      totalPairs,
+                      startDate,
+                      endDate
+                    );
                   }
                 }}
                 variant="secondary"
                 className="text-sm font-bold py-2 w-full lg:w-auto"
               >
-                <Download className="w-4 h-4 mr-2" /> Solo {productionTab === 'orders' ? 'Pedidos' : 'Tareas'}
+                <Download className="w-4 h-4 mr-2" /> Solo{' '}
+                {productionTab === 'orders' ? 'Pedidos' : 'Tareas'}
               </Button>
               <Button
                 onClick={() => {
@@ -1152,7 +1688,7 @@ function ReportGeneratorTab() {
                   setShareModal({
                     type: 'production',
                     to_email: '',
-                    to_name: '',
+                    to_name: ''
                   });
                 }}
                 variant="secondary"
@@ -1167,120 +1703,203 @@ function ReportGeneratorTab() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pedidos Creados</p>
-                  <p className="text-4xl font-black text-blue-600 dark:text-blue-400">{productionReport.total_orders_created}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                    Pedidos Creados
+                  </p>
+                  <p className="text-4xl font-black text-blue-600 dark:text-blue-400">
+                    {productionReport.total_orders_created}
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares Ordenados</p>
-                  <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{productionReport.total_pairs_ordered}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                    Pares Ordenados
+                  </p>
+                  <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400">
+                    {productionReport.total_pairs_ordered}
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Pares Fabricados</p>
-                  <p className="text-4xl font-black text-green-600 dark:text-green-400">{productionReport.total_pairs_period}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                    Pares Fabricados
+                  </p>
+                  <p className="text-4xl font-black text-green-600 dark:text-green-400">
+                    {productionReport.total_pairs_period}
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Vales Completados</p>
-                  <p className="text-4xl font-black text-gray-900 dark:text-white">{productionReport.total_tasks_period}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                    Vales Completados
+                  </p>
+                  <p className="text-4xl font-black text-gray-900 dark:text-white">
+                    {productionReport.total_tasks_period}
+                  </p>
                 </div>
               </div>
 
               <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-purple-500" /> Pedidos en el Periodo
+                <ShoppingBag className="w-4 h-4 text-purple-500" /> Pedidos en
+                el Periodo
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-                {productionReport.orders && productionReport.orders.length > 0 ? productionReport.orders.map(o => (
-                  <div 
-                    key={o.id} 
-                    onClick={() => navigate(`/dashboard/admin/orders?order=${o.id}`)}
-                    className="cursor-pointer bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex items-center justify-between gap-4 group/card"
-                  >
-                    <div className="flex items-center gap-6 flex-1 min-w-0">
-                      <div className="shrink-0 w-24">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">ID PEDIDO</p>
-                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">#{o.id.toString().substring(0, 8)}</h4>
-                        <p className="text-[10px] text-gray-500 font-bold">{new Date(o.created_at).toLocaleDateString()}</p>
+                {productionReport.orders &&
+                productionReport.orders.length > 0 ? (
+                  productionReport.orders.map((o) => (
+                    <div
+                      key={o.id}
+                      onClick={() =>
+                        navigate(`/dashboard/admin/orders?order=${o.id}`)
+                      }
+                      className="cursor-pointer bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex items-center justify-between gap-4 group/card"
+                    >
+                      <div className="flex items-center gap-6 flex-1 min-w-0">
+                        <div className="shrink-0 w-24">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+                            ID PEDIDO
+                          </p>
+                          <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">
+                            #{o.id.toString().substring(0, 8)}
+                          </h4>
+                          <p className="text-[10px] text-gray-500 font-bold">
+                            {new Date(o.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                          {o.items &&
+                            o.items.map((p) => {
+                              const productImg =
+                                p.image_url && !p.image_url.startsWith('http')
+                                  ? `${API_URL}${p.image_url}`
+                                  : p.image_url ||
+                                    'https://via.placeholder.com/150';
+                              return (
+                                <div
+                                  key={p.product_id}
+                                  className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shrink-0"
+                                >
+                                  <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
+                                    <img
+                                      src={productImg}
+                                      alt={p.product_name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate max-w-[80px]">
+                                      {p.product_name}
+                                    </p>
+                                    <p className="text-[9px] text-gray-500">
+                                      {p.amount} p
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
-                        {o.items && o.items.map(p => {
-                          const productImg = p.image_url && !p.image_url.startsWith('http') ? `${API_URL}${p.image_url}` : (p.image_url || "https://via.placeholder.com/150");
-                          return (
-                            <div key={p.product_id} className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shrink-0">
-                              <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
-                                <img src={productImg} alt={p.product_name} className="w-full h-full object-cover" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate max-w-[80px]">{p.product_name}</p>
-                                <p className="text-[9px] text-gray-500">{p.amount} p</p>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="flex items-center gap-6 shrink-0">
+                        <div className="text-right">
+                          <span
+                            className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg border ${
+                              o.state === 'entregado'
+                                ? 'bg-green-100 text-green-700 border-green-200'
+                                : o.state === 'pendiente'
+                                  ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                  : o.state === 'en_progreso'
+                                    ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                    : 'bg-gray-100 text-gray-700 border-gray-200'
+                            }`}
+                          >
+                            {o.state === 'en_progreso'
+                              ? 'En Producción'
+                              : o.state.replace('_', ' ')}
+                          </span>
+                          <p className="text-xs font-black text-blue-600 mt-1">
+                            {o.total_pairs} pares
+                          </p>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-6 shrink-0">
-                      <div className="text-right">
-                        <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg border ${
-                          o.state === 'entregado' ? 'bg-green-100 text-green-700 border-green-200' :
-                          o.state === 'pendiente' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                          o.state === 'en_progreso' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                          'bg-gray-100 text-gray-700 border-gray-200'
-                        }`}>
-                          {o.state === 'en_progreso' ? 'En Producción' : o.state.replace('_', ' ')}
-                        </span>
-                        <p className="text-xs font-black text-blue-600 mt-1">{o.total_pairs} pares</p>
-                      </div>
-                    </div>
-                  </div>
-                )) : (
+                  ))
+                ) : (
                   <div className="col-span-full text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
                     <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                    <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay pedidos registrados en este periodo</p>
+                    <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">
+                      No hay pedidos registrados en este periodo
+                    </p>
                   </div>
                 )}
               </div>
 
               <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-purple-500" /> Rendimiento Semanal
+                <TrendingUp className="w-4 h-4 text-purple-500" /> Rendimiento
+                Semanal
               </h3>
               <div className="space-y-3">
-                {productionReport.weekly_metrics.length > 0 ? productionReport.weekly_metrics.map(w => (
-                  <div key={w.week} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400">
-                          {w.week.split('-W')[1]}
+                {productionReport.weekly_metrics.length > 0 ? (
+                  productionReport.weekly_metrics.map((w) => (
+                    <div
+                      key={w.week}
+                      className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all"
+                    >
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400">
+                            {w.week.split('-W')[1]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-gray-900 dark:text-white uppercase">
+                              Semana {w.week.split('-W')[1]}
+                            </p>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase">
+                              {w.week.split('-W')[0]}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase">Semana {w.week.split('-W')[1]}</p>
-                          <p className="text-[10px] text-gray-500 font-bold uppercase">{w.week.split('-W')[0]}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 sm:flex items-center gap-6">
-                        <div className="text-center sm:text-right">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pedidos</p>
-                          <p className="text-sm font-black text-blue-600">{w.orders_created}</p>
-                        </div>
-                        <div className="text-center sm:text-right">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pares Ord.</p>
-                          <p className="text-sm font-black text-indigo-600">{w.pairs_ordered}</p>
-                        </div>
-                        <div className="text-center sm:text-right border-l border-gray-100 dark:border-slate-800 pl-4">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pares Fab.</p>
-                          <p className="text-sm font-black text-green-600">{w.pairs_manufactured}</p>
-                        </div>
-                        <div className="text-center sm:text-right">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Tareas</p>
-                          <p className="text-sm font-black text-gray-900 dark:text-white">{w.tasks_completed}</p>
+                        <div className="grid grid-cols-2 sm:flex items-center gap-6">
+                          <div className="text-center sm:text-right">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                              Pedidos
+                            </p>
+                            <p className="text-sm font-black text-blue-600">
+                              {w.orders_created}
+                            </p>
+                          </div>
+                          <div className="text-center sm:text-right">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                              Pares Ord.
+                            </p>
+                            <p className="text-sm font-black text-indigo-600">
+                              {w.pairs_ordered}
+                            </p>
+                          </div>
+                          <div className="text-center sm:text-right border-l border-gray-100 dark:border-slate-800 pl-4">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                              Pares Fab.
+                            </p>
+                            <p className="text-sm font-black text-green-600">
+                              {w.pairs_manufactured}
+                            </p>
+                          </div>
+                          <div className="text-center sm:text-right">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                              Tareas
+                            </p>
+                            <p className="text-sm font-black text-gray-900 dark:text-white">
+                              {w.tasks_completed}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )) : (
+                  ))
+                ) : (
                   <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
                     <Activity className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                    <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay datos en este periodo</p>
+                    <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">
+                      No hay datos en este periodo
+                    </p>
                   </div>
                 )}
               </div>
@@ -1289,17 +1908,31 @@ function ReportGeneratorTab() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Tareas en Período</p>
-                  <p className="text-4xl font-black text-purple-600 dark:text-purple-400">{tasksLoading ? '...' : productionTasks.length}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                    Tareas en Período
+                  </p>
+                  <p className="text-4xl font-black text-purple-600 dark:text-purple-400">
+                    {tasksLoading ? '...' : productionTasks.length}
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Total Pares</p>
-                  <p className="text-4xl font-black text-green-600 dark:text-green-400">{tasksLoading ? '...' : productionTasks.reduce((sum, t) => sum + (t.amount || 0), 0)}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                    Total Pares
+                  </p>
+                  <p className="text-4xl font-black text-green-600 dark:text-green-400">
+                    {tasksLoading
+                      ? '...'
+                      : productionTasks.reduce(
+                          (sum, t) => sum + (t.amount || 0),
+                          0
+                        )}
+                  </p>
                 </div>
               </div>
 
               <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-purple-500" /> Tareas Registradas
+                <Activity className="w-4 h-4 text-purple-500" /> Tareas
+                Registradas
               </h3>
 
               {tasksLoading ? (
@@ -1308,30 +1941,46 @@ function ReportGeneratorTab() {
                 </div>
               ) : productionTasks.length > 0 ? (
                 <div className="space-y-3 mb-8">
-                  {productionTasks.map(t => (
-                    <div key={t.id} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+                  {productionTasks.map((t) => (
+                    <div
+                      key={t.id}
+                      className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all"
+                    >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400 text-sm shrink-0">
                             {t.vale_number || '—'}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-black text-gray-900 dark:text-white truncate">{t.product_name}</p>
-                            {t.colour && <p className="text-xs text-gray-500">{t.colour}</p>}
+                            <p className="text-sm font-black text-gray-900 dark:text-white truncate">
+                              {t.product_name}
+                            </p>
+                            {t.colour && (
+                              <p className="text-xs text-gray-500">
+                                {t.colour}
+                              </p>
+                            )}
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[10px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
-                                {PROCESS_DISPLAY[t.process_name] || t.process_name}
+                                {PROCESS_DISPLAY[t.process_name] ||
+                                  t.process_name}
                               </span>
-                              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{t.amount} pares</span>
+                              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                {t.amount} pares
+                              </span>
                             </div>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-lg border ${
-                            t.status === 'pagado' ? 'bg-green-100 text-green-700 border-green-200' :
-                            t.status === 'completado' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                            'bg-yellow-100 text-yellow-700 border-yellow-200'
-                          }`}>
+                          <span
+                            className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-lg border ${
+                              t.status === 'pagado'
+                                ? 'bg-green-100 text-green-700 border-green-200'
+                                : t.status === 'completado'
+                                  ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                  : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                            }`}
+                          >
                             {t.status}
                           </span>
                           {t.task_total_price != null && (
@@ -1347,7 +1996,9 @@ function ReportGeneratorTab() {
               ) : (
                 <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800 mb-8">
                   <Activity className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                  <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No hay tareas registradas en este periodo</p>
+                  <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">
+                    No hay tareas registradas en este periodo
+                  </p>
                 </div>
               )}
             </>
@@ -1356,26 +2007,46 @@ function ReportGeneratorTab() {
       )}
 
       {/* Share modal */}
-      <Modal isOpen={!!shareModal} onClose={() => { setShareModal(null); setShareMessage(''); }} title="Compartir Reporte" size="md">
+      <Modal
+        isOpen={!!shareModal}
+        onClose={() => {
+          setShareModal(null);
+          setShareMessage('');
+        }}
+        title="Compartir Reporte"
+        size="md"
+      >
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Correo del destinatario</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">
+                Correo del destinatario
+              </label>
               <input
                 type="email"
                 value={shareModal?.to_email || ''}
-                onChange={(e) => setShareModal(prev => prev ? { ...prev, to_email: e.target.value } : null)}
+                onChange={(e) =>
+                  setShareModal((prev) =>
+                    prev ? { ...prev, to_email: e.target.value } : null
+                  )
+                }
                 placeholder="correo@ejemplo.com"
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
                 disabled={sendingShare}
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Nombre del destinatario</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">
+                Nombre del destinatario
+              </label>
               <input
                 type="text"
                 value={shareModal?.to_name || ''}
-                onChange={(e) => setShareModal(prev => prev ? { ...prev, to_name: e.target.value } : null)}
+                onChange={(e) =>
+                  setShareModal((prev) =>
+                    prev ? { ...prev, to_name: e.target.value } : null
+                  )
+                }
                 placeholder="Nombre"
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
                 disabled={sendingShare}
@@ -1384,12 +2055,18 @@ function ReportGeneratorTab() {
           </div>
           {shareModal?.type === 'employee' && shareModal?.target_user_id && (
             <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-              <p className="text-sm font-bold text-purple-700 dark:text-purple-300">Se enviará automáticamente al dashboard del empleado</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5">El empleado verá este reporte en tiempo real en su panel</p>
+              <p className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                Se enviará automáticamente al dashboard del empleado
+              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5">
+                El empleado verá este reporte en tiempo real en su panel
+              </p>
             </div>
           )}
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">Mensaje (opcional)</label>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1.5">
+              Mensaje (opcional)
+            </label>
             <textarea
               value={shareMessage}
               onChange={(e) => setShareMessage(e.target.value)}
@@ -1399,13 +2076,18 @@ function ReportGeneratorTab() {
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500 resize-none"
               disabled={sendingShare}
             />
-            <span className="text-[10px] text-gray-400 text-right block mt-0.5">{shareMessage.length}/500</span>
+            <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+              {shareMessage.length}/500
+            </span>
           </div>
           <div className="flex gap-3 pt-2">
             <Button
               variant="secondary"
               className="flex-1 font-bold py-2.5"
-              onClick={() => { setShareModal(null); setShareMessage(''); }}
+              onClick={() => {
+                setShareModal(null);
+                setShareMessage('');
+              }}
               disabled={sendingShare}
             >
               Cancelar
@@ -1415,13 +2097,16 @@ function ReportGeneratorTab() {
               onClick={handleShareReport}
               disabled={sendingShare}
             >
-              {sendingShare ? <Loader2 className="w-4 h-4 mr-2 animate-spin inline" /> : <Send className="w-4 h-4 mr-2 inline" />}
+              {sendingShare ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+              ) : (
+                <Send className="w-4 h-4 mr-2 inline" />
+              )}
               {sendingShare ? 'Enviando...' : 'Compartir'}
             </Button>
           </div>
         </div>
       </Modal>
-
     </div>
   );
 }
@@ -1430,13 +2115,19 @@ function KPIItem({ label, value, icon: Icon, color, bgColor }: any) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all group">
       <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 rounded-2xl ${bgColor} flex items-center justify-center ${color} shadow-sm border border-inherit`}>
+        <div
+          className={`w-12 h-12 rounded-2xl ${bgColor} flex items-center justify-center ${color} shadow-sm border border-inherit`}
+        >
           <Icon className="w-6 h-6" />
         </div>
       </div>
       <div>
-        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{value}</p>
+        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
+          {label}
+        </p>
+        <p className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -1446,11 +2137,15 @@ function CategoryProgress({ label, value, percentage, color }: any) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center text-sm">
-        <span className="font-bold text-gray-700 dark:text-gray-300">{label}</span>
-        <span className="font-extrabold text-gray-900 dark:text-white">{value}</span>
+        <span className="font-bold text-gray-700 dark:text-gray-300">
+          {label}
+        </span>
+        <span className="font-extrabold text-gray-900 dark:text-white">
+          {value}
+        </span>
       </div>
       <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-        <div 
+        <div
           className={`h-full ${color} rounded-full transition-all duration-1000 ease-out`}
           style={{ width: `${percentage}%` }}
         />
@@ -1460,14 +2155,19 @@ function CategoryProgress({ label, value, percentage, color }: any) {
 }
 
 function TopProductItem({ name, sales, image }: any) {
-  const imageUrl = image && !image.startsWith('http') ? `${API_URL}${image}` : (image || "https://via.placeholder.com/150");
+  const imageUrl =
+    image && !image.startsWith('http')
+      ? `${API_URL}${image}`
+      : image || 'https://via.placeholder.com/150';
   return (
     <div className="flex items-center gap-4 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-slate-700">
       <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 dark:border-slate-700 shrink-0">
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{name}</p>
+        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+          {name}
+        </p>
         <p className="text-xs text-gray-500 font-medium">{sales}</p>
       </div>
     </div>

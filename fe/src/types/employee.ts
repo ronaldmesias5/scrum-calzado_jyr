@@ -156,10 +156,10 @@ export interface ProductIncidence {
   product_name?: string | null;
   size: string;
   colour?: string | null;
-  defect_code_id?: string | null;  // Ahora opcional — puede usar description en su lugar
+  defect_code_id?: string | null; // Ahora opcional — puede usar description en su lugar
   defect_code?: string | null;
   defect_name?: string | null;
-  description?: string | null;  // Descripción libre del defecto
+  description?: string | null; // Descripción libre del defecto
   quantity: number;
   observations?: string | null;
   status: string; // pending, approved, rejected
@@ -179,8 +179,8 @@ export interface ProductIncidenceCreateRequest {
   task_id: string;
   size: string;
   colour?: string;
-  defect_code_id?: string;  // Opcional — ahora se usa description como alternativa
-  description?: string;  // Descripción libre del defecto
+  defect_code_id?: string; // Opcional — ahora se usa description como alternativa
+  description?: string; // Descripción libre del defecto
   quantity: number;
   observations?: string;
 }

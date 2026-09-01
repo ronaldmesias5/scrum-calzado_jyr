@@ -7,11 +7,13 @@ Descripción: Router FastAPI con endpoints para gestión del perfil del usuario 
   - GET /me: Obtener perfil completo del usuario autenticado
   - POST /me/avatar: Subir o actualizar foto de perfil
   - DELETE /me/avatar: Eliminar foto de perfil
+  - DELETE /me: Eliminar cuenta propia (soft delete)
   
 ¿Para qué?
   - Permitir al usuario consultar y editar sus propios datos
   - Proveer información para header del dashboard (nombre, avatar)
   - Subir/eliminar avatar (foto de perfil)
+  - Permitir auto-eliminación de cuenta con doble confirmación
   
 ¿Impacto?
   MEDIO — Dashboard AdminHeader depende de /me para mostrar nombre/avatar.
@@ -30,6 +32,7 @@ from app.config import settings
 from app.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.auth import UserResponse
+from app.utils.security import verify_password
 
 router = APIRouter(
     prefix="/api/v1/users",
@@ -236,4 +239,52 @@ def delete_email_credentials(
     db.commit()
 
     return {"configured": False, "message": "Clave eliminada. Vuelves al correo global del sistema."}
+
+
+# ────────────────────────────
+# 🗑️ Eliminación de cuenta propia
+# ────────────────────────────
+
+
+from pydantic import BaseModel
+
+
+class DeleteAccountRequest(BaseModel):
+    """Schema para la eliminación de cuenta propia (requiere contraseña)."""
+    password: str
+
+
+@router.delete(
+    "/me",
+    summary="Eliminar cuenta propia (soft delete con doble confirmación)",
+)
+def delete_my_account(
+    payload: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Elimina la cuenta del usuario autenticado mediante soft delete.
+    Requiere la contraseña actual como doble confirmación de seguridad.
+    La cuenta se marca con deleted_at en lugar de eliminarse físicamente.
+    """
+    # Verificar que la contraseña sea correcta (doble confirmación)
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=400,
+            detail="La contraseña es incorrecta. Confirma tu contraseña para eliminar la cuenta.",
+        )
+
+    # Soft delete — marcar eliminated_at en lugar de borrar físicamente
+    now = datetime.now(timezone.utc)
+    current_user.deleted_at = now
+    current_user.is_active = False
+    current_user.updated_at = now
+
+    # Incrementar session_version para invalidar todas las sesiones activas
+    current_user.session_version = (current_user.session_version or 0) + 1
+
+    db.commit()
+
+    return {"message": "Cuenta eliminada exitosamente. Lamentamos verte partir."}
 

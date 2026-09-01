@@ -9,7 +9,7 @@ Sistema integral para la gestión y producción de calzado, diseñado con una ar
 **Dashboards implementados:**
 - **Dashboard Jefe**: Supervisión total (14 páginas), validación de clientes, gestión de empleados, catálogo, pedidos, inventario, insumos, tareas de producción, incidencias (scrap, pérdidas, pendientes), reportes con PDF export, alertas.
 - **Dashboard Empleados**: Operativo (6 páginas) — tareas disponibles, mis tareas, incidencias (maquinaria, producto), reportes de rendimiento con PDF export, configuración de perfil con avatar.
-- **Dashboard Clientes**: Operativo (2 páginas) — dashboard y consulta de pedidos.
+- **Dashboard Clientes**: Operativo (6 páginas) — dashboard, catálogo mayorista, pedidos, reportes, incidencias, configuración.
 
 **Estado actual:** Sprints 1-7 completados. Sprints 8-16 con funcionalidad en código. Notificaciones, incidencias, vales de producción, y badges de conteo implementados.
 
@@ -23,23 +23,27 @@ scrum/
 │   ├── app/
 │   │   ├── core/                # Configuración, BD, dependencias y seguridad
 │   │   ├── init_db.py           # Auto-migraciones + seed data al arrancar
-│   │   ├── models/              # Modelos SQLAlchemy (23 tablas)
-│   │   ├── modules/             # 📦 12 módulos feature-based
-│   │   │   ├── admin/           # Catálogo admin, reportes, usuarios, creación sin contraseña
-│   │   │   ├── auth/            # Login, registro, JWT, logout global, cambio de contraseña
-│   │   │   ├── catalog/         # Catálogo público
-│   │   │   ├── client/          # Dashboard cliente y pedidos
-│   │   │   ├── dashboard_empleado/  # Tareas, incidencias, métricas empleado
-│   │   │   ├── dashboard_jefe/  # Métricas y dashboard principal
-│   │   │   ├── notifications/   # Notificaciones en tiempo real (WebSocket)
-│   │   │   ├── orders/          # Pedidos + producción + vales + line_group
-│   │   │   ├── scrap/           # Incidencias (scrap, pérdidas, pendientes)
-│   │   │   ├── supplies/        # Insumos y movimientos
-│   │   │   ├── type_document/   # Tipos de documento
-│   │   │   └── users/           # CRUD usuarios + avatar upload
-│   │   ├── utils/               # Email SMTP con aiosmtplib (Gmail + Mailpit)
+│   │   ├── models/              # Modelos SQLAlchemy (23 modelos)
+│   │   ├── routers/             # 📦 21 routers FastAPI
+│   │   │   ├── admin.py         # Catálogo admin, reportes, usuarios, creación sin contraseña
+│   │   │   ├── auth.py          # Login, registro, JWT, logout global, cambio de contraseña
+│   │   │   ├── catalog*.py      # Catálogo público (5 routers: catalog, products, brands, styles, inventory)
+│   │   │   ├── client.py        # Dashboard cliente y pedidos
+│   │   │   ├── dashboard_*.py   # Dashboards jefe/empleado (5 routers)
+│   │   │   ├── notifications.py # Notificaciones en tiempo real (WebSocket)
+│   │   │   ├── orders*.py       # Pedidos + producción + vales (3 routers)
+│   │   │   ├── scrap.py         # Incidencias (scrap, pérdidas, pendientes)
+│   │   │   ├── supplies.py      # Insumos y movimientos
+│   │   │   ├── reports.py       # Reportes admin (dashboard, empleados, clientes, producción)
+│   │   │   ├── type_document.py # Tipos de documento
+│   │   │   └── users.py         # CRUD usuarios + avatar upload
+│   │   ├── controllers/         # Capa de controladores (14 archivos)
+│   │   ├── services/            # Servicios de negocio (8 archivos)
+│   │   ├── schemas/             # Esquemas Pydantic (13 archivos)
+│   │   ├── middleware/          # Rate limiting, error handling, security headers
+│   │   ├── utils/               # Email SMTP (Gmail + Mailpit), seguridad, crypto
 │   │   └── main.py              # Punto de entrada
-│   ├── alembic/versions/        # 37 migraciones versionadas
+│   ├── alembic/versions/        # 42 migraciones versionadas
 │   ├── scripts/                 # create_admin.py, heal_line_groups.py
 │   └── pyproject.toml           # Dependencias (uv)
 │
@@ -56,7 +60,7 @@ scrum/
 │   │   │   ├── client/           # Panel cliente — components/{molecules,organisms}
 │   │   │   ├── employee/         # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
 │   │   │   └── landing/          # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
-│   │   ├── pages/                # Páginas enrutables: admin(14), auth(7), client(3), employee(6), public(2)
+│   │   ├── pages/                # Páginas enrutables: admin(14), auth(7), client(6), employee(6), public(2)
 │   │   ├── hooks/                # Hooks reutilizables
 │   │   ├── services/             # Servicios de API globales
 │   │   ├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
@@ -122,7 +126,7 @@ cp .env.example .env
 
 Levante la base de datos y/o todo el entorno:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Backend (Vía uv)

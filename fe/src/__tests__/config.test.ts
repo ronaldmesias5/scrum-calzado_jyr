@@ -16,7 +16,7 @@ describe('API Config', () => {
   it('debe tener un timeout definido', () => {
     const API_CONFIG = {
       baseURL: 'http://localhost:8000',
-      timeout: 10000,
+      timeout: 10000
     };
     expect(API_CONFIG.timeout).toBeGreaterThan(0);
     expect(API_CONFIG.timeout).toBe(10000);

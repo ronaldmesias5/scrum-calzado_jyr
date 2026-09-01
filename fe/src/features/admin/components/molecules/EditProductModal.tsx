@@ -26,10 +26,11 @@ export default function EditProductModal({
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
   const availableSizes = useMemo(
-    () => categoryName === 'Infantil'
-      ? Array.from({ length: 12 }, (_, i) => String(21 + i))
-      : Array.from({ length: 11 }, (_, i) => String(33 + i)),
-    [categoryName],
+    () =>
+      categoryName === 'Infantil'
+        ? Array.from({ length: 12 }, (_, i) => String(21 + i))
+        : Array.from({ length: 11 }, (_, i) => String(33 + i)),
+    [categoryName]
   );
 
   useEffect(() => {
@@ -46,7 +47,9 @@ export default function EditProductModal({
     }
   }, [availableSizes, currentAmount, isOpen]);
 
-  const applyPreset = (preset: 'equal3' | 'equal5' | 'equal10' | 'comercial') => {
+  const applyPreset = (
+    preset: 'equal3' | 'equal5' | 'equal10' | 'comercial'
+  ) => {
     const newAmounts: Record<string, number> = {};
     let amount = 0;
 
@@ -75,7 +78,7 @@ export default function EditProductModal({
       }
     }
 
-    availableSizes.forEach(size => {
+    availableSizes.forEach((size) => {
       newAmounts[size] = amount;
     });
     setSizeAmounts(newAmounts);
@@ -124,14 +127,18 @@ export default function EditProductModal({
     >
       <div className="flex flex-col h-full">
         <div className="px-6 py-2 mb-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{productName}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {productName}
+          </p>
         </div>
 
         {/* Body */}
         <div className="p-6 bg-white dark:bg-slate-900 space-y-6 max-h-[70vh] overflow-y-auto">
           {/* Numeraciones Rápidas */}
           <div className="space-y-3">
-            <label className="text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">Numeraciones Rápidas</label>
+            <label className="text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">
+              Numeraciones Rápidas
+            </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => applyPreset('equal3')}
@@ -178,7 +185,9 @@ export default function EditProductModal({
 
           {/* Grid de Tallas */}
           <div className="space-y-3">
-            <label className="text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">Cantidades por Talla</label>
+            <label className="text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">
+              Cantidades por Talla
+            </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-100 dark:border-slate-700">
               {availableSizes.map((size) => (
                 <div key={size} className="flex flex-col gap-1">
@@ -187,7 +196,9 @@ export default function EditProductModal({
                   </label>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleSizeChange(size, (sizeAmounts[size] || 0) - 1)}
+                      onClick={() =>
+                        handleSizeChange(size, (sizeAmounts[size] || 0) - 1)
+                      }
                       className="flex-1 px-1.5 py-1 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded font-bold text-xs hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
                     >
                       <Minus size={12} className="mx-auto" />
@@ -196,7 +207,9 @@ export default function EditProductModal({
                       type="number"
                       min="0"
                       value={sizeAmounts[size] || 0}
-                      onChange={(e) => handleSizeChange(size, parseInt(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleSizeChange(size, parseInt(e.target.value) || 0)
+                      }
                       className={`flex-1 px-2 py-1.5 rounded-lg text-center text-xs font-black outline-none transition-all ${
                         (sizeAmounts[size] || 0) > 0
                           ? 'bg-white dark:bg-slate-700 border-2 border-blue-500 text-blue-600 dark:text-blue-400'
@@ -204,7 +217,9 @@ export default function EditProductModal({
                       }`}
                     />
                     <button
-                      onClick={() => handleSizeChange(size, (sizeAmounts[size] || 0) + 1)}
+                      onClick={() =>
+                        handleSizeChange(size, (sizeAmounts[size] || 0) + 1)
+                      }
                       className="flex-1 px-1.5 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded font-bold text-xs hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
                     >
                       <Plus size={12} className="mx-auto" />
@@ -217,19 +232,28 @@ export default function EditProductModal({
 
           {/* Total */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-4 flex items-center justify-between">
-            <span className="font-bold text-lg">Total acumulado en el pedido:</span>
+            <span className="font-bold text-lg">
+              Total acumulado en el pedido:
+            </span>
             <span className="text-3xl font-black">{total} pares</span>
           </div>
 
           {total !== currentAmount && (
             <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-2xl">
               <p className="text-sm text-amber-800 dark:text-amber-200">
-                <span className="font-bold">Cambio:</span> de {currentAmount} a {total} pares
+                <span className="font-bold">Cambio:</span> de {currentAmount} a{' '}
+                {total} pares
                 {total > currentAmount && (
-                  <span className="text-green-600 dark:text-green-400 font-bold"> (+{total - currentAmount})</span>
+                  <span className="text-green-600 dark:text-green-400 font-bold">
+                    {' '}
+                    (+{total - currentAmount})
+                  </span>
                 )}
                 {total < currentAmount && (
-                  <span className="text-orange-600 dark:text-orange-400 font-bold"> (-{currentAmount - total})</span>
+                  <span className="text-orange-600 dark:text-orange-400 font-bold">
+                    {' '}
+                    (-{currentAmount - total})
+                  </span>
                 )}
               </p>
             </div>

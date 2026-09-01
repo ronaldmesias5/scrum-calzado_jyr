@@ -11,7 +11,12 @@ import axios from '@/services/axios';
 // Tipos
 // ────────────────────────────────────────────────
 
-export type OrderStatus = 'pendiente' | 'en_progreso' | 'completado' | 'entregado' | 'cancelado';
+export type OrderStatus =
+  | 'pendiente'
+  | 'en_progreso'
+  | 'completado'
+  | 'entregado'
+  | 'cancelado';
 
 export interface OrderDetailItem {
   id: string;
@@ -95,13 +100,16 @@ export async function getOrders(
   page: number = 1,
   page_size: number = 10,
   state?: OrderStatus | null,
-  customerName?: string | null,
+  customerName?: string | null
 ): Promise<OrderListResponse> {
   const params: Record<string, unknown> = { page, page_size };
   if (state) params.state = state;
-  if (customerName && customerName.trim()) params.customer_name = customerName.trim();
+  if (customerName && customerName.trim())
+    params.customer_name = customerName.trim();
 
-  const response = await axios.get<OrderListResponse>('/api/v1/admin/orders', { params });
+  const response = await axios.get<OrderListResponse>('/api/v1/admin/orders', {
+    params
+  });
   return response.data;
 }
 
@@ -111,7 +119,9 @@ export async function getOrders(
  * @returns Promise<OrderDetail>
  */
 export async function getOrderDetail(orderId: string): Promise<OrderDetail> {
-  const response = await axios.get<OrderDetail>(`/api/v1/admin/orders/${orderId}`);
+  const response = await axios.get<OrderDetail>(
+    `/api/v1/admin/orders/${orderId}`
+  );
   return response.data;
 }
 
@@ -120,16 +130,24 @@ export async function getOrderDetail(orderId: string): Promise<OrderDetail> {
  * @param orderData - Datos de la orden a crear
  * @returns Promise<OrderDetail>
  */
-export async function createOrder(orderData: OrderCreateRequest): Promise<OrderDetail> {
-  const response = await axios.post<OrderDetail>('/api/v1/admin/orders', orderData);
+export async function createOrder(
+  orderData: OrderCreateRequest
+): Promise<OrderDetail> {
+  const response = await axios.post<OrderDetail>(
+    '/api/v1/admin/orders',
+    orderData
+  );
   return response.data;
 }
 
 /** Crea una orden para el cliente autenticado. */
 export async function createMyOrder(
-  orderData: OrderCreateRequest,
+  orderData: OrderCreateRequest
 ): Promise<OrderDetail> {
-  const response = await axios.post<OrderDetail>('/api/v1/client/orders', orderData);
+  const response = await axios.post<OrderDetail>(
+    '/api/v1/client/orders',
+    orderData
+  );
   return response.data;
 }
 
@@ -141,11 +159,11 @@ export async function createMyOrder(
  */
 export async function updateOrderStatus(
   orderId: string,
-  statusUpdate: OrderUpdateStatusRequest,
+  statusUpdate: OrderUpdateStatusRequest
 ): Promise<OrderDetail> {
   const response = await axios.patch<OrderDetail>(
     `/api/v1/admin/orders/${orderId}/status`,
-    statusUpdate,
+    statusUpdate
   );
   return response.data;
 }
@@ -157,9 +175,12 @@ export interface OrderUpdateDetailsRequest {
 
 export async function updateOrderDetails(
   orderId: string,
-  data: OrderUpdateDetailsRequest,
+  data: OrderUpdateDetailsRequest
 ): Promise<OrderDetail> {
-  const response = await axios.put<OrderDetail>(`/api/v1/admin/orders/${orderId}`, data);
+  const response = await axios.put<OrderDetail>(
+    `/api/v1/admin/orders/${orderId}`,
+    data
+  );
   return response.data;
 }
 
@@ -195,7 +216,9 @@ export async function getStyles(): Promise<any[]> {
  * @returns Promise<InventoryInfo>
  */
 export async function getStyleInventory(styleId: string): Promise<any> {
-  const response = await axios.get(`/api/v1/catalog/styles/${styleId}/inventory`);
+  const response = await axios.get(
+    `/api/v1/catalog/styles/${styleId}/inventory`
+  );
   return response.data;
 }
 
@@ -204,7 +227,9 @@ export async function getStyleInventory(styleId: string): Promise<any> {
  * @returns Promise<User[]>
  */
 export async function getClients(): Promise<any[]> {
-  const response = await axios.get('/api/v1/admin/users', { params: { role: 'client' } });
+  const response = await axios.get('/api/v1/admin/users', {
+    params: { role: 'client' }
+  });
   return response.data || [];
 }
 
@@ -261,45 +286,75 @@ export interface ProductionTask {
 }
 
 /** Crea las 4 tareas de producción para una orden */
-export async function createProductionTasks(orderId: string, tasks: ProductionTaskCreate[]): Promise<ProductionTask[]> {
-  const response = await axios.post<ProductionTask[]>(`/api/v1/admin/orders/${orderId}/tasks`, { tasks });
+export async function createProductionTasks(
+  orderId: string,
+  tasks: ProductionTaskCreate[]
+): Promise<ProductionTask[]> {
+  const response = await axios.post<ProductionTask[]>(
+    `/api/v1/admin/orders/${orderId}/tasks`,
+    { tasks }
+  );
   return response.data;
 }
 
 /** Obtiene las tareas de producción de una orden */
-export async function getOrderTasks(order_id: string): Promise<ProductionTask[]> {
-  const response = await axios.get<ProductionTask[]>(`/api/v1/admin/orders/${order_id}/tasks`, {
-    params: { _ts: Date.now() },
-    headers: { 'Cache-Control': 'no-cache' },
-  });
+export async function getOrderTasks(
+  order_id: string
+): Promise<ProductionTask[]> {
+  const response = await axios.get<ProductionTask[]>(
+    `/api/v1/admin/orders/${order_id}/tasks`,
+    {
+      params: { _ts: Date.now() },
+      headers: { 'Cache-Control': 'no-cache' }
+    }
+  );
   return response.data;
 }
 
 /** Obtiene el siguiente número de vale disponible */
 export async function getNextValeNumber(): Promise<number> {
-  const response = await axios.get<{ next_number: number }>('/api/v1/admin/orders/tasks/next-number');
+  const response = await axios.get<{ next_number: number }>(
+    '/api/v1/admin/orders/tasks/next-number'
+  );
   return response.data.next_number;
 }
 
 /** Cambia el estado de una tarea de producción */
-export async function updateProductionTaskStatus(task_id: string, status: string): Promise<ProductionTask> {
-  const response = await axios.patch<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}/status`, { status });
+export async function updateProductionTaskStatus(
+  task_id: string,
+  status: string
+): Promise<ProductionTask> {
+  const response = await axios.patch<ProductionTask>(
+    `/api/v1/admin/orders/tasks/${task_id}/status`,
+    { status }
+  );
   return response.data;
 }
 
 /** Asigna un empleado a una tarea pendiente */
-export async function assignTaskEmployee(task_id: string, assigned_to: string): Promise<ProductionTask> {
-  const response = await axios.patch<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}/assign`, { assigned_to });
+export async function assignTaskEmployee(
+  task_id: string,
+  assigned_to: string
+): Promise<ProductionTask> {
+  const response = await axios.patch<ProductionTask>(
+    `/api/v1/admin/orders/tasks/${task_id}/assign`,
+    { assigned_to }
+  );
   return response.data;
 }
 
 /** Obtiene TODAS las tareas de producción con filtros */
-export async function getAllProductionTasks(filters: {
-  status?: string;
-  type?: string;
-  assigned_to?: string;
-} = {}): Promise<ProductionTask[]> {
-  const response = await axios.get<ProductionTask[]>('/api/v1/admin/orders/tasks/all', { params: filters });
+export async function getAllProductionTasks(
+  filters: {
+    status?: string;
+    type?: string;
+    assigned_to?: string;
+  } = {}
+): Promise<ProductionTask[]> {
+  const response = await axios.get<ProductionTask[]>(
+    '/api/v1/admin/orders/tasks/all',
+    { params: filters }
+  );
   return response.data;
 }
 
@@ -318,7 +373,12 @@ export interface InventoryMovementCreate {
 }
 
 /** Crea un movimiento de inventario cuando un producto se completa en producción */
-export async function createInventoryMovement(movement: InventoryMovementCreate): Promise<any> {
-  const response = await axios.post('/api/v1/admin/catalog/inventory/movements', movement);
+export async function createInventoryMovement(
+  movement: InventoryMovementCreate
+): Promise<any> {
+  const response = await axios.post(
+    '/api/v1/admin/catalog/inventory/movements',
+    movement
+  );
   return response.data;
 }

@@ -92,8 +92,13 @@ export interface ClientIncidenceCreateRequest {
   observations?: string | null;
 }
 
-export async function getMyOrders(page: number = 1, pageSize: number = 10): Promise<ClientOrderListResponse> {
-  const res = await api.get(`/api/v1/client/orders?page=${page}&page_size=${pageSize}`);
+export async function getMyOrders(
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ClientOrderListResponse> {
+  const res = await api.get(
+    `/api/v1/client/orders?page=${page}&page_size=${pageSize}`
+  );
   return res.data;
 }
 
@@ -102,7 +107,9 @@ export async function getMyOrderDetail(orderId: string): Promise<ClientOrder> {
   return res.data;
 }
 
-export async function createMyOrder(orderData: OrderCreateRequest): Promise<ClientOrder> {
+export async function createMyOrder(
+  orderData: OrderCreateRequest
+): Promise<ClientOrder> {
   const res = await api.post('/api/v1/client/orders', orderData);
   return res.data;
 }
@@ -139,11 +146,17 @@ export interface ClientAllOrdersReport {
   orders: ClientOrderSummary[];
 }
 
-export async function getAllMyOrders(startDate?: string, endDate?: string): Promise<ClientAllOrdersReport> {
+export async function getAllMyOrders(
+  startDate?: string,
+  endDate?: string
+): Promise<ClientAllOrdersReport> {
   const params: Record<string, string> = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
-  const res = await api.get<ClientAllOrdersReport>('/api/v1/client/orders/all', { params });
+  const res = await api.get<ClientAllOrdersReport>(
+    '/api/v1/client/orders/all',
+    { params }
+  );
   return res.data;
 }
 
@@ -152,7 +165,9 @@ export async function getMyIncidences(): Promise<ClientIncidenceListResponse> {
   return res.data;
 }
 
-export async function createMyIncidence(data: ClientIncidenceCreateRequest): Promise<ClientIncidence> {
+export async function createMyIncidence(
+  data: ClientIncidenceCreateRequest
+): Promise<ClientIncidence> {
   const res = await api.post('/api/v1/client/incidences', data);
   return res.data;
 }
@@ -173,7 +188,10 @@ export interface ClientSharedIncidence {
   created_at: string | null;
 }
 
-export async function getSharedIncidences(): Promise<{ items: ClientSharedIncidence[]; total: number }> {
+export async function getSharedIncidences(): Promise<{
+  items: ClientSharedIncidence[];
+  total: number;
+}> {
   const res = await api.get('/api/v1/client/incidences/shared');
   return res.data;
 }

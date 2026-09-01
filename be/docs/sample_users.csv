@@ -1,0 +1,4 @@
+email,name_user,last_name,role_name,phone,occupation
+empleado1@test.com,Juan,Pérez,employee,3001234567,cortador
+empleado2@test.com,María,García,employee,3009876543,guarnecedor
+cliente@test.com,Carlos,López,client,3005551234,

@@ -7,7 +7,8 @@ interface WsMessage {
 }
 
 export function useNotificationWebSocket() {
-  const [lastNotification, setLastNotification] = useState<BackendNotification | null>(null);
+  const [lastNotification, setLastNotification] =
+    useState<BackendNotification | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);

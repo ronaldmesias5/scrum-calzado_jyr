@@ -36,7 +36,7 @@ export default function CatalogFilters({
   onColorChange,
   onSearchChange,
   onClear,
-  isFiltering,
+  isFiltering
 }: CatalogFiltersProps) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-7">
@@ -46,7 +46,9 @@ export default function CatalogFilters({
         <div>
           <div className="mb-2 flex items-center gap-2 text-blue-600 dark:text-blue-400">
             <Filter className="h-4 w-4" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Explorar por</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em]">
+              Explorar por
+            </span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
             Refine your selection

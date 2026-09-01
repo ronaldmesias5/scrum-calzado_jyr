@@ -3,14 +3,13 @@
  * Descripción: Modal con la Política de Privacidad de CALZADO J&R.
  */
 
-import Modal from "@/components/atoms/Modal";
+import Modal from '@/components/atoms/Modal';
 
 interface PrivacyPolicyModalProps {
   onClose: () => void;
 }
 
 export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
-
   return (
     <Modal
       isOpen={true}
@@ -19,7 +18,6 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
       size="md"
     >
       <div className="flex flex-col">
-
         {/* Contenido con scroll */}
         <div className="max-h-[60vh] overflow-y-auto px-6 py-4 text-sm text-gray-600 space-y-4">
           <p className="text-xs text-gray-400">
@@ -31,9 +29,9 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
               1. Responsable del tratamiento
             </h4>
             <p>
-              CALZADO J&R es responsable del tratamiento de sus datos personales.
-              Nos comprometemos a cumplir con la Ley 1581 de 2012 y sus decretos
-              reglamentarios en Colombia.
+              CALZADO J&R es responsable del tratamiento de sus datos
+              personales. Nos comprometemos a cumplir con la Ley 1581 de 2012 y
+              sus decretos reglamentarios en Colombia.
             </p>
           </section>
 
@@ -58,9 +56,7 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
             <h4 className="mb-1 font-semibold text-gray-800">
               3. Finalidad del tratamiento
             </h4>
-            <p>
-              Sus datos se utilizan exclusivamente para:
-            </p>
+            <p>Sus datos se utilizan exclusivamente para:</p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
               <li>Crear y gestionar su cuenta</li>
               <li>Procesar pedidos y pagos</li>
@@ -96,14 +92,14 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
             <h4 className="mb-1 font-semibold text-gray-800">
               6. Derechos del usuario
             </h4>
-            <p>
-              Tiene derecho a:
-            </p>
+            <p>Tiene derecho a:</p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
               <li>Acceder a sus datos personales</li>
               <li>Solicitar corrección o actualización</li>
               <li>Solicitar eliminación (derecho al olvido)</li>
-              <li>Presentar reclamaciones ante la Superintendencia de Industria</li>
+              <li>
+                Presentar reclamaciones ante la Superintendencia de Industria
+              </li>
             </ul>
           </section>
 
@@ -118,11 +114,10 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
           </section>
 
           <section>
-            <h4 className="mb-1 font-semibold text-gray-800">
-              8. Contacto
-            </h4>
+            <h4 className="mb-1 font-semibold text-gray-800">8. Contacto</h4>
             <p>
-              Para ejercer sus derechos o consultas sobre privacidad, contáctenos en:
+              Para ejercer sus derechos o consultas sobre privacidad,
+              contáctenos en:
               <strong> contacto@calzadojyr.com</strong>
             </p>
           </section>

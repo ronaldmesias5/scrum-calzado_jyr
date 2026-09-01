@@ -290,3 +290,128 @@ async def request_new_invitation(
         message="Si tu invitación había expirado, recibirás un nuevo email con tus credenciales."
     )
 
+
+# ────────────────────────────
+# 📧 Verificación de email
+# ────────────────────────────
+
+
+@router.get(
+    "/verify-email",
+    response_model=MessageResponse,
+    summary="Verificar correo electrónico con token",
+)
+async def verify_email(
+    token: str,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Verifica el correo electrónico del usuario usando el token enviado por email.
+    Endpoint público (sin auth) — el token sirve como autenticación.
+    """
+    from datetime import datetime, timezone
+    from app.models.email_verification_token import EmailVerificationToken
+
+    # Buscar el token
+    token_record = (
+        db.query(EmailVerificationToken)
+        .filter(EmailVerificationToken.token == token)
+        .first()
+    )
+
+    if not token_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token de verificación inválido o no encontrado.",
+        )
+
+    if token_record.used:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este token de verificación ya ha sido utilizado.",
+        )
+
+    if token_record.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El token de verificación ha expirado. Solicita uno nuevo.",
+        )
+
+    # Marcar token como usado
+    token_record.used = True
+    db.commit()
+
+    return MessageResponse(
+        message="Correo electrónico verificado exitosamente. Ya puedes iniciar sesión."
+    )
+
+
+class ResendVerificationRequest(BaseModel):
+    """Schema para reenviar email de verificación."""
+    email: EmailStr
+
+
+@router.post(
+    "/resend-verification",
+    response_model=MessageResponse,
+    summary="Reenviar email de verificación",
+)
+async def resend_verification(
+    data: ResendVerificationRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Reenvía el email de verificación. Por seguridad, siempre responde con
+    el mismo mensaje sin revelar si el email existe.
+    """
+    import uuid
+    from datetime import timedelta
+    from app.models.email_verification_token import EmailVerificationToken
+    from app.utils.email import send_verification_email
+
+    stmt = select(User).where(User.email == data.email)
+    user = db.execute(stmt).scalar_one_or_none()
+
+    if not user:
+        # Por seguridad, no revelar si el email existe
+        return MessageResponse(
+            message="Si tu correo está registrado, recibirás un enlace de verificación."
+        )
+
+    # Invalidar tokens anteriores no usados
+    old_tokens = (
+        db.query(EmailVerificationToken)
+        .filter(
+            EmailVerificationToken.user_id == user.id,
+            EmailVerificationToken.used == False,
+        )
+        .all()
+    )
+    for old_token in old_tokens:
+        old_token.used = True
+    db.commit()
+
+    # Generar nuevo token
+    verification_token = str(uuid.uuid4())
+    token_record = EmailVerificationToken(
+        user_id=user.id,
+        token=verification_token,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    )
+    db.add(token_record)
+    db.commit()
+
+    # Enviar email (no bloquea)
+    try:
+        await send_verification_email(
+            email=user.email,
+            name=f"{user.name_user} {user.last_name}",
+            token=verification_token,
+        )
+    except Exception:
+        pass  # No revelar errores al usuario
+
+    return MessageResponse(
+        message="Si tu correo está registrado, recibirás un enlace de verificación."
+    )
+

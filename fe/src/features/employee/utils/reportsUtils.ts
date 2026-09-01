@@ -1,6 +1,10 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { MyTasksReportResponse, MyTaskDetail, MyPerformanceResponse } from '@/services/employeeApi';
+import type {
+  MyTasksReportResponse,
+  MyTaskDetail,
+  MyPerformanceResponse
+} from '@/services/employeeApi';
 import { formatReportCOP } from '@/utils/format';
 
 const COLORS = {
@@ -8,7 +12,7 @@ const COLORS = {
   accent: [217, 119, 6] as [number, number, number],
   green: [22, 163, 74] as [number, number, number],
   gray: [107, 114, 128] as [number, number, number],
-  lightGray: [243, 244, 246] as [number, number, number],
+  lightGray: [243, 244, 246] as [number, number, number]
 };
 
 function sanitizeFilename(name: string): string {
@@ -21,13 +25,20 @@ function sanitizeFilename(name: string): string {
 
 function formatDate(iso?: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
 }
 
 function formatDateTime(): string {
   return new Date().toLocaleString('es-CO', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 }
 
@@ -41,18 +52,31 @@ async function loadLogoBase64(): Promise<string | null> {
           canvas.width = 35;
           canvas.height = 35;
           const ctx = canvas.getContext('2d');
-          if (!ctx) { resolve(null); return; }
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
           ctx.drawImage(img, 0, 0, 35, 35);
           resolve(canvas.toDataURL('image/png'));
-        } catch { resolve(null); }
+        } catch {
+          resolve(null);
+        }
       };
       img.onerror = () => resolve(null);
       img.src = '/logo.png';
     });
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-function addHeader(doc: jsPDF, title: string, subtitle?: string, logoBase64?: string | null, generatedAt?: string) {
+function addHeader(
+  doc: jsPDF,
+  title: string,
+  subtitle?: string,
+  logoBase64?: string | null,
+  generatedAt?: string
+) {
   const genStr = `Generado: ${generatedAt ?? formatDateTime()}`;
   if (logoBase64) {
     doc.setFillColor(...COLORS.primary);
@@ -116,7 +140,7 @@ function addFooter(doc: jsPDF) {
     doc.text(
       `CALZADO J&R — Reporte generado el ${formatDate(new Date().toISOString())} — Página ${i} de ${pageCount}`,
       14,
-      290,
+      290
     );
   }
 }
@@ -126,15 +150,17 @@ export async function exportMyTasksPDF(
   tasks: MyTaskDetail[],
   title?: string,
   startDate?: string,
-  endDate?: string,
+  endDate?: string
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const reportTitle = title || `Reporte de Tareas: ${data.name}`;
 
-  const tasksWithDates = tasks.filter(t => t.completed_at || t.created_at);
+  const tasksWithDates = tasks.filter((t) => t.completed_at || t.created_at);
   let dateRangeStr: string | undefined;
   if (tasksWithDates.length > 0) {
-    const timestamps = tasksWithDates.map(t => new Date(t.completed_at || t.created_at).getTime());
+    const timestamps = tasksWithDates.map((t) =>
+      new Date(t.completed_at || t.created_at).getTime()
+    );
     dateRangeStr = `Período: ${formatDate(new Date(Math.min(...timestamps)).toISOString())} — ${formatDate(new Date(Math.max(...timestamps)).toISOString())}`;
   } else if (startDate && endDate) {
     dateRangeStr = `Período: ${formatDate(startDate)} — ${formatDate(endDate)}`;
@@ -154,7 +180,12 @@ export async function exportMyTasksPDF(
     doc.setTextColor(80, 80, 80);
     doc.text(text, x, y);
   }
-  function summaryValue(text: string, x: number, y: number, color: [number, number, number]) {
+  function summaryValue(
+    text: string,
+    x: number,
+    y: number,
+    color: [number, number, number]
+  ) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...color);
@@ -162,37 +193,81 @@ export async function exportMyTasksPDF(
   }
 
   summaryLabel('TOTAL TAREAS', 16, summaryY + 5);
-  summaryValue(String(data.total_tasks_completed), 16, summaryY + 13, [60, 60, 60]);
+  summaryValue(
+    String(data.total_tasks_completed),
+    16,
+    summaryY + 13,
+    [60, 60, 60]
+  );
 
   summaryLabel('TOTAL PARES', 86, summaryY + 5);
-  summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
+  summaryValue(
+    String(data.total_pairs_produced),
+    86,
+    summaryY + 13,
+    COLORS.green
+  );
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatReportCOP(data.total_earnings, 2), 146, summaryY + 13, COLORS.accent);
+  summaryValue(
+    formatReportCOP(data.total_earnings, 2),
+    146,
+    summaryY + 13,
+    COLORS.accent
+  );
 
   const tableStartY = summaryY + 21;
 
   if (tasks.length > 0) {
-    const sortedTasks = [...tasks].sort((a, b) => (a.vale_number ?? Infinity) - (b.vale_number ?? Infinity));
+    const sortedTasks = [...tasks].sort(
+      (a, b) => (a.vale_number ?? Infinity) - (b.vale_number ?? Infinity)
+    );
     autoTable(doc, {
       startY: tableStartY,
-      head: [['Nº Vale', 'Producto', 'Color', 'Cant.', 'Estado', 'Fecha Completado', 'Valor x Par', 'Total']],
-      body: sortedTasks.map(t => [
+      head: [
+        [
+          'Nº Vale',
+          'Producto',
+          'Color',
+          'Cant.',
+          'Estado',
+          'Fecha Completado',
+          'Valor x Par',
+          'Total'
+        ]
+      ],
+      body: sortedTasks.map((t) => [
         t.vale_number != null ? `#${t.vale_number}` : '—',
         t.product_name || '—',
         t.colour || '—',
         String(t.amount),
         t.status === 'pagado' ? 'Pagado' : 'Completado',
-        t.completed_at ? formatDate(t.completed_at) : (t.created_at ? formatDate(t.created_at) : '—'),
+        t.completed_at
+          ? formatDate(t.completed_at)
+          : t.created_at
+            ? formatDate(t.created_at)
+            : '—',
         t.price_per_dozen ? formatReportCOP(t.price_per_dozen / 12, 3) : '—',
-        t.task_total_price ? formatReportCOP(t.task_total_price, 2) : '$0',
+        t.task_total_price ? formatReportCOP(t.task_total_price, 2) : '$0'
       ]),
-      foot: [['', '', '', '', '', 'TOTAL', formatReportCOP(data.total_earnings, 2)]],
+      foot: [
+        ['', '', '', '', '', 'TOTAL', formatReportCOP(data.total_earnings, 2)]
+      ],
       theme: 'grid',
-      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-      footStyles: { fillColor: COLORS.lightGray, textColor: [...COLORS.primary], fontStyle: 'bold', fontSize: 8 },
+      headStyles: {
+        fillColor: COLORS.primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8
+      },
+      footStyles: {
+        fillColor: COLORS.lightGray,
+        textColor: [...COLORS.primary],
+        fontStyle: 'bold',
+        fontSize: 8
+      },
       bodyStyles: { fontSize: 7 },
-      margin: { left: 10, right: 10 },
+      margin: { left: 10, right: 10 }
     });
   } else {
     doc.setTextColor(...COLORS.gray);
@@ -209,7 +284,7 @@ export async function exportMyTasksPDF(
 
 export async function exportPerformancePDF(
   data: MyPerformanceResponse,
-  returnBase64?: boolean,
+  returnBase64?: boolean
 ): Promise<string | void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const reportTitle = `Mi Rendimiento: ${data.name}`;
@@ -229,7 +304,12 @@ export async function exportPerformancePDF(
     doc.setTextColor(80, 80, 80);
     doc.text(text, x, y);
   }
-  function summaryValue(text: string, x: number, y: number, color: [number, number, number]) {
+  function summaryValue(
+    text: string,
+    x: number,
+    y: number,
+    color: [number, number, number]
+  ) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...color);
@@ -237,13 +317,28 @@ export async function exportPerformancePDF(
   }
 
   summaryLabel('TOTAL TAREAS', 16, summaryY + 5);
-  summaryValue(String(data.total_tasks_completed), 16, summaryY + 13, [60, 60, 60]);
+  summaryValue(
+    String(data.total_tasks_completed),
+    16,
+    summaryY + 13,
+    [60, 60, 60]
+  );
 
   summaryLabel('TOTAL PARES', 86, summaryY + 5);
-  summaryValue(String(data.total_pairs_produced), 86, summaryY + 13, COLORS.green);
+  summaryValue(
+    String(data.total_pairs_produced),
+    86,
+    summaryY + 13,
+    COLORS.green
+  );
 
   summaryLabel('TOTAL DINERO', 146, summaryY + 5);
-  summaryValue(formatReportCOP(data.total_earnings, 2), 146, summaryY + 13, COLORS.accent);
+  summaryValue(
+    formatReportCOP(data.total_earnings, 2),
+    146,
+    summaryY + 13,
+    COLORS.accent
+  );
 
   // ── Desglose por Proceso ────────────────────────────────────────────────
   let y = summaryY + 22;
@@ -257,11 +352,16 @@ export async function exportPerformancePDF(
     autoTable(doc, {
       startY: y,
       head: [['Proceso', 'Cantidad']],
-      body: data.tasks_breakdown.map(b => [b.process_name, String(b.count)]),
+      body: data.tasks_breakdown.map((b) => [b.process_name, String(b.count)]),
       theme: 'grid',
-      headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      headStyles: {
+        fillColor: COLORS.primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8
+      },
       bodyStyles: { fontSize: 7 },
-      margin: { left: 10, right: 10 },
+      margin: { left: 10, right: 10 }
     });
   } else {
     doc.setTextColor(...COLORS.gray);

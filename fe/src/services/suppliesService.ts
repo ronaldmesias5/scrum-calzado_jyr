@@ -75,7 +75,11 @@ export interface ProductSuppliesCheckResponse {
 
 // ─── CRUD de Insumos ───────────────────────────────────────────
 
-export async function listSupplies(category?: string, page: number = 1, pageSize: number = 100): Promise<SuppliesListResponse> {
+export async function listSupplies(
+  category?: string,
+  page: number = 1,
+  pageSize: number = 100
+): Promise<SuppliesListResponse> {
   const params = new URLSearchParams();
   if (category) params.append('category', category);
   params.append('page', String(page));
@@ -84,12 +88,17 @@ export async function listSupplies(category?: string, page: number = 1, pageSize
   return res.data;
 }
 
-export async function createSupply(payload: SupplyCreatePayload): Promise<Supply> {
+export async function createSupply(
+  payload: SupplyCreatePayload
+): Promise<Supply> {
   const res = await api.post('/api/v1/supplies', payload);
   return res.data;
 }
 
-export async function updateSupply(id: string, payload: SupplyUpdatePayload): Promise<Supply> {
+export async function updateSupply(
+  id: string,
+  payload: SupplyUpdatePayload
+): Promise<Supply> {
   const res = await api.put(`/api/v1/supplies/${id}`, payload);
   return res.data;
 }
@@ -111,16 +120,21 @@ export async function linkSupplyToProduct(
 ): Promise<{ detail: string }> {
   const res = await api.post(`/api/v1/products/${productId}/supplies`, {
     supply_id: supplyId,
-    quantity_required: quantityRequired,
+    quantity_required: quantityRequired
   });
   return res.data;
 }
 
-export async function unlinkSupplyFromProduct(productId: string, supplyId: string): Promise<void> {
+export async function unlinkSupplyFromProduct(
+  productId: string,
+  supplyId: string
+): Promise<void> {
   await api.delete(`/api/v1/products/${productId}/supplies/${supplyId}`);
 }
 
-export async function checkProductSupplies(productId: string): Promise<ProductSuppliesCheckResponse> {
+export async function checkProductSupplies(
+  productId: string
+): Promise<ProductSuppliesCheckResponse> {
   const res = await api.get(`/api/v1/products/${productId}/supplies/check`);
   return res.data;
 }

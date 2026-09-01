@@ -47,7 +47,9 @@ export default function AdminLayout() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - startX;
-      setSidebarWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta)));
+      setSidebarWidth(
+        Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta))
+      );
     };
 
     const handleMouseUp = () => {

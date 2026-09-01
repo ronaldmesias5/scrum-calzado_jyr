@@ -4,10 +4,22 @@ export default function MetricsSection() {
   const { t } = useTranslation();
 
   const metrics = [
-    { value: '25+', label: t('landing.metrics.experience') || 'Años de experiencia' },
-    { value: '10.000+', label: t('landing.metrics.models') || 'Modelos diseñados' },
-    { value: '100%', label: t('landing.metrics.quality') || 'Garantía de calidad' },
-    { value: '5.000+', label: t('landing.metrics.clients') || 'Clientes satisfechos' },
+    {
+      value: '25+',
+      label: t('landing.metrics.experience') || 'Años de experiencia'
+    },
+    {
+      value: '10.000+',
+      label: t('landing.metrics.models') || 'Modelos diseñados'
+    },
+    {
+      value: '100%',
+      label: t('landing.metrics.quality') || 'Garantía de calidad'
+    },
+    {
+      value: '5.000+',
+      label: t('landing.metrics.clients') || 'Clientes satisfechos'
+    }
   ];
   return (
     <section className="bg-white dark:bg-slate-900 py-12 border-b border-gray-100 dark:border-slate-800 transition-colors duration-500">

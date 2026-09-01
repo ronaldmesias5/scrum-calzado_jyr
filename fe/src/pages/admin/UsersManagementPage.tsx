@@ -6,8 +6,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  UserCheck, UserPlus, Clock, CheckCircle, XCircle,
-  Loader2, Users, ShieldCheck, Trash2, RefreshCw, RotateCcw
+  UserCheck,
+  UserPlus,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Users,
+  ShieldCheck,
+  Trash2,
+  RefreshCw,
+  RotateCcw
 } from 'lucide-react';
 import {
   getPendingUsers,
@@ -19,7 +28,7 @@ import {
   approveReactivation,
   rejectReactivation,
   renewInvitation,
-  type ReactivationTicket,
+  type ReactivationTicket
 } from '@/services/adminApi';
 import { getTypeDocuments } from '@/services/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
@@ -31,7 +40,12 @@ import { useToast } from '@/store/ToastContext';
 // Tipos locales
 // ────────────────────────────────────────────────
 
-type Tab = 'pending' | 'manage' | 'create-employee' | 'create-client' | 'reactivation';
+type Tab =
+  | 'pending'
+  | 'manage'
+  | 'create-employee'
+  | 'create-client'
+  | 'reactivation';
 
 // ────────────────────────────────────────────────
 // Sub-componente: Tab de cuentas pendientes
@@ -63,7 +77,9 @@ function PendingUsersTab() {
     }
   }, []);
 
-  useEffect(() => { fetchPending(); }, [fetchPending]);
+  useEffect(() => {
+    fetchPending();
+  }, [fetchPending]);
 
   const handleApprove = async (userId: string) => {
     setApprovingId(userId);
@@ -161,13 +177,22 @@ function PendingUsersTab() {
                 const id = user.id.toString();
                 const approved = successIds.has(id);
                 return (
-                  <tr key={id} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr
+                    key={id}
+                    className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                  >
                     <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">
                       {user.name} {user.last_name}
                     </td>
-                    <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{user.email}</td>
-                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-medium">{user.business_name || '—'}</td>
-                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-medium">{user.phone || '—'}</td>
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">
+                      {user.email}
+                    </td>
+                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-medium">
+                      {user.business_name || '—'}
+                    </td>
+                    <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-medium">
+                      {user.phone || '—'}
+                    </td>
                     <td className="px-4 py-4 text-gray-400 dark:text-gray-500 text-xs font-bold">
                       {new Date(user.created_at).toLocaleDateString('es-CO')}
                     </td>
@@ -181,7 +206,9 @@ function PendingUsersTab() {
                           <>
                             <button
                               onClick={() => handleApprove(user.id.toString())}
-                              disabled={approvingId === id || rejectingId === id}
+                              disabled={
+                                approvingId === id || rejectingId === id
+                              }
                               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                             >
                               {approvingId === id ? (
@@ -193,7 +220,9 @@ function PendingUsersTab() {
                             </button>
                             <button
                               onClick={() => openRejectModal(user)}
-                              disabled={approvingId === id || rejectingId === id}
+                              disabled={
+                                approvingId === id || rejectingId === id
+                              }
                               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                             >
                               <XCircle size={14} />
@@ -224,7 +253,10 @@ function PendingUsersTab() {
             </div>
             <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
               Vas a rechazar la cuenta de <br />
-              <strong className="text-gray-900 dark:text-gray-200">{userToReject.email}</strong>.
+              <strong className="text-gray-900 dark:text-gray-200">
+                {userToReject.email}
+              </strong>
+              .
             </p>
 
             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -238,7 +270,9 @@ function PendingUsersTab() {
               maxLength={500}
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500 transition-all resize-none"
             />
-            <span className="text-[10px] text-gray-400 text-right block mt-0.5">{rejectReason.length}/500</span>
+            <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+              {rejectReason.length}/500
+            </span>
 
             {rejectError && (
               <p className="mt-2 text-sm text-red-600">{rejectError}</p>
@@ -284,7 +318,10 @@ function ManageUsersTab() {
   const [error, setError] = useState<string | null>(null);
   const [renewingId, setRenewingId] = useState<string | null>(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
-  const [renewedCreds, setRenewedCreds] = useState<{ email: string; tempPassword: string } | null>(null);
+  const [renewedCreds, setRenewedCreds] = useState<{
+    email: string;
+    tempPassword: string;
+  } | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -299,7 +336,9 @@ function ManageUsersTab() {
     }
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleDelete = async (userId: string) => {
     setDeletingId(userId);
@@ -321,8 +360,13 @@ function ManageUsersTab() {
     setRenewingId(userId);
     try {
       const updatedUser = await renewInvitation(userId);
-      setUsers((prev) => prev.map((u) => u.id.toString() === userId ? updatedUser : u));
-      setRenewedCreds({ email: updatedUser.email, tempPassword: updatedUser.temporary_password || '' });
+      setUsers((prev) =>
+        prev.map((u) => (u.id.toString() === userId ? updatedUser : u))
+      );
+      setRenewedCreds({
+        email: updatedUser.email,
+        tempPassword: updatedUser.temporary_password || ''
+      });
       setShowRenewModal(true);
       showToast('Invitación renovada correctamente', 'success');
     } catch {
@@ -384,54 +428,86 @@ function ManageUsersTab() {
               {users.map((user) => {
                 const id = user.id.toString();
                 return (
-                  <tr key={id} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr
+                    key={id}
+                    className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                  >
                     <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">
                       {user.name} {user.last_name}
                     </td>
-                    <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{user.email}</td>
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">
+                      {user.email}
+                    </td>
                     <td className="px-4 py-4 text-gray-500 dark:text-gray-400 font-bold">
                       <span className="capitalize">{user.role_name}</span>
-                      {user.occupation && <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">({user.occupation})</span>}
+                      {user.occupation && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
+                          ({user.occupation})
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase shadow-sm ${
-                        user.is_active 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50' 
-                          : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase shadow-sm ${
+                          user.is_active
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700'
+                        }`}
+                      >
                         {user.is_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       {(() => {
                         if (!user.must_change_password) {
-                          return <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-[10px] font-bold uppercase"><CheckCircle size={12} /> Completada</span>;
+                          return (
+                            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-[10px] font-bold uppercase">
+                              <CheckCircle size={12} /> Completada
+                            </span>
+                          );
                         }
                         if (!user.invitation_expires_at) {
-                          return <span className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase">—</span>;
+                          return (
+                            <span className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase">
+                              —
+                            </span>
+                          );
                         }
-                        const expired = new Date(user.invitation_expires_at).getTime() < Date.now();
+                        const expired =
+                          new Date(user.invitation_expires_at).getTime() <
+                          Date.now();
                         if (expired) {
-                          return <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-[10px] font-bold uppercase"><XCircle size={12} /> Expirada</span>;
+                          return (
+                            <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-[10px] font-bold uppercase">
+                              <XCircle size={12} /> Expirada
+                            </span>
+                          );
                         }
-                        return <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase"><Clock size={12} /> Válida</span>;
+                        return (
+                          <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase">
+                            <Clock size={12} /> Válida
+                          </span>
+                        );
                       })()}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {user.must_change_password && user.invitation_expires_at && new Date(user.invitation_expires_at).getTime() < Date.now() && (
-                        <button
-                          onClick={() => handleRenew(user.id.toString())}
-                          disabled={renewingId === id}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
-                        >
-                          {renewingId === id ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
-                            <RotateCcw size={12} />
-                          )}
-                          Renovar
-                        </button>
-                      )}
+                      {user.must_change_password &&
+                        user.invitation_expires_at &&
+                        new Date(user.invitation_expires_at).getTime() <
+                          Date.now() && (
+                          <button
+                            onClick={() => handleRenew(user.id.toString())}
+                            disabled={renewingId === id}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                          >
+                            {renewingId === id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <RotateCcw size={12} />
+                            )}
+                            Renovar
+                          </button>
+                        )}
                     </td>
                   </tr>
                 );
@@ -454,10 +530,13 @@ function ManageUsersTab() {
             </div>
             <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
               Estás a punto de eliminar a <br />
-              <strong className="text-gray-900 dark:text-gray-200">{userToDelete.email}</strong>.<br />
+              <strong className="text-gray-900 dark:text-gray-200">
+                {userToDelete.email}
+              </strong>
+              .<br />
               Esta acción es irreversible y se perderá todo acceso.
             </p>
-            
+
             <div className="flex gap-4">
               <button
                 onClick={() => setShowConfirmDelete(false)}
@@ -484,7 +563,10 @@ function ManageUsersTab() {
       {showRenewModal && renewedCreds && (
         <Modal
           isOpen={true}
-          onClose={() => { setShowRenewModal(false); setRenewedCreds(null); }}
+          onClose={() => {
+            setShowRenewModal(false);
+            setRenewedCreds(null);
+          }}
           title="Invitación renovada"
           size="md"
         >
@@ -495,15 +577,21 @@ function ManageUsersTab() {
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
               Se ha generado una nueva contraseña temporal para:
             </p>
-            <p className="font-bold text-gray-900 dark:text-gray-100 mb-4">{renewedCreds.email}</p>
+            <p className="font-bold text-gray-900 dark:text-gray-100 mb-4">
+              {renewedCreds.email}
+            </p>
             <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 mb-4">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Nueva contraseña temporal</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Nueva contraseña temporal
+              </label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-lg font-mono font-bold text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900 rounded-lg px-3 py-2 border border-gray-200 dark:border-slate-700">
                   {renewedCreds.tempPassword}
                 </code>
                 <button
-                  onClick={() => navigator.clipboard.writeText(renewedCreds.tempPassword)}
+                  onClick={() =>
+                    navigator.clipboard.writeText(renewedCreds.tempPassword)
+                  }
                   className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors"
                 >
                   Copiar
@@ -511,10 +599,14 @@ function ManageUsersTab() {
               </div>
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-400 mb-6">
-              Esta contraseña se mostrará solo una vez. El usuario deberá cambiarla al iniciar sesión. La invitación expira en 24 horas.
+              Esta contraseña se mostrará solo una vez. El usuario deberá
+              cambiarla al iniciar sesión. La invitación expira en 24 horas.
             </p>
             <button
-              onClick={() => { setShowRenewModal(false); setRenewedCreds(null); }}
+              onClick={() => {
+                setShowRenewModal(false);
+                setRenewedCreds(null);
+              }}
               className="w-full px-4 py-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
             >
               Cerrar
@@ -536,7 +628,8 @@ function ReactivationTicketsTab() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<ReactivationTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] =
+    useState<ReactivationTicket | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
   const [comment, setComment] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
@@ -555,9 +648,14 @@ function ReactivationTicketsTab() {
     }
   }, []);
 
-  useEffect(() => { fetchTickets(); }, [fetchTickets]);
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
-  const openAction = (ticket: ReactivationTicket, type: 'approve' | 'reject') => {
+  const openAction = (
+    ticket: ReactivationTicket,
+    type: 'approve' | 'reject'
+  ) => {
     setSelectedTicket(ticket);
     setActionType(type);
     setComment('');
@@ -580,7 +678,12 @@ function ReactivationTicketsTab() {
       setShowActionModal(false);
       setSelectedTicket(null);
       setComment('');
-      showToast(actionType === 'approve' ? 'Reactivación aprobada correctamente' : 'Reactivación rechazada correctamente', 'success');
+      showToast(
+        actionType === 'approve'
+          ? 'Reactivación aprobada correctamente'
+          : 'Reactivación rechazada correctamente',
+        'success'
+      );
     } catch {
       setActionError('Error al procesar el ticket. Inténtalo de nuevo.');
       showToast('Error al procesar el ticket', 'error');
@@ -624,8 +727,12 @@ function ReactivationTicketsTab() {
       {pendingTickets.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <RotateCcw size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="font-medium">No hay solicitudes de reactivación pendientes</p>
-          <p className="text-sm mt-1">Todas las solicitudes han sido revisadas.</p>
+          <p className="font-medium">
+            No hay solicitudes de reactivación pendientes
+          </p>
+          <p className="text-sm mt-1">
+            Todas las solicitudes han sido revisadas.
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300">
@@ -642,11 +749,23 @@ function ReactivationTicketsTab() {
             </thead>
             <tbody>
               {pendingTickets.map((ticket) => (
-                <tr key={ticket.id} className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
-                  <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">{ticket.email}</td>
-                  <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{ticket.phone}</td>
-                  <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">{ticket.identity_document}</td>
-                  <td className="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-[250px] truncate" title={ticket.reason}>
+                <tr
+                  key={ticket.id}
+                  className="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <td className="px-4 py-4 font-bold text-gray-800 dark:text-gray-100">
+                    {ticket.email}
+                  </td>
+                  <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">
+                    {ticket.phone}
+                  </td>
+                  <td className="px-4 py-4 text-gray-600 dark:text-gray-400 font-medium">
+                    {ticket.identity_document}
+                  </td>
+                  <td
+                    className="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-[250px] truncate"
+                    title={ticket.reason}
+                  >
                     {ticket.reason}
                   </td>
                   <td className="px-4 py-4 text-gray-400 dark:text-gray-500 text-xs font-bold">
@@ -659,7 +778,8 @@ function ReactivationTicketsTab() {
                         disabled={processingId === ticket.id}
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
                       >
-                        {processingId === ticket.id && actionType === 'approve' ? (
+                        {processingId === ticket.id &&
+                        actionType === 'approve' ? (
                           <Loader2 size={14} className="animate-spin" />
                         ) : (
                           <CheckCircle size={14} />
@@ -687,19 +807,35 @@ function ReactivationTicketsTab() {
         <Modal
           isOpen={true}
           onClose={() => setShowActionModal(false)}
-          title={actionType === 'approve' ? 'Aprobar reactivación' : 'Rechazar reactivación'}
+          title={
+            actionType === 'approve'
+              ? 'Aprobar reactivación'
+              : 'Rechazar reactivación'
+          }
           size="md"
         >
           <div className="p-4">
-            <div className={`w-16 h-16 ${actionType === 'approve' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'} rounded-full flex items-center justify-center mb-4 mx-auto`}>
-              {actionType === 'approve' ? <CheckCircle size={32} /> : <XCircle size={32} />}
+            <div
+              className={`w-16 h-16 ${actionType === 'approve' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'} rounded-full flex items-center justify-center mb-4 mx-auto`}
+            >
+              {actionType === 'approve' ? (
+                <CheckCircle size={32} />
+              ) : (
+                <XCircle size={32} />
+              )}
             </div>
             <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-2 leading-relaxed">
-              {actionType === 'approve' ? 'Vas a aprobar la reactivación de' : 'Vas a rechazar la reactivación de'}
+              {actionType === 'approve'
+                ? 'Vas a aprobar la reactivación de'
+                : 'Vas a rechazar la reactivación de'}
             </p>
-            <p className="text-center font-bold text-gray-900 dark:text-gray-200 mb-1">{selectedTicket.email}</p>
+            <p className="text-center font-bold text-gray-900 dark:text-gray-200 mb-1">
+              {selectedTicket.email}
+            </p>
             <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-3 mb-4 text-xs text-gray-500 dark:text-gray-400">
-              <p><strong>Motivo del usuario:</strong></p>
+              <p>
+                <strong>Motivo del usuario:</strong>
+              </p>
               <p className="mt-1">{selectedTicket.reason}</p>
             </div>
 
@@ -709,12 +845,18 @@ function ReactivationTicketsTab() {
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder={actionType === 'approve' ? 'Ej: Cuenta reactivada tras verificar documentación...' : 'Ej: La solicitud no cumple con los requisitos porque...'}
+              placeholder={
+                actionType === 'approve'
+                  ? 'Ej: Cuenta reactivada tras verificar documentación...'
+                  : 'Ej: La solicitud no cumple con los requisitos porque...'
+              }
               rows={3}
               maxLength={500}
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all resize-none"
             />
-            <span className="text-[10px] text-gray-400 text-right block mt-0.5">{comment.length}/500</span>
+            <span className="text-[10px] text-gray-400 text-right block mt-0.5">
+              {comment.length}/500
+            </span>
 
             {actionError && (
               <p className="mt-2 text-sm text-red-600">{actionError}</p>
@@ -761,7 +903,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'manage', label: 'Gestionar Usuarios', icon: Users },
   { id: 'reactivation', label: 'Reactivaciones', icon: RotateCcw },
   { id: 'create-employee', label: 'Crear empleado', icon: UserPlus },
-  { id: 'create-client', label: 'Crear cliente', icon: UserPlus },
+  { id: 'create-client', label: 'Crear cliente', icon: UserPlus }
 ];
 
 export default function UsersManagementPage() {
@@ -771,7 +913,9 @@ export default function UsersManagementPage() {
   useEffect(() => {
     getTypeDocuments()
       .then(setTypeDocuments)
-      .catch(() => {/* No bloquear si falla */ });
+      .catch(() => {
+        /* No bloquear si falla */
+      });
   }, []);
 
   return (

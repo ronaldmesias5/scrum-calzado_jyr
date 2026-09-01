@@ -4,8 +4,7 @@
  */
 
 import axios from '@/services/axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_URL } from '@/services/config';
 
 /** Convierte una ruta relativa del backend (/uploads/...) a URL absoluta con CORS */
 export const resolveImageUrl = (url?: string | null): string | undefined => {
@@ -13,7 +12,7 @@ export const resolveImageUrl = (url?: string | null): string | undefined => {
   if (url.startsWith('/uploads/')) {
     // Usa el nuevo endpoint API que tiene CORS configurado
     const filename = url.replace('/uploads/', '');
-    return `${API_BASE}/api/v1/uploads/${filename}`;
+    return `${API_URL}/api/v1/uploads/${filename}`;
   }
   return url;
 };
@@ -89,13 +88,26 @@ export const listBrands = async (): Promise<Brand[]> => {
   return res.data.brands;
 };
 
-export const createBrand = async (name: string, description?: string): Promise<Brand> => {
-  const res = await axios.post('/api/v1/admin/catalog/brands', { name, description });
+export const createBrand = async (
+  name: string,
+  description?: string
+): Promise<Brand> => {
+  const res = await axios.post('/api/v1/admin/catalog/brands', {
+    name,
+    description
+  });
   return res.data;
 };
 
-export const updateBrand = async (id: string, name: string, description?: string): Promise<Brand> => {
-  const res = await axios.put(`/api/v1/admin/catalog/brands/${id}`, { name, description });
+export const updateBrand = async (
+  id: string,
+  name: string,
+  description?: string
+): Promise<Brand> => {
+  const res = await axios.put(`/api/v1/admin/catalog/brands/${id}`, {
+    name,
+    description
+  });
   return res.data;
 };
 
@@ -115,13 +127,30 @@ export const listStyles = async (brandId?: string): Promise<Style[]> => {
   return res.data.styles;
 };
 
-export const createStyle = async (name: string, brand_id: string, description?: string): Promise<Style> => {
-  const res = await axios.post('/api/v1/admin/catalog/styles', { name, brand_id, description });
+export const createStyle = async (
+  name: string,
+  brand_id: string,
+  description?: string
+): Promise<Style> => {
+  const res = await axios.post('/api/v1/admin/catalog/styles', {
+    name,
+    brand_id,
+    description
+  });
   return res.data;
 };
 
-export const updateStyle = async (id: string, name: string, brand_id: string, description?: string): Promise<Style> => {
-  const res = await axios.put(`/api/v1/admin/catalog/styles/${id}`, { name, brand_id, description });
+export const updateStyle = async (
+  id: string,
+  name: string,
+  brand_id: string,
+  description?: string
+): Promise<Style> => {
+  const res = await axios.put(`/api/v1/admin/catalog/styles/${id}`, {
+    name,
+    brand_id,
+    description
+  });
   return res.data;
 };
 
@@ -148,7 +177,9 @@ export interface AdminCatalogListResponse {
   total_pages: number;
 }
 
-export const listProducts = async (params?: ListProductsParams & { page?: number; page_size?: number }): Promise<AdminCatalogListResponse> => {
+export const listProducts = async (
+  params?: ListProductsParams & { page?: number; page_size?: number }
+): Promise<AdminCatalogListResponse> => {
   const res = await axios.get('/api/v1/admin/catalog/products', { params });
   return res.data;
 };
@@ -161,7 +192,12 @@ export const createProduct = async (
   description?: string,
   color?: string,
   insufficient_threshold?: number,
-  task_prices?: { corte?: number; guarnicion?: number; soladura?: number; emplantillado?: number }
+  task_prices?: {
+    corte?: number;
+    guarnicion?: number;
+    soladura?: number;
+    emplantillado?: number;
+  }
 ): Promise<Product> => {
   const res = await axios.post('/api/v1/admin/catalog/products', {
     name,
@@ -171,7 +207,7 @@ export const createProduct = async (
     brand_id,
     style_id,
     category_id,
-    task_prices,
+    task_prices
   });
   return res.data;
 };
@@ -184,17 +220,27 @@ export const updateProduct = async (
   return res.data;
 };
 
-export const uploadProductImage = async (id: string, imageFile: File): Promise<{ image_url: string }> => {
+export const uploadProductImage = async (
+  id: string,
+  imageFile: File
+): Promise<{ image_url: string }> => {
   const formData = new FormData();
   formData.append('image', imageFile);
-  const res = await axios.post(`/api/v1/admin/catalog/products/${id}/image`, formData, {
-    headers: { 'Content-Type': undefined },
-  });
+  const res = await axios.post(
+    `/api/v1/admin/catalog/products/${id}/image`,
+    formData,
+    {
+      headers: { 'Content-Type': undefined }
+    }
+  );
   return res.data;
 };
 
 export const toggleProductState = async (id: string): Promise<Product> => {
-  const res = await axios.put(`/api/v1/admin/catalog/products/${id}/toggle-state`, {});
+  const res = await axios.put(
+    `/api/v1/admin/catalog/products/${id}/toggle-state`,
+    {}
+  );
   return res.data;
 };
 
@@ -206,7 +252,9 @@ export const deleteProduct = async (id: string): Promise<void> => {
 // INVENTARIO
 // ─────────────────────────────────────────
 
-export const listInventory = async (productId?: string): Promise<InventoryItem[]> => {
+export const listInventory = async (
+  productId?: string
+): Promise<InventoryItem[]> => {
   const url = productId
     ? `/api/v1/admin/catalog/inventory?product_id=${productId}`
     : '/api/v1/admin/catalog/inventory';
@@ -222,7 +270,7 @@ export const createOrUpdateInventory = async (
   const res = await axios.post('/api/v1/admin/catalog/inventory', {
     product_id,
     size,
-    quantity,
+    quantity
   });
   return res.data;
 };
@@ -237,7 +285,7 @@ export const bulkUpdateInventory = async (
 ): Promise<any> => {
   const res = await axios.post('/api/v1/admin/catalog/inventory/bulk', {
     product_id,
-    quantities,
+    quantities
   });
   return res.data;
 };
@@ -263,7 +311,9 @@ export interface ListPublicProductsParams {
   search?: string;
 }
 
-export const listPublicProducts = async (params?: ListPublicProductsParams): Promise<Product[]> => {
+export const listPublicProducts = async (
+  params?: ListPublicProductsParams
+): Promise<Product[]> => {
   const res = await axios.get('/api/v1/catalog/products', { params });
   return res.data.products;
 };

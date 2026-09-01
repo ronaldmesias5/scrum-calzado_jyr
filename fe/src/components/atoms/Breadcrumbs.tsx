@@ -22,7 +22,7 @@ const ROUTE_NAMES: Record<string, string> = {
   'register-client': 'Registro de Cliente',
   'forgot-password': 'Recuperar Contraseña',
   'reset-password': 'Nueva Contraseña',
-  'change-password': 'Cambiar Contraseña',
+  'change-password': 'Cambiar Contraseña'
 };
 
 export function Breadcrumbs() {
@@ -37,14 +37,25 @@ export function Breadcrumbs() {
   const isEmployee = pathnames.includes('employee');
   const isClient = pathnames.includes('client');
   const homeLink = isDashboard
-    ? (isEmployee ? '/dashboard/employee' : isClient ? '/dashboard/client' : '/dashboard/admin')
+    ? isEmployee
+      ? '/dashboard/employee'
+      : isClient
+        ? '/dashboard/client'
+        : '/dashboard/admin'
     : '/';
   const homeLabel = isDashboard
-    ? (isEmployee ? 'Mi Dashboard' : isClient ? 'Inicio' : 'Escritorio')
+    ? isEmployee
+      ? 'Mi Dashboard'
+      : isClient
+        ? 'Inicio'
+        : 'Escritorio'
     : 'Inicio';
 
   return (
-    <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
+    <nav
+      className="flex items-center space-x-2 text-sm text-gray-500 mb-6"
+      aria-label="Breadcrumb"
+    >
       <Link
         to={homeLink}
         className="flex items-center hover:text-blue-600 transition-colors"
@@ -56,7 +67,7 @@ export function Breadcrumbs() {
       {pathnames.map((value, index) => {
         // Ignorar "dashboard" ya que "admin" o el home son nuestras raíces contextuales
         if (value === 'dashboard') return null;
-        
+
         const last = index === pathnames.length - 1;
         const to = `/${pathnames.slice(0, index + 1).join('/')}`;
         const name = ROUTE_NAMES[value] || value;

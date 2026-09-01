@@ -5,7 +5,7 @@ Descripción: Script para crear usuario administrador inicial manualmente.
 ¿Qué?
   Script standalone que:
   - Verifica que role "admin" existe en BD
-  - Crea usuario admin@calzadojyr.com con password Admin123!
+  - Crea usuario admin@calzadojyr.com con contraseña aleatoria segura
   - Salta si admin ya existe (evita duplicados)
   - Marca is_active=True, is_validated=True, validated_at=now()
   
@@ -16,7 +16,7 @@ Descripción: Script para crear usuario administrador inicial manualmente.
   
 ¿Impacto?
   MEDIO — Sin admin, sistema queda sin gestor (nadie valida cuentas).
-  Password hardcoded Admin123! debe cambiarse después de primer login.
+  Password aleatoria se muestra en consola después de crearla.
   Modificar email/password requiere: editar script + reejecutar.
   Dependencias: database.py (SessionLocal), models/user.py, models/role.py,
                utils/security.py (hash_password)
@@ -32,6 +32,7 @@ Uso:
 
 import sys
 import os
+import secrets
 
 # Agregar el directorio padre al path para importar app
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -70,7 +71,7 @@ def create_admin() -> None:
 
         # Crear el admin
         admin_email = "admin@calzadojyr.com"
-        admin_password = "Admin123!"
+        admin_password = secrets.token_urlsafe(12)  # Generar contraseña segura aleatoria
 
         admin_user = User(
             email=admin_email,
