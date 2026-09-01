@@ -5,13 +5,21 @@
  */
 
 import { useState } from 'react';
-import { UserPlus, CheckCircle, Loader2, Copy, KeyRound, Mail, Eye } from 'lucide-react';
+import {
+  UserPlus,
+  CheckCircle,
+  Loader2,
+  Copy,
+  KeyRound,
+  Mail,
+  Eye
+} from 'lucide-react';
 import { useToast } from '@/store/ToastContext';
 import {
   createEmployee,
   createClient,
   type CreateEmployeeRequest,
-  type CreateClientRequest,
+  type CreateClientRequest
 } from '@/services/adminApi';
 import type { TypeDocument, UserResponse } from '@/types/auth';
 import { getDocAbbreviation } from '@/utils/type-documents';
@@ -24,7 +32,11 @@ interface CreateUserFormProps {
   onSuccess?: () => void;
 }
 
-export default function CreateUserForm({ userType, typeDocuments, onSuccess }: CreateUserFormProps) {
+export default function CreateUserForm({
+  userType,
+  typeDocuments,
+  onSuccess
+}: CreateUserFormProps) {
   const isEmployee = userType === 'employee';
 
   const [form, setForm] = useState({
@@ -35,7 +47,7 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
     identity_document: '',
     identity_document_type_id: '',
     occupation: '',
-    business_name: '',
+    business_name: ''
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<{
@@ -46,7 +58,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -77,10 +91,12 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
           last_name: form.last_name,
           occupation: form.occupation as CreateEmployeeRequest['occupation'],
           ...(form.phone && { phone: form.phone }),
-          ...(form.identity_document && { identity_document: form.identity_document }),
-          ...(form.identity_document_type_id && {
-            identity_document_type_id: form.identity_document_type_id,
+          ...(form.identity_document && {
+            identity_document: form.identity_document
           }),
+          ...(form.identity_document_type_id && {
+            identity_document_type_id: form.identity_document_type_id
+          })
         };
         result = await createEmployee(payload);
       } else {
@@ -89,11 +105,13 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
           name: form.name,
           last_name: form.last_name,
           ...(form.phone && { phone: form.phone }),
-          ...(form.identity_document && { identity_document: form.identity_document }),
-          ...(form.identity_document_type_id && {
-            identity_document_type_id: form.identity_document_type_id,
+          ...(form.identity_document && {
+            identity_document: form.identity_document
           }),
-          ...(form.business_name && { business_name: form.business_name }),
+          ...(form.identity_document_type_id && {
+            identity_document_type_id: form.identity_document_type_id
+          }),
+          ...(form.business_name && { business_name: form.business_name })
         };
         result = await createClient(payload);
       }
@@ -101,20 +119,25 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       setSuccess({
         user: result,
         email: form.email,
-        tempPassword: result.temporary_password || 'No disponible',
+        tempPassword: result.temporary_password || 'No disponible'
       });
 
       setForm({
-        email: '', name: '', last_name: '', phone: '',
-        identity_document: '', identity_document_type_id: '',
-        occupation: '', business_name: '',
+        email: '',
+        name: '',
+        last_name: '',
+        phone: '',
+        identity_document: '',
+        identity_document_type_id: '',
+        occupation: '',
+        business_name: ''
       });
 
       if (onSuccess) onSuccess();
-
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail ||
         'Error al crear la cuenta. Verifica los datos e inténtalo de nuevo.';
       showToast(typeof msg === 'string' ? msg : JSON.stringify(msg), 'error');
     } finally {
@@ -125,8 +148,11 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
   if (success) {
     const label = isEmployee ? 'empleado' : 'cliente';
     const occupationLabels: Record<string, string> = {
-      cortador: 'Cortador', guarnecedor: 'Guarnecedor',
-      solador: 'Solador', emplantillador: 'Emplantillador', jefe: 'Jefe',
+      cortador: 'Cortador',
+      guarnecedor: 'Guarnecedor',
+      solador: 'Solador',
+      emplantillador: 'Emplantillador',
+      jefe: 'Jefe'
     };
 
     return (
@@ -138,11 +164,14 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         <div className="mb-5 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
           <p className="text-sm font-bold text-green-800 dark:text-green-300 mb-3 flex items-center gap-2">
-            <Mail size={16} /> Credenciales enviadas a <strong>{success.email}</strong>
+            <Mail size={16} /> Credenciales enviadas a{' '}
+            <strong>{success.email}</strong>
           </p>
           {isEmployee && success.user.occupation && (
             <p className="text-xs text-green-700 dark:text-green-400 mb-2">
-              Ocupación: {occupationLabels[success.user.occupation] || success.user.occupation}
+              Ocupación:{' '}
+              {occupationLabels[success.user.occupation] ||
+                success.user.occupation}
             </p>
           )}
 
@@ -161,7 +190,10 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
               </button>
             </div>
             <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg">
-              <KeyRound size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />
+              <KeyRound
+                size={18}
+                className="text-amber-600 dark:text-amber-400 shrink-0"
+              />
               <span className="text-base font-mono font-bold text-amber-800 dark:text-amber-300 tracking-wider select-all">
                 {success.tempPassword}
               </span>
@@ -172,7 +204,8 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-xl">
           <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">
-            ⚠️ Esta contraseña se muestra solo una vez. El {label} deberá cambiarla al iniciar sesión por primera vez.
+            ⚠️ Esta contraseña se muestra solo una vez. El {label} deberá
+            cambiarla al iniciar sesión por primera vez.
           </p>
         </div>
 
@@ -189,7 +222,10 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full bg-white dark:bg-slate-900 transition-colors">
+    <form
+      onSubmit={handleSubmit}
+      className="w-full bg-white dark:bg-slate-900 transition-colors"
+    >
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
         {isEmployee ? 'Datos del nuevo empleado' : 'Datos del nuevo cliente'}
       </h3>
@@ -197,7 +233,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Nombre */}
         <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Nombre *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+            Nombre *
+          </label>
           <input
             type="text"
             name="name"
@@ -211,7 +249,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Apellido */}
         <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Apellido *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+            Apellido *
+          </label>
           <input
             type="text"
             name="last_name"
@@ -225,7 +265,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Email */}
         <div className="sm:col-span-2">
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Correo electrónico *</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+            Correo electrónico *
+          </label>
           <input
             type="email"
             name="email"
@@ -239,7 +281,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Teléfono */}
         <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Teléfono</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+            Teléfono
+          </label>
           <input
             type="tel"
             name="phone"
@@ -252,14 +296,18 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Tipo documento */}
         <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Tipo de documento</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+            Tipo de documento
+          </label>
           <select
             name="identity_document_type_id"
             value={form.identity_document_type_id}
             onChange={handleChange}
             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
           >
-            <option value="" className="dark:bg-slate-900">Seleccionar...</option>
+            <option value="" className="dark:bg-slate-900">
+              Seleccionar...
+            </option>
             {typeDocuments.map((td) => (
               <option key={td.id.toString()} value={td.id.toString()}>
                 {getDocAbbreviation(td.name)}
@@ -270,7 +318,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
 
         {/* Número documento */}
         <div>
-          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Número de documento</label>
+          <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+            Número de documento
+          </label>
           <input
             type="text"
             name="identity_document"
@@ -284,7 +334,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
         {/* Campo específico por tipo */}
         {isEmployee ? (
           <div>
-            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Ocupación *</label>
+            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+              Ocupación *
+            </label>
             <select
               name="occupation"
               value={form.occupation}
@@ -292,7 +344,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
               required
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none"
             >
-              <option value="" className="dark:bg-slate-900">Seleccionar...</option>
+              <option value="" className="dark:bg-slate-900">
+                Seleccionar...
+              </option>
               <option value="cortador">Cortador</option>
               <option value="guarnecedor">Guarnecedor</option>
               <option value="solador">Solador</option>
@@ -302,7 +356,9 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
           </div>
         ) : (
           <div>
-            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">Nombre comercial</label>
+            <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 transition-colors">
+              Nombre comercial
+            </label>
             <input
               type="text"
               name="business_name"
@@ -316,7 +372,8 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
       </div>
 
       <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 px-4 py-3 rounded-xl transition-all">
-        📧 El sistema generará una contraseña automáticamente y la enviará al correo del {isEmployee ? 'empleado' : 'cliente'}.
+        📧 El sistema generará una contraseña automáticamente y la enviará al
+        correo del {isEmployee ? 'empleado' : 'cliente'}.
       </p>
 
       <button
@@ -324,7 +381,11 @@ export default function CreateUserForm({ userType, typeDocuments, onSuccess }: C
         disabled={loading}
         className="mt-8 flex items-center justify-center gap-3 px-8 py-3.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-black text-sm rounded-2xl transition-all shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-[0.98] disabled:opacity-60 grow-0 w-full sm:w-auto"
       >
-        {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={20} />}
+        {loading ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : (
+          <UserPlus size={20} />
+        )}
         {isEmployee ? 'CREAR EMPLEADO' : 'CREAR CLIENTE'}
       </button>
     </form>

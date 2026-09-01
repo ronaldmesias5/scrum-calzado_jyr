@@ -1,7 +1,7 @@
 /**
  * Archivo: modules/dashboard-jefe/pages/DashboardPage.tsx
  * Descripción: Dashboard principal del jefe/admin con métricas, órdenes y alertas.
- * 
+ *
  * ¿Qué?
  *   Página que muestra:
  *   - MetricsCards: KPIs (total pedidos, ventas, stock bajo)
@@ -9,12 +9,12 @@
  *   - AlertsPanel: Alertas activas (bajo stock, pedidos pending)
  *   - QuickActionsSection: Acciones rápidas (crear orden, añadir producto)
  *   Datos se cargan con: getMetrics(), getRecentOrders(), getAlerts() desde backend
- * 
+ *
  * ¿Para qué?
  *   - Visión general del estado del negocio en tiempo real
  *   - Permitir acciones rápidas sin navegar a submódulos
  *   - Alertar sobre problemas críticos (bajo stock, pedidos pending)
- * 
+ *
  * ¿Impacto?
  *   ALTO — Punto de entrada principal del jefe/admin.
  *   Si falla: jefe no ve métricas, órdenes recientes, alertas.
@@ -30,7 +30,11 @@ import RecentOrdersTable from '@/features/admin/components/organisms/RecentOrder
 import AlertsPanel from '@/features/admin/components/organisms/AlertsPanel';
 import QuickActionsSection from '@/features/admin/components/organisms/QuickActionsSection';
 import AvailableTasksPanel from '@/features/admin/components/organisms/AvailableTasksPanel';
-import { getMetrics, getRecentOrders, getAlerts } from '@/services/dashboardService';
+import {
+  getMetrics,
+  getRecentOrders,
+  getAlerts
+} from '@/services/dashboardService';
 import type { Metric, RecentOrder, Alert } from '@/types/dashboard';
 
 export default function DashboardPage() {
@@ -53,7 +57,9 @@ export default function DashboardPage() {
           <Home className="w-8 h-8 text-primary" />
           Inicio
         </h1>
-        <p className="text-gray-600 text-sm mt-1">Bienvenido al dashboard de gestión</p>
+        <p className="text-gray-600 text-sm mt-1">
+          Bienvenido al dashboard de gestión
+        </p>
       </div>
 
       {/* KPIs */}

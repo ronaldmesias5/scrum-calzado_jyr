@@ -26,7 +26,7 @@ import {
   Category,
   Brand,
   Style,
-  PublicCatalogFilters,
+  PublicCatalogFilters
 } from '@/services/publicCatalogService';
 
 export default function CatalogPage() {
@@ -34,7 +34,7 @@ export default function CatalogPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [orderModalOpen, setOrderModalOpen] = useState(false);
-  
+
   // Estados
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,7 +57,7 @@ export default function CatalogPage() {
 
   // Estilos filtrados según la marca seleccionada
   const filteredStyles = selectedBrand
-    ? styles.filter(s => s.brand_id === selectedBrand)
+    ? styles.filter((s) => s.brand_id === selectedBrand)
     : styles;
 
   // Cargar datos iniciales
@@ -68,12 +68,18 @@ export default function CatalogPage() {
   // Resetear página cuando cambian los filtros
   useEffect(() => {
     setPage(1);
-  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, searchTerm]);
+  }, [
+    selectedCategory,
+    selectedBrand,
+    selectedStyle,
+    selectedColor,
+    searchTerm
+  ]);
 
   // Resetear estilo si cambia la marca y el estilo ya no es válido
   useEffect(() => {
     if (selectedStyle) {
-      const isValidStyle = filteredStyles.some(s => s.id === selectedStyle);
+      const isValidStyle = filteredStyles.some((s) => s.id === selectedStyle);
       if (!isValidStyle) {
         setSelectedStyle('');
       }
@@ -83,17 +89,25 @@ export default function CatalogPage() {
   // Recargar productos cuando cambian los filtros o página
   useEffect(() => {
     loadProducts();
-  }, [selectedCategory, selectedBrand, selectedStyle, selectedColor, searchTerm, page]);
+  }, [
+    selectedCategory,
+    selectedBrand,
+    selectedStyle,
+    selectedColor,
+    searchTerm,
+    page
+  ]);
 
   const loadCatalogData = async () => {
     try {
       setLoading(true);
-      const [categoriesData, brandsData, stylesData, colorsData] = await Promise.all([
-        getCatalogCategories(),
-        getCatalogBrands(),
-        getCatalogStyles(),
-        getCatalogColors(),
-      ]);
+      const [categoriesData, brandsData, stylesData, colorsData] =
+        await Promise.all([
+          getCatalogCategories(),
+          getCatalogBrands(),
+          getCatalogStyles(),
+          getCatalogColors()
+        ]);
 
       setCategories(categoriesData);
       setBrands(brandsData);
@@ -118,7 +132,7 @@ export default function CatalogPage() {
         brand_id: selectedBrand || undefined,
         style_id: selectedStyle || undefined,
         color: selectedColor || undefined,
-        search: searchTerm || undefined,
+        search: searchTerm || undefined
       };
 
       const data = await getPublicProducts(filters, page);
@@ -194,7 +208,9 @@ export default function CatalogPage() {
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-              <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
+              <p className="text-red-600 dark:text-red-400 font-medium">
+                {error}
+              </p>
             </div>
           )}
 
@@ -226,12 +242,20 @@ export default function CatalogPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-8">
                     <div className="border-l border-blue-400/50 pl-4">
-                      <p className="text-2xl font-bold text-white">{products.length}</p>
-                      <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">Modelos visibles</p>
+                      <p className="text-2xl font-bold text-white">
+                        {products.length}
+                      </p>
+                      <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">
+                        Modelos visibles
+                      </p>
                     </div>
                     <div className="border-l border-blue-400/50 pl-4">
-                      <p className="text-2xl font-bold text-white">{brands.length}</p>
-                      <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">Marcas</p>
+                      <p className="text-2xl font-bold text-white">
+                        {brands.length}
+                      </p>
+                      <p className="mt-1 text-[11px] uppercase tracking-wider text-slate-400">
+                        Marcas
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -269,10 +293,14 @@ export default function CatalogPage() {
                   {/* Contador de resultados */}
                   <div className="flex items-end justify-between border-b border-slate-200 pb-3 dark:border-slate-700">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Selección disponible</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
+                        Selección disponible
+                      </p>
                       <p className="mt-1 text-sm font-medium text-gray-600 dark:text-gray-400">
                         {products.length}{' '}
-                        {products.length === 1 ? 'producto encontrado' : 'productos encontrados'}
+                        {products.length === 1
+                          ? 'producto encontrado'
+                          : 'productos encontrados'}
                       </p>
                     </div>
                     <Tag className="h-5 w-5 text-slate-400" />
@@ -293,7 +321,11 @@ export default function CatalogPage() {
                   </div>
 
                   {/* Paginación */}
-                  <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                  />
                 </>
               )}
             </>

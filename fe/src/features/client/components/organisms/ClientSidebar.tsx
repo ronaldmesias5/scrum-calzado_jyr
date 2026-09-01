@@ -1,5 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Store, Package, BarChart3, AlertTriangle, Settings, X, LogOut } from 'lucide-react';
+import {
+  Home,
+  Store,
+  Package,
+  BarChart3,
+  AlertTriangle,
+  Settings,
+  X,
+  LogOut
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ClientSidebarProps {
@@ -15,19 +24,32 @@ const ICON_COLORS: Record<string, string> = {
   '/dashboard/client/orders': 'text-emerald-500 dark:text-emerald-400',
   '/dashboard/client/reports': 'text-violet-500 dark:text-violet-400',
   '/dashboard/client/incidences': 'text-amber-500 dark:text-amber-400',
-  '/dashboard/client/settings': 'text-slate-500 dark:text-slate-400',
+  '/dashboard/client/settings': 'text-slate-500 dark:text-slate-400'
 };
 
 const NAV_ITEMS = [
   { label: 'Inicio', icon: Home, path: '/dashboard/client' },
-  { label: 'Catálogo Mayorista', icon: Store, path: '/dashboard/client/catalog' },
+  {
+    label: 'Catálogo Mayorista',
+    icon: Store,
+    path: '/dashboard/client/catalog'
+  },
   { label: 'Mis Pedidos', icon: Package, path: '/dashboard/client/orders' },
   { label: 'Reportes', icon: BarChart3, path: '/dashboard/client/reports' },
-  { label: 'Mis Incidencias', icon: AlertTriangle, path: '/dashboard/client/incidences' },
-  { label: 'Configuración', icon: Settings, path: '/dashboard/client/settings' },
+  {
+    label: 'Mis Incidencias',
+    icon: AlertTriangle,
+    path: '/dashboard/client/incidences'
+  },
+  { label: 'Configuración', icon: Settings, path: '/dashboard/client/settings' }
 ] as const;
 
-export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: ClientSidebarProps) {
+export default function ClientSidebar({
+  isOpen,
+  onClose,
+  width,
+  isCollapsed
+}: ClientSidebarProps) {
   const { logout } = useAuth();
 
   return (
@@ -50,8 +72,14 @@ export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: C
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-800 lg:hidden">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
-            <span className="font-bold text-gray-900 dark:text-white">Calzado J&R</span>
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-8 w-8 object-contain"
+            />
+            <span className="font-bold text-gray-900 dark:text-white">
+              Calzado J&R
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -66,20 +94,28 @@ export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: C
             <NavLink
               key={label}
               to={path}
-              onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+              onClick={() => {
+                if (window.innerWidth < 1024) onClose();
+              }}
               end={path === '/dashboard/client'}
               title={isCollapsed ? label : undefined}
               className={({ isActive }) =>
                 `flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-5'} py-3 text-sm font-semibold transition-all duration-200 rounded-none hover:scale-[1.02] hover:translate-x-0.5
-                ${isActive
-                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                ${
+                  isActive
+                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
-                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                  <Icon size={18} className={!isActive ? (ICON_COLORS[path] ?? '') : ''} />
+                <div
+                  className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+                >
+                  <Icon
+                    size={18}
+                    className={!isActive ? (ICON_COLORS[path] ?? '') : ''}
+                  />
                   {!isCollapsed && <span>{label}</span>}
                 </div>
               )}
@@ -93,7 +129,10 @@ export default function ClientSidebar({ isOpen, onClose, width, isCollapsed }: C
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group`}
             title={isCollapsed ? 'Cerrar Sesión' : undefined}
           >
-            <LogOut size={17} className="group-hover:-translate-x-0.5 transition-transform" />
+            <LogOut
+              size={17}
+              className="group-hover:-translate-x-0.5 transition-transform"
+            />
             {!isCollapsed && 'Cerrar Sesión'}
           </button>
         </div>

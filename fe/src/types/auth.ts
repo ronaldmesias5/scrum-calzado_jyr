@@ -1,20 +1,20 @@
 /**
  * Archivo: fe/src/types/auth.ts
  * Descripción: Tipos e interfaces TypeScript para sistema de autenticación.
- * 
+ *
  * ¿Qué?
  *   Define 15+ interfaces TypeScript que espeja backend schemas:
  *   - Request: LoginRequest, RegisterRequest, ChangePasswordRequest, etc.
  *   - Response: UserResponse, TokenResponse, MessageResponse
  *   - Enums: OccupationType (jefe, cortador, etc.)
  *   - Context: AuthContextType (para AuthContext)
- * 
+ *
  * ¿Para qué?
  *   - Type safety en todo el flujo de autenticación
  *   - Contrato explícito entre frontend y backend (evitar errores de API)
  *   - Autocompletado en IDE (developer experience)
  *   - Validación en tiempo de compilación (TypeScript)
- * 
+ *
  * ¿Impacto?
  *   CRÍTICO — Modificar interfaces rompe TODO el sistema si no coincide con backend.
  *   Añadir campo en UserResponse requiere: backend UserResponse schema + BD migration.
@@ -131,6 +131,7 @@ export interface AuthContextType extends AuthState {
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 export interface ApiError {

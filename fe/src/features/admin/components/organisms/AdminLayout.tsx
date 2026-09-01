@@ -47,7 +47,9 @@ export default function AdminLayout() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - startX;
-      setSidebarWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta)));
+      setSidebarWidth(
+        Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta))
+      );
     };
 
     const handleMouseUp = () => {
@@ -81,7 +83,10 @@ export default function AdminLayout() {
             className="hidden lg:block w-1.5 cursor-col-resize bg-transparent hover:bg-blue-400/30 active:bg-blue-500/50 transition-colors flex-shrink-0"
           />
 
-          <main id="main-content" className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <main
+            id="main-content"
+            className="flex min-h-0 min-w-0 flex-1 flex-col"
+          >
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-3 sm:px-8">
               <Breadcrumbs />
               <PageTransition>

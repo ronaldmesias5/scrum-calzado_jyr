@@ -1,7 +1,7 @@
 /**
  * Archivo: fe/src/modules/auth/pages/LoginPage.tsx
  * Descripción: Página de login para usuarios registrados de CALZADO J&R.
- * 
+ *
  * ¿Qué?
  *   Formulario de autenticación con:
  *   - Inputs: email, password
@@ -9,13 +9,13 @@
  *   - Manejo de errores (Alert component)
  *   - Redirección automática a dashboard según rol/ocupación
  *   - Redirección a /auth/change-password si must_change_password=true
- * 
+ *
  * ¿Para qué?
  *   - Permitir login de usuarios existentes (admin, employee, client)
  *   - Validar credenciales con backend POST /api/v1/auth/login
  *   - Guardar tokens en sessionStorage (via AuthContext)
  *   - Redirigir automáticamente al dashboard correcto
- * 
+ *
  * ¿Impacto?
  *   CRÍTICO — Sin login funcional, usuarios no pueden acceder al sistema.
  *   Modificar formData rompe: validación, envío a backend.
@@ -23,26 +23,29 @@
  *   Dependencias: hooks/useAuth.ts, components/ui/*, utils/routing.ts
  */
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Send } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useTranslation } from "react-i18next";
-import { AuthLayout } from "@/components/layout/AuthLayout";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { Alert } from "@/components/atoms/Alert";
-import { useToast } from "@/store/ToastContext";
-import { getDashboardRoute } from "@/utils/routing";
-import { requestNewInvitation } from "@/services/authService";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Send } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { Alert } from '@/components/atoms/Alert';
+import { useToast } from '@/store/ToastContext';
+import { getDashboardRoute } from '@/utils/routing';
+import { requestNewInvitation } from '@/services/authService';
 
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const rememberedEmail = localStorage.getItem("remembered_email") || "";
-  const [formData, setFormData] = useState({ email: rememberedEmail, password: "" });
+  const rememberedEmail = localStorage.getItem('remembered_email') || '';
+  const [formData, setFormData] = useState({
+    email: rememberedEmail,
+    password: ''
+  });
   const [rememberMe, setRememberMe] = useState(!!rememberedEmail);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,11 +64,17 @@ export function LoginPage() {
     setRequestingNew(true);
     try {
       await requestNewInvitation(formData.email);
-      showToast("Se ha enviado una nueva invitación a tu correo electrónico.", "success");
+      showToast(
+        'Se ha enviado una nueva invitación a tu correo electrónico.',
+        'success'
+      );
       setInvitationExpired(false);
       setError(null);
     } catch {
-      showToast("No se pudo procesar la solicitud. Verifica tu correo.", "error");
+      showToast(
+        'No se pudo procesar la solicitud. Verifica tu correo.',
+        'error'
+      );
     } finally {
       setRequestingNew(false);
     }
@@ -80,14 +89,14 @@ export function LoginPage() {
       const userData = await login({ ...formData, remember_me: rememberMe });
 
       if (rememberMe) {
-        localStorage.setItem("remembered_email", formData.email);
+        localStorage.setItem('remembered_email', formData.email);
       } else {
-        localStorage.removeItem("remembered_email");
+        localStorage.removeItem('remembered_email');
       }
 
       // Si el usuario debe cambiar contraseña en el primer inicio
       if (userData?.must_change_password) {
-        navigate("/change-password", { replace: true });
+        navigate('/change-password', { replace: true });
         return;
       }
 
@@ -96,8 +105,10 @@ export function LoginPage() {
       navigate(dashboardRoute, { replace: true });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Error al iniciar sesión";
-      const isExpired = message.toLowerCase().includes("expirado") || message.toLowerCase().includes("invitación");
+        err instanceof Error ? err.message : 'Error al iniciar sesión';
+      const isExpired =
+        message.toLowerCase().includes('expirado') ||
+        message.toLowerCase().includes('invitación');
       if (isExpired) {
         setInvitationExpired(true);
       }
@@ -110,7 +121,10 @@ export function LoginPage() {
   return (
     <AuthLayout
       title={t('common.login')}
-      subtitle={t('auth.subtitleLogin') || "Ingresa tus credenciales para acceder a tu panel"}
+      subtitle={
+        t('auth.subtitleLogin') ||
+        'Ingresa tus credenciales para acceder a tu panel'
+      }
     >
       {error && (
         <div className="mb-4">
@@ -150,7 +164,9 @@ export function LoginPage() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 accent-[#1e3a8a] cursor-pointer"
             />
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t('auth.rememberMe')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+              {t('auth.rememberMe')}
+            </span>
           </label>
           <Link
             to="/auth/forgot-password"
@@ -160,7 +176,12 @@ export function LoginPage() {
           </Link>
         </div>
 
-        <Button type="submit" fullWidth isLoading={isLoading} className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all">
+        <Button
+          type="submit"
+          fullWidth
+          isLoading={isLoading}
+          className="py-4 text-lg font-extrabold shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all"
+        >
           {t('common.login')}
         </Button>
       </form>
@@ -168,7 +189,8 @@ export function LoginPage() {
       {invitationExpired && (
         <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-center">
           <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-3">
-            Tu contraseña temporal ha expirado. Solicita una nueva invitación a tu correo.
+            Tu contraseña temporal ha expirado. Solicita una nueva invitación a
+            tu correo.
           </p>
           <button
             type="button"
@@ -189,7 +211,7 @@ export function LoginPage() {
       )}
 
       <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-        {t('auth.noAccountPhrase') || "¿No tienes cuenta?"}{" "}
+        {t('auth.noAccountPhrase') || '¿No tienes cuenta?'}{' '}
         <Link
           to="/auth/register"
           className="font-extrabold text-[#1e40af] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors underline decoration-2 underline-offset-4"
@@ -199,7 +221,7 @@ export function LoginPage() {
       </p>
 
       <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-        ¿Tu cuenta fue suspendida?{" "}
+        ¿Tu cuenta fue suspendida?{' '}
         <Link
           to="/auth/reactivation"
           className="font-bold text-[#1e40af] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline decoration-2 underline-offset-4 transition-colors"

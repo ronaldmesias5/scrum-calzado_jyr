@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Store } from "lucide-react";
-import Pagination from "@/components/atoms/Pagination";
-import CartModal from "@/features/client/components/organisms/CartModal";
-import { ProductDetailModal } from "@/features/client/components/molecules/ProductDetailModal";
-import { useCart } from "@/store/CartContext";
-import { WholesaleProductCard } from "@/features/client/components/molecules/WholesaleProductCard";
-import { WholesaleCatalogFilters } from "@/features/client/components/molecules/WholesaleCatalogFilters";
+import { useEffect, useState } from 'react';
+import { Loader2, ShoppingCart, Store } from 'lucide-react';
+import Pagination from '@/components/atoms/Pagination';
+import CartModal from '@/features/client/components/organisms/CartModal';
+import { ProductDetailModal } from '@/features/client/components/molecules/ProductDetailModal';
+import { useCart } from '@/store/CartContext';
+import { WholesaleProductCard } from '@/features/client/components/molecules/WholesaleProductCard';
+import { WholesaleCatalogFilters } from '@/features/client/components/molecules/WholesaleCatalogFilters';
 import {
   getWholesaleProducts,
   getWholesaleCategories,
@@ -16,15 +16,16 @@ import {
   type Category,
   type Brand,
   type Style,
-  type WholesaleCatalogFilters as Filters,
-} from "@/services/wholesaleCatalogApi";
+  type WholesaleCatalogFilters as Filters
+} from '@/services/wholesaleCatalogApi';
 
 const PAGE_SIZE = 12;
 
 export default function WholesaleCatalogPage() {
   const { cart } = useCart();
   const [cartModalOpen, setCartModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<WholesaleProduct | null>(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState<WholesaleProduct | null>(null);
 
   const [products, setProducts] = useState<WholesaleProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,11 +39,11 @@ export default function WholesaleCatalogPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedStyle, setSelectedStyle] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredStyles = selectedBrand
     ? styles.filter((s) => s.brand_id === selectedBrand)
@@ -60,13 +61,13 @@ export default function WholesaleCatalogPage() {
     selectedBrand,
     selectedStyle,
     selectedColor,
-    searchTerm,
+    searchTerm
   ]);
 
   useEffect(() => {
     if (selectedStyle) {
       const isValid = filteredStyles.some((s) => s.id === selectedStyle);
-      if (!isValid) setSelectedStyle("");
+      if (!isValid) setSelectedStyle('');
     }
   }, [selectedBrand, filteredStyles, selectedStyle]);
 
@@ -79,7 +80,7 @@ export default function WholesaleCatalogPage() {
     selectedStyle,
     selectedColor,
     searchTerm,
-    page,
+    page
   ]);
 
   const loadCatalogData = async () => {
@@ -90,7 +91,7 @@ export default function WholesaleCatalogPage() {
           getWholesaleCategories(),
           getWholesaleBrands(),
           getWholesaleStyles(),
-          getWholesaleColors(),
+          getWholesaleColors()
         ]);
       setCategories(categoriesData);
       setBrands(brandsData);
@@ -99,8 +100,8 @@ export default function WholesaleCatalogPage() {
       await loadProducts();
       setError(null);
     } catch (err) {
-      console.error("Error cargando datos del catálogo:", err);
-      setError("No se pudieron cargar los datos del catálogo");
+      console.error('Error cargando datos del catálogo:', err);
+      setError('No se pudieron cargar los datos del catálogo');
     } finally {
       setLoading(false);
     }
@@ -113,24 +114,24 @@ export default function WholesaleCatalogPage() {
         brand_id: selectedBrand || undefined,
         style_id: selectedStyle || undefined,
         color: selectedColor || undefined,
-        search: searchTerm || undefined,
+        search: searchTerm || undefined
       };
       const data = await getWholesaleProducts(filters, page, PAGE_SIZE);
       setProducts(data.products);
       setTotal(data.total);
       setTotalPages(data.total_pages);
     } catch (err) {
-      console.error("Error cargando productos:", err);
-      setError("No se pudieron cargar los productos");
+      console.error('Error cargando productos:', err);
+      setError('No se pudieron cargar los productos');
     }
   };
 
   const handleClearFilters = () => {
-    setSelectedCategory("");
-    setSelectedBrand("");
-    setSelectedStyle("");
-    setSelectedColor("");
-    setSearchTerm("");
+    setSelectedCategory('');
+    setSelectedBrand('');
+    setSelectedStyle('');
+    setSelectedColor('');
+    setSearchTerm('');
   };
 
   const isFiltering =
@@ -203,8 +204,8 @@ export default function WholesaleCatalogPage() {
             <>
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {total}{" "}
-                  {total === 1 ? "modelo encontrado" : "modelos encontrados"}
+                  {total}{' '}
+                  {total === 1 ? 'modelo encontrado' : 'modelos encontrados'}
                 </p>
               </div>
 
@@ -228,9 +229,12 @@ export default function WholesaleCatalogPage() {
         </>
       )}
 
-      <CartModal isOpen={cartModalOpen} onClose={() => setCartModalOpen(false)} />
+      <CartModal
+        isOpen={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+      />
       <ProductDetailModal
-        key={selectedProduct?.id ?? "no-product"}
+        key={selectedProduct?.id ?? 'no-product'}
         isOpen={selectedProduct !== null}
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}

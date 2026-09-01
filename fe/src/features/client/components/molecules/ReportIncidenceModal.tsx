@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { Loader2, Minus, Package, Plus } from "lucide-react";
-import Modal from "@/components/atoms/Modal";
-import { useToast } from "@/store/ToastContext";
-import { resolveImageUrl } from "@/services/catalogService";
+import { useEffect, useMemo, useState } from 'react';
+import { Loader2, Minus, Package, Plus } from 'lucide-react';
+import Modal from '@/components/atoms/Modal';
+import { useToast } from '@/store/ToastContext';
+import { resolveImageUrl } from '@/services/catalogService';
 import {
   createMyIncidence,
   getMyOrders,
   type ClientOrder,
-  type ClientOrderDetailItem,
-} from "@/services/clientApi";
+  type ClientOrderDetailItem
+} from '@/services/clientApi';
 
 interface ReportIncidenceModalProps {
   isOpen: boolean;
@@ -27,15 +27,19 @@ interface ProductGroup {
   items: ClientOrderDetailItem[];
 }
 
-export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncidenceModalProps) {
+export function ReportIncidenceModal({
+  isOpen,
+  onClose,
+  onCreated
+}: ReportIncidenceModalProps) {
   const { showToast } = useToast();
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState('');
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [description, setDescription] = useState("");
-  const [observations, setObservations] = useState("");
+  const [description, setDescription] = useState('');
+  const [observations, setObservations] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) || null;
@@ -46,12 +50,12 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
     for (const d of selectedOrder.details) {
       const group = map.get(d.product_id) ?? {
         productId: d.product_id,
-        productName: d.product_name || "Producto",
+        productName: d.product_name || 'Producto',
         brandName: d.brand_name,
         categoryName: d.category_name,
         imageUrl: d.image_url,
         totalPairs: 0,
-        items: [],
+        items: []
       };
       group.totalPairs += d.amount;
       group.items.push(d);
@@ -60,22 +64,27 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
     return Array.from(map.values());
   }, [selectedOrder]);
 
-  const activeGroup = productGroups.find((g) => g.productId === activeProductId) || null;
+  const activeGroup =
+    productGroups.find((g) => g.productId === activeProductId) || null;
 
-  const claimedEntries = Object.entries(quantities).filter(([, qty]) => qty > 0);
+  const claimedEntries = Object.entries(quantities).filter(
+    ([, qty]) => qty > 0
+  );
   const claimedTotal = claimedEntries.reduce((sum, [, qty]) => sum + qty, 0);
 
   // Reset y carga de pedidos entregados al abrir
   useEffect(() => {
     if (!isOpen) return;
-    setSelectedOrderId("");
+    setSelectedOrderId('');
     setActiveProductId(null);
     setQuantities({});
-    setDescription("");
-    setObservations("");
+    setDescription('');
+    setObservations('');
     setLoadingOrders(true);
     getMyOrders(1, 100)
-      .then((data) => setOrders(data.items.filter((o) => o.state === "entregado")))
+      .then((data) =>
+        setOrders(data.items.filter((o) => o.state === 'entregado'))
+      )
       .catch(() => setOrders([]))
       .finally(() => setLoadingOrders(false));
   }, [isOpen]);
@@ -91,10 +100,12 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
     if (productId !== activeProductId) {
       // Limpia cantidades de otros productos; conserva las del mismo si reabre
       const keep = new Set(
-        productGroups.find((g) => g.productId === productId)?.items.map((i) => i.id) ?? [],
+        productGroups
+          .find((g) => g.productId === productId)
+          ?.items.map((i) => i.id) ?? []
       );
       setQuantities((prev) =>
-        Object.fromEntries(Object.entries(prev).filter(([id]) => keep.has(id))),
+        Object.fromEntries(Object.entries(prev).filter(([id]) => keep.has(id)))
       );
     }
   };
@@ -108,19 +119,19 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
 
   const handleSubmit = async () => {
     if (!selectedOrder) {
-      showToast("Selecciona un pedido entregado", "error");
+      showToast('Selecciona un pedido entregado', 'error');
       return;
     }
     if (!activeGroup) {
-      showToast("Selecciona un producto del pedido", "error");
+      showToast('Selecciona un producto del pedido', 'error');
       return;
     }
     if (claimedTotal === 0) {
-      showToast("Digita la cantidad defectuosa en al menos una talla", "error");
+      showToast('Digita la cantidad defectuosa en al menos una talla', 'error');
       return;
     }
     if (!description.trim()) {
-      showToast("Describe el defecto del producto", "error");
+      showToast('Describe el defecto del producto', 'error');
       return;
     }
 
@@ -137,21 +148,21 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
           colour: detail.colour,
           description: description.trim(),
           quantity: qty,
-          observations: observations.trim() || null,
+          observations: observations.trim() || null
         });
         created += 1;
       }
       showToast(
-        `${created} ${created === 1 ? "reclamo enviado" : "reclamos enviados"}. El jefe lo revisará.`,
-        "success",
+        `${created} ${created === 1 ? 'reclamo enviado' : 'reclamos enviados'}. El jefe lo revisará.`,
+        'success'
       );
       onCreated();
       onClose();
     } catch (e: unknown) {
       const detail =
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        (e instanceof Error ? e.message : "Desconocido");
-      showToast("Error al reportar la incidencia: " + detail, "error");
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail ?? (e instanceof Error ? e.message : 'Desconocido');
+      showToast('Error al reportar la incidencia: ' + detail, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -160,11 +171,17 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Reportar Incidencia" size="xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Reportar Incidencia"
+      size="xl"
+    >
       <div className="space-y-5 p-6">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Solo puedes reportar productos de pedidos ya <span className="font-bold">entregados</span>.
-          El reclamo queda pendiente hasta que el jefe lo apruebe o rechace.
+          Solo puedes reportar productos de pedidos ya{' '}
+          <span className="font-bold">entregados</span>. El reclamo queda
+          pendiente hasta que el jefe lo apruebe o rechace.
         </p>
 
         {/* ── Paso 1 · Pedido entregado ─────────────────── */}
@@ -182,7 +199,9 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
             className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-amber-500 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800"
           >
             <option value="">
-              {loadingOrders ? "Cargando pedidos..." : "Seleccionar pedido entregado..."}
+              {loadingOrders
+                ? 'Cargando pedidos...'
+                : 'Seleccionar pedido entregado...'}
             </option>
             {orders.map((o) => (
               <option key={o.id} value={o.id}>
@@ -202,8 +221,8 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
                 #{selectedOrder.id.slice(0, 8)}
               </span>
               <span className="rounded-full bg-gray-100 px-3 py-1 font-bold text-gray-600 dark:bg-slate-800 dark:text-gray-300">
-                {selectedOrder.total_pairs} pares ·{" "}
-                {productGroups.length} {productGroups.length === 1 ? "producto" : "productos"}
+                {selectedOrder.total_pairs} pares · {productGroups.length}{' '}
+                {productGroups.length === 1 ? 'producto' : 'productos'}
               </span>
               {selectedOrder.delivery_date && (
                 <span className="rounded-full bg-green-100 px-3 py-1 font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -233,8 +252,8 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
                     onClick={() => handleSelectProduct(group.productId)}
                     className={`group overflow-hidden rounded-xl border text-left transition-all duration-200 active:scale-[0.98] ${
                       isActive
-                        ? "border-amber-500 bg-amber-50 shadow-lg shadow-amber-500/15 ring-2 ring-amber-500/30 dark:border-amber-500 dark:bg-amber-950/30"
-                        : "border-gray-200 bg-white hover:border-amber-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-amber-600"
+                        ? 'border-amber-500 bg-amber-50 shadow-lg shadow-amber-500/15 ring-2 ring-amber-500/30 dark:border-amber-500 dark:bg-amber-950/30'
+                        : 'border-gray-200 bg-white hover:border-amber-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-amber-600'
                     }`}
                   >
                     <div className="flex h-20 items-center justify-center bg-gray-50 p-1.5 dark:bg-slate-900/60">
@@ -249,14 +268,20 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
                       )}
                     </div>
                     <div className="min-w-0 space-y-1 p-2">
-                      <p className="truncate text-xs font-bold text-gray-900 dark:text-white" title={group.productName}>
+                      <p
+                        className="truncate text-xs font-bold text-gray-900 dark:text-white"
+                        title={group.productName}
+                      >
                         {group.productName}
                       </p>
                       <p className="truncate text-[10px] text-gray-400 dark:text-gray-500">
-                        {[group.brandName, group.categoryName].filter(Boolean).join(" · ") || "—"}
+                        {[group.brandName, group.categoryName]
+                          .filter(Boolean)
+                          .join(' · ') || '—'}
                       </p>
                       <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                        {group.items.length} {group.items.length === 1 ? "talla" : "tallas"} ·{" "}
+                        {group.items.length}{' '}
+                        {group.items.length === 1 ? 'talla' : 'tallas'} ·{' '}
                         {group.totalPairs} pares
                       </p>
                     </div>
@@ -280,8 +305,8 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
               <span
                 className={`rounded-full px-3 py-1 text-xs font-extrabold tabular-nums transition-colors ${
                   claimedTotal > 0
-                    ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
-                    : "bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500"
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25'
+                    : 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500'
                 }`}
               >
                 {claimedTotal} a reportar
@@ -295,8 +320,8 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
                     key={detail.id}
                     className={`flex items-center gap-3 rounded-xl border p-2.5 transition-colors ${
                       qty > 0
-                        ? "border-amber-400 bg-amber-50/70 dark:border-amber-500/60 dark:bg-amber-950/25"
-                        : "border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800/60"
+                        ? 'border-amber-400 bg-amber-50/70 dark:border-amber-500/60 dark:bg-amber-950/25'
+                        : 'border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800/60'
                     }`}
                   >
                     <div className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-gray-900 px-1.5 text-xs font-extrabold text-white dark:bg-white dark:text-gray-900">
@@ -305,7 +330,7 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-gray-900 dark:text-white">
                         Talla {detail.size}
-                        {detail.colour ? ` · ${detail.colour}` : ""}
+                        {detail.colour ? ` · ${detail.colour}` : ''}
                       </p>
                       <p className="text-[11px] text-gray-500 dark:text-gray-400">
                         Pedidos: {detail.amount} pares
@@ -326,8 +351,12 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
                         min={0}
                         max={detail.amount}
                         value={qty}
-                        onChange={(e) => updateQuantity(detail, Number(e.target.value))}
-                        onBlur={(e) => updateQuantity(detail, Number(e.target.value))}
+                        onChange={(e) =>
+                          updateQuantity(detail, Number(e.target.value))
+                        }
+                        onBlur={(e) =>
+                          updateQuantity(detail, Number(e.target.value))
+                        }
                         aria-label={`Cantidad defectuosa talla ${detail.size}`}
                         className="w-16 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-center text-sm font-extrabold tabular-nums text-gray-900 outline-none transition-all focus:ring-2 focus:ring-amber-500 sm:w-20 dark:border-slate-600 dark:bg-slate-700 dark:text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
@@ -367,7 +396,8 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
 
         <div>
           <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Observaciones <span className="font-normal text-gray-400">(opcional)</span>
+            Observaciones{' '}
+            <span className="font-normal text-gray-400">(opcional)</span>
           </label>
           <textarea
             value={observations}
@@ -394,8 +424,12 @@ export function ReportIncidenceModal({ isOpen, onClose, onCreated }: ReportIncid
             disabled={submitting || claimedTotal === 0}
             className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-            Enviar {claimedTotal > 0 ? `${claimedTotal} par(es)` : "reclamo"}
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Plus size={16} />
+            )}
+            Enviar {claimedTotal > 0 ? `${claimedTotal} par(es)` : 'reclamo'}
           </button>
         </div>
       </div>

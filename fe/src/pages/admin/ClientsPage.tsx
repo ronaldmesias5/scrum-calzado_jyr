@@ -4,8 +4,23 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Phone, Edit2, Shield, ShieldOff, CheckCircle2, XCircle, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
-import { getAllUsers, updateUser, type UpdateUserRequest } from '@/services/adminApi';
+import {
+  Search,
+  Phone,
+  Edit2,
+  Shield,
+  ShieldOff,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  UserPlus,
+  Loader2
+} from 'lucide-react';
+import {
+  getAllUsers,
+  updateUser,
+  type UpdateUserRequest
+} from '@/services/adminApi';
 import { getTypeDocuments } from '@/services/type-documents';
 import type { UserResponse, TypeDocument } from '@/types/auth';
 import CreateUserForm from '@/features/admin/components/molecules/CreateUserForm';
@@ -18,9 +33,11 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  
+
   // Estado para el modal de edición
-  const [selectedClient, setSelectedClient] = useState<UserResponse | null>(null);
+  const [selectedClient, setSelectedClient] = useState<UserResponse | null>(
+    null
+  );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -41,12 +58,26 @@ export default function ClientsPage() {
 
   useEffect(() => {
     fetchClients();
-    getTypeDocuments().then(setTypeDocuments).catch(() => {});
+    getTypeDocuments()
+      .then(setTypeDocuments)
+      .catch(() => {});
   }, [fetchClients]);
 
-  const filteredClients = clients.filter(cli => {
-    const matchesSearch = (cli.name + ' ' + cli.last_name + ' ' + cli.email + ' ' + (cli.business_name || '')).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || (filterStatus === 'active' ? cli.is_active : !cli.is_active);
+  const filteredClients = clients.filter((cli) => {
+    const matchesSearch = (
+      cli.name +
+      ' ' +
+      cli.last_name +
+      ' ' +
+      cli.email +
+      ' ' +
+      (cli.business_name || '')
+    )
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'active' ? cli.is_active : !cli.is_active);
     return matchesSearch && matchesStatus;
   });
 
@@ -67,15 +98,18 @@ export default function ClientsPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient) return;
-    
+
     setIsUpdating(true);
     try {
       const updated = await updateUser(selectedClient.id.toString(), editForm);
-      setClients(prev => prev.map(cli => cli.id === updated.id ? updated : cli));
+      setClients((prev) =>
+        prev.map((cli) => (cli.id === updated.id ? updated : cli))
+      );
       setIsEditModalOpen(false);
       showToast('Cliente actualizado correctamente', 'success');
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Error al actualizar el cliente.';
+      const msg =
+        err?.response?.data?.detail || 'Error al actualizar el cliente.';
       showToast(msg, 'error');
     } finally {
       setIsUpdating(false);
@@ -85,9 +119,16 @@ export default function ClientsPage() {
   const toggleStatus = async (cli: UserResponse) => {
     const newStatus = !cli.is_active;
     try {
-      const updated = await updateUser(cli.id.toString(), { is_active: newStatus });
-      setClients(prev => prev.map(c => c.id === updated.id ? updated : c));
-      showToast(`Cliente ${newStatus ? 'activado' : 'desactivado'} correctamente`, 'success');
+      const updated = await updateUser(cli.id.toString(), {
+        is_active: newStatus
+      });
+      setClients((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      );
+      showToast(
+        `Cliente ${newStatus ? 'activado' : 'desactivado'} correctamente`,
+        'success'
+      );
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Error al cambiar el estado.';
       showToast(msg, 'error');
@@ -161,15 +202,26 @@ export default function ClientsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Información Personal</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identificación</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Información Personal
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Identificación
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {filteredClients.map((cli) => (
-                  <tr key={cli.id.toString()} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr
+                    key={cli.id.toString()}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                  >
                     <td className="px-4 py-2">
                       <div className="flex flex-col">
                         <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">
@@ -215,9 +267,17 @@ export default function ClientsPage() {
                         <button
                           onClick={() => toggleStatus(cli)}
                           className={`p-1.5 rounded-lg transition-colors shadow-sm ${cli.is_active ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' : 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'}`}
-                          title={cli.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}
+                          title={
+                            cli.is_active
+                              ? 'Desactivar cuenta'
+                              : 'Activar cuenta'
+                          }
                         >
-                          {cli.is_active ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                          {cli.is_active ? (
+                            <ShieldOff className="w-4 h-4" />
+                          ) : (
+                            <Shield className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -237,25 +297,35 @@ export default function ClientsPage() {
           size="lg"
         >
           <div className="flex flex-col">
-            
-            <form onSubmit={handleUpdate} className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors">
+            <form
+              onSubmit={handleUpdate}
+              className="p-8 space-y-5 bg-white dark:bg-slate-900 transition-colors"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Nombre
+                  </label>
                   <input
                     type="text"
                     value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Apellido</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Apellido
+                  </label>
                   <input
                     type="text"
                     value={editForm.last_name}
-                    onChange={(e) => setEditForm({...editForm, last_name: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, last_name: e.target.value })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                     required
                   />
@@ -263,44 +333,76 @@ export default function ClientsPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nombre Comercial / Empresa</label>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                  Nombre Comercial / Empresa
+                </label>
                 <input
                   type="text"
                   value={editForm.business_name}
-                  onChange={(e) => setEditForm({...editForm, business_name: e.target.value})}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, business_name: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                   placeholder="Ej: Calzados J&R"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Teléfono</label>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                  Teléfono
+                </label>
                 <input
                   type="text"
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, phone: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Tipo Doc.</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Tipo Doc.
+                  </label>
                   <select
                     value={editForm.identity_document_type_id}
-                    onChange={(e) => setEditForm({...editForm, identity_document_type_id: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        identity_document_type_id: e.target.value
+                      })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                   >
-                    <option value="" className="dark:bg-slate-800">Seleccionar...</option>
-                    {typeDocuments.map(td => <option key={td.id} value={td.id} className="dark:bg-slate-800">{td.name}</option>)}
+                    <option value="" className="dark:bg-slate-800">
+                      Seleccionar...
+                    </option>
+                    {typeDocuments.map((td) => (
+                      <option
+                        key={td.id}
+                        value={td.id}
+                        className="dark:bg-slate-800"
+                      >
+                        {td.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Nro. Documento</label>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">
+                    Nro. Documento
+                  </label>
                   <input
                     type="text"
                     value={editForm.identity_document}
-                    onChange={(e) => setEditForm({...editForm, identity_document: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        identity_document: e.target.value
+                      })
+                    }
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
@@ -337,9 +439,9 @@ export default function ClientsPage() {
         >
           <div className="flex flex-col">
             <div className="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar bg-white dark:bg-slate-900 transition-colors">
-              <CreateUserForm 
-                userType="client" 
-                typeDocuments={typeDocuments} 
+              <CreateUserForm
+                userType="client"
+                typeDocuments={typeDocuments}
                 onSuccess={() => {
                   fetchClients();
                   // No cerramos el modal automáticamente por si quiere ver el mensaje de éxito

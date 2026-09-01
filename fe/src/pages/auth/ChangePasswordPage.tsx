@@ -1,33 +1,33 @@
 /**
  * Archivo: fe/src/modules/auth/pages/ChangePasswordPage.tsx
  * Descripción: Página para cambiar contraseña (requiere autenticación).
- * 
+ *
  * ¿Qué?
  *   Formulario con:
  *   - Inputs: current_password, new_password, confirmPassword
  *   - Validación: contraseñas coinciden
  *   - Success: Muestra mensaje y limpia form
  *   - Redirección: Si must_change_password=true, redirige después de cambiar
- * 
+ *
  * ¿Para qué?
  *   - Permitir usuarios cambien contraseña desde dashboard
  *   - Flow forzado: Si must_change_password=true (primer login), obligar cambio
  *   - Validar actual contraseña (seguridad, no cualquiera cambia)
- * 
+ *
  * ¿Impacto?
  *   MEDIO — Usuarios con must_change_password=true DEBEN pasar por aquí.
  *   Modificar flujo rompe: onboarding de empleados creados por admin.
  *   Dependencias: hooks/useAuth.ts (changePassword), components/ui/*
  */
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Lock, KeyRound, ShieldCheck } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { getDashboardRoute } from "@/utils/routing";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { useToast } from "@/store/ToastContext";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Lock, KeyRound, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { getDashboardRoute } from '@/utils/routing';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { useToast } from '@/store/ToastContext';
 
 export function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -35,9 +35,9 @@ export function ChangePasswordPage() {
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
-    current_password: "",
-    new_password: "",
-    confirmPassword: "",
+    current_password: '',
+    new_password: '',
+    confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,7 +49,7 @@ export function ChangePasswordPage() {
     e.preventDefault();
 
     if (formData.new_password !== formData.confirmPassword) {
-      showToast("Las contraseñas no coinciden", "error");
+      showToast('Las contraseñas no coinciden', 'error');
       return;
     }
 
@@ -58,19 +58,23 @@ export function ChangePasswordPage() {
     try {
       await changePassword({
         current_password: formData.current_password,
-        new_password: formData.new_password,
+        new_password: formData.new_password
       });
-      showToast("Contraseña actualizada exitosamente.", "success");
-      setFormData({ current_password: "", new_password: "", confirmPassword: "" });
-      
+      showToast('Contraseña actualizada exitosamente.', 'success');
+      setFormData({
+        current_password: '',
+        new_password: '',
+        confirmPassword: ''
+      });
+
       // Redirigir al dashboard correcto según rol/ocupación después de 1.5 segundos
       setTimeout(() => {
         navigate(getDashboardRoute(user), { replace: true });
       }, 1500);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Error al cambiar la contraseña";
-      showToast(message, "error");
+        err instanceof Error ? err.message : 'Error al cambiar la contraseña';
+      showToast(message, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -92,6 +96,7 @@ export function ChangePasswordPage() {
             placeholder="Tu contraseña actual"
             autoComplete="current-password"
             autoFocus
+            required
             icon={<Lock className="h-5 w-5" />}
             onChange={handleChange}
           />
@@ -103,6 +108,7 @@ export function ChangePasswordPage() {
             value={formData.new_password}
             placeholder="Mínimo 8 caracteres"
             autoComplete="new-password"
+            required
             icon={<KeyRound className="h-5 w-5" />}
             onChange={handleChange}
           />
@@ -114,6 +120,7 @@ export function ChangePasswordPage() {
             value={formData.confirmPassword}
             placeholder="Repite la nueva contraseña"
             autoComplete="new-password"
+            required
             icon={<ShieldCheck className="h-5 w-5" />}
             onChange={handleChange}
           />

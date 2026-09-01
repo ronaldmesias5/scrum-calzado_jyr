@@ -2,7 +2,13 @@
  * BadgeCountsContext — conteos para badges del sidebar.
  * Notificaciones vía REST API + WebSocket (no más polling de pedidos).
  */
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback
+} from 'react';
 import apiClient from '@/services/axios';
 import { getUnreadCount } from '../services/notificationApi';
 import { useNotificationWebSocket } from '../hooks/useNotificationWebSocket';
@@ -36,29 +42,47 @@ const BadgeCountsContext = createContext<ContextValue>({
   counts: { pedidos: 0, usuarios: 0, incidencias: 0 },
   pendingUsers: [],
   refresh: () => {},
-  resetNotificationCount: () => {},
+  resetNotificationCount: () => {}
 });
 
-export function BadgeCountsProvider({ children }: { children: React.ReactNode }) {
-  const [counts, setCounts] = useState<BadgeCounts>({ pedidos: 0, usuarios: 0, incidencias: 0 });
+export function BadgeCountsProvider({
+  children
+}: {
+  children: React.ReactNode;
+}) {
+  const [counts, setCounts] = useState<BadgeCounts>({
+    pedidos: 0,
+    usuarios: 0,
+    incidencias: 0
+  });
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const { unreadCount, resetUnreadCount } = useNotificationWebSocket();
   const { user, isLoading: authLoading } = useAuth();
-  const canAccessAdmin = user?.role_name === 'admin' || user?.occupation === 'jefe';
+  const canAccessAdmin =
+    user?.role_name === 'admin' || user?.occupation === 'jefe';
 
   const refresh = useCallback(async () => {
     if (!canAccessAdmin) {
       setPendingUsers([]);
       try {
         const notifUnread = await getUnreadCount();
-        setCounts((prev) => ({ ...prev, pedidos: notifUnread, usuarios: 0, incidencias: 0 }));
-      } catch { /* silently ignore */ }
+        setCounts((prev) => ({
+          ...prev,
+          pedidos: notifUnread,
+          usuarios: 0,
+          incidencias: 0
+        }));
+      } catch {
+        /* silently ignore */
+      }
       return;
     }
 
     try {
       // Usuarios pendientes
-      const usersRes = await apiClient.get<PendingUser[]>('/api/v1/admin/users/pending-validation');
+      const usersRes = await apiClient.get<PendingUser[]>(
+        '/api/v1/admin/users/pending-validation'
+      );
       const users = usersRes.data;
       setPendingUsers(users);
 
@@ -70,12 +94,14 @@ export function BadgeCountsProvider({ children }: { children: React.ReactNode })
       try {
         const incRes = await getPendingIncidences('pending');
         pendingIncCount = incRes.total ?? 0;
-      } catch { /* silently ignore */ }
+      } catch {
+        /* silently ignore */
+      }
 
       setCounts({
         pedidos: notifUnread,
         usuarios: users.length,
-        incidencias: pendingIncCount,
+        incidencias: pendingIncCount
       });
     } catch {
       // silently ignore
@@ -100,7 +126,9 @@ export function BadgeCountsProvider({ children }: { children: React.ReactNode })
   }, [resetUnreadCount]);
 
   return (
-    <BadgeCountsContext.Provider value={{ counts, pendingUsers, refresh, resetNotificationCount }}>
+    <BadgeCountsContext.Provider
+      value={{ counts, pendingUsers, refresh, resetNotificationCount }}
+    >
       {children}
     </BadgeCountsContext.Provider>
   );

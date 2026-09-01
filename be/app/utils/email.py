@@ -57,13 +57,13 @@ async def _send_email(
     from_email = overrides.get("from_email") or settings.MAIL_FROM
     from_name = overrides.get("from_name") or settings.MAIL_FROM_NAME
 
-    print("=" * 60)
-    print(f"📧 Email a: {to_email}")
-    print(f"   De: {from_name} <{from_email}>")
+    logger.info("=" * 60)
+    logger.info(f"📧 Email a: {to_email}")
+    logger.info(f"   De: {from_name} <{from_email}>")
     if reply_to:
-        print(f"   Reply-To: {reply_to}")
-    print(f"   Servidor: {settings.MAIL_SERVER}:{settings.MAIL_PORT}")
-    print("=" * 60)
+        logger.info(f"   Reply-To: {reply_to}")
+    logger.info(f"   Servidor: {settings.MAIL_SERVER}:{settings.MAIL_PORT}")
+    logger.info("=" * 60)
 
     try:
         from aiosmtplib import SMTP
@@ -402,11 +402,11 @@ async def send_report_email(
     html = REPORT_HTML_TEMPLATE.format(to_name=to_name, body_html=body_html)
     pdf_bytes = base64.b64decode(pdf_base64)
 
-    print("=" * 60)
-    print(f"📧 Reporte a: {to_email}")
-    print(f"   Asunto: {subject}")
-    print(f"   Archivo: {pdf_filename}")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info(f"📧 Reporte a: {to_email}")
+    logger.info(f"   Asunto: {subject}")
+    logger.info(f"   Archivo: {pdf_filename}")
+    logger.info("=" * 60)
 
     try:
         from aiosmtplib import SMTP
@@ -632,3 +632,44 @@ async def send_incidence_shared_email(
             f"Fallo SMTP hacia {settings.MAIL_SERVER}:{settings.MAIL_PORT} "
             f"(revisa MAIL_SERVER en .env o la clave de aplicación del usuario)"
         )
+
+
+# ══════════════════════════════════════════
+# 📧 Email de verificación de cuenta
+# ══════════════════════════════════════════
+
+EMAIL_VERIFICATION_HTML = """\
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+  <div style="max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+    <div style="background:#1e3a5f;padding:24px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">CALZADO J&R</h1>
+      <p style="color:#93c5fd;margin:4px 0 0;font-size:13px">Verifica tu correo electrónico</p>
+    </div>
+    <div style="padding:32px 24px">
+      <p style="font-size:15px;color:#333">Hola <strong>{name}</strong>,</p>
+      <p style="font-size:15px;color:#333">Gracias por registrarte en <strong>Calzado J&R</strong>. Para completar tu registro, verifica tu correo electrónico haciendo clic en el botón de abajo:</p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="{verify_url}" style="background:#16a34a;color:#fff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block">✅ Verificar mi correo</a>
+      </div>
+      <p style="font-size:13px;color:#777">Este enlace expira en 24 horas. Si no solicitaste esta verificación, puedes ignorar este mensaje.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:12px;color:#999">Calzado J&R — Sistema de gestión de fábrica de calzado</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+async def send_verification_email(email: str, name: str, token: str) -> None:
+    """Envía un email de verificación de cuenta con enlace único."""
+    verify_url = f"{settings.FRONTEND_URL}/auth/verify-email?token={token}"
+    html = EMAIL_VERIFICATION_HTML.format(name=name, verify_url=verify_url)
+
+    await _send_email(
+        to_email=email,
+        subject="CALZADO J&R — Verifica tu correo electrónico",
+        html_body=html,
+    )

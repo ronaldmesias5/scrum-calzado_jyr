@@ -130,67 +130,121 @@ export interface SalesGlobalReport {
   weekly_metrics: SalesWeeklyMetric[];
 }
 
-export async function getDashboardReports(days: number = 30): Promise<DashboardReportResponse> {
-  const response = await axios.get<DashboardReportResponse>('/api/v1/admin/reports/dashboard', {
-    params: { days }
+export async function getDashboardReports(
+  days: number = 30
+): Promise<DashboardReportResponse> {
+  const response = await axios.get<DashboardReportResponse>(
+    '/api/v1/admin/reports/dashboard',
+    {
+      params: { days }
+    }
+  );
+  return response.data;
+}
+
+export async function getEmployeeReport(
+  userId: string,
+  startDate?: string,
+  endDate?: string,
+  status?: string
+): Promise<EmployeeReportResponse> {
+  const params: any = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (status && status !== 'all') params.status = status;
+  const response = await axios.get<EmployeeReportResponse>(
+    `/api/v1/admin/reports/employee/${userId}`,
+    { params }
+  );
+  return response.data;
+}
+
+export async function getCustomerReport(
+  userId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<CustomerReportResponse> {
+  const params: any = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  const response = await axios.get<CustomerReportResponse>(
+    `/api/v1/admin/reports/customer/${userId}`,
+    { params }
+  );
+  return response.data;
+}
+
+export async function getGlobalProduction(
+  days: number = 30,
+  startDate?: string,
+  endDate?: string,
+  state?: string
+): Promise<ProductionGlobalReport> {
+  const params: any = { days };
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (state && state !== 'all') params.state = state;
+  const response = await axios.get<ProductionGlobalReport>(
+    '/api/v1/admin/reports/global/production',
+    { params }
+  );
+  return response.data;
+}
+
+export async function getRoleReport(
+  roleName: string,
+  startDate?: string,
+  endDate?: string,
+  status?: string
+): Promise<EmployeeReportResponse> {
+  const params: any = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (status && status !== 'all') params.status = status;
+  const response = await axios.get<EmployeeReportResponse>(
+    `/api/v1/admin/reports/role/${roleName}`,
+    { params }
+  );
+  return response.data;
+}
+
+export async function getAllCustomersReport(
+  startDate?: string,
+  endDate?: string,
+  state?: string
+): Promise<CustomerReportResponse> {
+  const params: any = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (state && state !== 'all') params.state = state;
+  const response = await axios.get<CustomerReportResponse>(
+    '/api/v1/admin/reports/customer/all/orders',
+    { params }
+  );
+  return response.data;
+}
+
+export async function getGlobalSales(
+  days: number = 30,
+  startDate?: string,
+  endDate?: string
+): Promise<SalesGlobalReport> {
+  const params: any = { days };
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  const response = await axios.get<SalesGlobalReport>(
+    '/api/v1/admin/reports/global/sales',
+    { params }
+  );
+  return response.data;
+}
+
+export async function markTasksAsPaid(
+  taskIds: string[]
+): Promise<{ message: string; updated_count: number }> {
+  const response = await axios.patch('/api/v1/admin/reports/tasks/mark-paid', {
+    task_ids: taskIds
   });
-  return response.data;
-}
-
-export async function getEmployeeReport(userId: string, startDate?: string, endDate?: string, status?: string): Promise<EmployeeReportResponse> {
-  const params: any = {};
-  if (startDate) params.start_date = startDate;
-  if (endDate) params.end_date = endDate;
-  if (status && status !== 'all') params.status = status;
-  const response = await axios.get<EmployeeReportResponse>(`/api/v1/admin/reports/employee/${userId}`, { params });
-  return response.data;
-}
-
-export async function getCustomerReport(userId: string, startDate?: string, endDate?: string): Promise<CustomerReportResponse> {
-  const params: any = {};
-  if (startDate) params.start_date = startDate;
-  if (endDate) params.end_date = endDate;
-  const response = await axios.get<CustomerReportResponse>(`/api/v1/admin/reports/customer/${userId}`, { params });
-  return response.data;
-}
-
-export async function getGlobalProduction(days: number = 30, startDate?: string, endDate?: string, state?: string): Promise<ProductionGlobalReport> {
-  const params: any = { days };
-  if (startDate) params.start_date = startDate;
-  if (endDate) params.end_date = endDate;
-  if (state && state !== 'all') params.state = state;
-  const response = await axios.get<ProductionGlobalReport>('/api/v1/admin/reports/global/production', { params });
-  return response.data;
-}
-
-export async function getRoleReport(roleName: string, startDate?: string, endDate?: string, status?: string): Promise<EmployeeReportResponse> {
-  const params: any = {};
-  if (startDate) params.start_date = startDate;
-  if (endDate) params.end_date = endDate;
-  if (status && status !== 'all') params.status = status;
-  const response = await axios.get<EmployeeReportResponse>(`/api/v1/admin/reports/role/${roleName}`, { params });
-  return response.data;
-}
-
-export async function getAllCustomersReport(startDate?: string, endDate?: string, state?: string): Promise<CustomerReportResponse> {
-  const params: any = {};
-  if (startDate) params.start_date = startDate;
-  if (endDate) params.end_date = endDate;
-  if (state && state !== 'all') params.state = state;
-  const response = await axios.get<CustomerReportResponse>('/api/v1/admin/reports/customer/all/orders', { params });
-  return response.data;
-}
-
-export async function getGlobalSales(days: number = 30, startDate?: string, endDate?: string): Promise<SalesGlobalReport> {
-  const params: any = { days };
-  if (startDate) params.start_date = startDate;
-  if (endDate) params.end_date = endDate;
-  const response = await axios.get<SalesGlobalReport>('/api/v1/admin/reports/global/sales', { params });
-  return response.data;
-}
-
-export async function markTasksAsPaid(taskIds: string[]): Promise<{ message: string; updated_count: number }> {
-  const response = await axios.patch('/api/v1/admin/reports/tasks/mark-paid', { task_ids: taskIds });
   return response.data;
 }
 
@@ -203,8 +257,13 @@ export interface SendReportEmailPayload {
   pdf_filename: string;
 }
 
-export async function sendReportEmail(payload: SendReportEmailPayload): Promise<{ success: boolean; message: string }> {
-  const response = await axios.post('/api/v1/admin/reports/send-email', payload);
+export async function sendReportEmail(
+  payload: SendReportEmailPayload
+): Promise<{ success: boolean; message: string }> {
+  const response = await axios.post(
+    '/api/v1/admin/reports/send-email',
+    payload
+  );
   return response.data;
 }
 
@@ -216,7 +275,12 @@ export interface ShareInternalPayload {
   parameters?: Record<string, unknown>;
 }
 
-export async function shareInternal(payload: ShareInternalPayload): Promise<{ success: boolean; message: string; share_id: string }> {
-  const response = await axios.post('/api/v1/admin/reports/share-internal', payload);
+export async function shareInternal(
+  payload: ShareInternalPayload
+): Promise<{ success: boolean; message: string; share_id: string }> {
+  const response = await axios.post(
+    '/api/v1/admin/reports/share-internal',
+    payload
+  );
   return response.data;
 }

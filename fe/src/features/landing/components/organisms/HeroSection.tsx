@@ -19,27 +19,40 @@ export default function HeroSection({ onLoginClick }: HeroSectionProps) {
     >
       {/* Background with darker shade in dark mode */}
       <div className="absolute inset-0 bg-blue-900 dark:bg-slate-950 transition-colors duration-500" />
-      
+
       {/* Overlay decorativo */}
-      <div className="absolute inset-0 opacity-20 dark:opacity-10 pointer-events-none"
+      <div
+        className="absolute inset-0 opacity-20 dark:opacity-10 pointer-events-none"
         style={{
           backgroundImage: 'url("/factory.png")',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'center'
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-transparent dark:from-slate-950/60" />
 
       {/* Contenido */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight stagger-reveal" style={{ animationDelay: '0.1s' }}>
-          {t('landing.hero.title')}<br />
-          <span className="text-amber-300 dark:text-amber-400">{t('landing.hero.subtitle')}</span>
+        <h1
+          className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight stagger-reveal"
+          style={{ animationDelay: '0.1s' }}
+        >
+          {t('landing.hero.title')}
+          <br />
+          <span className="text-amber-300 dark:text-amber-400">
+            {t('landing.hero.subtitle')}
+          </span>
         </h1>
-        <p className="text-gray-200 dark:text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed stagger-reveal" style={{ animationDelay: '0.3s' }}>
-           {t('landing.hero.description')}
+        <p
+          className="text-gray-200 dark:text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed stagger-reveal"
+          style={{ animationDelay: '0.3s' }}
+        >
+          {t('landing.hero.description')}
         </p>
-        <div className="flex flex-col sm:flex-row gap-5 justify-center stagger-reveal" style={{ animationDelay: '0.5s' }}>
+        <div
+          className="flex flex-col sm:flex-row gap-5 justify-center stagger-reveal"
+          style={{ animationDelay: '0.5s' }}
+        >
           <a
             href="/catalog"
             className="px-8 py-4 bg-secondary hover:bg-secondary-dark text-white font-bold rounded-xl shadow-lg hover:scale-105 transform transition duration-200 btn-shimmer"
@@ -55,11 +68,44 @@ export default function HeroSection({ onLoginClick }: HeroSectionProps) {
         </div>
 
         {/* Indicador de scroll */}
-        <a href="#categorias" aria-label="Desplazar hacia abajo" className="scroll-mouse mt-10 flex justify-center block">
-          <svg width="28" height="44" viewBox="0 0 28 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="1.5" y="1.5" width="25" height="41" rx="12.5" stroke="white" strokeOpacity="0.7" strokeWidth="2"/>
-            <circle className="scroll-wheel" cx="14" cy="12" r="3" fill="white" fillOpacity="0.8"/>
-            <polyline points="9,32 14,38 19,32" stroke="white" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <a
+          href="#categorias"
+          aria-label="Desplazar hacia abajo"
+          className="scroll-mouse mt-10 flex justify-center block"
+        >
+          <svg
+            width="28"
+            height="44"
+            viewBox="0 0 28 44"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect
+              x="1.5"
+              y="1.5"
+              width="25"
+              height="41"
+              rx="12.5"
+              stroke="white"
+              strokeOpacity="0.7"
+              strokeWidth="2"
+            />
+            <circle
+              className="scroll-wheel"
+              cx="14"
+              cy="12"
+              r="3"
+              fill="white"
+              fillOpacity="0.8"
+            />
+            <polyline
+              points="9,32 14,38 19,32"
+              stroke="white"
+              strokeOpacity="0.7"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </a>
       </div>

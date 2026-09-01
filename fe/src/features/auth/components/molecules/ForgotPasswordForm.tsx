@@ -3,22 +3,24 @@
  * Props: onSwitchToLogin (switch back to login modal).
  */
 
-import { useState } from "react";
-import { Mail } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { useToast } from "@/store/ToastContext";
+import { useState } from 'react';
+import { Mail } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { useToast } from '@/store/ToastContext';
 
 interface ForgotPasswordFormProps {
   onSwitchToLogin?: () => void;
 }
 
-export function ForgotPasswordForm({ onSwitchToLogin }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({
+  onSwitchToLogin
+}: ForgotPasswordFormProps) {
   const { forgotPassword } = useAuth();
   const { showToast } = useToast();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,10 +29,14 @@ export function ForgotPasswordForm({ onSwitchToLogin }: ForgotPasswordFormProps)
 
     try {
       await forgotPassword({ email });
-      showToast("Si el email está registrado, recibirás un enlace de recuperación.", "success");
+      showToast(
+        'Si el email está registrado, recibirás un enlace de recuperación.',
+        'success'
+      );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al enviar el enlace";
-      showToast(message, "error");
+      const message =
+        err instanceof Error ? err.message : 'Error al enviar el enlace';
+      showToast(message, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -47,6 +53,7 @@ export function ForgotPasswordForm({ onSwitchToLogin }: ForgotPasswordFormProps)
           placeholder="correo@ejemplo.com"
           autoComplete="email"
           autoFocus
+          required
           icon={<Mail className="h-5 w-5" />}
           onChange={(e) => {
             setEmail(e.target.value);

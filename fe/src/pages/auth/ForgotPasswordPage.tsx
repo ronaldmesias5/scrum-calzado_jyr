@@ -4,19 +4,19 @@
  * ¿Para qué? Permitir al usuario solicitar un enlace de reset por email.
  */
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Mail } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { AuthLayout } from "@/components/layout/AuthLayout";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { Alert } from "@/components/atoms/Alert";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Mail } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { Alert } from '@/components/atoms/Alert';
 
 export function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,11 +30,11 @@ export function ForgotPasswordPage() {
     try {
       await forgotPassword({ email });
       setSuccess(
-        "Si el email está registrado, recibirás un enlace de recuperación."
+        'Si el email está registrado, recibirás un enlace de recuperación.'
       );
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Error al enviar el enlace";
+        err instanceof Error ? err.message : 'Error al enviar el enlace';
       setError(message);
     } finally {
       setIsLoading(false);

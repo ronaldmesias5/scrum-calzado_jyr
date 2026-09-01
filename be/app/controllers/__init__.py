@@ -11,30 +11,18 @@ desde `routers/` a `controllers/` según lo solicites.
 
 from . import auth
 from . import orders
-from . import users
-from . import catalog
 from . import notifications
 from . import supplies
 from . import scrap
 from . import dashboard_empleado
 from . import dashboard_jefe
-from . import client
-from . import reports
-from . import type_document
-from . import admin
 
 __all__ = [
     "auth",
     "orders",
-    "users",
-    "catalog",
     "notifications",
     "supplies",
     "scrap",
     "dashboard_empleado",
     "dashboard_jefe",
-    "client",
-    "reports",
-    "type_document",
-    "admin",
 ]

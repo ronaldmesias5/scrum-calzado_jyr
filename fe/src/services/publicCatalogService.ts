@@ -1,6 +1,5 @@
 import api from '@/services/axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_URL } from '@/services/config';
 
 /** Convierte una ruta relativa del backend (/uploads/...) a URL absoluta con CORS */
 export const resolveImageUrl = (url?: string | null): string | undefined => {
@@ -8,7 +7,7 @@ export const resolveImageUrl = (url?: string | null): string | undefined => {
   if (url.startsWith('/uploads/')) {
     // Usa el nuevo endpoint API que tiene CORS configurado
     const filename = url.replace('/uploads/', '');
-    return `${API_BASE}/api/v1/uploads/${filename}`;
+    return `${API_URL}/api/v1/uploads/${filename}`;
   }
   return url;
 };
@@ -61,7 +60,11 @@ export interface PublicCatalogListResponse {
 /**
  * Obtener productos del catálogo público con paginación
  */
-export const getPublicProducts = async (filters?: PublicCatalogFilters, page: number = 1, pageSize: number = 10): Promise<PublicCatalogListResponse> => {
+export const getPublicProducts = async (
+  filters?: PublicCatalogFilters,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<PublicCatalogListResponse> => {
   const params = new URLSearchParams();
   if (filters?.category_id) params.append('category_id', filters.category_id);
   if (filters?.brand_id) params.append('brand_id', filters.brand_id);

@@ -37,10 +37,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
+from app.logging_config import audit_logger
 from app.models.role import Role
 from app.models.user import User
 from app.models.reactivation_ticket import ReactivationTicket
 from app.schemas.auth import MessageResponse, UserResponse
+from app.services.auth import _redact_email
 from app.schemas.admin import (
     AdminCreateClientRequest, 
     AdminCreateEmployeeRequest, 
@@ -414,7 +416,7 @@ async def create_employee(
     )
 
     response = _build_user_response(new_user)
-    response.temporary_password = temp_password
+    # La contraseña temporal se envía por email, NO en la respuesta HTTP
     return response
 
 
@@ -474,7 +476,7 @@ async def create_client(
     )
 
     response = _build_user_response(new_user)
-    response.temporary_password = temp_password
+    # La contraseña temporal se envía por email, NO en la respuesta HTTP
     return response
 
 
@@ -540,7 +542,7 @@ async def create_jefe(
     )
 
     response = _build_user_response(new_user)
-    response.temporary_password = temp_password
+    # La contraseña temporal se envía por email, NO en la respuesta HTTP
     return response
 
 
@@ -584,8 +586,34 @@ async def renew_invitation(
     )
 
     response = _build_user_response(user)
-    response.temporary_password = temp_password
+    # La contraseña temporal se envía por email, NO en la respuesta HTTP
     return response
+
+
+@router.post(
+    "/users/{user_id}/unlock",
+    response_model=MessageResponse,
+    summary="Desbloquear cuenta de usuario",
+)
+def unlock_user_account(
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """Desbloquea la cuenta de un usuario que fue bloqueada por intentos fallidos."""
+    _require_admin_or_jefe(current_user)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    # Reset lockout in memory
+    from app.services.auth import _login_attempts
+    email_lower = user.email.lower().strip()
+    _login_attempts[email_lower] = {"count": 0, "locked_until": 0.0}
+
+    audit_logger.info(f"Cuenta desbloqueada por admin: {_redact_email(user.email)} por {_redact_email(current_user.email)}")
+    return MessageResponse(message=f"Cuenta de {user.email} desbloqueada exitosamente")
 
 
 # ─────────────────────────────────────────

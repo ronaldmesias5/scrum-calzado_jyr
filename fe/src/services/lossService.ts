@@ -19,7 +19,14 @@ export interface DefectCode {
   is_active: boolean;
 }
 
-export type IncidentType = 'perdida' | 'en_reparacion' | 'reparado' | 'devuelto' | 'falla' | 'faltante' | 'solucionado';
+export type IncidentType =
+  | 'perdida'
+  | 'en_reparacion'
+  | 'reparado'
+  | 'devuelto'
+  | 'falla'
+  | 'faltante'
+  | 'solucionado';
 
 export interface SupplyInfo {
   id: string;
@@ -40,7 +47,7 @@ export interface IncidentRecord {
   custom_supply_name?: string | null;
   incident_type: IncidentType;
   defect_code?: DefectCode;
-  description?: string;  // Descripción libre del defecto
+  description?: string; // Descripción libre del defecto
   reason?: string;
   observations?: string;
   registered_by_id: string;
@@ -68,7 +75,7 @@ export interface IncidentCreateRequest {
   custom_supply_name?: string;
   incident_type?: IncidentType;
   defect_code_id?: string;
-  description?: string;  // Descripción libre del defecto (reemplaza defect_code_id)
+  description?: string; // Descripción libre del defecto (reemplaza defect_code_id)
   reason?: string;
   observations?: string;
   order_id?: string;
@@ -98,10 +105,14 @@ export interface ScrapStockItem {
 // ─────────────────────────────────────────
 
 export const getDefectCodes = () =>
-  api.get<DefectCode[]>('/api/v1/scrap/defect-codes').then(r => r.data);
+  api.get<DefectCode[]>('/api/v1/scrap/defect-codes').then((r) => r.data);
 
-export const createDefectCode = (data: { code: string; name: string; description?: string }) =>
-  api.post<DefectCode>('/api/v1/scrap/defect-codes', data).then(r => r.data);
+export const createDefectCode = (data: {
+  code: string;
+  name: string;
+  description?: string;
+}) =>
+  api.post<DefectCode>('/api/v1/scrap/defect-codes', data).then((r) => r.data);
 
 // ─────────────────────────────────────────
 // REGISTROS DE INCIDENCIAS
@@ -118,22 +129,35 @@ export const getIncidents = (params: {
 }) =>
   api
     .get<IncidentListResponse>('/api/v1/scrap/losses', { params })
-    .then(r => r.data);
+    .then((r) => r.data);
 
 export const createIncident = (data: IncidentCreateRequest) =>
-  api.post<IncidentRecord>('/api/v1/scrap/losses', data).then(r => r.data);
+  api.post<IncidentRecord>('/api/v1/scrap/losses', data).then((r) => r.data);
 
 export const approveIncident = (id: string) =>
-  api.patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/approve`).then(r => r.data);
+  api
+    .patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/approve`)
+    .then((r) => r.data);
 
 export const rejectIncident = (id: string) =>
-  api.patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/reject`).then(r => r.data);
+  api
+    .patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/reject`)
+    .then((r) => r.data);
 
-export const repairIncident = (id: string, repairDestination: string = 'stock') =>
-  api.patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/repair`, { repair_destination: repairDestination }).then(r => r.data);
+export const repairIncident = (
+  id: string,
+  repairDestination: string = 'stock'
+) =>
+  api
+    .patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/repair`, {
+      repair_destination: repairDestination
+    })
+    .then((r) => r.data);
 
 export const solveIncident = (id: string) =>
-  api.patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/solve`).then(r => r.data);
+  api
+    .patch<IncidentRecord>(`/api/v1/scrap/losses/${id}/solve`)
+    .then((r) => r.data);
 
 // ─────────────────────────────────────────
 // COMPARTIR INCIDENCIA AL CLIENTE
@@ -152,14 +176,16 @@ export interface ShareIncidenceResponse {
 }
 
 export const shareIncident = (id: string, data: ShareIncidenceRequest) =>
-  api.post<ShareIncidenceResponse>(`/api/v1/scrap/losses/${id}/share`, data).then(r => r.data);
+  api
+    .post<ShareIncidenceResponse>(`/api/v1/scrap/losses/${id}/share`, data)
+    .then((r) => r.data);
 
 // ─────────────────────────────────────────
 // STOCK DE RECUPERABLES
 // ─────────────────────────────────────────
 
 export const getScrapStock = () =>
-  api.get<ScrapStockItem[]>('/api/v1/scrap/stock').then(r => r.data);
+  api.get<ScrapStockItem[]>('/api/v1/scrap/stock').then((r) => r.data);
 
 // ─────────────────────────────────────────
 // INSUMOS (para dropdown en formulario)
@@ -179,4 +205,4 @@ export interface SuppliesListResponse {
 }
 
 export const getSupplies = () =>
-  api.get<SuppliesListResponse>('/api/v1/supplies').then(r => r.data.items);
+  api.get<SuppliesListResponse>('/api/v1/supplies').then((r) => r.data.items);

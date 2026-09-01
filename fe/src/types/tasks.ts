@@ -5,7 +5,13 @@
 
 export type TaskPriority = 'baja' | 'media' | 'alta';
 export type TaskType = 'corte' | 'guarnicion' | 'soladura' | 'emplantillado';
-export type TaskStatus = 'pendiente' | 'por_liquidar' | 'en_progreso' | 'completado' | 'pagado' | 'cancelado';
+export type TaskStatus =
+  | 'pendiente'
+  | 'por_liquidar'
+  | 'en_progreso'
+  | 'completado'
+  | 'pagado'
+  | 'cancelado';
 
 export interface ProductionTask {
   id: string;

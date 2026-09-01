@@ -1,5 +1,5 @@
-import { X, Search } from "lucide-react";
-import { Brand, Category, Style } from "@/services/wholesaleCatalogApi";
+import { X, Search } from 'lucide-react';
+import { Brand, Category, Style } from '@/services/wholesaleCatalogApi';
 
 interface WholesaleCatalogFiltersProps {
   categories: Category[];
@@ -21,7 +21,7 @@ interface WholesaleCatalogFiltersProps {
 }
 
 const selectClass =
-  "w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200";
+  'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200';
 
 export function WholesaleCatalogFilters({
   categories,
@@ -39,20 +39,24 @@ export function WholesaleCatalogFilters({
   onColorChange,
   onSearchChange,
   onClear,
-  isFiltering,
+  isFiltering
 }: WholesaleCatalogFiltersProps) {
   return (
     <section className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Filtros
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Encuentra los modelos disponibles para tu pedido mayorista.
-        </p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Filtros
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Encuentra los modelos disponibles para tu pedido mayorista.
+          </p>
         </div>
-        {isFiltering && <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Filtros activos</span>}
+        {isFiltering && (
+          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+            Filtros activos
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -155,7 +159,6 @@ export function WholesaleCatalogFilters({
           </button>
         </div>
       </div>
-
     </section>
   );
 }

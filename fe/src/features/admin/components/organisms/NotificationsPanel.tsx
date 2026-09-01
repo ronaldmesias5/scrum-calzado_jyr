@@ -4,11 +4,21 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import {
-  X, ShoppingBag, CheckCircle, XCircle, Zap, Trash2, Check, UserCheck,
+  X,
+  ShoppingBag,
+  CheckCircle,
+  XCircle,
+  Zap,
+  Trash2,
+  Check,
+  UserCheck
 } from 'lucide-react';
 import {
-  getNotifications, markAsRead, markAllAsRead, dismissNotification,
-  type BackendNotification,
+  getNotifications,
+  markAsRead,
+  markAllAsRead,
+  dismissNotification,
+  type BackendNotification
 } from '@/services/notificationApi';
 import { useBadgeCounts, type PendingUser } from '@/store/BadgeCountsContext';
 
@@ -27,25 +37,38 @@ function relativeTime(isoDate: string): string {
 
 function NotifIcon({ type }: { type: string }) {
   switch (type) {
-    case 'exito':   return <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />;
-    case 'error':   return <XCircle className="w-5 h-5 text-red-500 dark:text-red-400" />;
-    case 'advertencia': return <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />;
-    default:        return <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
+    case 'exito':
+      return (
+        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+      );
+    case 'error':
+      return <XCircle className="w-5 h-5 text-red-500 dark:text-red-400" />;
+    case 'advertencia':
+      return <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />;
+    default:
+      return (
+        <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      );
   }
 }
 
 function iconBg(type: string): string {
   switch (type) {
-    case 'exito':   return 'bg-green-100 dark:bg-green-900/30';
-    case 'error':   return 'bg-red-100 dark:bg-red-900/30';
-    case 'advertencia': return 'bg-amber-100 dark:bg-amber-900/30';
-    default:        return 'bg-blue-100 dark:bg-blue-900/30';
+    case 'exito':
+      return 'bg-green-100 dark:bg-green-900/30';
+    case 'error':
+      return 'bg-red-100 dark:bg-red-900/30';
+    case 'advertencia':
+      return 'bg-amber-100 dark:bg-amber-900/30';
+    default:
+      return 'bg-blue-100 dark:bg-blue-900/30';
   }
 }
 
 // ─────── Notificación de usuario pendiente (local, no del backend) ───────
 function PendingUserItem({ user }: { user: PendingUser }) {
-  const fullName = user.name && user.last_name ? `${user.name} ${user.last_name}` : user.email;
+  const fullName =
+    user.name && user.last_name ? `${user.name} ${user.last_name}` : user.email;
   return (
     <div className="relative flex items-start gap-4 px-5 py-5 border-b border-gray-50 dark:border-slate-800/40 bg-purple-50/20 dark:bg-purple-900/5">
       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-purple-600 rounded-r-full" />
@@ -53,11 +76,19 @@ function PendingUserItem({ user }: { user: PendingUser }) {
         <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-gray-900 dark:text-white">Cuenta pendiente de validación</p>
-        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">{fullName} espera aprobación</p>
+        <p className="text-sm font-bold text-gray-900 dark:text-white">
+          Cuenta pendiente de validación
+        </p>
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
+          {fullName} espera aprobación
+        </p>
         <div className="flex items-center gap-3 mt-2.5">
-          <span className="text-[10px] font-bold text-gray-400 uppercase">{relativeTime(user.created_at)}</span>
-          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[9px] font-black rounded uppercase">Urgente</span>
+          <span className="text-[10px] font-bold text-gray-400 uppercase">
+            {relativeTime(user.created_at)}
+          </span>
+          <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[9px] font-black rounded uppercase">
+            Urgente
+          </span>
         </div>
       </div>
     </div>
@@ -93,13 +124,16 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
     if (isOpen) loadNotifications();
   }, [isOpen, loadNotifications]);
 
-  const unreadNotifs = notifications.filter((n) => !n.is_read && !dismissedIds.has(n.id));
+  const unreadNotifs = notifications.filter(
+    (n) => !n.is_read && !dismissedIds.has(n.id)
+  );
 
   // Aplicar filtro de tabs + dismissed
   const visible = (() => {
     if (tab === 'usuarios') return []; // usuarios se muestran aparte
     let filtered = notifications.filter((n) => !dismissedIds.has(n.id));
-    if (tab === 'pedidos')  filtered = filtered.filter((n) => n.order_id !== null);
+    if (tab === 'pedidos')
+      filtered = filtered.filter((n) => n.order_id !== null);
     return filtered;
   })();
 
@@ -112,7 +146,9 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
       refresh();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleMarkAllRead = async () => {
@@ -120,7 +156,9 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
       await markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       refresh();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleDismiss = async (id: string) => {
@@ -128,20 +166,23 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
       await dismissNotification(id);
       setDismissedIds((prev) => new Set([...prev, id]));
       refresh();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const tabBadge = (key: NotifTab): number => {
-    if (key === 'todas')    return unreadNotifs.length;
-    if (key === 'pedidos')  return unreadNotifs.filter((n) => n.order_id !== null).length;
+    if (key === 'todas') return unreadNotifs.length;
+    if (key === 'pedidos')
+      return unreadNotifs.filter((n) => n.order_id !== null).length;
     if (key === 'usuarios') return pendingUsers.length;
     return 0;
   };
 
   const tabs: Array<{ key: NotifTab; label: string }> = [
-    { key: 'todas',    label: 'Todas' },
-    { key: 'pedidos',  label: 'Pedidos' },
-    { key: 'usuarios', label: 'Usuarios' },
+    { key: 'todas', label: 'Todas' },
+    { key: 'pedidos', label: 'Pedidos' },
+    { key: 'usuarios', label: 'Usuarios' }
   ];
 
   if (!isOpen) return null;
@@ -157,7 +198,9 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
         <div className="px-5 pt-6 pb-5 border-b border-gray-100 dark:border-slate-800">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notificaciones</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Notificaciones
+              </h2>
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
                 {unreadCount > 0
                   ? `Tienes ${unreadCount} sin leer`
@@ -199,9 +242,13 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
                 >
                   {label}
                   {badge > 0 && (
-                    <span className={`text-[10px] font-black rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center leading-none ${
-                      tab === key ? 'bg-white text-blue-600' : 'bg-red-500 text-white'
-                    }`}>
+                    <span
+                      className={`text-[10px] font-black rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center leading-none ${
+                        tab === key
+                          ? 'bg-white text-blue-600'
+                          : 'bg-red-500 text-white'
+                      }`}
+                    >
                       {badge > 9 ? '9+' : badge}
                     </span>
                   )}
@@ -224,7 +271,9 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
                 <p className="text-sm">Sin usuarios pendientes</p>
               </div>
             ) : (
-              pendingUsers.map((user) => <PendingUserItem key={user.id} user={user} />)
+              pendingUsers.map((user) => (
+                <PendingUserItem key={user.id} user={user} />
+              ))
             )
           ) : visible.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-gray-400">
@@ -240,28 +289,43 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
                   if (notif.link_url) window.location.href = notif.link_url;
                 }}
                 className={`relative flex items-start gap-4 px-5 py-5 border-b border-gray-50 dark:border-slate-800/40 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer group ${
-                  notif.is_read ? 'opacity-60 grayscale-[0.3]' : 'bg-blue-50/20 dark:bg-blue-900/5'
+                  notif.is_read
+                    ? 'opacity-60 grayscale-[0.3]'
+                    : 'bg-blue-50/20 dark:bg-blue-900/5'
                 }`}
               >
                 {!notif.is_read && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-blue-600 rounded-r-full group-hover:h-16 transition-all" />
                 )}
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconBg(notif.type_notification)}`}>
+                <div
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconBg(notif.type_notification)}`}
+                >
                   <NotifIcon type={notif.type_notification} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{notif.title_notification}</p>
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{notif.message_notification}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {notif.title_notification}
+                  </p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                    {notif.message_notification}
+                  </p>
                   <div className="flex items-center gap-3 mt-2.5">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">{relativeTime(notif.created_at)}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">
+                      {relativeTime(notif.created_at)}
+                    </span>
                     {!notif.is_read && (
-                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[9px] font-black rounded uppercase">Nuevo</span>
+                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[9px] font-black rounded uppercase">
+                        Nuevo
+                      </span>
                     )}
                   </div>
                 </div>
                 <div className="flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDismiss(notif.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDismiss(notif.id);
+                    }}
                     className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-90"
                     title="Descartar"
                   >
@@ -277,7 +341,8 @@ export default function NotificationsPanel({ isOpen, onClose }: Props) {
         {(visible.length > 0 || pendingUsers.length > 0) && (
           <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800 text-center bg-gray-50/30 dark:bg-slate-900/50">
             <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
-              {visible.length + (tab === 'usuarios' ? pendingUsers.length : 0)} elementos • {unreadCount} sin leer
+              {visible.length + (tab === 'usuarios' ? pendingUsers.length : 0)}{' '}
+              elementos • {unreadCount} sin leer
             </p>
           </div>
         )}

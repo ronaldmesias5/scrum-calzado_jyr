@@ -4,24 +4,24 @@
  * ¿Para qué? Completar el flujo de forgot password.
  */
 
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Lock, KeyRound } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { AuthLayout } from "@/components/layout/AuthLayout";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { useToast } from "@/store/ToastContext";
+import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Lock, KeyRound } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { useToast } from '@/store/ToastContext';
 
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams.get('token') || '';
 
   const [formData, setFormData] = useState({
-    new_password: "",
-    confirmPassword: "",
+    new_password: '',
+    confirmPassword: ''
   });
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,12 +34,12 @@ export function ResetPasswordPage() {
     e.preventDefault();
 
     if (!token) {
-      showToast("Token de recuperación no encontrado en la URL.", "error");
+      showToast('Token de recuperación no encontrado en la URL.', 'error');
       return;
     }
 
     if (formData.new_password !== formData.confirmPassword) {
-      showToast("Las contraseñas no coinciden", "error");
+      showToast('Las contraseñas no coinciden', 'error');
       return;
     }
 
@@ -47,13 +47,16 @@ export function ResetPasswordPage() {
 
     try {
       await resetPassword({ token, new_password: formData.new_password });
-      const msg = "Contraseña restablecida exitosamente. Ya puedes iniciar sesión.";
+      const msg =
+        'Contraseña restablecida exitosamente. Ya puedes iniciar sesión.';
       setSuccess(msg);
-      showToast(msg, "success");
+      showToast(msg, 'success');
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Error al restablecer la contraseña";
-      showToast(message, "error");
+        err instanceof Error
+          ? err.message
+          : 'Error al restablecer la contraseña';
+      showToast(message, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -80,6 +83,7 @@ export function ResetPasswordPage() {
             placeholder="Mínimo 8 caracteres"
             autoComplete="new-password"
             autoFocus
+            required
             icon={<Lock className="h-5 w-5" />}
             onChange={handleChange}
           />
@@ -91,6 +95,7 @@ export function ResetPasswordPage() {
             value={formData.confirmPassword}
             placeholder="Repite tu contraseña"
             autoComplete="new-password"
+            required
             icon={<KeyRound className="h-5 w-5" />}
             onChange={handleChange}
           />

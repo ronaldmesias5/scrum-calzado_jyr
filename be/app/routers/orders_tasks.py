@@ -6,7 +6,7 @@ PATCH /tasks/{task_id}/assign y PATCH /tasks/{task_id}/status.
 ¿Nota? Comparte prefix y tag con router.py de orders; la lógica de inventario vive en service.py.
 """
 
-import traceback
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
@@ -33,6 +33,8 @@ router = APIRouter(
     tags=["orders"],
 )
 
+logger = logging.getLogger(__name__)
+
 
 @router.get("/tasks/next-number", summary="Obtener el siguiente número de vale")
 def get_next_vale_number(
@@ -44,7 +46,7 @@ def get_next_vale_number(
         max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
         return {"next_number": int(max_vale) + 1}
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Error al calcular número de vale")
         raise HTTPException(status_code=500, detail=f"Error al calcular número de vale: {e!s}")
 
 
@@ -109,13 +111,13 @@ def list_all_production_tasks(
                     product_image=t.product.image_url if t.product else None
                 ))
             except Exception:
-                traceback.print_exc()
+                logger.exception("Error al serializar tarea de producción")
                 continue
 
         return tasks_list
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Error al listar tareas")
         raise HTTPException(status_code=500, detail=f"Error al listar tareas: {e!s}")
 
 
@@ -262,7 +264,7 @@ def create_production_tasks(
         raise
     except Exception as e:
         db.rollback()
-        traceback.print_exc()
+        logger.exception("Error al crear tareas")
         raise HTTPException(status_code=500, detail=f"Error al crear tareas: {e!s}")
 
 
@@ -368,7 +370,7 @@ def get_order_tasks(
             ) for t, total in tasks_data
         ]
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Error al listar tareas de la orden")
         raise HTTPException(status_code=500, detail=f"Error al listar tareas: {e!s}")
 
 

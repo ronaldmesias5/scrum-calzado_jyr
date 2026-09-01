@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Mail, FileText, Phone } from "lucide-react";
-import { InputField } from "@/components/atoms/InputField";
-import { Button } from "@/components/atoms/Button";
-import { useToast } from "@/store/ToastContext";
-import { requestReactivation, type ReactivationRequest } from "@/services/authService";
+import { useState } from 'react';
+import { Mail, FileText, Phone } from 'lucide-react';
+import { InputField } from '@/components/atoms/InputField';
+import { Button } from '@/components/atoms/Button';
+import { useToast } from '@/store/ToastContext';
+import {
+  requestReactivation,
+  type ReactivationRequest
+} from '@/services/authService';
 
 interface ReactivationFormProps {
   onSwitchToLogin?: () => void;
@@ -13,13 +16,15 @@ export function ReactivationForm({ onSwitchToLogin }: ReactivationFormProps) {
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
-    email: "",
-    phone: "",
-    identity_document: "",
+    email: '',
+    phone: '',
+    identity_document: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -28,17 +33,20 @@ export function ReactivationForm({ onSwitchToLogin }: ReactivationFormProps) {
     e.preventDefault();
 
     if (!formData.email || !formData.phone || !formData.identity_document) {
-      showToast("Todos los campos son obligatorios.", "error");
+      showToast('Todos los campos son obligatorios.', 'error');
       return;
     }
 
     if (formData.phone.trim().length < 7) {
-      showToast("El teléfono debe tener al menos 7 caracteres.", "error");
+      showToast('El teléfono debe tener al menos 7 caracteres.', 'error');
       return;
     }
 
     if (formData.identity_document.trim().length < 8) {
-      showToast("El documento de identidad debe tener al menos 8 caracteres.", "error");
+      showToast(
+        'El documento de identidad debe tener al menos 8 caracteres.',
+        'error'
+      );
       return;
     }
 
@@ -46,21 +54,21 @@ export function ReactivationForm({ onSwitchToLogin }: ReactivationFormProps) {
     try {
       const payload: ReactivationRequest = {
         email: formData.email.trim(),
-        reason: "Solicitud de reactivación de cuenta",
+        reason: 'Solicitud de reactivación de cuenta',
         phone: formData.phone.trim(),
-        identity_document: formData.identity_document.trim(),
+        identity_document: formData.identity_document.trim()
       };
       const response = await requestReactivation(payload);
-      showToast(response.message, "success");
-      setFormData({ email: "", phone: "", identity_document: "" });
+      showToast(response.message, 'success');
+      setFormData({ email: '', phone: '', identity_document: '' });
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      if (typeof detail === "string") {
-        showToast(detail, "error");
+      if (typeof detail === 'string') {
+        showToast(detail, 'error');
       } else if (Array.isArray(detail)) {
-        showToast(detail.map((d: any) => d.msg).join(". "), "error");
+        showToast(detail.map((d: any) => d.msg).join('. '), 'error');
       } else {
-        showToast("Error al enviar la solicitud. Inténtalo de nuevo.", "error");
+        showToast('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
       }
     } finally {
       setIsLoading(false);
@@ -69,7 +77,6 @@ export function ReactivationForm({ onSwitchToLogin }: ReactivationFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-
       <InputField
         label="Correo electrónico"
         name="email"
@@ -102,13 +109,13 @@ export function ReactivationForm({ onSwitchToLogin }: ReactivationFormProps) {
 
       <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
         <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-          <strong>Importante:</strong> Solo puedes solicitar reactivación si tu cuenta está{" "}
-          <strong>inactiva o suspendida</strong>.
+          <strong>Importante:</strong> Solo puedes solicitar reactivación si tu
+          cuenta está <strong>inactiva o suspendida</strong>.
         </p>
       </div>
 
       <Button type="submit" disabled={isLoading} fullWidth>
-        {isLoading ? "Enviando solicitud..." : "Enviar solicitud"}
+        {isLoading ? 'Enviando solicitud...' : 'Enviar solicitud'}
       </Button>
 
       <p className="text-center text-sm text-gray-500 dark:text-gray-400">

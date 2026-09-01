@@ -97,7 +97,7 @@ pnpm lint                         # expo lint
 - Las migraciones de Alembic se ejecutan **automáticamente al iniciar el backend** (`be/app/init_db.py`), tanto en Docker como local.
 - Los datos semilla también se insertan automáticamente (roles, tipos de documento, catálogo con 65 productos, usuarios de prueba).
 - **Nunca ejecutes `alembic upgrade head` manualmente** a menos que estés depurando algo muy específico.
-- Hay 37 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
+- Hay 42 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
 
 ### Usuario admin de prueba
 ```
@@ -117,24 +117,21 @@ Un solo `.env` en la raíz. Copiar de `.env.example`. Los `.env` individuales en
 
 ## Estructura y convenciones
 
-### Backend — módulos por funcionalidad
+### Backend — capas por funcionalidad
 ```
-be/app/modules/
-├── auth/            # Autenticación (JWT + Bcrypt)
-├── users/           # CRUD usuarios + avatar upload (POST/DELETE /me/avatar)
-├── admin/           # Rutas admin + catálogo admin + reportes + creación sin contraseña
-├── dashboard_jefe/  # Dashboard del jefe
-├── dashboard_empleado/  # Dashboard del empleado (tareas, incidencias, métricas)
-├── orders/          # Pedidos + line_group
-├── catalog/         # Catálogo público
-├── client/          # Dashboard cliente y pedidos
-├── supplies/        # Insumos
-├── scrap/           # Incidencias (scrap, pérdidas, pendientes de aprobación)
-├── notifications/   # Notificaciones en tiempo real (WebSocket)
-└── type_document/   # Tipos de documento
+be/app/
+├── routers/           # 21 routers FastAPI (endpoint definitions)
+├── controllers/       # 14 controllers (business logic delegation)
+├── services/          # 8 services (domain logic)
+├── models/            # 23 modelos SQLAlchemy
+├── schemas/           # 13 esquemas Pydantic (request/response)
+├── middleware/        # Rate limiting, error handling, security headers
+├── utils/             # Email, seguridad, crypto
+├── init_db.py         # Auto-migraciones + seed al arrancar
+└── main.py            # Punto de entrada
 ```
-- Cada módulo tiene `router.py`, `controller.py`, `service.py`, `repository.py` (patrón documentado; en la práctica algunos módulos fusionan capas).
 - Modelos centralizados en `be/app/models/` (23 modelos) — no dentro de cada módulo.
+- No existe directorio `be/app/modules/` — la estructura es por capa (routers/, controllers/, services/).
 
 ### Frontend — import alias `@`
 ```typescript
@@ -177,7 +174,7 @@ fe/src/
 ├── pages/                # Páginas enrutables
 │   ├── admin/            # 14 páginas del panel admin
 │   ├── auth/             # 7 páginas (login, register, password reset…)
-│   ├── client/           # 3 páginas (DashboardPage, OrdersPage, WholesaleCatalogPage)
+│   ├── client/           # 6 páginas (DashboardPage, OrdersPage, WholesaleCatalogPage, ReportsPage, SettingsPage, MisIncidenciasPage)
 │   ├── employee/         # 6 páginas (Dashboard, Tasks, AvailableTasks, Incidences, Reports, Settings)
 │   └── public/           # 2 páginas (LandingPage, ReactivationPage)
 ├── hooks/                # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
@@ -218,7 +215,7 @@ fe/src/
 
 13. **Dashboard Empleado**: Feature `fe/src/features/employee/` con 6 páginas en `fe/src/pages/employee/`. Las preferencias del empleado se almacenan en localStorage con prefijo `emp_` para evitar colisiones con las del admin.
 
-14. **Dashboard Cliente**: Feature `fe/src/features/client/` con 2 páginas en `fe/src/pages/client/` (DashboardPage, OrdersPage).
+14. **Dashboard Cliente**: Feature `fe/src/features/client/` con 6 páginas en `fe/src/pages/client/` (DashboardPage, OrdersPage, WholesaleCatalogPage, ReportsPage, SettingsPage, MisIncidenciasPage).
 
 15. **PDF export**: Usa `jspdf` + `jspdf-autotable`. La función `sanitizeFilename()` elimina caracteres prohibidos por Windows (`<>:"/\|?*`) de los nombres de archivo. Hay implementaciones separadas en `features/admin/utils/reportsUtils.ts` y `features/employee/utils/reportsUtils.ts`.
 
@@ -251,5 +248,5 @@ const { isOpen, open, close } = useModalDialog();
 - `COMO_CORRER_PROYECTO.md` — instrucciones en español para arrancar el proyecto
 - `docs/project-documentation/` — arquitectura, diccionario de datos, requerimientos
 - `docs/sprints/` — plan de trabajo y backlogs de sprints
-- `docs/GUIA_DISENO.md` — guía de diseño visual, consistencia de UI y plantilla para nuevas secciones
+- `docs/project-documentation/GUIA_DISENO.md` — guía de diseño visual, consistencia de UI y plantilla para nuevas secciones
 - `README.md` (raíz) — descripción general del sistema

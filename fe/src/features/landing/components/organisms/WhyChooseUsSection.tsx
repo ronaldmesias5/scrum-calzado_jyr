@@ -1,23 +1,42 @@
 import { Factory, Award, Palette, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-
-
 export default function WhyChooseUsSection() {
   const { t } = useTranslation();
 
   const reasons = [
-    { icon: Factory, title: t('landing.whyUs.reasons.national'), desc: t('landing.whyUs.reasons.nationalDesc') },
-    { icon: Award, title: t('landing.whyUs.reasons.exp'), desc: t('landing.whyUs.reasons.expDesc') },
-    { icon: Palette, title: t('landing.whyUs.reasons.design'), desc: t('landing.whyUs.reasons.designDesc') },
-    { icon: Heart, title: t('landing.whyUs.reasons.passion'), desc: t('landing.whyUs.reasons.passionDesc') },
+    {
+      icon: Factory,
+      title: t('landing.whyUs.reasons.national'),
+      desc: t('landing.whyUs.reasons.nationalDesc')
+    },
+    {
+      icon: Award,
+      title: t('landing.whyUs.reasons.exp'),
+      desc: t('landing.whyUs.reasons.expDesc')
+    },
+    {
+      icon: Palette,
+      title: t('landing.whyUs.reasons.design'),
+      desc: t('landing.whyUs.reasons.designDesc')
+    },
+    {
+      icon: Heart,
+      title: t('landing.whyUs.reasons.passion'),
+      desc: t('landing.whyUs.reasons.passionDesc')
+    }
   ];
 
   return (
-    <section id="nosotros" className="py-20 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
+    <section
+      id="nosotros"
+      className="py-20 bg-gray-50 dark:bg-slate-900 transition-colors duration-500"
+    >
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">{t('landing.whyUs.title')}</h2>
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
+            {t('landing.whyUs.title')}
+          </h2>
           <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
             {t('landing.whyUs.subtitle')}
           </p>
@@ -35,8 +54,12 @@ export default function WhyChooseUsSection() {
                 </div>
               </div>
               <div>
-                <h4 className="font-bold text-2xl text-gray-900 dark:text-white mb-3 tracking-tight">{title}</h4>
-                <p className="text-gray-500 dark:text-gray-400 text-base leading-relaxed">{desc}</p>
+                <h4 className="font-bold text-2xl text-gray-900 dark:text-white mb-3 tracking-tight">
+                  {title}
+                </h4>
+                <p className="text-gray-500 dark:text-gray-400 text-base leading-relaxed">
+                  {desc}
+                </p>
               </div>
             </div>
           ))}

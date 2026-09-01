@@ -7,7 +7,8 @@ interface WsMessage {
 }
 
 export function useNotificationWebSocket() {
-  const [lastNotification, setLastNotification] = useState<BackendNotification | null>(null);
+  const [lastNotification, setLastNotification] =
+    useState<BackendNotification | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -55,7 +56,10 @@ export function useNotificationWebSocket() {
       if (mountedRef.current) {
         setIsConnected(false);
         // Reconectar después de 5 segundos
-        reconnectTimerRef.current = setTimeout(() => connectRef.current(), 5000);
+        reconnectTimerRef.current = setTimeout(
+          () => connectRef.current(),
+          5000
+        );
       }
     };
 

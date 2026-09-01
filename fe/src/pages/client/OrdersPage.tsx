@@ -1,21 +1,42 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ShoppingBag, Package2, ArrowRight, Search } from 'lucide-react';
-import { getMyOrders, getMyOrderDetail, type ClientOrder } from '@/services/clientApi';
+import {
+  getMyOrders,
+  getMyOrderDetail,
+  type ClientOrder
+} from '@/services/clientApi';
 import { resolveImageUrl } from '@/services/wholesaleCatalogApi';
 import Modal from '@/components/atoms/Modal';
 import Pagination from '@/components/atoms/Pagination';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pendiente: { label: 'Pendiente', color: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400' },
-  en_progreso: { label: 'En Progreso', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
-  completado: { label: 'Completado', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
-  entregado: { label: 'Entregado', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
-  cancelado: { label: 'Cancelado', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  pendiente: {
+    label: 'Pendiente',
+    color: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400'
+  },
+  en_progreso: {
+    label: 'En Progreso',
+    color:
+      'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+  },
+  completado: {
+    label: 'Completado',
+    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+  },
+  entregado: {
+    label: 'Entregado',
+    color:
+      'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+  },
+  cancelado: {
+    label: 'Cancelado',
+    color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+  }
 };
 
 const DEFAULT_STATUS: { label: string; color: string } = {
   label: 'Pendiente',
-  color: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400',
+  color: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400'
 };
 
 export default function OrdersPage() {
@@ -46,7 +67,7 @@ export default function OrdersPage() {
   }, [page]);
 
   const filtered = orders.filter((o) =>
-    o.id.toLowerCase().includes(search.toLowerCase()),
+    o.id.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleViewDetail = async (orderId: string) => {
@@ -63,16 +84,19 @@ export default function OrdersPage() {
 
   const groupedProducts = useMemo(() => {
     if (!selectedOrder) return [];
-    const map = new Map<string, {
-      product_id: string;
-      product_name: string | null;
-      brand_name: string | null;
-      category_name: string | null;
-      image_url: string | null;
-      total: number;
-      sizes: { size: string; amount: number; colour: string | null }[];
-      observations: string[];
-    }>();
+    const map = new Map<
+      string,
+      {
+        product_id: string;
+        product_name: string | null;
+        brand_name: string | null;
+        category_name: string | null;
+        image_url: string | null;
+        total: number;
+        sizes: { size: string; amount: number; colour: string | null }[];
+        observations: string[];
+      }
+    >();
     for (const d of selectedOrder.details) {
       const group = map.get(d.product_id) ?? {
         product_id: d.product_id,
@@ -82,7 +106,7 @@ export default function OrdersPage() {
         image_url: d.image_url,
         total: 0,
         sizes: [],
-        observations: [],
+        observations: []
       };
       group.total += d.amount;
       group.sizes.push({ size: d.size, amount: d.amount, colour: d.colour });
@@ -93,7 +117,7 @@ export default function OrdersPage() {
     }
     return [...map.values()].map((g) => ({
       ...g,
-      sizes: g.sizes.sort((a, b) => Number(a.size) - Number(b.size)),
+      sizes: g.sizes.sort((a, b) => Number(a.size) - Number(b.size))
     }));
   }, [selectedOrder]);
 
@@ -105,15 +129,23 @@ export default function OrdersPage() {
             <ShoppingBag className="w-8 h-8 text-blue-600" />
             Mis Pedidos
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Consulta el estado de tus pedidos</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Consulta el estado de tus pedidos
+          </p>
         </div>
       </div>
 
       <div className="relative w-full sm:max-w-sm">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search
+          size={16}
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+        />
         <input
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
           placeholder="Buscar por ID de pedido..."
         />
@@ -127,38 +159,62 @@ export default function OrdersPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
-              <Package2 size={28} className="text-gray-300 dark:text-gray-600" />
+              <Package2
+                size={28}
+                className="text-gray-300 dark:text-gray-600"
+              />
             </div>
-            <p className="text-gray-500 dark:text-gray-400 font-bold">No hay pedidos registrados</p>
+            <p className="text-gray-500 dark:text-gray-400 font-bold">
+              No hay pedidos registrados
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">N° Pedido</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Fecha</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Pares</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado</th>
-                  <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Detalle</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    N° Pedido
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Fecha
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Total Pares
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Estado
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Detalle
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                 {filtered.map((order) => {
                   const status = STATUS_MAP[order.state] || DEFAULT_STATUS;
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr
+                      key={order.id}
+                      className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
+                    >
                       <td className="px-4 py-3">
                         <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
                           #{order.id.slice(0, 8)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">
-                        {new Date(order.creation_date).toLocaleDateString('es-CO')}
+                        {new Date(order.creation_date).toLocaleDateString(
+                          'es-CO'
+                        )}
                       </td>
-                      <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{order.total_pairs}</td>
+                      <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">
+                        {order.total_pairs}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${status.color}`}>
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${status.color}`}
+                        >
                           {status.label}
                         </span>
                       </td>
@@ -179,7 +235,11 @@ export default function OrdersPage() {
           </div>
         )}
 
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* Modal detalle */}
@@ -197,36 +257,57 @@ export default function OrdersPage() {
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Estado</p>
-                <span className={`inline-flex mt-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${(STATUS_MAP[selectedOrder.state] || DEFAULT_STATUS).color}`}>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                  Estado
+                </p>
+                <span
+                  className={`inline-flex mt-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${(STATUS_MAP[selectedOrder.state] || DEFAULT_STATUS).color}`}
+                >
                   {(STATUS_MAP[selectedOrder.state] || DEFAULT_STATUS).label}
                 </span>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Total pares</p>
-                <p className="text-lg font-black text-gray-900 dark:text-white">{selectedOrder.total_pairs}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Fecha creación</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">
-                  {new Date(selectedOrder.creation_date).toLocaleDateString('es-CO')}
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                  Total pares
+                </p>
+                <p className="text-lg font-black text-gray-900 dark:text-white">
+                  {selectedOrder.total_pairs}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Fecha entrega</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                  Fecha creación
+                </p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                  {new Date(selectedOrder.creation_date).toLocaleDateString(
+                    'es-CO'
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                  Fecha entrega
+                </p>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">
                   {selectedOrder.delivery_date
-                    ? new Date(selectedOrder.delivery_date).toLocaleDateString('es-CO')
+                    ? new Date(selectedOrder.delivery_date).toLocaleDateString(
+                        'es-CO'
+                      )
                     : 'Por definir'}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Productos</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
+                Productos
+              </h3>
               <div className="space-y-3">
                 {groupedProducts.map((group) => (
-                  <div key={group.product_id} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4">
+                  <div
+                    key={group.product_id}
+                    className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4"
+                  >
                     <div className="flex items-center gap-3">
                       {group.image_url ? (
                         <img
@@ -241,9 +322,13 @@ export default function OrdersPage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{group.product_name || 'Producto'}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {group.product_name || 'Producto'}
+                        </p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                          {[group.brand_name, group.category_name].filter(Boolean).join(' · ')}
+                          {[group.brand_name, group.category_name]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </p>
                       </div>
                       <span className="inline-flex shrink-0 items-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/50">
@@ -256,7 +341,10 @@ export default function OrdersPage() {
                           key={`${group.product_id}-${s.size}-${s.colour ?? ''}`}
                           className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
                         >
-                          Talla {s.size}: <span className="font-bold text-blue-600 dark:text-blue-400">{s.amount}</span>
+                          Talla {s.size}:{' '}
+                          <span className="font-bold text-blue-600 dark:text-blue-400">
+                            {s.amount}
+                          </span>
                         </span>
                       ))}
                     </div>

@@ -1,9 +1,21 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Home, ShoppingCart, Layers, Package, CheckSquare,
-  Users, UserCheck, Bell, BarChart, Settings, UserCog, Package2, X, LogOut,
-  AlertTriangle,
+  Home,
+  ShoppingCart,
+  Layers,
+  Package,
+  CheckSquare,
+  Users,
+  UserCheck,
+  Bell,
+  BarChart,
+  Settings,
+  UserCog,
+  Package2,
+  X,
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import { useBadgeCounts } from '@/store/BadgeCountsContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,33 +40,105 @@ const ICON_COLORS: Record<string, string> = {
   '/dashboard/admin/usuarios': 'text-violet-500 dark:text-violet-400',
   '/dashboard/admin/alerts': 'text-rose-500 dark:text-rose-400',
   '/dashboard/admin/reports': 'text-orange-500 dark:text-orange-400',
-  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400',
+  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400'
 };
 
-export default function AdminSidebar({ isOpen, onClose, width, isCollapsed }: AdminSidebarProps) {
+export default function AdminSidebar({
+  isOpen,
+  onClose,
+  width,
+  isCollapsed
+}: AdminSidebarProps) {
   const { counts } = useBadgeCounts();
   const { t } = useTranslation();
   const { logout } = useAuth();
 
   const BASE_ITEMS = [
-    { label: t('dashboard.sidebar.home'),         icon: Home,        path: '/dashboard/admin',              badgeKey: null },
-    { label: t('dashboard.sidebar.orders'),       icon: ShoppingCart, path: '/dashboard/admin/orders',       badgeKey: 'pedidos' },
-    { label: t('dashboard.sidebar.catalog'),      icon: Layers,       path: '/dashboard/admin/catalog',      badgeKey: null },
-    { label: t('dashboard.sidebar.inventory'),    icon: Package,      path: '/dashboard/admin/inventory',    badgeKey: null },
-    { label: 'Incidencias',                       icon: AlertTriangle, path: '/dashboard/admin/losses',      badgeKey: 'incidencias' },
-    { label: 'Insumos',                           icon: Package2,     path: '/dashboard/admin/insumos',      badgeKey: null },
-    { label: t('dashboard.sidebar.tasks'),        icon: CheckSquare,  path: '/dashboard/admin/tasks',        badgeKey: null },
-    { label: t('dashboard.sidebar.employees'),     icon: Users,        path: '/dashboard/admin/employees',    badgeKey: null },
-    { label: t('dashboard.sidebar.clients'),      icon: UserCheck,    path: '/dashboard/admin/clients',      badgeKey: null },
-    { label: t('dashboard.sidebar.users'),        icon: UserCog,      path: '/dashboard/admin/usuarios',     badgeKey: 'usuarios' },
-    { label: t('dashboard.sidebar.alerts'),       icon: Bell,         path: '/dashboard/admin/alerts',       badgeKey: null },
-    { label: t('dashboard.sidebar.reports'),      icon: BarChart,     path: '/dashboard/admin/reports',      badgeKey: null },
-    { label: t('dashboard.sidebar.settings'),     icon: Settings,     path: '/dashboard/admin/settings',     badgeKey: null },
+    {
+      label: t('dashboard.sidebar.home'),
+      icon: Home,
+      path: '/dashboard/admin',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.orders'),
+      icon: ShoppingCart,
+      path: '/dashboard/admin/orders',
+      badgeKey: 'pedidos'
+    },
+    {
+      label: t('dashboard.sidebar.catalog'),
+      icon: Layers,
+      path: '/dashboard/admin/catalog',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.inventory'),
+      icon: Package,
+      path: '/dashboard/admin/inventory',
+      badgeKey: null
+    },
+    {
+      label: 'Incidencias',
+      icon: AlertTriangle,
+      path: '/dashboard/admin/losses',
+      badgeKey: 'incidencias'
+    },
+    {
+      label: 'Insumos',
+      icon: Package2,
+      path: '/dashboard/admin/insumos',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.tasks'),
+      icon: CheckSquare,
+      path: '/dashboard/admin/tasks',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.employees'),
+      icon: Users,
+      path: '/dashboard/admin/employees',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.clients'),
+      icon: UserCheck,
+      path: '/dashboard/admin/clients',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.users'),
+      icon: UserCog,
+      path: '/dashboard/admin/usuarios',
+      badgeKey: 'usuarios'
+    },
+    {
+      label: t('dashboard.sidebar.alerts'),
+      icon: Bell,
+      path: '/dashboard/admin/alerts',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.reports'),
+      icon: BarChart,
+      path: '/dashboard/admin/reports',
+      badgeKey: null
+    },
+    {
+      label: t('dashboard.sidebar.settings'),
+      icon: Settings,
+      path: '/dashboard/admin/settings',
+      badgeKey: null
+    }
   ] as const;
 
   const menuItems = BASE_ITEMS.map((item) => ({
     ...item,
-    badge: item.badgeKey ? (counts[item.badgeKey as keyof typeof counts] ?? 0) : 0,
+    badge: item.badgeKey
+      ? (counts[item.badgeKey as keyof typeof counts] ?? 0)
+      : 0
   }));
 
   return (
@@ -77,8 +161,14 @@ export default function AdminSidebar({ isOpen, onClose, width, isCollapsed }: Ad
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-800 lg:hidden">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
-            <span className="font-bold text-gray-900 dark:text-white">Calzado J&R</span>
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-8 w-8 object-contain"
+            />
+            <span className="font-bold text-gray-900 dark:text-white">
+              Calzado J&R
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -93,21 +183,29 @@ export default function AdminSidebar({ isOpen, onClose, width, isCollapsed }: Ad
             <NavLink
               key={label}
               to={path}
-              onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+              onClick={() => {
+                if (window.innerWidth < 1024) onClose();
+              }}
               end={path === '/dashboard/admin'}
               title={isCollapsed ? label : undefined}
               className={({ isActive }) =>
                 `flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-5'} py-3 text-sm font-semibold transition-all duration-200 rounded-none hover:scale-[1.02] hover:translate-x-0.5
-                ${isActive
-                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                ${
+                  isActive
+                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-r-4 border-blue-800 dark:border-blue-500'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                    <Icon size={18} className={!isActive ? (ICON_COLORS[path] ?? '') : ''} />
+                  <div
+                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+                  >
+                    <Icon
+                      size={18}
+                      className={!isActive ? (ICON_COLORS[path] ?? '') : ''}
+                    />
                     {!isCollapsed && <span>{label}</span>}
                   </div>
                   {!isCollapsed && badge > 0 && (
@@ -127,7 +225,10 @@ export default function AdminSidebar({ isOpen, onClose, width, isCollapsed }: Ad
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group`}
             title={isCollapsed ? 'Cerrar Sesión' : undefined}
           >
-            <LogOut size={17} className="group-hover:-translate-x-0.5 transition-transform" />
+            <LogOut
+              size={17}
+              className="group-hover:-translate-x-0.5 transition-transform"
+            />
             {!isCollapsed && 'Cerrar Sesión'}
           </button>
         </div>

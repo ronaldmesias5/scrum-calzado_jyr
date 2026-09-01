@@ -23,6 +23,7 @@ from app.database import SessionLocal
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.csrf import CSRFMiddleware
 
 # Importar modelos para que SQLAlchemy los registre en Base.metadata
 from app.models import (  # noqa: F401
@@ -40,6 +41,7 @@ from app.models import (  # noqa: F401
     user,
 )
 from app.routers.auth import router as auth_router
+from app.routers.bulk_import import router as bulk_import_router
 from app.routers.catalog_brands import router as catalog_brands_router
 from app.routers.catalog_inventory import router as catalog_inventory_router
 from app.routers.catalog_products import router as catalog_products_router
@@ -130,19 +132,22 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(CSRFMiddleware)
 
 # CORSMiddleware debe ser el último (el más externo) para manejar OPTIONS correctamente
 app.add_middleware(CORSMiddleware,
     allow_origins=[
         settings.FRONTEND_URL,
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:8081",  # Expo Metro web (app móvil)
+        *([] if settings.ENVIRONMENT == "production" else [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:8081",
+        ]),
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
 )
 
 
@@ -187,6 +192,7 @@ app.include_router(dashboard_empleado_router)
 app.include_router(client_router)
 app.include_router(notifications_router)
 app.include_router(scrap_router, prefix="/api/v1/scrap", tags=["Scrap / Incidencias"])
+app.include_router(bulk_import_router)
 
 # ────────────────────────────
 # 📍 Endpoint raíz de bienvenida
@@ -241,7 +247,6 @@ async def serve_image(file_path: str):
     return FileResponse(
         path=file_location,
         headers={
-            "Access-Control-Allow-Origin": settings.FRONTEND_URL,
             "Cache-Control": "public, max-age=86400",
             "Content-Disposition": "inline",
         }

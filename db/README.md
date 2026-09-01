@@ -18,7 +18,7 @@ be/alembic/versions/          ← Esquema y datos de NEGOCIO (versionado en git)
   ├── 002_seed_initial_data.py             (datos iniciales: roles, tipos de documento)
   ├── 003_seed_catalog_data.py             (catálogo: marcas, categorías, productos)
   ├── 004_seed_test_users.py               (usuarios de prueba: admin, cortador, cliente)
-  └── ... hasta 027_add_avatar_url_to_users (avatar_url en users)
+   └── ... hasta 042_email_sender (última migración)
 ```
 
 ## ✅ ¿Qué va en `db/init/init.sql`?
@@ -74,7 +74,7 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
    └─> be/app/main.py inicia
    └─> lifespan() ejecuta: run_migrations()
    └─> Ejecuta: alembic upgrade head
-   └─> Crea tablas desde migraciones (001 → 027)
+   └─> Crea tablas desde migraciones (001 → 042)
    └─> Inserta datos iniciales (roles, tipos de doc, usuarios, 65 productos)
    └─> Backend listo ✅
    
@@ -82,7 +82,7 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
    └─> FE listo ✅
 
 6. Sistema completo operacional ✅
-   ├─ BD con 22 tablas versionadas
+   ├─ BD con 24 tablas versionadas
    ├─ 65 productos en catálogo
    ├─ 3 roles (admin, employee, client)
    ├─ Usuarios de prueba (jefe, cortador, cliente)
@@ -96,13 +96,13 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
 
 ```bash
 # Versión actual aplicada
-docker compose exec backend alembic current
+docker compose exec be alembic current
 
 # Historial completo de migraciones
-docker compose exec backend alembic history
+docker compose exec be alembic history
 
 # Ver siguiente migración a aplicar
-docker compose exec backend alembic current --verbose
+docker compose exec be alembic current --verbose
 ```
 
 ### Ejecutar migraciones
@@ -110,23 +110,23 @@ docker compose exec backend alembic current --verbose
 ```bash
 # Aplicar todas migraciones hasta 'head' (último)
 # (Normalmente automático al arrancar, pero puedes forzar)
-docker compose exec backend alembic upgrade head
+docker compose exec be alembic upgrade head
 
 # Aplicar hasta versión específica
-docker compose exec backend alembic upgrade 003_seed_catalog_data
+docker compose exec be alembic upgrade 003_seed_catalog_data
 ```
 
 ### Hacer rollback (deshacer migraciones)
 
 ```bash
 # Deshacer 1 migración
-docker compose exec backend alembic downgrade -1
+docker compose exec be alembic downgrade -1
 
 # Deshacer 2 migraciones
-docker compose exec backend alembic downgrade -2
+docker compose exec be alembic downgrade -2
 
 # Deshacer TODAS (si es necesario)
-docker compose exec backend alembic downgrade base
+docker compose exec be alembic downgrade base
 ```
 
 ### Conectarse directamente a la BD
@@ -147,7 +147,7 @@ SELECT COUNT(*) FROM products;  # Ver cantidad de productos (debe ser 65)
 
 ```bash
 # Logs del backend (donde se ejecutan las migraciones)
-docker compose logs backend -f
+docker compose logs be -f
 
 # Logs de PostgreSQL
 docker compose logs db -f
@@ -155,10 +155,7 @@ docker compose logs db -f
 
 ## 📚 Referencias Documentación
 
-- **Guía completa de migraciones:** [MIGRACIONES.md](../MIGRACIONES.md) (si existe)
-- **Usuarios de prueba:** [USUARIOS_PRUEBA.md](../USUARIOS_PRUEBA.md) (si existe)
 - **Cómo correr el proyecto:** [COMO_CORRER_PROYECTO.md](../COMO_CORRER_PROYECTO.md)
-- **Análisis de arquitectura:** [ANALISIS_ARQUITECTURA_ALEMBIC.md](../ANALISIS_ARQUITECTURA_ALEMBIC.md)
 - **Arquitectura del proyecto:** [docs/project-documentation/arquitectura_proyecto.md](../docs/project-documentation/arquitectura_proyecto.md)
 
 ## ✅ Exigencia Académica Cumplida

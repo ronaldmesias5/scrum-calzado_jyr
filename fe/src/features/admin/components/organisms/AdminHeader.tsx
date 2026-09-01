@@ -16,13 +16,22 @@ interface AdminHeaderProps {
   roleLabel?: string;
 }
 
-export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin', roleLabel }: AdminHeaderProps) {
+export default function AdminHeader({
+  onMenuClick,
+  homePath = '/dashboard/admin',
+  roleLabel
+}: AdminHeaderProps) {
   const { t } = useTranslation();
   const { user, logout, logoutAllDevices } = useAuth();
   const navigate = useNavigate();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { counts } = useBadgeCounts();
-  const { getHeaderClasses, getLogoClasses, getSearchClasses, getButtonsClasses } = useHeaderAnimation();
+  const {
+    getHeaderClasses,
+    getLogoClasses,
+    getSearchClasses,
+    getButtonsClasses
+  } = useHeaderAnimation();
   // Total de avisos = pedidos pendientes + usuarios sin validar
   const totalBadge = counts.pedidos + counts.usuarios;
 
@@ -34,8 +43,13 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
   };
 
   const handleLogoutAll = async () => {
-    if (!window.confirm('¿Estás seguro de cerrar sesión en TODOS tus dispositivos? Deberás volver a ingresar en este también.')) return;
-    
+    if (
+      !window.confirm(
+        '¿Estás seguro de cerrar sesión en TODOS tus dispositivos? Deberás volver a ingresar en este también.'
+      )
+    )
+      return;
+
     setIsLoggingOutAll(true);
     try {
       await logoutAllDevices();
@@ -47,18 +61,22 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
     }
   };
 
-  const initials = user?.name && user?.last_name
-    ? `${user.name[0]}${user.last_name[0]}`.toUpperCase()
-    : user?.email
-    ? user.email.substring(0, 2).toUpperCase()
-    : 'AD';
+  const initials =
+    user?.name && user?.last_name
+      ? `${user.name[0]}${user.last_name[0]}`.toUpperCase()
+      : user?.email
+        ? user.email.substring(0, 2).toUpperCase()
+        : 'AD';
 
-  const fullName = user?.name && user?.last_name 
-    ? `${user.name} ${user.last_name}` 
-    : user?.email?.split('@')[0] ?? 'Administrador';
+  const fullName =
+    user?.name && user?.last_name
+      ? `${user.name} ${user.last_name}`
+      : (user?.email?.split('@')[0] ?? 'Administrador');
 
   return (
-    <header className={`h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10 transition-colors duration-500 ${getHeaderClasses()}`}>
+    <header
+      className={`h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10 transition-colors duration-500 ${getHeaderClasses()}`}
+    >
       <div className="flex items-center gap-3">
         {/* Botón Hamburguesa (Móvil) */}
         <button
@@ -74,16 +92,26 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
           className={`flex items-center gap-3 cursor-pointer flex-shrink-0 ${getLogoClasses()}`}
           onClick={() => navigate(homePath)}
         >
-          <img src="/logo.png" alt="CALZADO J&R" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
+          <img
+            src="/logo.png"
+            alt="CALZADO J&R"
+            className="h-8 w-8 lg:h-10 lg:w-10 object-contain"
+          />
           <div className="hidden sm:block">
-            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{roleLabel || user?.occupation || t('dashboard.header.adminRole')}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{t('dashboard.header.welcome')}, {fullName}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+              {roleLabel || user?.occupation || t('dashboard.header.adminRole')}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+              {t('dashboard.header.welcome')}, {fullName}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Búsqueda */}
-      <div className={`hidden md:flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2 w-48 lg:w-80 transition-colors ${getSearchClasses()}`}>
+      <div
+        className={`hidden md:flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2 w-48 lg:w-80 transition-colors ${getSearchClasses()}`}
+      >
         <Search size={16} className="text-gray-400" />
         <input
           type="text"
@@ -93,12 +121,14 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
       </div>
 
       {/* Notificaciones + usuario */}
-      <div className={`flex items-center gap-2 lg:gap-4 ${getButtonsClasses()}`}>
+      <div
+        className={`flex items-center gap-2 lg:gap-4 ${getButtonsClasses()}`}
+      >
         <div className="hidden sm:flex items-center gap-2">
           <LanguageSwitcher />
         </div>
         <ThemeToggle />
-        
+
         <button
           onClick={() => setIsPanelOpen(true)}
           className="relative text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors p-1"
@@ -129,7 +159,9 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
             <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
               {fullName}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabel || user?.occupation || t('dashboard.header.adminRole')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {roleLabel || user?.occupation || t('dashboard.header.adminRole')}
+            </p>
           </div>
         </div>
 
@@ -159,7 +191,10 @@ export default function AdminHeader({ onMenuClick, homePath = '/dashboard/admin'
         </div>
       </div>
 
-      <NotificationsPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} />
+      <NotificationsPanel
+        isOpen={isPanelOpen}
+        onClose={() => setIsPanelOpen(false)}
+      />
     </header>
   );
 }

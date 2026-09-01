@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Loader2 } from 'lucide-react';
-import { getAllProductionTasks, assignTaskEmployee, type ProductionTask } from '@/services/ordersApi';
+import {
+  getAllProductionTasks,
+  assignTaskEmployee,
+  type ProductionTask
+} from '@/services/ordersApi';
 import { getAllUsers } from '@/services/adminApi';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
 import type { UserResponse } from '@/types/auth';
@@ -12,7 +16,9 @@ export default function AvailableTasksPanel() {
   const { showToast } = useToast();
   const [tasks, setTasks] = useState<ProductionTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [employees, setEmployees] = useState<{ id: string; name: string; occupation: string }[]>([]);
+  const [employees, setEmployees] = useState<
+    { id: string; name: string; occupation: string }[]
+  >([]);
 
   const reloadTasks = () => {
     getAllProductionTasks({ status: 'pendiente' })
@@ -37,13 +43,15 @@ export default function AvailableTasksPanel() {
         const filtered = users.filter(
           (u) =>
             u.occupation &&
-            ['cortador', 'guarnecedor', 'solador', 'emplantillador'].includes(u.occupation)
+            ['cortador', 'guarnecedor', 'solador', 'emplantillador'].includes(
+              u.occupation
+            )
         );
         setEmployees(
           filtered.map((u) => ({
             id: u.id,
             name: `${u.name} ${u.last_name}`.toUpperCase(),
-            occupation: u.occupation || '',
+            occupation: u.occupation || ''
           }))
         );
       })
@@ -73,9 +81,13 @@ export default function AvailableTasksPanel() {
           <UserPlus size={20} className="text-green-600 dark:text-green-400" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Tareas Disponibles</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            Tareas Disponibles
+          </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {loading ? 'Cargando...' : `${tasks.length} tarea${tasks.length !== 1 ? 's' : ''} sin asignar`}
+            {loading
+              ? 'Cargando...'
+              : `${tasks.length} tarea${tasks.length !== 1 ? 's' : ''} sin asignar`}
           </p>
         </div>
       </div>
@@ -83,7 +95,9 @@ export default function AvailableTasksPanel() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-10 gap-2">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-          <p className="text-xs text-gray-400 font-medium">Cargando tareas...</p>
+          <p className="text-xs text-gray-400 font-medium">
+            Cargando tareas...
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -96,7 +110,9 @@ export default function AvailableTasksPanel() {
               employees={employees}
               onAssignEmployee={handleAssignEmployee}
               onViewOrder={(orderId, productId) =>
-                navigate(`/dashboard/admin/orders?order=${orderId}&product=${productId}&line_group=${task.line_group ?? 0}`)
+                navigate(
+                  `/dashboard/admin/orders?order=${orderId}&product=${productId}&line_group=${task.line_group ?? 0}`
+                )
               }
             />
           ))}
