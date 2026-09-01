@@ -3075,9 +3075,9 @@ export default function OrdersPage() {
       );
       await calculateTotals();
     } catch (err: unknown) {
-      // @ts-expect-error err has response from axios
+      const axiosErr = err as { response?: { data?: { detail?: string } } };
       const msg =
-        err.response?.data?.detail ||
+        axiosErr.response?.data?.detail ||
         'Error al actualizar el estado del pedido.';
       setError(msg);
     } finally {

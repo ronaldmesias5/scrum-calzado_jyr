@@ -49,7 +49,7 @@ from app.schemas.auth import (
     UserCreate,
     UserLogin,
 )
-from app.utils.email import send_password_reset_email, send_account_approved_email, send_welcome_email
+from app.utils.email import send_password_reset_email, send_welcome_email
 from app.logging_config import audit_logger
 from app.utils.security import (
     create_access_token,

@@ -4,7 +4,7 @@ import { API_CONFIG } from './config';
 // ─── CSRF Token Helper ────────────────────────────────────────
 function getCsrfToken(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 const api = axios.create({

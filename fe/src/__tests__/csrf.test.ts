@@ -3,20 +3,25 @@
  * Descripción: Tests del interceptor CSRF en el frontend.
  */
 
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+
 describe('CSRF Token Helper', () => {
-  // Mock de document.cookie
   const originalCookie = Object.getOwnPropertyDescriptor(
     Document.prototype,
     'cookie'
   );
 
   beforeEach(() => {
-    // Reset cookies
-    document.cookie = '';
+    // jsdom no limpia cookies con document.cookie = '', expirar manualmente
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const eqIdx = cookie.indexOf('=');
+      const name = (eqIdx > -1 ? cookie.substring(0, eqIdx) : cookie).trim();
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    }
   });
 
   afterAll(() => {
-    // Restaurar cookie descriptor original
     if (originalCookie) {
       Object.defineProperty(Document.prototype, 'cookie', originalCookie);
     }
@@ -25,9 +30,8 @@ describe('CSRF Token Helper', () => {
   it('debe leer el token csrf_token de las cookies', () => {
     document.cookie = 'csrf_token=abc123def456';
 
-    // La función getCsrfToken lee document.cookie
     const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-    const token = match ? decodeURIComponent(match[1]) : null;
+    const token = match?.[1] ? decodeURIComponent(match[1]) : null;
 
     expect(token).toBe('abc123def456');
   });
@@ -36,16 +40,14 @@ describe('CSRF Token Helper', () => {
     document.cookie = 'other=value';
 
     const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-    const token = match ? decodeURIComponent(match[1]) : null;
+    const token = match?.[1] ? decodeURIComponent(match[1]) : null;
 
     expect(token).toBeNull();
   });
 
   it('debe manejar cookies vacías', () => {
-    document.cookie = '';
-
     const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-    const token = match ? decodeURIComponent(match[1]) : null;
+    const token = match?.[1] ? decodeURIComponent(match[1]) : null;
 
     expect(token).toBeNull();
   });
