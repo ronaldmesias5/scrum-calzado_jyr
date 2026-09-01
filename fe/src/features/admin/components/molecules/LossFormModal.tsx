@@ -358,7 +358,12 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         const details: OrderDetailItem[] = res.data.details ?? [];
         setOrderDetails(details);
       } catch (err) {
-        console.error('Error loading order details:', err);
+        const e = err as { response?: { status?: number } };
+        if (e.response?.status === 401) {
+          showToast('Sesión expirada, recargue e inicie sesión de nuevo', 'error');
+        } else {
+          console.error('Error loading order details:', err);
+        }
         setOrderDetails([]);
       } finally {
         setLoadingOrderDetails(false);
@@ -1014,9 +1019,9 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
 
   const renderCommonSection = () => (
     <div className="space-y-5 border-t border-gray-100 dark:border-slate-800 pt-5">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 isolate">
         {/* Incident Type */}
-        <div>
+        <div className="relative">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
             Tipo de Incidencia <span className="text-red-500">*</span>
           </label>
@@ -1056,7 +1061,7 @@ export default function LossFormModal({ isOpen, onClose, onSuccess }: LossFormMo
         </div>
 
         {/* Description — free-text defect description */}
-        <div>
+        <div className="relative">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
             Descripción del defecto <span className="text-red-500">*</span>
           </label>

@@ -127,7 +127,7 @@ export default function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full overflow-hidden flex flex-col border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 my-8 ${className}`}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 my-8 flex flex-col overflow-hidden ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || showClose) && (
@@ -150,7 +150,7 @@ export default function Modal({
             )}
           </div>
         )}
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto min-h-0 p-0">{children}</div>
       </div>
     </div>,
     document.body

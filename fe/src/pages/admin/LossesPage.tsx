@@ -17,6 +17,9 @@ import {
   ClipboardCheck,
   AlertCircle,
   Share2,
+  Users,
+  FileText,
+  Eye,
 } from 'lucide-react';
 import StatCard from '@/features/admin/components/atoms/StatCard';
 import LossFormModal from '@/features/admin/components/molecules/LossFormModal';
@@ -85,6 +88,51 @@ const CATEGORY_BADGE: Record<string, string> = {
   maquinaria: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
   insumo: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
 };
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function ValeInline({ orderId, productId }: { orderId: string; productId: string }) {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { getOrderTasks } = await import('@/services/ordersApi');
+        const all = await getOrderTasks(orderId);
+        const filtered = all.filter((t: any) => !productId || t.product_id === productId);
+        if (alive) setTasks(filtered);
+      } catch {
+        if (alive) setTasks([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [orderId, productId]);
+  if (loading) return <p className="text-xs text-gray-400 animate-pulse">Cargando producción...</p>;
+  if (tasks.length === 0) return <p className="text-xs text-gray-400 italic">Sin producción registrada para este pedido/producto.</p>;
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+        <ClipboardList size={12} /> Producción — quién hizo cada proceso
+        {tasks[0]?.vale_number && <span className="ml-auto font-mono text-[10px] text-blue-600 dark:text-blue-400">Vale #{tasks[0].vale_number}</span>}
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {tasks.map((t: any) => (
+          <div key={t.id} className="flex items-center justify-between rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2.5 py-2">
+            <span className="text-xs font-bold capitalize text-gray-700 dark:text-gray-300">{t.type}</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-white truncate max-w-[110px] text-right">
+              {t.assigned_user_name || 'Sin asignar'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function LossesPage() {
   const navigate = useNavigate();
@@ -166,6 +214,32 @@ export default function LossesPage() {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<Record<string, string>>({});
+
+  // ── Vale de producción (para ver quién hizo cada proceso) ──
+  const [valeModalInc, setValeModalInc] = useState<PendingProductIncidence | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [valeTasks, setValeTasks] = useState<any[]>([]);
+  const [valeLoading, setValeLoading] = useState(false);
+
+  const openValeModal = async (inc: PendingProductIncidence) => {
+    setValeModalInc(inc);
+    setValeTasks([]);
+    if (!inc.order_id) return;
+    setValeLoading(true);
+    try {
+      const { getOrderTasks } = await import('@/services/ordersApi');
+      const tasks = await getOrderTasks(inc.order_id);
+      const filtered = inc.product_id
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? tasks.filter((t: any) => t.product_id === inc.product_id)
+        : tasks;
+      setValeTasks(filtered);
+    } catch {
+      setValeTasks([]);
+    } finally {
+      setValeLoading(false);
+    }
+  };
 
   // ── Toast ─────────────────────────────
   const { showToast } = useToast();
@@ -980,12 +1054,38 @@ export default function LossesPage() {
                       </div>
 
                       <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3">
-                        <p>Empleado: {inc.employee_name || '—'}</p>
-                        <p>Tarea: {inc.task_type || '—'} — Talla: {inc.size}</p>
+                        <p className="flex items-center gap-1.5">
+                          {inc.customer_name ? <Users size={14} className="text-blue-500"/> : <Package size={14} className="text-purple-500"/>}
+                          Reportado por:{" "}
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {inc.customer_name
+                              ? `Cliente: ${inc.customer_name}`
+                              : inc.employee_name
+                              ? `Empleado: ${inc.employee_name}`
+                              : '—'}
+                          </span>
+                        </p>
+                        {inc.order_id && (
+                          <p className="flex items-center gap-2">
+                            <FileText size={12} /> Pedido:{" "}
+                            <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">#{inc.order_id.slice(0, 8)}</span>
+                            <button
+                              type="button"
+                              onClick={() => openValeModal(inc)}
+                              className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px] font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                            >
+                              <Eye size={10} /> Ver vale de producción
+                            </button>
+                          </p>
+                        )}
+                        <p>Tarea: {inc.task_type || '—'} — Talla: {inc.size} {inc.colour ? `· Color: ${inc.colour}` : ''}</p>
                         {inc.description && <p>Defecto: {inc.description}</p>}
                         {!inc.description && inc.defect_code && <p>Defecto: {inc.defect_code} — {inc.defect_name}</p>}
                         <p>Cantidad: {inc.quantity}</p>
                       </div>
+
+                      {/* Producción — quién hizo cada proceso (vale) — bien ubicado en la card */}
+                      {inc.order_id && <ValeInline orderId={inc.order_id} productId={inc.product_id} />}
 
                       {inc.observations && (
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 italic">
@@ -1075,7 +1175,6 @@ export default function LossesPage() {
         onClose={() => setIsFormModalOpen(false)}
         onSuccess={() => {
           loadIncidents();
-          showToast('Incidencia registrada exitosamente');
         }}
       />
 
@@ -1262,6 +1361,66 @@ export default function LossesPage() {
                   <Share2 size={16} />
                 )}
                 Compartir
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+    {/* ──────── Modal: Vale de producción ──────── */}
+    {valeModalInc &&
+      createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setValeModalInc(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Vale de producción</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Pedido #{valeModalInc.order_id?.slice(0, 8)} · Producto {valeModalInc.product_name || valeModalInc.product_id.slice(0, 8)}
+                </p>
+              </div>
+              <button onClick={() => setValeModalInc(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full" aria-label="Cerrar">
+                ✕
+              </button>
+            </div>
+            {valeLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : valeTasks.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                Sin tareas de producción para este producto. El pedido puede aún no haber iniciado producción o el vale es del cliente (sin tareas).
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {valeTasks.map((t: any) => (
+                  <div key={t.id} className="flex items-start justify-between rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-3">
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">
+                        {t.type}
+                        {t.vale_number && <span className="ml-2 font-mono text-xs text-blue-600">Vale #{t.vale_number}</span>}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Estado: {t.status} · Cant: {t.amount}
+                      </p>
+                      {t.description_task && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{t.description_task}</p>}
+                      {t.observation && <p className="text-xs italic text-amber-600 dark:text-amber-400">Obs: {t.observation}</p>}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">
+                        {t.assigned_user_name || (t.assigned_to ? t.assigned_to.slice(0, 8) : 'Sin asignar')}
+                      </p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">{t.assigned_user_occupation || t.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end mt-6">
+              <button onClick={() => setValeModalInc(null)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700">
+                Cerrar
               </button>
             </div>
           </div>

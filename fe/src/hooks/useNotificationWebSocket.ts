@@ -16,7 +16,7 @@ export function useNotificationWebSocket() {
   const connectRef = useRef<() => void>(() => undefined);
 
   const connect = useCallback(() => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
     if (!token) return;
 
     // Limpiar conexión previa
@@ -51,17 +51,21 @@ export function useNotificationWebSocket() {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       if (mountedRef.current) {
         setIsConnected(false);
-        // Reconectar después de 5 segundos
+        // No reconectar si el token expiró (403) — evita bucle infinito y ruido en consola
+        if (event.code === 1008 || event.code === 1006) {
+          const code = event.code;
+          if (code === 1008) return;
+        }
+        // Reconectar después de 5 segundos solo si no fue cierre por auth
         reconnectTimerRef.current = setTimeout(() => connectRef.current(), 5000);
       }
     };
 
     ws.onerror = () => {
-      // No llamar ws.close() aquí — el navegador cierra automáticamente
-      // y llamar close() manualmente causa "closed before connection established"
+      // Silenciar para no spamear consola en 403/401
     };
   }, []);
 
