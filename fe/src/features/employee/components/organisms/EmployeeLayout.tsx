@@ -89,6 +89,7 @@ export default function EmployeeLayout() {
             <DashboardFooter className="shrink-0 border-t border-gray-100 dark:border-slate-800/50" />
         </main>
       </div>
+      </div>
     </EmployeeBadgeCountsProvider>
   );
 }
