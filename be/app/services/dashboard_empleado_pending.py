@@ -184,7 +184,7 @@ def create_customer_pending_incidence(
                 message_notification=f"{reporter_name} reportó una incidencia en el pedido #{str(order.id)[:8]} — {detail.product_id} talla {size}",
                 type_notification=NotificationType.error,
                 order_id=order.id,
-                link_url=f"/dashboard/admin/losses?tab=pending",
+                link_url="/dashboard/admin/losses?tab=pending",
                 created_by=customer_id,
             )
             db.add(notif)
