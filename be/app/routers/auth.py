@@ -24,7 +24,11 @@ Descripción: Router FastAPI con endpoints de autenticación y gestión de contr
                dependencies.py (get_db, get_current_user)
 """
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
