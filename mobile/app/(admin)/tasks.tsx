@@ -27,6 +27,7 @@ import { ordersService } from '@/services/ordersService';
 import type { ProductionTask } from '@/types/orders';
 import type { AdminUser } from '@/types/users';
 import { cn } from '@/utils/cn';
+import { PriorityBadge } from '@/components/admin/PriorityBadge';
 import { getErrorMessage } from '@/utils/httpError';
 
 // ─── Constantes ─────────────────────────────────────────────
@@ -211,6 +212,7 @@ function TaskCard({
           </View>
         </View>
         <Badge tone={statusInfo.tone} label={statusInfo.label} />
+        {task.priority && <PriorityBadge priority={task.priority} />}
       </View>
     </View>
   );

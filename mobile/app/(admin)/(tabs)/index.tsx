@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { AppHeader } from '@/components/ui/AppHeader';
 import { Badge } from '@/components/ui/Badge';
+import { PriorityBadge } from '@/components/admin/PriorityBadge';
 import { Card } from '@/components/ui/Card';
 import { StatCard, resolveStatColor } from '@/components/ui/StatCard';
 import { useAuthStore } from '@/store/auth';
@@ -106,7 +107,10 @@ function TaskRow({ task }: { task: ProductionTask }) {
         </Text>
       </View>
       <View className="items-end gap-1">
-        <Badge tone={st.tone} label={st.label} />
+        <View className="flex-row items-center gap-1">
+          <Badge tone={st.tone} label={st.label} />
+          <PriorityBadge priority={task.priority} />
+        </View>
         <Text className="text-xs text-gray-400">{task.amount} pares</Text>
       </View>
     </View>

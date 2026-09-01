@@ -29,6 +29,7 @@ import type { OrderDetail, OrderDetailItem, OrderStatus, ProductionTask } from '
 import type { SupplyCheckResponse } from '@/types/supplies';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/utils/cn';
+import { PriorityBadge } from '@/components/admin/PriorityBadge';
 
 const STATUS_BADGE: Record<OrderStatus, { tone: BadgeTone; label: string }> = {
   pendiente: { tone: 'yellow', label: 'Pendiente' },
@@ -479,7 +480,7 @@ export default function OrderDetailScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Card className="mx-4 mt-4">
           <View className="mb-3 flex-row items-center justify-between">
-            <Badge tone={statusInfo.tone} label={statusInfo.label} />
+        <Badge tone={statusInfo.tone} label={statusInfo.label} />
             <Text className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.created_at)}</Text>
           </View>
 

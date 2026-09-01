@@ -383,6 +383,7 @@ def get_task_vale(
             id=str(t.id),
             type=t.type,
             status=t.status,
+            priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
             amount=t.amount,
             assigned_user_name=assigned_name,
             assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,

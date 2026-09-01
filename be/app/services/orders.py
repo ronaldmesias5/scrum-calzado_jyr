@@ -19,6 +19,7 @@ from app.models.inventory_movement import InventoryMovement, InventoryMovementTy
 from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.tasks import Task
 from app.models.user import User
+from app.utils.task_priority import calculate_task_priority
 from app.schemas.orders import (
     OrderDetailItemCreateRequest,
     OrderDetailItemResponse,
@@ -27,9 +28,10 @@ from app.schemas.orders import (
 )
 
 
-def _order_to_response(order: Order) -> OrderResponse:
-    """Serializa una Order incluyendo datos del cliente."""
+def _order_to_response(order: Order, db=None) -> OrderResponse:
+    """Serializa una Order incluyendo datos del cliente y prioridad desde delivery_date."""
     customer = order.customer
+    priority = calculate_task_priority(order.delivery_date)
     return OrderResponse(
         id=order.id,
         customer_id=order.customer_id,
@@ -39,6 +41,8 @@ def _order_to_response(order: Order) -> OrderResponse:
         customer_phone=customer.phone if customer else None,
         total_pairs=order.total_pairs,
         state=order.state,
+        priority=priority,
+        delivery_date=order.delivery_date,
         creation_date=order.creation_date,
         created_at=order.created_at,
     )

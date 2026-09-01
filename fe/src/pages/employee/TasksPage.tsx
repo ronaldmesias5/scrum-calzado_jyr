@@ -21,7 +21,7 @@ const toProductionTask = (
   amount: task.amount,
   status: task.status,
   type: task.type,
-  priority: task.priority || 'media',
+  priority: task.priority || 'baja',
   created_at: task.created_at || new Date().toISOString(),
   vale_number: task.vale_number ?? undefined,
   product_name: task.product_name || undefined,

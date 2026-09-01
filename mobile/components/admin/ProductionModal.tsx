@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -62,6 +63,7 @@ export function ProductionModal({
 }: ProductionModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [option, setOption] = useState<'A' | 'B'>('B');
+  const [stagePriorities, setStagePriorities] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
   const orderDetails = order.details.filter((d) => d.product_id === productId);
@@ -103,7 +105,7 @@ export function ProductionModal({
           assigned_to: vars.assignedTo || null,
           type: vars.stageKey,
           description: `${stageInfo.label} - ${productName}`,
-          priority: 'media',
+          priority: stagePriorities[vars.stageKey] || 'baja',
           amount: pairs,
           line_group: orderDetails[0]?.line_group ?? 0,
         },
@@ -392,11 +394,25 @@ export function ProductionModal({
 
                     <View className="flex-row gap-2">
                       {!task && !isBlocked && (
-                        <Button
-                          title={`Iniciar ${stage.label}`}
-                          onPress={() => handleStartStage(stage.key)}
-                          className="flex-1"
-                        />
+                        <>
+                          <View className="flex-1">
+                            <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1">Prioridad</Text>
+                            <View className="border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900">
+                              <Picker
+                                selectedValue={stagePriorities[stage.key] || 'baja'}
+                                onValueChange={(value) => setStagePriorities(p => ({ ...p, [stage.key]: value }))}
+                              >
+              <Picker.Item label="Alta" value="alta" />
+              <Picker.Item label="Baja" value="baja" />
+                              </Picker>
+                            </View>
+                          </View>
+                          <Button
+                            title={`Iniciar ${stage.label}`}
+                            onPress={() => handleStartStage(stage.key)}
+                            className="flex-1"
+                          />
+                        </>
                       )}
                       {!task && !isBlocked && (
                         <Button

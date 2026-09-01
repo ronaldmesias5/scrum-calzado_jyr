@@ -5,7 +5,7 @@ export type OrderStatus =
   | 'entregado'
   | 'cancelado';
 
-export type TaskPriority = 'baja' | 'media' | 'alta';
+export type TaskPriority = 'baja' | 'alta';
 export type TaskType = 'corte' | 'guarnicion' | 'soladura' | 'emplantillado';
 export type TaskStatus =
   | 'pendiente'
@@ -95,6 +95,7 @@ export interface ProductionTask {
   assigned_to: string | null;
   type: TaskType;
   status: TaskStatus;
+  priority: string;
   vale_number: number | null;
   amount: number;
   description_task: string | null;

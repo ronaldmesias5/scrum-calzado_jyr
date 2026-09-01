@@ -53,7 +53,8 @@ import {
   createProductionTasks,
   updateProductionTaskStatus,
   assignTaskEmployee,
-  createInventoryMovement
+  createInventoryMovement,
+  updateTaskPriority
 } from '@/services/ordersApi';
 import { getAllUsers } from '@/services/adminApi';
 import { type UserResponse } from '@/types/auth';
@@ -218,6 +219,9 @@ function OrdersTable({
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Estado
               </th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Prioridad
+              </th>
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Fecha
               </th>
@@ -253,6 +257,17 @@ function OrdersTable({
                 </td>
                 <td className="px-4 py-2">
                   <StatusBadge status={order.state} />
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {order.priority === 'alta' ? (
+                    <span className="text-[10px] font-black text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-200 uppercase">
+                      ALTA
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200 uppercase">
+                      BAJA
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-gray-600 dark:text-gray-400 text-xs font-medium">
                   {new Date(order.created_at).toLocaleDateString('es-CO')}
@@ -335,6 +350,7 @@ function OrderDetailView({
   const [productionStep, setProductionStep] = useState(1);
   const [selectedOption, setSelectedOption] = useState<'A' | 'B'>('A');
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [stagePriorities, setStagePriorities] = useState<Record<string, string>>({});
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [nextValeNumber, setNextValeNumber] = useState<number | null>(null);
   const [currentTasks, setCurrentTasks] = useState<any[]>([]);
@@ -661,6 +677,19 @@ function OrderDetailView({
     }
   };
 
+  // ─── Toggle prioridad de tarea (solo admin) ─────────────────
+  const handleTogglePriority = async (taskId: string, currentPriority: string) => {
+    const newPriority = currentPriority === 'alta' ? 'baja' : 'alta';
+    try {
+      await updateTaskPriority(taskId, newPriority);
+      setCurrentTasks(prev => prev.map(t => t.id === taskId ? { ...t, priority: newPriority } : t));
+      showToast(`Prioridad cambiada a ${newPriority.toUpperCase()}`);
+    } catch (e) {
+      console.error('Error toggling priority:', e);
+      showToast('Error al cambiar prioridad', 'error');
+    }
+  };
+
   // ─── Iniciar etapa individual desde la card ────────────────
   const handleIniciarEtapa = async (stageKey: string, stageLabel: string) => {
     const productId = productionModal?.productId;
@@ -717,7 +746,7 @@ function OrderDetailView({
         assigned_to: assignedUser || null,
         type: stageKey,
         description: `Iniciando ${stageLabel} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'}) | METADATA: ${JSON.stringify({ breakdown: breakdownMetadata, option: selectedOption })}`,
-        priority: 'media' as const,
+        priority: stagePriorities[stageKey] || 'baja',
         amount: amountForTask,
         breakdown: breakdownMetadata
       };
@@ -2136,12 +2165,65 @@ function OrderDetailView({
                               prevStage &&
                               (!prevTask || prevTask.status !== 'completado');
 
+<<<<<<< HEAD
                             // Current task info
                             const currentTask = Array.isArray(currentTasks)
                               ? currentTasks.find((t) => t.type === stage.key)
                               : null;
                             const isCompleted =
                               currentTask?.status === 'completado';
+=======
+                    <button 
+                      onClick={() => setProductionStep(2)}
+                      className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2 group active:scale-[0.98]"
+                    >
+                      Configurar Personal y Tareas <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                ) : (
+                  /* PASO 2: Hoja de Producción Pro */
+                  <div className="space-y-8 animate-in fade-in zoom-in duration-300">
+                    
+                    {/* Encabezado de la Hoja */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm gap-6">
+                      <div className="flex items-center gap-6">
+                        <img src="/logo.png" alt="Logo Fábrica" className="w-16 h-16 object-contain drop-shadow-md" />
+                        <div className="h-10 w-[2px] bg-gray-100 dark:bg-slate-800 hidden sm:block" />
+                        <div>
+                          <h1 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">CALZADO J&R</h1>
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-[0.2em] mt-1">SISTEMA DE PRODUCCIÓN</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-8 text-right items-center">
+                        {order.delivery_date && (() => {
+                          const diff = Math.ceil((new Date(order.delivery_date).getTime() - Date.now()) / (1000*60*60*24));
+                          const priority = diff <= 10 ? 'alta' : 'baja';
+                          return (
+                            <div>
+                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Prioridad</p>
+                              <span className={`text-[11px] font-black px-2.5 py-1 rounded-md border shadow-sm inline-block ${
+                                priority === 'alta' ? 'text-red-700 bg-red-50 border-red-200' : 'text-gray-500 bg-gray-50 border-gray-200'
+                              }`}>
+                                {priority.toUpperCase()}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vale Nº</p>
+                          <p className="text-lg font-black text-red-600">
+                            {currentTasks && currentTasks.length > 0 && currentTasks[0].vale_number
+                              ? `# ${currentTasks[0].vale_number}`
+                              : (nextValeNumber ? `# ${nextValeNumber}` : '# ⏳')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</p>
+                          <p className="text-lg font-black text-gray-800 dark:text-gray-200">{new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+                    </div>
+>>>>>>> 257779c (feat: task priority and mobile admin improvements)
 
                             return (
                               <div
@@ -2207,9 +2289,103 @@ function OrderDetailView({
                                               Total: {formatCOP(taskCost)} (
                                               {pares} pares)
                                             </p>
+<<<<<<< HEAD
                                           </div>
                                         );
                                       })()}
+=======
+                                         </div>
+                                       );
+                                     })()}
+                                   </div>
+                                 </div>
+                                 <span className="text-[9px] font-black px-2 py-0.5 bg-black/5 dark:bg-white/5 rounded uppercase tracking-tighter text-gray-600 dark:text-gray-400">Cargo: {stage.occupation}</span>
+                              </div>
+
+                              <div className="space-y-4">
+                                {currentTask ? (
+                                  currentTask.assigned_to ? (
+                                    <div className="flex flex-col gap-3 p-3 bg-white/60 dark:bg-slate-900/60 rounded-xl border border-black/5">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700 flex items-center justify-center shadow-md shadow-blue-500/20">
+                                          <User size={16} className="text-white" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-0.5">Responsable</p>
+                                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none truncate">
+                                            {currentTask?.assigned_user_name || 'Asignado'}
+                                          </p>
+                                        </div>
+                                        <div className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 ${
+                                          currentTask.status === 'completado' 
+                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
+                                            : currentTask.status === 'pendiente'
+                                            ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400'
+                                            : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                                        }`}>
+                                          {currentTask.status === 'completado' ? 'Hecho' : currentTask.status === 'pendiente' ? 'Pendiente' : 'Activo'}
+                                        </div>
+                                        {currentTask.priority && (
+                                          <button
+                                            onClick={() => handleTogglePriority(currentTask.id, currentTask.priority)}
+                                            className={`ml-1 px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ${
+                                              currentTask.priority === 'alta'
+                                                ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 hover:bg-red-200'
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200'
+                                            }`}
+                                            title="Click para cambiar prioridad"
+                                          >
+                                            {currentTask.priority === 'alta' ? 'ALTA' : 'BAJA'}
+                                          </button>
+                                        )}
+                                      </div>
+                                      
+                                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+                                        {(() => {
+                                          // Verificar si la siguiente etapa ya fue creada/iniciada
+                                          const currentIndex = STAGES_LOGIC.findIndex(s => s.key === stage.key);
+                                          const nextIndex = currentIndex + 1;
+                                          const nextStage = nextIndex < STAGES_LOGIC.length ? STAGES_LOGIC[nextIndex] : null;
+                                          const nextTaskExists = nextStage && Array.isArray(currentTasks) && currentTasks.some(t => t?.type === nextStage.key);
+                                          
+                                          // Si es EMPLANTILLADO y está completado, mostrar mensaje especial
+                                          if (stage.key === 'emplantillado' && currentTask.status === 'completado') {
+                                            return (
+                                              <div className="w-full text-[11px] font-black uppercase bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg py-3 px-3 flex flex-col items-center justify-center gap-2 text-center">
+                                                <CheckCircle2 size={18} />
+                                                <span>🎉 Producto Terminado</span>
+                                                <span className="text-[9px] font-bold opacity-80 block">Listo para Entrega</span>
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          // Solo bloquear si la siguiente etapa fue iniciada
+                                          if (nextTaskExists) {
+                                            return (
+                                              <div className="w-full text-[10px] font-black uppercase bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg py-2 px-2 flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
+                                                <CheckCircle2 size={14} />
+                                                Completado
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          // De lo contrario, permitir editar el estado
+                                          return (
+                                            <select 
+                                              value={currentTask.status}
+                                              onChange={(e) => handleUpdateTaskStatus(currentTask.id, e.target.value)}
+                                              disabled={loadingTasks}
+                                              className="w-full text-[10px] font-black uppercase bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg py-1.5 px-2 outline-none cursor-pointer disabled:opacity-50 transition-colors"
+                                            >
+                                             <option value="pendiente">Pendiente</option>
+                                               <option value="en_progreso">En Progreso</option>
+                                               <option value="completado">Completado</option>
+                                               <option value="cancelado">Cancelado</option>
+                                             </select>
+                                          );
+                                        })()}
+                                      </div>
+>>>>>>> 257779c (feat: task priority and mobile admin improvements)
                                     </div>
                                   </div>
                                   <span className="text-[9px] font-black px-2 py-0.5 bg-black/5 dark:bg-white/5 rounded uppercase tracking-tighter text-gray-600 dark:text-gray-400">
@@ -2415,6 +2591,7 @@ function OrderDetailView({
                                     </select>
                                   )}
 
+<<<<<<< HEAD
                                   {/* Botón Iniciar dentro de la card, solo si la etapa no está bloqueada ni iniciada */}
                                   {!currentTask && !isUnreachable && (
                                     <button
@@ -2431,6 +2608,31 @@ function OrderDetailView({
                                       {stage.label}
                                     </button>
                                   )}
+=======
+                                {/* Botón Iniciar dentro de la card, solo si la etapa no está bloqueada ni iniciada */}
+                                {!currentTask && !isUnreachable && (
+                                  <>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Prioridad</label>
+                                      <select
+                                        value={stagePriorities[stage.key] || 'baja'}
+                                        onChange={(e) => setStagePriorities(p => ({ ...p, [stage.key]: e.target.value }))}
+                                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-xs font-bold outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
+                                      >
+                                    <option value="alta">Alta</option>
+                                    <option value="baja">Baja</option>
+                                      </select>
+                                    </div>
+                                    <button
+                                      onClick={() => handleIniciarEtapa(stage.key, stage.label)}
+                                      disabled={loadingTasks}
+                                      className="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                                    >
+                                      <PlayCircle size={16} /> Iniciar {stage.label}
+                                    </button>
+                                  </>
+                                )}
+>>>>>>> 257779c (feat: task priority and mobile admin improvements)
 
                                   {/* Materiales en esta etapa */}
                                   <div className="space-y-2">
