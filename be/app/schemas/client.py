@@ -80,6 +80,7 @@ class ClientIncidenceResponse(BaseModel):
     observations: str | None = None
     status: str
     approved_type: str | None = None
+    rejection_reason: str | None = None
     reviewed_by_name: str | None = None
     reviewed_at: str | None = None
     created_at: str | None = None

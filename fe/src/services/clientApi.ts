@@ -71,6 +71,7 @@ export interface ClientIncidence {
   observations: string | null;
   status: string;
   approved_type: string | null;
+  rejection_reason: string | null;
   reviewed_by_name: string | null;
   reviewed_at: string | null;
   created_at: string | null;

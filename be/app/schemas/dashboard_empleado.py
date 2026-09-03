@@ -302,6 +302,7 @@ class ProductIncidenceResponse(BaseModel):
     observations: str | None = None
     status: str
     approved_type: str | None = None
+    rejection_reason: str | None = None
     employee_name: str | None = None
     customer_name: str | None = None
     order_id: str | None = None
@@ -319,3 +320,9 @@ class ApproveProductIncidenceRequest(BaseModel):
     """Aprobar incidencia de producto — el jefe elige el tipo."""
 
     incident_type: str  # perdida, en_reparacion, devuelto
+
+
+class RejectProductIncidenceRequest(BaseModel):
+    """Rechazar incidencia de producto — el jefe escribe un motivo."""
+
+    reason: str | None = None

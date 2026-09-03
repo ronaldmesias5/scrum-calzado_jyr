@@ -247,6 +247,7 @@ export default function EmployeeIncidencesPage() {
                       </div>
                       {inc.observations && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{inc.observations}</p>)}
                       {inc.status === 'approved' && inc.approved_type && (<p className="text-xs text-green-600 dark:text-green-400 mb-2">Tipo: {inc.approved_type}</p>)}
+                      {inc.status === 'rejected' && inc.rejection_reason && (<p className="text-xs text-red-600 dark:text-red-400 mb-2">Motivo: {inc.rejection_reason}</p>)}
                       {inc.reviewed_by_name && (<p className="text-xs text-gray-500 dark:text-gray-400">{inc.status === 'approved' ? 'Aprobado' : 'Rechazado'} por {inc.reviewed_by_name}{inc.reviewed_at && ` — ${formatDate(inc.reviewed_at)}`}</p>)}
                       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2"><span className="flex items-center gap-1"><AlertCircle size={12} />{formatDate(inc.created_at)}</span></div>
                     </div>

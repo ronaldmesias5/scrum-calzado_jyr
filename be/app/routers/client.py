@@ -289,6 +289,7 @@ def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidence
         observations=p.observations,
         status=p.status,
         approved_type=p.approved_type,
+        rejection_reason=p.rejection_reason,
         reviewed_by_name=reviewed_by_name,
         reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
         created_at=p.created_at.isoformat() if p.created_at else None,

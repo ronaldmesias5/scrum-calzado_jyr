@@ -214,6 +214,8 @@ export default function LossesPage() {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<Record<string, string>>({});
+  const [rejectModalInc, setRejectModalInc] = useState<PendingProductIncidence | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // ── Vale de producción (para ver quién hizo cada proceso) ──
   const [valeModalInc, setValeModalInc] = useState<PendingProductIncidence | null>(null);
@@ -321,10 +323,10 @@ export default function LossesPage() {
     }
   };
 
-  const handleRejectPending = async (id: string) => {
+  const handleRejectPending = async (id: string, reason?: string) => {
     setRejectingId(id);
     try {
-      await rejectPendingIncidence(id);
+      await rejectPendingIncidence(id, reason);
       await loadPendingIncidences();
       showToast('Incidencia rechazada exitosamente');
     } catch (e) {
@@ -332,6 +334,8 @@ export default function LossesPage() {
       showToast('Error al rechazar la incidencia', 'error');
     } finally {
       setRejectingId(null);
+      setRejectModalInc(null);
+      setRejectionReason('');
     }
   };
 
@@ -1124,7 +1128,10 @@ export default function LossesPage() {
                               Aprobar
                             </button>
                             <button
-                              onClick={() => handleRejectPending(inc.id)}
+                              onClick={() => {
+                                setRejectModalInc(inc);
+                                setRejectionReason('');
+                              }}
                               disabled={isRejecting}
                               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all text-sm font-bold"
                             >
@@ -1149,6 +1156,11 @@ export default function LossesPage() {
                           {inc.approved_type && (
                             <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                               Tipo: {inc.approved_type === 'perdida' ? 'Pérdida' : inc.approved_type === 'en_reparacion' ? 'En Reparación' : 'Devuelto'}
+                            </p>
+                          )}
+                          {inc.rejection_reason && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              Motivo: {inc.rejection_reason}
                             </p>
                           )}
                         </div>
@@ -1421,6 +1433,54 @@ export default function LossesPage() {
             <div className="flex justify-end mt-6">
               <button onClick={() => setValeModalInc(null)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700">
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Reject incidence reason modal */}
+      {rejectModalInc && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+              Rechazar incidencia
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Producto: {rejectModalInc.product_name} — Talla {rejectModalInc.size}
+            </p>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Motivo del rechazo (opcional):
+            </label>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Escribe por qué se rechaza esta incidencia..."
+              rows={3}
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setRejectModalInc(null);
+                  setRejectionReason('');
+                }}
+                className="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all text-sm font-bold"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleRejectPending(rejectModalInc.id, rejectionReason || undefined)}
+                disabled={rejectingId === rejectModalInc.id}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all text-sm font-bold"
+              >
+                {rejectingId === rejectModalInc.id ? (
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <XCircle size={16} />
+                )}
+                Rechazar
               </button>
             </div>
           </div>

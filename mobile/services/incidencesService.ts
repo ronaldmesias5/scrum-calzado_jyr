@@ -110,9 +110,11 @@ export async function approvePendingIncidence(
 
 export async function rejectPendingIncidence(
   pendingId: string,
+  reason?: string,
 ): Promise<PendingIncidence> {
   const { data } = await apiClient.post<PendingIncidence>(
     `/scrap/pending-incidences/${pendingId}/reject`,
+    { reason: reason || null },
   );
   return data;
 }

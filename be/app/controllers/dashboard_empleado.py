@@ -56,7 +56,7 @@ def approve_pending_incidence(db, pending_id, jefe_id, incident_type):
 def reject_pending_incidence(db, pending_id, jefe_id, reason=None):
     from app.services.dashboard_empleado_pending import reject_pending_incidence
 
-    return reject_pending_incidence(db=db, pending_id=pending_id, jefe_id=jefe_id)
+    return reject_pending_incidence(db=db, pending_id=pending_id, jefe_id=jefe_id, reason=reason)
 
 
 def create_customer_pending_incidence(

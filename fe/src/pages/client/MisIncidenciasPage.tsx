@@ -171,6 +171,11 @@ export default function MisIncidenciasPage() {
                             por {inc.reviewed_by_name}
                           </p>
                         )}
+                        {inc.rejection_reason && (
+                          <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5">
+                            Motivo: {inc.rejection_reason}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                         {formatDate(inc.created_at)}
