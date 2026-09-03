@@ -9,10 +9,9 @@ Create Date: 2026-08-31
 """
 
 from alembic import op
-import sqlalchemy as sa
 
 revision = "043_task_priority_remove_media"
-down_revision = "042_email_sender"
+down_revision = "043_email_verification_tokens"
 branch_labels = None
 depends_on = None
 
