@@ -3,9 +3,6 @@ Archivo: tests/test_delete_account.py
 Descripción: Tests del endpoint DELETE /api/v1/users/me (auto-eliminación de cuenta).
 """
 
-import uuid
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
 
 
 def test_delete_account_request_schema_validation():
@@ -33,7 +30,6 @@ def test_delete_account_wrong_password():
 
     # Primero necesitamos hacer login para tener un token
     # Pero si no hay BD disponible, test de schema solamente
-    from app.routers.users import DeleteAccountRequest
     from app.utils.security import hash_password, verify_password
 
     correct_hash = hash_password("Correcta123!")

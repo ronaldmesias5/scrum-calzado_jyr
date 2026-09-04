@@ -3,7 +3,7 @@
  * Descripción: Tipos centralizados para tareas de producción.
  */
 
-export type TaskPriority = 'baja' | 'media' | 'alta';
+export type TaskPriority = 'baja' | 'alta';
 export type TaskType = 'corte' | 'guarnicion' | 'soladura' | 'emplantillado';
 export type TaskStatus =
   | 'pendiente'
@@ -29,6 +29,7 @@ export interface ProductionTask {
   completed_at?: string | null;
   created_at: string;
   updated_at?: string;
+  deadline?: string | null;
 }
 
 export interface TaskStatusUpdateRequest {

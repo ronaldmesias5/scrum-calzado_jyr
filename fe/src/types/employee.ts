@@ -85,6 +85,7 @@ export interface ValeTaskInfo {
   id: string;
   type: string;
   status: string;
+  priority?: string;
   amount: number;
   assigned_user_name: string | null;
   assigned_user_occupation: string | null;

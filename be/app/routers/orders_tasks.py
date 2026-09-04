@@ -23,10 +23,12 @@ from app.schemas.orders import (
     AssignTaskEmployeeRequest,
     ProductionBatchTasksRequest,
     ProductionTaskResponse,
+    TaskPriorityUpdateRequest,
     TaskStatusUpdateRequest,
 )
 from app.controllers.orders import complete_emplantillado
 from app.controllers.supplies import deduct_supplies_for_production
+from app.utils.task_priority import calculate_task_priority
 
 router = APIRouter(
     prefix="/api/v1/admin/orders",
@@ -99,16 +101,18 @@ def list_all_production_tasks(
                     assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                     type=t.type,
                     status=t.status,
+                    priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
                     vale_number=t.vale_number,
                     observation=t.observation,
                     created_at=t.created_at,
+                    deadline=t.deadline,
                     task_prices=t.product.task_prices if t.product else {},
                     total_pairs=t.amount if t.amount > 0 else int(total or 0),
                     amount=t.amount if t.amount > 0 else int(total or 0),
                     description_task=t.description_task,
                     product_name=t.product.name_product if t.product else None,
                     product_category=t.product.category.name_category if t.product and t.product.category else None,
-                    product_image=t.product.image_url if t.product else None
+                    product_image=t.product.image_url if t.product else None,
                 ))
             except Exception:
                 logger.exception("Error al serializar tarea de producción")
@@ -196,9 +200,10 @@ def create_production_tasks(
                 amount=t_data.amount,
                 type=t_data.type,
                 description_task=t_data.description or f"Tarea de {t_data.type} para la orden {order_id}",
-                priority=t_data.priority,
+                priority=t_data.priority or calculate_task_priority(order.delivery_date),
+                deadline=order.delivery_date,
                 assignment_date=now,
-                created_by=current_user.id
+                created_by=current_user.id,
             )
             db.add(task)
             # Si se asignó empleado, la tarea arranca en progreso
@@ -246,8 +251,10 @@ def create_production_tasks(
                 assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                 type=t.type,
                 status=t.status,
+                priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
                 vale_number=t.vale_number,
                 created_at=t.created_at,
+                deadline=t.deadline,
                 observation=t.observation,
                 task_prices=t.product.task_prices if t.product else {},
                 total_pairs=t.amount if t.amount > 0 else int(total or 0),
@@ -255,8 +262,7 @@ def create_production_tasks(
                 description_task=t.description_task,
                 product_name=t.product.name_product if t.product else None,
                 product_category=t.product.category.name_category if t.product and t.product.category else None,
-                product_image=t.product.image_url if t.product else None
-
+                product_image=t.product.image_url if t.product else None,
             ))
 
         return results
@@ -309,11 +315,13 @@ def assign_task_employee(
         assigned_user_occupation=employee.occupation,
         type=task.type,
         status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
         description_task=task.description_task,
         vale_number=task.vale_number,
         created_at=task.created_at,
+        deadline=task.deadline,
         observation=task.observation,
-        task_prices=task.product.task_prices if task.product else {}
+        task_prices=task.product.task_prices if task.product else {},
     )
 
 
@@ -357,8 +365,10 @@ def get_order_tasks(
                 assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
                 type=t.type,
                 status=t.status,
+                priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
                 vale_number=t.vale_number,
                 created_at=t.created_at,
+                deadline=t.deadline,
                 observation=t.observation,
                 task_prices=t.product.task_prices if t.product else {},
                 total_pairs=t.amount if t.amount > 0 else int(total or 0),
@@ -366,7 +376,7 @@ def get_order_tasks(
                 description_task=t.description_task,
                 product_name=t.product.name_product if t.product else None,
                 product_category=t.product.category.name_category if t.product and t.product.category else None,
-                product_image=t.product.image_url if t.product else None
+                product_image=t.product.image_url if t.product else None,
             ) for t, total in tasks_data
         ]
     except Exception as e:
@@ -435,9 +445,10 @@ def update_task_status(
                     type=next_type,
                     description_task=f"Tarea de {next_type} para la orden {task.order_id} (auto-generada)",
                     priority=task.priority,
+                    deadline=task.deadline,
                     assignment_date=now2,
                     created_by=current_user.id,
-                    status='pendiente'
+                    status='pendiente',
                 )
                 db.add(next_task)
 
@@ -467,9 +478,54 @@ def update_task_status(
         assigned_user_occupation=user_occupation,
         type=task.type,
         status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
         description_task=task.description_task,
         vale_number=task.vale_number,
         created_at=task.created_at,
+        deadline=task.deadline,
         observation=task.observation,
-        task_prices=task.product.task_prices if task.product else {}
+        task_prices=task.product.task_prices if task.product else {},
+    )
+
+
+@router.patch("/tasks/{task_id}/priority", response_model=ProductionTaskResponse)
+def update_task_priority(
+    task_id: uuid.UUID,
+    request: TaskPriorityUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Actualiza la prioridad de una tarea de producción. Solo el jefe puede cambiarla."""
+    _require_jefe(current_user)
+
+    query = select(Task).options(joinedload(Task.product), joinedload(Task.assigned_user)).where(Task.id == task_id)
+    task = db.execute(query).unique().scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    task.priority = request.priority
+    db.commit()
+
+    user_name = "Sin asignar"
+    user_occupation = None
+    if task.assigned_user:
+        user_name = f"{task.assigned_user.name_user} {task.assigned_user.last_name}"
+        user_occupation = task.assigned_user.occupation
+
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        line_group=task.line_group,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=user_occupation,
+        type=task.type,
+        status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        deadline=task.deadline,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {},
     )

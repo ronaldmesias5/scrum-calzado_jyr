@@ -13,8 +13,8 @@ from app.services import orders as orders_service
 
 
 # Expose same names as service for backward compatibility with routers
-def _order_to_response(order: Order):
-    return orders_service._order_to_response(order)
+def _order_to_response(order: Order, db=None):
+    return orders_service._order_to_response(order, db)
 
 
 def _order_to_detail_response(order: Order):

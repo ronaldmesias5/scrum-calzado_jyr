@@ -49,11 +49,14 @@ import {
   getNextValeNumber,
   type Order,
   type OrderDetail,
+  type OrderDetailItem,
   type OrderStatus,
+  type ProductionTask,
   createProductionTasks,
   updateProductionTaskStatus,
   assignTaskEmployee,
-  createInventoryMovement
+  createInventoryMovement,
+  updateTaskPriority
 } from '@/services/ordersApi';
 import { getAllUsers } from '@/services/adminApi';
 import { type UserResponse } from '@/types/auth';
@@ -117,6 +120,25 @@ const CAT_TO_STAGE: Record<string, string> = {
 
 const getStageByCat = (cat: string) =>
   CAT_TO_STAGE[cat.toLowerCase()] || 'otros';
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const response = error.response;
+    if (
+      typeof response === 'object' &&
+      response !== null &&
+      'data' in response &&
+      typeof response.data === 'object' &&
+      response.data !== null &&
+      'detail' in response.data &&
+      typeof response.data.detail === 'string'
+    ) {
+      return response.data.detail;
+    }
+  }
+  return 'Error desconocido';
+};
 
 // ─────────────────────────────────────────
 // ─────────────────────────────────────────
@@ -218,6 +240,9 @@ function OrdersTable({
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Estado
               </th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Prioridad
+              </th>
               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Fecha
               </th>
@@ -253,6 +278,17 @@ function OrdersTable({
                 </td>
                 <td className="px-4 py-2">
                   <StatusBadge status={order.state} />
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {order.priority === 'alta' ? (
+                    <span className="text-[10px] font-black text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-200 uppercase">
+                      ALTA
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200 uppercase">
+                      BAJA
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-gray-600 dark:text-gray-400 text-xs font-medium">
                   {new Date(order.created_at).toLocaleDateString('es-CO')}
@@ -321,7 +357,7 @@ function OrderDetailView({
   onOrderUpdate?: (updatedOrder: OrderDetail) => void;
   error?: string | null;
   setIsEditModalOpen: (productId?: string) => void;
-  onCompleteFromWarehouse: (productId: string, lines: any[]) => void;
+  onCompleteFromWarehouse: (productId: string, lines: OrderDetailItem[]) => void;
 }) {
   const { showToast } = useToast();
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -335,9 +371,10 @@ function OrderDetailView({
   const [productionStep, setProductionStep] = useState(1);
   const [selectedOption, setSelectedOption] = useState<'A' | 'B'>('A');
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [stagePriorities, setStagePriorities] = useState<Record<string, string>>({});
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [nextValeNumber, setNextValeNumber] = useState<number | null>(null);
-  const [currentTasks, setCurrentTasks] = useState<any[]>([]);
+  const [currentTasks, setCurrentTasks] = useState<ProductionTask[]>([]);
 
   useEffect(() => {
     if (productionModal) {
@@ -472,28 +509,25 @@ function OrderDetailView({
     if (!productionModal?.productId || !order?.details) return [];
 
     // 1. Intentar obtener el desglose desde el metadato de la tarea de Corte (fuente de verdad persistente)
-    const corteTask = Array.isArray(currentTasks)
-      ? currentTasks.find((t) => t?.type === 'corte')
-      : null;
-    if (
-      corteTask &&
-      (corteTask as any).description_task?.includes('METADATA:')
-    ) {
+    const corteTask = currentTasks.find((t) => t.type === 'corte');
+    if (corteTask && corteTask.description_task?.includes('METADATA:')) {
       try {
-        const metaStr = (corteTask as any).description_task.split(
-          'METADATA:'
-        )[1];
-        const metadata = JSON.parse(metaStr);
-        if (metadata?.breakdown) {
+        const metaStr = corteTask.description_task.split('METADATA:')[1];
+        if (!metaStr) return [];
+        const metadata = JSON.parse(metaStr) as {
+          breakdown?: Record<string, number>;
+        };
+        const breakdown = metadata.breakdown;
+        if (breakdown) {
           // Reconstruir los detalles basados en el metadato persistido
           const baseDetails = order.details.filter(
             (d) => d.product_id === productionModal.productId
           );
           return baseDetails
-            .filter((d) => metadata.breakdown[d.size] !== undefined)
+            .filter((d) => breakdown[d.size] !== undefined)
             .map((d) => ({
               ...d,
-              amount: metadata.breakdown[d.size] // Usar la cantidad que se guardó al crear la tarea
+              amount: breakdown[d.size] // Usar la cantidad que se guardó al crear la tarea
             }))
             .sort((a, b) => parseInt(a.size || '0') - parseInt(b.size || '0'));
         }
@@ -503,7 +537,7 @@ function OrderDetailView({
     }
 
     // 2. Fallback: Cálculo dinámico basado en stock (para nuevos vales o vales sin metadato)
-    let filtered = order.details
+    const filtered = order.details
       .filter((d) => d.product_id === productionModal.productId)
       .map((d) => ({
         ...d,
@@ -548,7 +582,7 @@ function OrderDetailView({
               colour: d.colour,
               amount: d.amount,
               state: d.state
-            }) as any
+            })
         )
       });
 
@@ -607,7 +641,7 @@ function OrderDetailView({
                     colour: d.colour,
                     amount: d.amount,
                     state: d.state
-                  }) as any
+                  })
               )
             });
 
@@ -627,7 +661,7 @@ function OrderDetailView({
                   // Refrescar la orden para obtener el estado actualizado
                   const updatedOrder = await getOrderDetail(order.id);
                   onOrderUpdate?.(updatedOrder);
-                } catch (statusErr: any) {
+                } catch (statusErr: unknown) {
                   console.error(
                     '❌ Error actualizando estado global:',
                     statusErr
@@ -658,6 +692,19 @@ function OrderDetailView({
       showToast('Error al actualizar la tarea', 'error');
     } finally {
       setLoadingTasks(false);
+    }
+  };
+
+  // ─── Toggle prioridad de tarea (solo admin) ─────────────────
+  const handleTogglePriority = async (taskId: string, currentPriority: string) => {
+    const newPriority = currentPriority === 'alta' ? 'baja' : 'alta';
+    try {
+      await updateTaskPriority(taskId, newPriority);
+      setCurrentTasks(prev => prev.map(t => t.id === taskId ? { ...t, priority: newPriority } : t));
+      showToast(`Prioridad cambiada a ${newPriority.toUpperCase()}`);
+    } catch (e) {
+      console.error('Error toggling priority:', e);
+      showToast('Error al cambiar prioridad', 'error');
     }
   };
 
@@ -717,7 +764,7 @@ function OrderDetailView({
         assigned_to: assignedUser || null,
         type: stageKey,
         description: `Iniciando ${stageLabel} para ${productionModal?.productName} (Vale #${nextValeNumber || '0'}) | METADATA: ${JSON.stringify({ breakdown: breakdownMetadata, option: selectedOption })}`,
-        priority: 'media' as const,
+        priority: stagePriorities[stageKey] || 'baja',
         amount: amountForTask,
         breakdown: breakdownMetadata
       };
@@ -1593,7 +1640,10 @@ function OrderDetailView({
                                 return '⏳';
                               // Buscar el número de vale más reciente de estas tareas
                               const fromTasks = currentTasks
-                                .filter((t) => t?.vale_number)
+                                .filter(
+                                  (t): t is ProductionTask & { vale_number: number } =>
+                                    typeof t.vale_number === 'number'
+                                )
                                 .sort(
                                   (a, b) => b.vale_number - a.vale_number
                                 )[0]?.vale_number;
@@ -1938,8 +1988,8 @@ function OrderDetailView({
                             <p className="text-lg font-black text-red-600">
                               {currentTasks &&
                               currentTasks.length > 0 &&
-                              currentTasks[0].vale_number
-                                ? `# ${currentTasks[0].vale_number}`
+                              currentTasks[0]?.vale_number
+                                ? `# ${currentTasks[0]?.vale_number}`
                                 : nextValeNumber
                                   ? `# ${nextValeNumber}`
                                   : '# ⏳'}
@@ -2025,7 +2075,7 @@ function OrderDetailView({
                                 Cantidad:{' '}
                                 <span className="text-blue-600 dark:text-blue-400">
                                   {tableDetails.reduce(
-                                    (sum, d) => sum + d.amount,
+                                    (sum, d) => sum + (d.amount ?? 0),
                                     0
                                   )}{' '}
                                   pares
@@ -2034,11 +2084,9 @@ function OrderDetailView({
                             </div>
                             {/* Observations display */}
                             {(() => {
-                              const obs = (
-                                order.details.find(
-                                  (d) =>
-                                    d.product_id === productionModal?.productId
-                                ) as any
+                              const obs = order.details.find(
+                                (d) =>
+                                  d.product_id === productionModal?.productId
                               )?.observations;
                               if (!obs) return null;
                               return (
@@ -2123,7 +2171,6 @@ function OrderDetailView({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {STAGES_LOGIC.map((stage, idx) => {
-                            // Sequential locking logic
                             const prevStage =
                               idx > 0 ? STAGES_LOGIC[idx - 1] : null;
                             const prevTask =
@@ -2136,7 +2183,6 @@ function OrderDetailView({
                               prevStage &&
                               (!prevTask || prevTask.status !== 'completado');
 
-                            // Current task info
                             const currentTask = Array.isArray(currentTasks)
                               ? currentTasks.find((t) => t.type === stage.key)
                               : null;
@@ -2186,8 +2232,6 @@ function OrderDetailView({
                                               | undefined
                                           )?.[stage.key] ?? 0;
                                         if (pricePerDozen <= 0) return null;
-                                        // Si la tarea ya fue creada, usar su amount guardado en DB (fuente de verdad única).
-                                        // Si aún no existe (plannign), usar la opción seleccionada por el usuario.
                                         const pares = currentTask
                                           ? currentTask.amount || 0
                                           : selectedOption === 'A'
@@ -2239,8 +2283,7 @@ function OrderDetailView({
                                           </div>
                                           <div
                                             className={`ml-auto px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 ${
-                                              currentTask.status ===
-                                              'completado'
+                                              currentTask.status === 'completado'
                                                 ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
                                                 : currentTask.status ===
                                                     'pendiente'
@@ -2255,11 +2298,30 @@ function OrderDetailView({
                                                 ? 'Pendiente'
                                                 : 'Activo'}
                                           </div>
+                                          {currentTask.priority && (
+                                            <button
+                                              onClick={() =>
+                                                handleTogglePriority(
+                                                  currentTask.id,
+                                                  currentTask.priority ?? 'baja'
+                                                )
+                                              }
+                                              className={`ml-1 px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ${
+                                                currentTask.priority === 'alta'
+                                                  ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 hover:bg-red-200'
+                                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200'
+                                              }`}
+                                              title="Click para cambiar prioridad"
+                                            >
+                                              {currentTask.priority === 'alta'
+                                                ? 'ALTA'
+                                                : 'BAJA'}
+                                            </button>
+                                          )}
                                         </div>
 
                                         <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                                           {(() => {
-                                            // Verificar si la siguiente etapa ya fue creada/iniciada
                                             const currentIndex =
                                               STAGES_LOGIC.findIndex(
                                                 (s) => s.key === stage.key
@@ -2276,7 +2338,6 @@ function OrderDetailView({
                                                 (t) => t?.type === nextStage.key
                                               );
 
-                                            // Si es EMPLANTILLADO y está completado, mostrar mensaje especial
                                             if (
                                               stage.key === 'emplantillado' &&
                                               currentTask.status ===
@@ -2295,7 +2356,6 @@ function OrderDetailView({
                                               );
                                             }
 
-                                            // Solo bloquear si la siguiente etapa fue iniciada
                                             if (nextTaskExists) {
                                               return (
                                                 <div className="w-full text-[10px] font-black uppercase bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg py-2 px-2 flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
@@ -2305,7 +2365,6 @@ function OrderDetailView({
                                               );
                                             }
 
-                                            // De lo contrario, permitir editar el estado
                                             return (
                                               <select
                                                 value={currentTask.status}
@@ -2360,27 +2419,21 @@ function OrderDetailView({
                                           <select
                                             onChange={(e) =>
                                               handleAssignToTask(
-                                                currentTask.id,
+                                                currentTask!.id,
                                                 e.target.value
                                               )
                                             }
                                             disabled={loadingTasks}
                                             className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-xs font-bold outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer disabled:opacity-50"
                                           >
-                                            <option value="">
-                                              Asignar Empleado...
-                                            </option>
+                                            <option value="">Asignar Empleado...</option>
                                             {employees
                                               .filter(
                                                 (e) =>
-                                                  e.occupation ===
-                                                  stage.occupation
+                                                  e.occupation === stage.occupation
                                               )
                                               .map((emp) => (
-                                                <option
-                                                  key={emp.id}
-                                                  value={emp.id}
-                                                >
+                                                <option key={emp.id} value={emp.id}>
                                                   {emp.name} {emp.last_name}
                                                 </option>
                                               ))}
@@ -2389,50 +2442,69 @@ function OrderDetailView({
                                       </div>
                                     )
                                   ) : (
-                                    <select
-                                      value={assignments[stage.key] || ''}
-                                      onChange={(e) =>
-                                        setAssignments((p) => ({
-                                          ...p,
-                                          [stage.key]: e.target.value
-                                        }))
-                                      }
-                                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-xs font-bold outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
-                                    >
-                                      <option value="">
-                                        Seleccionar Empleado...
-                                      </option>
-                                      {employees
-                                        .filter(
-                                          (e) =>
-                                            e.occupation === stage.occupation
-                                        )
-                                        .map((emp) => (
-                                          <option key={emp.id} value={emp.id}>
-                                            {emp.name} {emp.last_name}
-                                          </option>
-                                        ))}
-                                    </select>
+                                    <div className="space-y-3">
+                                      <select
+                                        value={assignments[stage.key] || ''}
+                                        onChange={(e) =>
+                                          setAssignments((p) => ({
+                                            ...p,
+                                            [stage.key]: e.target.value
+                                          }))
+                                        }
+                                        className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-xs font-bold outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
+                                      >
+                                        <option value="">Seleccionar Empleado...</option>
+                                        {employees
+                                          .filter(
+                                            (e) => e.occupation === stage.occupation
+                                          )
+                                          .map((emp) => (
+                                            <option key={emp.id} value={emp.id}>
+                                              {emp.name} {emp.last_name}
+                                            </option>
+                                          ))}
+                                      </select>
+
+                                      {!isUnreachable && (
+                                        <>
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                              Prioridad
+                                            </label>
+                                            <select
+                                              value={
+                                                stagePriorities[stage.key] || 'baja'
+                                              }
+                                              onChange={(e) =>
+                                                setStagePriorities((p) => ({
+                                                  ...p,
+                                                  [stage.key]: e.target.value
+                                                }))
+                                              }
+                                              className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-xs font-bold outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
+                                            >
+                                              <option value="alta">Alta</option>
+                                              <option value="baja">Baja</option>
+                                            </select>
+                                          </div>
+                                          <button
+                                            onClick={() =>
+                                              handleIniciarEtapa(
+                                                stage.key,
+                                                stage.label
+                                              )
+                                            }
+                                            disabled={loadingTasks}
+                                            className="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                                          >
+                                            <PlayCircle size={16} /> Iniciar{' '}
+                                            {stage.label}
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
                                   )}
 
-                                  {/* Botón Iniciar dentro de la card, solo si la etapa no está bloqueada ni iniciada */}
-                                  {!currentTask && !isUnreachable && (
-                                    <button
-                                      onClick={() =>
-                                        handleIniciarEtapa(
-                                          stage.key,
-                                          stage.label
-                                        )
-                                      }
-                                      disabled={loadingTasks}
-                                      className="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50"
-                                    >
-                                      <PlayCircle size={16} /> Iniciar{' '}
-                                      {stage.label}
-                                    </button>
-                                  )}
-
-                                  {/* Materiales en esta etapa */}
                                   <div className="space-y-2">
                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
                                       Insumos Relacionados
@@ -2464,7 +2536,6 @@ function OrderDetailView({
                                           );
 
                                         return stageSupplies.map((is) => {
-                                          // Usar misma fórmula que en detalle del pedido: cantidad = pares * quantity_required
                                           const calcQty =
                                             is.quantity_required > 0 &&
                                             totalPairs > 0
@@ -2944,10 +3015,7 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCompleteFromWarehouse = async (
-    productId: string,
-    _lines: any[]
-  ) => {
+  const handleCompleteFromWarehouse = async (productId: string) => {
     if (!selectedOrder) return;
     setIsUpdating(true);
     setError(null);
@@ -2978,8 +3046,8 @@ export default function OrdersPage() {
               colour: d.colour,
               amount: d.amount,
               state: d.state,
-              observations: (d as any).observations
-            }) as any
+              observations: d.observations ?? undefined
+            })
         )
       });
 
@@ -2992,11 +3060,11 @@ export default function OrdersPage() {
         )
       );
       showToast('✓ Producto completado desde bodega con éxito');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al completar desde bodega:', err);
       setError(
         'No se pudo completar desde bodega: ' +
-          (err.response?.data?.detail || err.message)
+          getErrorMessage(err)
       );
     } finally {
       setIsUpdating(false);
@@ -3029,7 +3097,7 @@ export default function OrdersPage() {
               colour: d.colour,
               amount: d.amount,
               state: d.state
-            }) as any
+            })
         )
       });
 
@@ -3047,10 +3115,7 @@ export default function OrdersPage() {
     } catch (err: unknown) {
       console.error('Error actualizando estados:', err);
       // Extraer mensaje de error específico del backend
-      const errorMsg =
-        (err as any)?.response?.data?.detail ||
-        (err as any)?.message ||
-        'Error desconocido al actualizar estados';
+      const errorMsg = getErrorMessage(err);
       setError(`No se pudo actualizar el estado: ${errorMsg}`);
     } finally {
       setIsUpdating(false);

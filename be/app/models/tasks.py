@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 class TaskPriority(str, Enum):
     """Prioridad de una tarea"""
     baja = "baja"
-    media = "media"
     alta = "alta"
 
 

@@ -200,7 +200,7 @@ def list_orders(
             page=page,
             page_size=page_size,
             total_pages=total_pages,
-            items=[_order_to_response(order) for order in orders],
+            items=[_order_to_response(order, db) for order in orders],
         )
     except Exception:
         logger.exception("Error al listar órdenes")

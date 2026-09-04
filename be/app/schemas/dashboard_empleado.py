@@ -32,7 +32,7 @@ class EmployeeTaskSchema(BaseModel):
     assigned_user_occupation: str | None = None
     type: str
     status: str
-    priority: str = "media"
+    priority: str = "baja"
     vale_number: int | None = None
     amount: int = 0
     description: str | None = None
@@ -74,7 +74,7 @@ class AvailableTaskSchema(BaseModel):
     line_group: int = 0
     type: str
     status: str
-    priority: str = "media"
+    priority: str = "baja"
     vale_number: int | None = None
     amount: int = 0
     description: str | None = None
@@ -121,6 +121,7 @@ class ValeTaskInfo(BaseModel):
     id: str
     type: str
     status: str
+    priority: str = "baja"
     amount: int
     assigned_user_name: str | None = None
     assigned_user_occupation: str | None = None
