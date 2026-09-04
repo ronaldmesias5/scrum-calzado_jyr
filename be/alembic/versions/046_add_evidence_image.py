@@ -3,16 +3,16 @@
 Adds a nullable String(500) column to store the URL of an optional
 photographic evidence image uploaded by the reporter (employee or customer).
 
-Revision ID: 046_add_evidence_image_to_pending_incidences
-Revises: 045_add_rejection_reason_to_pending_incidences
+Revision ID: 046_add_evidence_image
+Revises: 045_add_rejection_reason
 Create Date: 2026-09-03
 """
 
 from alembic import op
 import sqlalchemy as sa
 
-revision = "046_add_evidence_image_to_pending_incidences"
-down_revision = "045_add_rejection_reason_to_pending_incidences"
+revision = "046_add_evidence_image"
+down_revision = "045_add_rejection_reason"
 branch_labels = None
 depends_on = None
 

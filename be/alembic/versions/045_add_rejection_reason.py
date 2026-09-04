@@ -4,7 +4,7 @@ Adds a nullable String(500) column to store the jefe's written reason
 when rejecting a product incidence. Backward-compatible: existing
 rejected incidences will have NULL.
 
-Revision ID: 045_add_rejection_reason_to_pending_incidences
+Revision ID: 045_add_rejection_reason
 Revises: 044_create_database_views
 Create Date: 2026-09-02
 """
@@ -12,7 +12,7 @@ Create Date: 2026-09-02
 from alembic import op
 import sqlalchemy as sa
 
-revision = "045_add_rejection_reason_to_pending_incidences"
+revision = "045_add_rejection_reason"
 down_revision = "044_create_database_views"
 branch_labels = None
 depends_on = None
