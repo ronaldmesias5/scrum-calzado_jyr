@@ -1097,6 +1097,13 @@ export default function LossesPage() {
                         </p>
                       )}
 
+                      {inc.evidence_image_url && (
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Evidencia:</p>
+                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="h-40 rounded-xl object-cover border border-gray-200 dark:border-slate-700" />
+                        </div>
+                      )}
+
                       {/* Actions for pending */}
                       {isPending && (
                         <div className="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4">

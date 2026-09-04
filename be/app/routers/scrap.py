@@ -458,6 +458,7 @@ def _pending_to_response(p, current_user) -> ProductIncidenceResponse:
         reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
         created_at=p.created_at.isoformat() if p.created_at else None,
         rejection_reason=p.rejection_reason,
+        evidence_image_url=p.evidence_image_url,
     )
 
 

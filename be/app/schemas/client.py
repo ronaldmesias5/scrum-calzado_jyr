@@ -50,19 +50,6 @@ class ClientOrderSummaryResponse(BaseModel):
     by_state: dict[str, int]
 
 
-class ClientIncidenceCreateRequest(BaseModel):
-    """Reclamo de un producto de un pedido entregado (incidencia de cliente)."""
-
-    order_id: uuid.UUID
-    order_detail_id: uuid.UUID
-    size: str
-    colour: Optional[str] = None
-    defect_code_id: Optional[uuid.UUID] = None
-    description: Optional[str] = None
-    quantity: int = 1
-    observations: Optional[str] = None
-
-
 class ClientIncidenceResponse(BaseModel):
     """Respuesta de reclamo para el dashboard del cliente."""
 
@@ -81,6 +68,7 @@ class ClientIncidenceResponse(BaseModel):
     status: str
     approved_type: str | None = None
     rejection_reason: str | None = None
+    evidence_image_url: str | None = None
     reviewed_by_name: str | None = None
     reviewed_at: str | None = None
     created_at: str | None = None

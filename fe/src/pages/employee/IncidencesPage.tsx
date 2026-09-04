@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertTriangle, RefreshCw,
-  Wrench, Plus, Box, Package, AlertCircle,
+  Wrench, Plus, Box, Package, AlertCircle, Upload,
 } from 'lucide-react';
+import CameraCapture from '@/components/atoms/CameraCapture';
 import {
   getGeneralIncidences,
   createGeneralIncidence,
@@ -47,6 +48,7 @@ export default function EmployeeIncidencesPage() {
   const [productQuantity, setProductQuantity] = useState<number | ''>(1);
   const [productObservations, setProductObservations] = useState('');
   const [creatingProduct, setCreatingProduct] = useState(false);
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
 
   const loadGeneralIncidences = useCallback(async () => {
     setGeneralLoading(true);
@@ -83,6 +85,7 @@ export default function EmployeeIncidencesPage() {
     setShowProductModal(true);
     setSelectedTaskId(''); setSelectedSize(''); setValeAmountMap({});
     setDescription(''); setProductQuantity(1); setProductObservations('');
+    setEvidenceFile(null);
     await loadProductTasks();
   };
 
@@ -95,8 +98,9 @@ export default function EmployeeIncidencesPage() {
     if (!selectedTaskId || !selectedSize || !description.trim() || !productQuantity || productQuantity <= 0) return;
     setCreatingProduct(true);
     try {
-      await createProductIncidence({ task_id: selectedTaskId, size: selectedSize, description: description.trim(), quantity: productQuantity || 1, observations: productObservations || undefined });
+      await createProductIncidence({ task_id: selectedTaskId, size: selectedSize, description: description.trim(), quantity: productQuantity || 1, observations: productObservations || undefined }, evidenceFile);
       setShowProductModal(false);
+      setEvidenceFile(null);
       showToast('Incidencia de producto registrada correctamente', 'success');
       await loadProductIncidences();
     } catch (e) { console.error('Error al crear incidencia de producto:', e); showToast('Error al crear incidencia de producto', 'error'); }
@@ -248,6 +252,12 @@ export default function EmployeeIncidencesPage() {
                       {inc.observations && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{inc.observations}</p>)}
                       {inc.status === 'approved' && inc.approved_type && (<p className="text-xs text-green-600 dark:text-green-400 mb-2">Tipo: {inc.approved_type}</p>)}
                       {inc.status === 'rejected' && inc.rejection_reason && (<p className="text-xs text-red-600 dark:text-red-400 mb-2">Motivo: {inc.rejection_reason}</p>)}
+                      {inc.evidence_image_url && (
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Evidencia:</p>
+                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="h-32 rounded-lg object-cover border border-gray-200 dark:border-slate-700" />
+                        </div>
+                      )}
                       {inc.reviewed_by_name && (<p className="text-xs text-gray-500 dark:text-gray-400">{inc.status === 'approved' ? 'Aprobado' : 'Rechazado'} por {inc.reviewed_by_name}{inc.reviewed_at && ` — ${formatDate(inc.reviewed_at)}`}</p>)}
                       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2"><span className="flex items-center gap-1"><AlertCircle size={12} />{formatDate(inc.created_at)}</span></div>
                     </div>
@@ -332,6 +342,27 @@ export default function EmployeeIncidencesPage() {
             {selectedSize && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cantidad <span className="text-red-500">*</span></label><input type="number" min="0" max={valeAmountMap[selectedSize] ?? 1} value={productQuantity} onChange={(e) => { const cleaned = e.target.value.replace(/[^0-9]/g, ''); const parsed = parseInt(cleaned, 10); const max = valeAmountMap[selectedSize] ?? 1; if (cleaned === '') { setProductQuantity(''); return; } setProductQuantity(Math.min(Math.max(parsed || 0, 0), max)); }} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />{valeAmountMap[selectedSize] != null && <p className="text-[10px] text-gray-400 mt-1">Máx. {valeAmountMap[selectedSize]} pares</p>}</div>)}
             {productQuantity && productQuantity > 0 && (<div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción del defecto <span className="text-red-500">*</span></label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe el defecto encontrado (ej: 'despegue de suela', 'costura rota')" rows={3} maxLength={500} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" /><span className="text-[10px] text-gray-400 text-right block mt-0.5">{description.length}/500</span></div>)}
             <div className="mb-4"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observaciones</label><textarea value={productObservations} onChange={(e) => setProductObservations(e.target.value)} placeholder="Describe el problema..." rows={3} maxLength={500} className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" /><span className="text-[10px] text-gray-400 text-right block mt-0.5">{productObservations.length}/500</span></div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Evidencia fotográfica (opcional)</label>
+              <div className="flex gap-2 mb-2">
+                <CameraCapture onCapture={(f) => setEvidenceFile(f)} />
+                <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                  <Upload size={16} />
+                  Subir archivo
+                  <input type="file" accept="image/*" onChange={(e) => setEvidenceFile(e.target.files?.[0] ?? null)} className="hidden" />
+                </label>
+              </div>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">PNG, JPG, WEBP (max. 5MB)</p>
+              {evidenceFile && (
+                <div className="mt-2 flex items-center gap-3">
+                  <img src={URL.createObjectURL(evidenceFile)} alt="Vista previa" className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-slate-700" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{evidenceFile.name}</p>
+                    <button type="button" onClick={() => setEvidenceFile(null)} className="text-xs text-red-500 hover:text-red-700 font-medium mt-1">Quitar</button>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowProductModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-colors">Cancelar</button>
               <button onClick={handleCreateProductIncidence} disabled={creatingProduct || !selectedTaskId || !selectedSize || !description.trim() || !productQuantity || productQuantity <= 0} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2">{creatingProduct ? (<span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />) : (<Plus size={16} />)} Registrar</button>

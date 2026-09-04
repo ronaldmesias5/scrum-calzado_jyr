@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Minus, Package, Plus } from 'lucide-react';
+import { Loader2, Minus, Package, Plus, Upload } from 'lucide-react';
+import CameraCapture from '@/components/atoms/CameraCapture';
 import Modal from '@/components/atoms/Modal';
 import { useToast } from '@/store/ToastContext';
 import { resolveImageUrl } from '@/services/catalogService';
@@ -41,6 +42,7 @@ export function ReportIncidenceModal({
   const [description, setDescription] = useState('');
   const [observations, setObservations] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) || null;
 
@@ -80,6 +82,7 @@ export function ReportIncidenceModal({
     setQuantities({});
     setDescription('');
     setObservations('');
+    setEvidenceFile(null);
     setLoadingOrders(true);
     getMyOrders(1, 100)
       .then((data) =>
@@ -149,7 +152,7 @@ export function ReportIncidenceModal({
           description: description.trim(),
           quantity: qty,
           observations: observations.trim() || null
-        });
+        }, evidenceFile);
         created += 1;
       }
       showToast(
@@ -406,6 +409,31 @@ export function ReportIncidenceModal({
             placeholder="Información adicional para el jefe"
             className="w-full resize-none rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-800"
           />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            Evidencia fotográfica{' '}
+            <span className="font-normal text-gray-400">(opcional)</span>
+          </label>
+          <div className="flex gap-2 mb-2">
+            <CameraCapture onCapture={(f) => setEvidenceFile(f)} />
+            <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+              <Upload size={16} />
+              Subir archivo
+              <input type="file" accept="image/*" onChange={(e) => setEvidenceFile(e.target.files?.[0] ?? null)} className="hidden" />
+            </label>
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500">PNG, JPG, WEBP (max. 5MB)</p>
+          {evidenceFile && (
+            <div className="mt-2 flex items-center gap-3">
+              <img src={URL.createObjectURL(evidenceFile)} alt="Vista previa" className="h-16 w-16 rounded-lg object-cover border border-gray-200 dark:border-slate-700" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{evidenceFile.name}</p>
+                <button type="button" onClick={() => setEvidenceFile(null)} className="text-xs text-red-500 hover:text-red-700 font-medium mt-1">Quitar</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Acciones ──────────────────────────────────── */}

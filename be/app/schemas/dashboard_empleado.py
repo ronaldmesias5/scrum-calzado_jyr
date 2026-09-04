@@ -273,18 +273,6 @@ class GeneralIncidenceListResponse(BaseModel):
 # ────────────────────────────────────────────────
 
 
-class ProductIncidenceCreateRequest(BaseModel):
-    """Crear incidencia de producto vinculada a una tarea del empleado."""
-
-    task_id: str
-    size: str
-    colour: str | None = None
-    defect_code_id: str | None = None  # Ahora opcional — reemplazado por descripción libre
-    description: str | None = None  # Descripción libre del defecto
-    quantity: int
-    observations: str | None = None
-
-
 class ProductIncidenceResponse(BaseModel):
     """Respuesta de incidencia de producto para el empleado/jefe."""
 
@@ -304,6 +292,7 @@ class ProductIncidenceResponse(BaseModel):
     status: str
     approved_type: str | None = None
     rejection_reason: str | None = None
+    evidence_image_url: str | None = None
     employee_name: str | None = None
     customer_name: str | None = None
     order_id: str | None = None

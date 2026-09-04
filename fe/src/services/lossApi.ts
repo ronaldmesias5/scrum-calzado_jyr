@@ -151,6 +151,7 @@ export interface PendingProductIncidence {
   status: string;
   approved_type?: string | null;
   rejection_reason?: string | null;
+  evidence_image_url?: string | null;
   employee_name?: string | null;
   customer_name?: string | null;
   order_id?: string | null;

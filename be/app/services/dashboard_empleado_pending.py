@@ -34,6 +34,7 @@ def create_pending_incidence(
     description: str | None = None,
     quantity: int = 1,
     observations: str | None = None,
+    evidence_image_url: str | None = None,
 ) -> PendingProductIncidence:
     """Crea una incidencia de producto pendiente de aprobación."""
     # Validar que la tarea existe y está asignada al empleado
@@ -67,6 +68,7 @@ def create_pending_incidence(
         description=description,
         quantity=Decimal(str(quantity)),
         observations=observations,
+        evidence_image_url=evidence_image_url,
         status=PendingIncidenceStatus.pending,
     )
     db.add(pending)
@@ -109,6 +111,7 @@ def create_customer_pending_incidence(
     description: str | None = None,
     quantity: int = 1,
     observations: str | None = None,
+    evidence_image_url: str | None = None,
 ) -> PendingProductIncidence:
     """Crea un reclamo de producto de un pedido entregado (incidencia de cliente)."""
     # Validar que la orden existe y pertenece al cliente
@@ -156,6 +159,7 @@ def create_customer_pending_incidence(
         description=description,
         quantity=Decimal(str(quantity)),
         observations=observations,
+        evidence_image_url=evidence_image_url,
         status=PendingIncidenceStatus.pending,
     )
     db.add(pending)
