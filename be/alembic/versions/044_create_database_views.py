@@ -19,7 +19,7 @@ Create Date: 2026-08-31
 from alembic import op
 
 revision = "044_create_database_views"
-down_revision = "043_email_verification_tokens"
+down_revision = "043_task_priority_remove_media"
 branch_labels = None
 depends_on = None
 

@@ -8,7 +8,7 @@ Descripción: Esquemas Pydantic para validación y serialización de órdenes.
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.order import OrderStatus
 
@@ -64,6 +64,8 @@ class OrderResponse(BaseModel):
     customer_phone: str | None = None
     total_pairs: int
     state: OrderStatus
+    priority: str = "baja"
+    delivery_date: datetime | None = None
     creation_date: datetime | None = None
     created_at: datetime | None = None
 
@@ -131,13 +133,24 @@ class OrderUpdateDetailsRequest(BaseModel):
 class TaskStatusUpdateRequest(BaseModel):
     status: str = Field(..., description="Nuevo estado (por_liquidar, en_progreso, completado, pagado, cancelado)")
 
+class TaskPriorityUpdateRequest(BaseModel):
+    priority: str = Field(..., description="Nueva prioridad (alta, baja)")
+
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: str) -> str:
+        allowed = {"alta", "baja"}
+        if v not in allowed:
+            raise ValueError(f"Prioridad inválida: {v}. Permitidas: {', '.join(sorted(allowed))}")
+        return v
+
 class ProductionTaskCreate(BaseModel):
     """Esquema para crear una tarea de producción vinculada a una orden."""
     product_id: UUID = Field(..., description="ID del producto especifico de este pedido")
     assigned_to: UUID | None = Field(None, description="ID del empleado asignado (opcional: si es None la tarea se crea como pendiente)")
     type: str = Field(..., description="Etapa (corte, guarnicion, soladura, emplantillado)")
     description: str | None = Field(None, description="Descripción opcional de la tarea")
-    priority: str = Field("media", description="Prioridad de la tarea")
+    priority: str = Field("baja", description="Prioridad de la tarea")
     amount: int = Field(..., description="Cantidad de pares")
     line_group: int = 0
     breakdown: dict[str, float] | None = Field(None, description="Desglose de tallas a producir {talla: pares}")
@@ -150,6 +163,7 @@ class ProductionTaskResponse(BaseModel):
     assigned_to: UUID | None = None
     type: str
     status: str
+    priority: str = "baja"
     vale_number: int | None = None
     amount: int = 0
     description_task: str | None = None
@@ -157,6 +171,7 @@ class ProductionTaskResponse(BaseModel):
     assigned_user_name: str | None = None
     assigned_user_occupation: str | None = None
     created_at: datetime
+    deadline: datetime | None = None
     task_prices: dict = {}   # precios por tarea del producto
     total_pairs: int = 0
     product_name: str | None = None

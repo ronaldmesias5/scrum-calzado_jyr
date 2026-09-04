@@ -63,6 +63,7 @@ interface TaskCardProps {
   task: ProductionTask;
   isEditable?: boolean;
   onUpdateStatus?: (taskId: string, newStatus: string) => void;
+  onUpdatePriority?: (taskId: string, newPriority: string) => void;
   updatingTaskId?: string | null;
   onViewOrder?: (orderId: string, productId: string) => void;
   isBlocked?: boolean;
@@ -91,6 +92,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   isEditable,
   onUpdateStatus,
+  onUpdatePriority,
   updatingTaskId,
   onViewOrder,
   isBlocked,
@@ -159,11 +161,33 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               VALE #{task.vale_number}
             </span>
           )}
-          {task.priority === 'alta' && (
-            <span className="text-[11px] font-black text-red-700 bg-red-50 px-2.5 py-1 rounded-md border border-red-200 whitespace-nowrap flex items-center gap-1 shadow-sm">
-              <AlertTriangle size={12} />
-              ALTA
-            </span>
+          {onUpdatePriority && isEditable ? (
+            <select
+              value={task.priority || 'baja'}
+              onChange={(e) => onUpdatePriority(task.id, e.target.value)}
+              className={`text-[10px] font-black uppercase tracking-wider rounded-md px-2 py-1 border cursor-pointer outline-none whitespace-nowrap transition-colors ${
+                task.priority === 'alta'
+                  ? 'text-red-700 bg-red-50 border-red-200 hover:border-red-400'
+                  : 'text-gray-600 bg-gray-50 border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              <option value="alta">Alta</option>
+              <option value="baja">Baja</option>
+            </select>
+          ) : (
+            <>
+              {task.priority === 'alta' && (
+                <span className="text-[11px] font-black text-red-700 bg-red-50 px-2.5 py-1 rounded-md border border-red-200 whitespace-nowrap flex items-center gap-1 shadow-sm">
+                  <AlertTriangle size={12} />
+                  ALTA
+                </span>
+              )}
+              {task.priority === 'baja' && (
+                <span className="text-[11px] font-black text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200 whitespace-nowrap flex items-center gap-1 shadow-sm">
+                  BAJA
+                </span>
+              )}
+            </>
           )}
           {selectable && (
             <div

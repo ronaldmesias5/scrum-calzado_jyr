@@ -6,18 +6,22 @@ import {
   getAllProductionTasks,
   ProductionTask,
   updateProductionTaskStatus,
-  assignTaskEmployee
+  assignTaskEmployee,
+  updateTaskPriority
 } from '@/services/ordersApi';
 import { getAllUsers } from '@/services/adminApi';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
 import type { UserResponse } from '@/types/auth';
 import { useToast } from '@/store/ToastContext';
+import { useAuth } from '@/hooks/useAuth';
 
 // Los iconos y colores se han movido a TaskCard.tsx para reusabilidad
 
 export default function ProductionTaskDashboard() {
   // const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role_name === 'admin' || user?.occupation === 'jefe';
   const [tasks, setTasks] = useState<ProductionTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,6 +94,20 @@ export default function ProductionTaskDashboard() {
     } catch (e) {
       console.error(e);
       showToast('Error al asignar empleado', 'error');
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
+  const handleUpdatePriority = async (taskId: string, newPriority: string) => {
+    try {
+      setUpdatingTaskId(taskId);
+      const updatedTask = await updateTaskPriority(taskId, newPriority);
+      setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+      showToast(`Prioridad actualizada a ${newPriority}`);
+    } catch (e) {
+      console.error(e);
+      showToast('Error al actualizar prioridad', 'error');
     } finally {
       setUpdatingTaskId(null);
     }
@@ -318,6 +336,7 @@ export default function ProductionTaskDashboard() {
               }
               isBlocked={isTaskBlocked(task)}
               onUpdateStatus={handleUpdateTaskStatus}
+              onUpdatePriority={isAdmin ? handleUpdatePriority : undefined}
               updatingTaskId={updatingTaskId}
               onViewOrder={(orderId, productId) =>
                 navigate(

@@ -399,6 +399,15 @@ export default function EmployeeValeModal({ taskId, onClose }: Props) {
                                   ? 'Pendiente'
                                   : 'Activo'}
                             </div>
+                            {task.priority && (
+                              <span className={`ml-1 px-2 py-0.5 text-[8px] font-black rounded uppercase flex-shrink-0 ${
+                                task.priority === 'alta'
+                                  ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                              }`}>
+                                {task.priority === 'alta' ? 'ALTA' : 'BAJA'}
+                              </span>
+                            )}
                           </div>
 
                           {isMine ? (
