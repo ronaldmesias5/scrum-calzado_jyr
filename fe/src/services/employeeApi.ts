@@ -151,6 +151,7 @@ export interface SharedReportDetailResponse {
 export const getMyPerformance = async (params?: {
   start_date?: string;
   end_date?: string;
+  category?: string;
 }): Promise<MyPerformanceResponse> => {
   const res = await api.get(
     '/api/v1/dashboard/employee/report/my-performance',
@@ -202,6 +203,7 @@ export interface MyTasksReportResponse {
 export const getMyTasksReport = async (params?: {
   start_date?: string;
   end_date?: string;
+  category?: string;
 }): Promise<MyTasksReportResponse> => {
   const res = await api.get('/api/v1/dashboard/employee/report/my-tasks', {
     params

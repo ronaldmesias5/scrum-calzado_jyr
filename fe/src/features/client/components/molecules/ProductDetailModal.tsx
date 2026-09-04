@@ -3,21 +3,21 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
-  Layers,
   MessageSquareText,
   Minus,
   Package,
   Plus,
-  RotateCcw,
   ShoppingCart
 } from 'lucide-react';
 import Modal from '@/components/atoms/Modal';
+import NumeracionesRapidas from '@/components/atoms/NumeracionesRapidas';
 import { useCart } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import {
   resolveImageUrl,
   type WholesaleProduct
 } from '@/services/wholesaleCatalogApi';
+import { getSizesList, getSizeRangeText } from '@/utils/shoeSizes';
 
 interface ProductDetailModalProps {
   isOpen: boolean;
@@ -25,14 +25,6 @@ interface ProductDetailModalProps {
   product: WholesaleProduct | null;
   onAdded?: () => void;
 }
-
-const PRESETS = [
-  { id: 'commercial', label: 'Comercial', hint: 'Escalera 1·2·3·3·2·1' },
-  { id: '2', label: '2 × talla', hint: '' },
-  { id: '3', label: '3 × talla', hint: '' },
-  { id: '4', label: '4 × talla', hint: '' },
-  { id: '5', label: '5 × talla', hint: '' }
-];
 
 function StepHeader({
   step,
@@ -76,15 +68,9 @@ export function ProductDetailModal({
   const { addItem } = useCart();
   const { showToast } = useToast();
   const [activePreset, setActivePreset] = useState<string | null>(null);
-  const sizeStart = product?.category_name.toLowerCase().includes('infantil')
-    ? 21
-    : 33;
-  const sizeEnd = product?.category_name.toLowerCase().includes('infantil')
-    ? 32
-    : 43;
-  const sizes = Array.from({ length: sizeEnd - sizeStart + 1 }, (_, index) => ({
-    size: String(sizeStart + index)
-  }));
+  const sizes = getSizesList(product?.category_name ?? 'Caballero').map(
+    (s) => ({ size: s })
+  );
   const [quantities, setQuantities] = useState<Record<string, number>>(() =>
     Object.fromEntries(sizes.map(({ size }) => [size, 0]))
   );
@@ -112,28 +98,14 @@ export function ProductDetailModal({
   ).length;
 
   const updateQuantity = (size: string, value: number) => {
-    setActivePreset(null);
     setQuantities((current) => ({
       ...current,
       [size]: Math.max(0, value)
     }));
   };
 
-  const applyPreset = (preset: string) => {
-    const nextQuantities: Record<string, number> = {};
-    if (preset === 'commercial') {
-      const pattern = [1, 2, 3, 3, 2, 1];
-      sizes.forEach(({ size }, index) => {
-        nextQuantities[size] = pattern[index] ?? 0;
-      });
-    } else {
-      const amount = preset === 'clear' ? 0 : Number(preset);
-      sizes.forEach(({ size }) => {
-        nextQuantities[size] = amount;
-      });
-    }
-    setQuantities(nextQuantities);
-    setActivePreset(preset);
+  const handleApplyNumeraciones = (newAmounts: Record<string, number>) => {
+    setQuantities(newAmounts);
   };
 
   const handleAddToCart = () => {
@@ -172,13 +144,6 @@ export function ProductDetailModal({
   };
 
   const todayIso = new Date().toLocaleDateString('en-CA');
-
-  const presetClass = (presetId: string) =>
-    `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-all duration-200 ${
-      activePreset === presetId
-        ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/25'
-        : 'border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400'
-    }`;
 
   return (
     <Modal
@@ -304,7 +269,7 @@ export function ProductDetailModal({
           <StepHeader
             step="2"
             title="Distribución de pares"
-            subtitle={`Tallas ${sizeStart}–${sizeEnd}`}
+            subtitle={`Tallas ${getSizeRangeText(product.category_name)}`}
             right={
               <span
                 className={`rounded-full px-3 py-1.5 text-sm font-extrabold tabular-nums transition-colors ${
@@ -318,34 +283,14 @@ export function ProductDetailModal({
             }
           />
 
-          <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="flex w-full items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 sm:w-auto dark:text-slate-400">
-                <Layers className="h-3.5 w-3.5 shrink-0" />
-                Rellenado rápido
-              </span>
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                {PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    title={preset.hint || undefined}
-                    onClick={() => applyPreset(preset.id)}
-                    className={presetClass(preset.id)}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => applyPreset('clear')}
-                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-transparent px-2.5 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 shrink-0" />
-                  Limpiar
-                </button>
-              </div>
-            </div>
+          <div className="mb-3">
+            <NumeracionesRapidas
+              categoryName={product.category_name}
+              amounts={quantities}
+              activePreset={activePreset}
+              onPresetChange={setActivePreset}
+              onApply={handleApplyNumeraciones}
+            />
           </div>
 
           {sizes.length === 0 ? (

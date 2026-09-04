@@ -12,6 +12,7 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.dependencies import get_current_user, get_db
+from app.models.category import Category
 from app.models.order import Order, OrderDetail
 from app.models.product import Product
 from app.models.report_share import ReportShare
@@ -441,6 +442,7 @@ def get_my_performance(
     current_user: User = Depends(get_current_user),
     start_date: datetime | None = Query(None),
     end_date: datetime | None = Query(None),
+    category: str | None = Query(None),
 ):
     """Retorna KPIs de rendimiento del empleado autenticado."""
     user_id = current_user.id
@@ -449,7 +451,11 @@ def get_my_performance(
         Task.assigned_to == user_id,
         Task.status.in_(["completado", "pagado"]),
         Task.deleted_at == None,
-    )
+    ).join(Product, Task.product_id == Product.id)
+    if category:
+        query = query.outerjoin(Category, Product.category_id == Category.id).filter(
+            Category.name_category == category
+        )
     if start_date:
         query = query.filter(func.coalesce(Task.completed_at, Task.created_at) >= start_date)
     if end_date:
@@ -497,6 +503,7 @@ def get_my_tasks_report(
     current_user: User = Depends(get_current_user),
     start_date: datetime | None = Query(None),
     end_date: datetime | None = Query(None),
+    category: str | None = Query(None),
 ):
     """Retorna detalle de tareas completadas/pagadas del empleado autenticado,
     con valores calculados por tarea y desglose por proceso."""
@@ -563,6 +570,10 @@ def get_my_tasks_report(
         )
     )
 
+    if category:
+        tasks_detail_query = tasks_detail_query.outerjoin(
+            Category, Product.category_id == Category.id
+        ).where(Category.name_category == category)
     if start_date:
         tasks_detail_query = tasks_detail_query.where(
             func.coalesce(Task.completed_at, Task.created_at) >= start_date
@@ -577,6 +588,7 @@ def get_my_tasks_report(
     # Desglose por tipo de tarea
     breakdown_query = (
         select(Task.type, func.count(Task.id).label("count"))
+        .join(Product, Task.product_id == Product.id)
         .where(
             Task.assigned_to == user_id,
             Task.status.in_(["completado", "pagado"]),
@@ -584,6 +596,10 @@ def get_my_tasks_report(
         )
         .group_by(Task.type)
     )
+    if category:
+        breakdown_query = breakdown_query.outerjoin(
+            Category, Product.category_id == Category.id
+        ).where(Category.name_category == category)
     if start_date:
         breakdown_query = breakdown_query.where(
             func.coalesce(Task.completed_at, Task.created_at) >= start_date

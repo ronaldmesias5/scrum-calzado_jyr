@@ -21,6 +21,7 @@ import {
 } from '@/services/clientApi';
 import { exportMyOrdersPDF } from '@/features/client/utils/reportsUtils';
 import { useAuth } from '@/hooks/useAuth';
+import CategoryFilter from '@/components/atoms/CategoryFilter';
 import StatCard from '@/features/admin/components/atoms/StatCard';
 
 const ORDER_STATES = [
@@ -91,6 +92,7 @@ export default function ReportsPage() {
   const [stateFilter, setStateFilter] = useState<
     'all' | (typeof ORDER_STATES)[number]
   >('all');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   const displayName = useMemo(() => {
     if (reportData?.name) return reportData.name;
@@ -142,7 +144,7 @@ export default function ReportsPage() {
     setReportData(null);
     try {
       const range = getDateRange(filter);
-      const data = await getAllMyOrders(range.start, range.end);
+      const data = await getAllMyOrders(range.start, range.end, categoryFilter ?? undefined);
       setReportData(data);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
@@ -161,6 +163,13 @@ export default function ReportsPage() {
     setStateFilter('all');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]);
+
+  useEffect(() => {
+    if (reportData) {
+      loadReport(dateFilter);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter]);
 
   const filteredOrders = useMemo(() => {
     if (!reportData) return [];
@@ -413,6 +422,11 @@ export default function ReportsPage() {
             )}
           </div>
 
+          {/* Category Filter */}
+          <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 p-4 shadow-sm">
+            <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
+          </div>
+
           {/* Report Error */}
           {reportError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-4 text-sm text-red-800 dark:text-red-300 font-medium">
@@ -471,7 +485,7 @@ export default function ReportsPage() {
                 </div>
 
                 {/* State Filter Buttons */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                   <button
                     onClick={() => setStateFilter('all')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
@@ -503,7 +517,8 @@ export default function ReportsPage() {
                       </button>
                     );
                   })}
-                </div>
+
+                  </div>
 
                 {/* Orders Table */}
                 {filteredOrders.length === 0 ? (

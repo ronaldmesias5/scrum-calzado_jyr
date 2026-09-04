@@ -76,7 +76,7 @@ export default function ClientLayout() {
             roleLabel="Cliente"
           />
 
-          <div className="flex flex-1 min-h-0 overflow-hidden relative">
+          <div className="flex flex-1 min-h-0 relative">
             <ClientSidebar
               isOpen={isSidebarOpen}
               onClose={closeSidebar}

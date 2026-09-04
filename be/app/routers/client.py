@@ -132,20 +132,22 @@ def get_my_orders_summary(
     return ClientOrderSummaryResponse(total=total, by_state=by_state)
 
 
-def _build_order_items(details: list) -> list:
-    """Agrupa OrderDetails por (product_id, colour) — replica de reports.py"""
+def _build_order_items(details: list, category: str | None = None) -> list:
+    """Agrupa OrderDetails por (product_id, colour), filtrando por categoría si se especifica."""
     items_map = {}
     for detail in details:
+        cat_name = None
+        if detail.product and detail.product.category:
+            cat_name = getattr(detail.product.category, 'name_category', None)
+        if category and (cat_name or "").lower() != category.lower():
+            continue
         key = (detail.product_id, detail.colour or "")
         if key not in items_map:
             p_name = "Producto Desconocido"
             p_img = None
-            cat_name = None
             if detail.product:
                 p_name = getattr(detail.product, 'name_product', "Producto Desconocido")
                 p_img = getattr(detail.product, 'image_url', None)
-                if detail.product.category:
-                    cat_name = getattr(detail.product.category, 'name_category', None)
             items_map[key] = OrderItemSummary(
                 product_id=detail.product_id,
                 product_name=p_name,
@@ -164,6 +166,7 @@ def get_all_my_orders(
     db: Annotated[Session, Depends(get_db)],
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
+    category: Optional[str] = Query(None),
 ) -> CustomerReportResponse:
     """Retorna todos los pedidos del cliente con detalles para generar reporte PDF."""
     query = select(Order).where(Order.customer_id == current_user.id)
@@ -176,20 +179,23 @@ def get_all_my_orders(
     query = query.order_by(desc(Order.created_at))
     orders = db.execute(query).scalars().all()
 
-    total_orders = len(orders)
-    total_pairs = sum((o.total_pairs or 0) for o in orders)
-    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders)
-
     orders_list = []
     for o in orders:
+        items = _build_order_items(o.details or [], category)
+        if category and not items:
+            continue
         orders_list.append(OrderSummary(
             id=o.id,
-            total_pairs=o.total_pairs or 0,
+            total_pairs=sum(it.amount for it in items) if category else (o.total_pairs or 0),
             total_price=0.0,
             state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
             created_at=o.created_at,
-            items=_build_order_items(o.details or []),
+            items=items,
         ))
+
+    total_orders = len(orders_list)
+    total_pairs = sum(o.total_pairs for o in orders_list)
+    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders_list)
 
     customer_name = f"{current_user.name_user} {current_user.last_name}".strip()
 

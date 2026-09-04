@@ -1,6 +1,7 @@
 import { ShoppingCart, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Product, resolveImageUrl } from '@/services/publicCatalogService';
+import { getSizeRangeText } from '@/utils/shoeSizes';
 
 interface ProductCardProps {
   product: Product;
@@ -19,15 +20,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const navigate = useNavigate();
 
-  // Determinar rango de tallas según categoría
-  const getSizeRange = (): string => {
-    if (!categoryName) return '33 al 43';
-    const category = categoryName.toLowerCase();
-    if (category.includes('infantil')) return '21 al 32';
-    if (category.includes('dama')) return '33 al 43';
-    if (category.includes('caballero')) return '33 al 43';
-    return '33 al 43'; // Por defecto
-  };
+  const sizeRangeText = getSizeRangeText(categoryName);
 
   const handleOrderClick = () => {
     if (onOrderClick) {
@@ -111,7 +104,7 @@ export default function ProductCard({
         <div className="mb-6 flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-700/50">
           <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Tallas: {getSizeRange()}
+            Tallas: {sizeRangeText}
           </span>
         </div>
 

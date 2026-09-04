@@ -44,20 +44,23 @@ router = APIRouter(
 )
 
 
-def _build_order_items(details: list) -> list:
-    """Agrupa OrderDetails por (product_id, colour) para incluir categoría y color"""
+def _build_order_items(details: list, category: Optional[str] = None) -> list:
+    """Agrupa OrderDetails por (product_id, colour) para incluir categoría y color.
+    Si category se proporciona, solo incluye detalles de esa categoría."""
     items_map = {}
     for detail in details:
+        cat_name = None
+        if detail.product and detail.product.category:
+            cat_name = getattr(detail.product.category, 'name_category', None)
+        if category and (cat_name or '').lower() != category.lower():
+            continue
         key = (detail.product_id, detail.colour or "")
         if key not in items_map:
             p_name = "Producto Desconocido"
             p_img = None
-            cat_name = None
             if detail.product:
                 p_name = getattr(detail.product, 'name_product', "Producto Desconocido")
                 p_img = getattr(detail.product, 'image_url', None)
-                if detail.product.category:
-                    cat_name = getattr(detail.product.category, 'name_category', None)
             items_map[key] = OrderItemSummary(
                 product_id=detail.product_id,
                 product_name=p_name,
@@ -68,6 +71,27 @@ def _build_order_items(details: list) -> list:
             )
         items_map[key].amount += (detail.amount or 0)
     return list(items_map.values())
+
+
+def _build_order_summary(o, category: Optional[str] = None) -> Optional[OrderSummary]:
+    """Construye OrderSummary para un pedido. Si category está activo, filtra
+    ítems y recomputa totales (solo líneas de esa categoría).
+    Retorna None si la categoría no tiene ítems en este pedido."""
+    items = _build_order_items(o.details or [], category)
+    if category and not items:
+        return None
+    total_pairs = sum(item.amount for item in items)
+    original_pairs = o.total_pairs or 1
+    original_price = float(o.total_price) if hasattr(o, 'total_price') else 0.0
+    prorated_price = round(original_price * (total_pairs / original_pairs), 2) if original_pairs > 0 else 0.0
+    return OrderSummary(
+        id=o.id,
+        total_pairs=total_pairs if category else (o.total_pairs or 0),
+        total_price=prorated_price if category else original_price,
+        state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
+        created_at=o.created_at,
+        items=items,
+    )
 
 
 @router.get("/dashboard", response_model=DashboardReportResponse)
@@ -262,6 +286,7 @@ def get_employee_report(
     current_user: User = Depends(get_current_user),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
+    category: Optional[str] = Query(None),
 ):
     """Obtiene el reporte de rendimiento de un empleado"""
     _require_admin_or_jefe(current_user)
@@ -312,21 +337,25 @@ def get_employee_report(
         tasks_detail_query = tasks_detail_query.where(func.coalesce(Task.completed_at, Task.created_at) >= start_date)
     if end_date:
         tasks_detail_query = tasks_detail_query.where(func.coalesce(Task.completed_at, Task.created_at) <= end_date)
+    if category:
+        tasks_detail_query = tasks_detail_query.where(Category.name_category == category)
         
     task_detail_rows = db.execute(tasks_detail_query).all()
     
     # Obtener el desglose por tipo de tarea
-    breakdown_query = (
+    breakdown_q = (
         select(Task.type, func.count(Task.id).label("count"))
         .where(Task.assigned_to == user_id, Task.status.in_(['completado', 'pagado']), Task.deleted_at == None)
-        .group_by(Task.type)
     )
+    if category:
+        breakdown_q = breakdown_q.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).where(Category.name_category == category)
     if start_date:
-        breakdown_query = breakdown_query.where(func.coalesce(Task.completed_at, Task.created_at) >= start_date)
+        breakdown_q = breakdown_q.where(func.coalesce(Task.completed_at, Task.created_at) >= start_date)
     if end_date:
-        breakdown_query = breakdown_query.where(func.coalesce(Task.completed_at, Task.created_at) <= end_date)
+        breakdown_q = breakdown_q.where(func.coalesce(Task.completed_at, Task.created_at) <= end_date)
+    breakdown_q = breakdown_q.group_by(Task.type)
         
-    breakdown_results = db.execute(breakdown_query).all()
+    breakdown_results = db.execute(breakdown_q).all()
     
     tasks_breakdown = [
         TaskBreakdown(
@@ -398,7 +427,8 @@ def get_role_report(
     current_user: User = Depends(get_current_user),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
-    status: Optional[str] = Query(None)
+    status: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
 ):
     """Obtiene el reporte consolidado de todos los empleados con un cargo específico"""
     _require_admin_or_jefe(current_user)
@@ -416,6 +446,8 @@ def get_role_report(
         )
 
     query = select(Task).where(Task.assigned_to.in_(user_ids))
+    if category:
+        query = query.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).where(Category.name_category == category)
     if start_date:
         query = query.where(Task.created_at >= start_date)
     if end_date:
@@ -434,6 +466,8 @@ def get_role_report(
         select(func.sum(func.coalesce(Task.amount, 0)))
         .where(Task.assigned_to.in_(user_ids))
     )
+    if category:
+        task_pairs_query = task_pairs_query.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).where(Category.name_category == category)
     if start_date:
         task_pairs_query = task_pairs_query.where(Task.created_at >= start_date)
     if end_date:
@@ -447,6 +481,8 @@ def get_role_report(
     
     # Desglose por tipo de proceso
     breakdown_query = select(Task.type, func.count(Task.id).label("count")).where(Task.assigned_to.in_(user_ids))
+    if category:
+        breakdown_query = breakdown_query.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).where(Category.name_category == category)
     if start_date:
         breakdown_query = breakdown_query.where(Task.created_at >= start_date)
     if end_date:
@@ -512,6 +548,8 @@ def get_role_report(
         task_detail_query = task_detail_query.where(Task.status == status)
     else:
         task_detail_query = task_detail_query.where(Task.status.in_(['completado', 'pagado']))
+    if category:
+        task_detail_query = task_detail_query.where(Category.name_category == category)
         
     task_detail_query = task_detail_query.order_by(desc(Task.created_at))
     task_detail_rows = db.execute(task_detail_query).all()
@@ -575,7 +613,8 @@ def get_all_customers_report(
     current_user: User = Depends(get_current_user),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
-    state: Optional[str] = Query(None)
+    state: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
 ):
     """Obtiene el reporte de todos los pedidos de todos los clientes"""
     _require_admin_or_jefe(current_user)
@@ -592,20 +631,15 @@ def get_all_customers_report(
     query = query.order_by(desc(Order.created_at))
     orders = db.execute(query).scalars().all()
     
-    total_orders = len(orders)
-    total_pairs = sum((o.total_pairs or 0) for o in orders)
-    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders)
-    
     orders_list = []
     for o in orders:
-        orders_list.append(OrderSummary(
-            id=o.id,
-            total_pairs=o.total_pairs or 0,
-            total_price=float(o.total_price) if hasattr(o, 'total_price') else 0.0,
-            state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
-            created_at=o.created_at,
-            items=_build_order_items(o.details or [])
-        ))
+        summary = _build_order_summary(o, category)
+        if summary is not None:
+            orders_list.append(summary)
+    
+    total_orders = len(orders_list)
+    total_pairs = sum(o.total_pairs for o in orders_list)
+    total_spent = sum(o.total_price for o in orders_list)
     
     return CustomerReportResponse(
         user_id=uuid4(),
@@ -657,6 +691,7 @@ def get_customer_report(
     current_user: User = Depends(get_current_user),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
+    category: Optional[str] = Query(None),
 ):
     """Obtiene el reporte de compras de un cliente"""
     _require_admin_or_jefe(current_user)
@@ -675,25 +710,19 @@ def get_customer_report(
     query = query.order_by(desc(Order.created_at))
     orders = db.execute(query).scalars().all()
     
-    total_orders = len(orders)
-    total_pairs = sum((o.total_pairs or 0) for o in orders)
-    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders)
-    
     orders_metric = []
     for o in orders:
-        orders_metric.append(OrderSummary(
-            id=o.id,
-            total_pairs=o.total_pairs or 0,
-            total_price=float(o.total_price) if hasattr(o, 'total_price') else 0.0,
-            state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
-            created_at=o.created_at,
-            items=_build_order_items(o.details or [])
-        ))
+        summary = _build_order_summary(o, category)
+        if summary is not None:
+            orders_metric.append(summary)
+        
+    total_pairs = sum(o.total_pairs for o in orders_metric)
+    total_spent = sum(o.total_price for o in orders_metric)
         
     return CustomerReportResponse(
         user_id=customer.id,
         name=f"{customer.name_user} {customer.last_name}",
-        total_orders=total_orders,
+        total_orders=len(orders_metric),
         total_pairs=int(total_pairs),
         total_spent=float(total_spent),
         orders=orders_metric
@@ -706,7 +735,8 @@ def get_global_production(
     days: int = Query(30),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
-    state: Optional[OrderStatus] = Query(None)
+    state: Optional[OrderStatus] = Query(None),
+    category: Optional[str] = Query(None),
 ):
     """Obtiene el reporte general de producción y ventas por semana"""
     _require_admin_or_jefe(current_user)
@@ -717,39 +747,89 @@ def get_global_production(
         end_date = datetime.now(timezone.utc)
     
     # 1. Métricas de Ventas (Pedidos creados)
-    sales_query = db.query(Order).filter(Order.created_at >= start_date, Order.created_at <= end_date)
+    order_pairs_map = {}
+    if category:
+        # Cuando hay filtro de categoría, computar desde OrderDetail nivel
+        order_ids_q = (
+            select(OrderDetail.order_id.distinct())
+            .join(Product, OrderDetail.product_id == Product.id)
+            .outerjoin(Category, Product.category_id == Category.id)
+            .where(OrderDetail.deleted_at == None, Category.name_category == category)
+            .subquery()
+        )
+        sales_query = db.query(Order).filter(
+            Order.created_at >= start_date, Order.created_at <= end_date,
+            Order.id.in_(select(order_ids_q))
+        )
+    else:
+        sales_query = db.query(Order).filter(Order.created_at >= start_date, Order.created_at <= end_date)
     if state:
         sales_query = sales_query.filter(Order.state == state)
     
     orders = sales_query.all()
     total_orders_created = len(orders)
-    total_pairs_ordered = sum(o.total_pairs for o in orders)
+
+    if category:
+        # Pares por categoría desde OrderDetail
+        pairs_detail = db.execute(
+            select(func.sum(OrderDetail.amount))
+            .join(Product, OrderDetail.product_id == Product.id)
+            .outerjoin(Category, Product.category_id == Category.id)
+            .where(OrderDetail.deleted_at == None, Category.name_category == category)
+            .join(Order, OrderDetail.order_id == Order.id)
+            .where(Order.created_at >= start_date, Order.created_at <= end_date)
+        ).scalar() or 0
+        if state:
+            pairs_detail = db.execute(
+                select(func.sum(OrderDetail.amount))
+                .join(Product, OrderDetail.product_id == Product.id)
+                .outerjoin(Category, Product.category_id == Category.id)
+                .join(Order, OrderDetail.order_id == Order.id)
+                .where(OrderDetail.deleted_at == None, Category.name_category == category,
+                       Order.created_at >= start_date, Order.created_at <= end_date,
+                       Order.state == state)
+            ).scalar() or 0
+        total_pairs_ordered = pairs_detail
+        # Pre-computar pares por pedido para métricas semanales
+        order_pairs_map_rows = db.execute(
+            select(OrderDetail.order_id, func.sum(OrderDetail.amount).label("pairs"))
+            .join(Product, OrderDetail.product_id == Product.id)
+            .outerjoin(Category, Product.category_id == Category.id)
+            .where(OrderDetail.deleted_at == None, Category.name_category == category)
+            .group_by(OrderDetail.order_id)
+        ).all()
+        order_pairs_map = {row.order_id: row.pairs for row in order_pairs_map_rows}
+    else:
+        total_pairs_ordered = sum(o.total_pairs for o in orders)
 
     # 2. Métricas de Producción (Tareas completadas)
     tasks_query = db.query(Task).filter(Task.created_at >= start_date, Task.created_at <= end_date, Task.status == 'completado')
+    if category:
+        tasks_query = tasks_query.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).filter(Category.name_category == category)
     if state:
-        # Si hay filtro de estado, solo tareas de pedidos en ese estado
         tasks_query = tasks_query.join(Order, Task.order_id == Order.id).filter(Order.state == state)
     
     tasks = tasks_query.all()
     total_tasks_period = len(tasks)
     
-    pairs_query = (
+    pairs_q = (
         select(Task.id, func.coalesce(Task.amount, 0).label("amount"), Task.created_at)
         .where(Task.created_at >= start_date, Task.created_at <= end_date, Task.status == 'completado')
     )
+    if category:
+        pairs_q = pairs_q.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).where(Category.name_category == category)
     if state:
-        pairs_query = pairs_query.join(Order, Task.order_id == Order.id).where(Order.state == state)
+        pairs_q = pairs_q.join(Order, Task.order_id == Order.id).where(Order.state == state)
         
-    pairs_results = db.execute(pairs_query).all()
-    # sumamos amount (que es el segundo elemento del tuple debido al distinct)
+    pairs_results = db.execute(pairs_q).all()
     total_pairs_period = sum(row[1] for row in pairs_results)
     
-    # Contar pedidos únicos que tuvieron tareas completadas en este periodo
-    orders_prod_query = select(func.count(func.distinct(Task.order_id))).where(Task.created_at >= start_date, Task.created_at <= end_date, Task.status == 'completado')
+    orders_prod_q = select(func.count(func.distinct(Task.order_id))).where(Task.created_at >= start_date, Task.created_at <= end_date, Task.status == 'completado')
+    if category:
+        orders_prod_q = orders_prod_q.join(Product, Task.product_id == Product.id).outerjoin(Category, Product.category_id == Category.id).where(Category.name_category == category)
     if state:
-        orders_prod_query = orders_prod_query.join(Order, Task.order_id == Order.id).where(Order.state == state)
-    total_orders_period = db.scalar(orders_prod_query) or 0
+        orders_prod_q = orders_prod_q.join(Order, Task.order_id == Order.id).where(Order.state == state)
+    total_orders_period = db.scalar(orders_prod_q) or 0
 
     weeks = {}
     
@@ -760,7 +840,7 @@ def get_global_production(
         if week_str not in weeks:
             weeks[week_str] = {"pairs_manufactured": 0, "tasks_completed": 0, "orders_created": 0, "pairs_ordered": 0}
         weeks[week_str]["orders_created"] += 1
-        weeks[week_str]["pairs_ordered"] += o.total_pairs
+        weeks[week_str]["pairs_ordered"] += order_pairs_map.get(o.id, o.total_pairs) if category else o.total_pairs
 
     # Procesar producción por semana
     for task in tasks:
@@ -780,14 +860,9 @@ def get_global_production(
     # 3. Listado de Pedidos Detallado
     orders_data = []
     for o in orders:
-        orders_data.append(OrderSummary(
-            id=o.id,
-            total_pairs=o.total_pairs or 0,
-            total_price=float(o.total_price) if hasattr(o, 'total_price') else 0.0,
-            state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
-            created_at=o.created_at,
-            items=_build_order_items(o.details or [])
-        ))
+        summary = _build_order_summary(o, category)
+        if summary is not None:
+            orders_data.append(summary)
 
     metrics = [
         ProductionWeeklyMetric(
