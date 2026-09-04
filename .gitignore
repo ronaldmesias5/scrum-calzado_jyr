@@ -66,6 +66,9 @@ test/back/*.postman_environment/
 # Checklists / documentos locales del SENA
 Lista de Chequeo*
 
+# Documentacion local (no subir al repo)
+docs/GUIA_PRE_PUSH_HOOK.md
+
 # Project specific
 
 be/logs/
