@@ -142,6 +142,9 @@ export default function MisIncidenciasPage() {
                             "{inc.observations}"
                           </p>
                         )}
+                        {inc.evidence_image_url && (
+                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="mt-1 h-12 w-12 rounded-md object-cover border border-gray-200 dark:border-slate-700" />
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
@@ -169,6 +172,11 @@ export default function MisIncidenciasPage() {
                         {inc.reviewed_by_name && (
                           <p className="text-[10px] text-gray-400 mt-0.5">
                             por {inc.reviewed_by_name}
+                          </p>
+                        )}
+                        {inc.rejection_reason && (
+                          <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5">
+                            Motivo: {inc.rejection_reason}
                           </p>
                         )}
                       </td>

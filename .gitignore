@@ -67,7 +67,7 @@ test/back/*.postman_environment/
 Lista de Chequeo*
 
 # Project specific
-GUIA_GIT.md
+
 be/logs/
 be/tmp_*.py
 be/sql_check.py

@@ -147,6 +147,18 @@ class PendingProductIncidence(Base):
         nullable=True,
     )
 
+    # Motivo de rechazo (escrito por el jefe al rechazar)
+    rejection_reason: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    # URL de imagen de evidencia fotográfica
+    evidence_image_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
     # Link al LossRecord creado tras aprobación
     loss_record_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

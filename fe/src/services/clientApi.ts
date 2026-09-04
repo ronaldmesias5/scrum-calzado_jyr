@@ -71,6 +71,8 @@ export interface ClientIncidence {
   observations: string | null;
   status: string;
   approved_type: string | null;
+  rejection_reason: string | null;
+  evidence_image_url: string | null;
   reviewed_by_name: string | null;
   reviewed_at: string | null;
   created_at: string | null;
@@ -166,9 +168,22 @@ export async function getMyIncidences(): Promise<ClientIncidenceListResponse> {
 }
 
 export async function createMyIncidence(
-  data: ClientIncidenceCreateRequest
+  data: ClientIncidenceCreateRequest,
+  evidence?: File | null
 ): Promise<ClientIncidence> {
-  const res = await api.post('/api/v1/client/incidences', data);
+  const formData = new FormData();
+  formData.append('order_id', data.order_id);
+  formData.append('order_detail_id', data.order_detail_id);
+  formData.append('size', data.size);
+  if (data.colour) formData.append('colour', data.colour);
+  if (data.defect_code_id) formData.append('defect_code_id', data.defect_code_id);
+  if (data.description) formData.append('description', data.description);
+  formData.append('quantity', String(data.quantity));
+  if (data.observations) formData.append('observations', data.observations);
+  if (evidence) formData.append('evidence', evidence);
+  const res = await api.post('/api/v1/client/incidences', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data;
 }
 

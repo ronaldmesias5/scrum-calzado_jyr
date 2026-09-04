@@ -150,6 +150,8 @@ export interface PendingProductIncidence {
   observations?: string | null;
   status: string;
   approved_type?: string | null;
+  rejection_reason?: string | null;
+  evidence_image_url?: string | null;
   employee_name?: string | null;
   customer_name?: string | null;
   order_id?: string | null;
@@ -189,12 +191,14 @@ export async function approvePendingIncidence(
   return res.data;
 }
 
-/** Rechaza una incidencia de producto */
+/** Rechaza una incidencia de producto con un motivo opcional */
 export async function rejectPendingIncidence(
-  id: string
+  id: string,
+  reason?: string
 ): Promise<PendingProductIncidence> {
   const res = await api.post<PendingProductIncidence>(
-    `${PENDING_PREFIX}/pending-incidences/${id}/reject`
+    `${PENDING_PREFIX}/pending-incidences/${id}/reject`,
+    { reason: reason || null }
   );
   return res.data;
 }

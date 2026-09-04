@@ -86,6 +86,8 @@ export interface PendingIncidence {
   observations: string | null;
   status: PendingIncidenceStatus;
   approved_type: IncidentType | null;
+  rejection_reason: string | null;
+  evidence_image_url: string | null;
   employee_name: string | null;
   customer_name: string | null;
   order_id: string | null;

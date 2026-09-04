@@ -54,6 +54,7 @@ from app.schemas.dashboard_empleado import (
     ProductIncidenceResponse,
     ProductIncidenceListResponse,
     ApproveProductIncidenceRequest,
+    RejectProductIncidenceRequest,
 )
 
 router = APIRouter()
@@ -456,6 +457,8 @@ def _pending_to_response(p, current_user) -> ProductIncidenceResponse:
         reviewed_by_name=reviewed_by_name,
         reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
         created_at=p.created_at.isoformat() if p.created_at else None,
+        rejection_reason=p.rejection_reason,
+        evidence_image_url=p.evidence_image_url,
     )
 
 
@@ -497,15 +500,18 @@ def approve_product_incidence(
 @router.post("/pending-incidences/{pending_id}/reject", response_model=ProductIncidenceResponse)
 def reject_product_incidence(
     pending_id: uuid.UUID,
+    data: RejectProductIncidenceRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ProductIncidenceResponse:
-    """Rechaza una incidencia de producto."""
+    """Rechaza una incidencia de producto con un motivo opcional."""
     from app.controllers.dashboard_empleado import reject_pending_incidence
 
     _ensure_admin_or_jefe(current_user)
     try:
-        pending = reject_pending_incidence(db, pending_id, current_user.id)
+        pending = reject_pending_incidence(
+            db, pending_id, current_user.id, reason=data.reason
+        )
         return _pending_to_response(pending, current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -165,6 +165,8 @@ export interface ProductIncidence {
   observations?: string | null;
   status: string; // pending, approved, rejected
   approved_type?: string | null;
+  rejection_reason?: string | null;
+  evidence_image_url?: string | null;
   employee_name?: string | null;
   reviewed_by_name?: string | null;
   reviewed_at?: string | null;

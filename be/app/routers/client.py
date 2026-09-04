@@ -1,8 +1,10 @@
+import time
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select, desc, func
 from sqlalchemy.orm import Session, selectinload
 
@@ -17,7 +19,6 @@ from app.schemas.client import (
     ClientOrderListResponse,
     ClientOrderDetailItem,
     ClientOrderSummaryResponse,
-    ClientIncidenceCreateRequest,
     ClientIncidenceResponse,
     ClientIncidenceListResponse,
     ClientSharedIncidenceResponse,
@@ -30,6 +31,9 @@ router = APIRouter(
     prefix="/api/v1/client",
     tags=["client"],
 )
+
+UPLOADS_DIR = (Path(settings.UPLOAD_DIR) / "evidence") if settings.UPLOAD_DIR else (Path(__file__).resolve().parent.parent.parent / "uploads" / "evidence")
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
 
 
 def _order_to_client_response(order: Order) -> ClientOrderResponse:
@@ -289,6 +293,8 @@ def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidence
         observations=p.observations,
         status=p.status,
         approved_type=p.approved_type,
+        rejection_reason=p.rejection_reason,
+        evidence_image_url=p.evidence_image_url,
         reviewed_by_name=reviewed_by_name,
         reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
         created_at=p.created_at.isoformat() if p.created_at else None,
@@ -298,10 +304,18 @@ def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidence
 @router.post(
     "/incidences", response_model=ClientIncidenceResponse, status_code=status.HTTP_201_CREATED
 )
-def create_my_incidence(
-    data: ClientIncidenceCreateRequest,
+async def create_my_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    order_id: str = Form(...),
+    order_detail_id: str = Form(...),
+    size: str = Form(...),
+    colour: str | None = Form(None),
+    defect_code_id: str | None = Form(None),
+    description: str | None = Form(None),
+    quantity: int = Form(1),
+    observations: str | None = Form(None),
+    evidence: UploadFile | None = File(None),
 ) -> ClientIncidenceResponse:
     """
     Reporta un reclamo sobre un producto de un pedido entregado.
@@ -309,18 +323,33 @@ def create_my_incidence(
     """
     from app.controllers.dashboard_empleado import create_customer_pending_incidence
 
+    # Handle evidence image upload
+    evidence_image_url = None
+    if evidence and evidence.filename:
+        if evidence.content_type not in ALLOWED_MIME:
+            raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+        content = await evidence.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
+        ext = evidence.filename.rsplit(".", 1)[-1].lower() if "." in evidence.filename else "jpg"
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"evidence_{uuid.uuid4().hex}_{int(time.time())}.{ext}"
+        (UPLOADS_DIR / filename).write_bytes(content)
+        evidence_image_url = f"uploads/evidence/{filename}"
+
     try:
         pending = create_customer_pending_incidence(
             db=db,
             customer_id=current_user.id,
-            order_id=data.order_id,
-            order_detail_id=data.order_detail_id,
-            size=data.size,
-            colour=data.colour,
-            defect_code_id=data.defect_code_id,
-            description=data.description,
-            quantity=data.quantity,
-            observations=data.observations,
+            order_id=uuid.UUID(order_id),
+            order_detail_id=uuid.UUID(order_detail_id),
+            size=size,
+            colour=colour,
+            defect_code_id=uuid.UUID(defect_code_id) if defect_code_id else None,
+            description=description,
+            quantity=quantity,
+            observations=observations,
+            evidence_image_url=evidence_image_url,
         )
         return _incidence_to_client_response(pending)
     except ValueError as e:

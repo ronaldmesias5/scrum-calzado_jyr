@@ -19,6 +19,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.pending_incidence import PendingProductIncidence, PendingIncidenceStatus
 from app.models.tasks import Task
 from app.models.order import Order, OrderDetail, OrderStatus
+from app.models.notifications import Notification, NotificationType
+from app.models.user import User
 from app.services.scrap import register_incident
 
 
@@ -32,6 +34,7 @@ def create_pending_incidence(
     description: str | None = None,
     quantity: int = 1,
     observations: str | None = None,
+    evidence_image_url: str | None = None,
 ) -> PendingProductIncidence:
     """Crea una incidencia de producto pendiente de aprobación."""
     # Validar que la tarea existe y está asignada al empleado
@@ -65,6 +68,7 @@ def create_pending_incidence(
         description=description,
         quantity=Decimal(str(quantity)),
         observations=observations,
+        evidence_image_url=evidence_image_url,
         status=PendingIncidenceStatus.pending,
     )
     db.add(pending)
@@ -107,6 +111,7 @@ def create_customer_pending_incidence(
     description: str | None = None,
     quantity: int = 1,
     observations: str | None = None,
+    evidence_image_url: str | None = None,
 ) -> PendingProductIncidence:
     """Crea un reclamo de producto de un pedido entregado (incidencia de cliente)."""
     # Validar que la orden existe y pertenece al cliente
@@ -154,6 +159,7 @@ def create_customer_pending_incidence(
         description=description,
         quantity=Decimal(str(quantity)),
         observations=observations,
+        evidence_image_url=evidence_image_url,
         status=PendingIncidenceStatus.pending,
     )
     db.add(pending)
@@ -332,8 +338,9 @@ def reject_pending_incidence(
     db: Session,
     pending_id: uuid.UUID,
     jefe_id: uuid.UUID,
+    reason: str | None = None,
 ) -> PendingProductIncidence:
-    """Rechaza una incidencia pendiente."""
+    """Rechaza una incidencia pendiente, opcionalmente con un motivo."""
     pending = db.execute(
         select(PendingProductIncidence).where(
             PendingProductIncidence.id == pending_id,
@@ -348,7 +355,43 @@ def reject_pending_incidence(
     pending.status = PendingIncidenceStatus.rejected
     pending.reviewed_by_id = jefe_id
     pending.reviewed_at = datetime.now(timezone.utc)
+    if reason:
+        pending.rejection_reason = reason
 
     db.commit()
     db.refresh(pending)
+
+    # Notify the reporter (employee or customer) about the rejection
+    reporter_id = pending.employee_id or pending.customer_id
+    if reporter_id:
+        jefe = db.get(User, jefe_id)
+        jefe_name = f"{jefe.name_user} {jefe.last_name}".strip() if jefe else "El jefe"
+        reason_text = f" Motivo: {reason}" if reason else ""
+        notif = Notification(
+            user_id=reporter_id,
+            title_notification="Incidencia rechazada",
+            message_notification=(
+                f"{jefe_name} rechazó tu incidencia del producto "
+                f"{pending.product.name_product if pending.product else ''} "
+                f"talla {pending.size}.{reason_text}"
+            ),
+            type_notification=NotificationType.advertencia,
+            link_url="/dashboard/admin/losses?tab=pending",
+            created_by=jefe_id,
+        )
+        db.add(notif)
+        db.commit()
+        try:
+            from app.utils.ws_manager import ws_manager
+            import asyncio
+
+            asyncio.run(
+                ws_manager.broadcast_to_user(
+                    str(reporter_id),
+                    {"type": "incidence_rejected", "title": "Incidencia rechazada"},
+                )
+            )
+        except Exception:
+            pass
+
     return pending

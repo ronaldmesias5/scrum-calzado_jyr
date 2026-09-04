@@ -226,9 +226,21 @@ export const getGeneralIncidences =
 // ─── Incidencias de producto (pendientes de aprobación) ────────────────────────
 
 export const createProductIncidence = async (
-  data: ProductIncidenceCreateRequest
+  data: ProductIncidenceCreateRequest,
+  evidence?: File | null
 ): Promise<void> => {
-  await api.post('/api/v1/dashboard/employee/product-incidences', data);
+  const formData = new FormData();
+  formData.append('task_id', data.task_id);
+  formData.append('size', data.size);
+  if (data.colour) formData.append('colour', data.colour);
+  if (data.defect_code_id) formData.append('defect_code_id', data.defect_code_id);
+  if (data.description) formData.append('description', data.description);
+  formData.append('quantity', String(data.quantity));
+  if (data.observations) formData.append('observations', data.observations);
+  if (evidence) formData.append('evidence', evidence);
+  await api.post('/api/v1/dashboard/employee/product-incidences', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
 export const getProductIncidences =

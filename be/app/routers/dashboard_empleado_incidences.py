@@ -4,13 +4,16 @@ Descripción: Endpoints de incidencias del panel del empleado.
 """
 
 import logging
+import time
 import uuid
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.dependencies import get_current_user, get_db
 from app.models.incidence import Incidence, IncidenceStatus
 from app.models.scrap import LossRecord
@@ -22,10 +25,12 @@ from app.schemas.dashboard_empleado import (
     GeneralIncidenceCreateRequest,
     GeneralIncidenceListResponse,
     GeneralIncidenceResponse,
-    ProductIncidenceCreateRequest,
     ProductIncidenceListResponse,
     ProductIncidenceResponse,
 )
+
+UPLOADS_DIR = (Path(settings.UPLOAD_DIR) / "evidence") if settings.UPLOAD_DIR else (Path(__file__).resolve().parent.parent.parent / "uploads" / "evidence")
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
 
 router = APIRouter(
     prefix="/api/v1/dashboard/employee",
@@ -204,25 +209,47 @@ def get_general_incidences(
     response_model=ProductIncidenceResponse,
     summary="Crear incidencia de producto vinculada a tarea",
 )
-def create_product_incidence(
-    data: ProductIncidenceCreateRequest,
+async def create_product_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    task_id: str = Form(...),
+    size: str = Form(...),
+    colour: str | None = Form(None),
+    defect_code_id: str | None = Form(None),
+    description: str | None = Form(None),
+    quantity: int = Form(1),
+    observations: str | None = Form(None),
+    evidence: UploadFile | None = File(None),
 ) -> ProductIncidenceResponse:
     """Crea una incidencia de producto pendiente de aprobación del jefe."""
     from app.controllers.dashboard_empleado import create_pending_incidence
+
+    # Handle evidence image upload
+    evidence_image_url = None
+    if evidence and evidence.filename:
+        if evidence.content_type not in ALLOWED_MIME:
+            raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+        content = await evidence.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
+        ext = evidence.filename.rsplit(".", 1)[-1].lower() if "." in evidence.filename else "jpg"
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"evidence_{uuid.uuid4().hex}_{int(time.time())}.{ext}"
+        (UPLOADS_DIR / filename).write_bytes(content)
+        evidence_image_url = f"uploads/evidence/{filename}"
 
     try:
         pending = create_pending_incidence(
             db=db,
             employee_id=current_user.id,
-            task_id=uuid.UUID(data.task_id),
-            size=data.size,
-            colour=data.colour,
-            defect_code_id=uuid.UUID(data.defect_code_id) if data.defect_code_id else None,
-            description=data.description,
-            quantity=data.quantity,
-            observations=data.observations,
+            task_id=uuid.UUID(task_id),
+            size=size,
+            colour=colour,
+            defect_code_id=uuid.UUID(defect_code_id) if defect_code_id else None,
+            description=description,
+            quantity=quantity,
+            observations=observations,
+            evidence_image_url=evidence_image_url,
         )
 
         return ProductIncidenceResponse(
@@ -245,6 +272,7 @@ def create_product_incidence(
             reviewed_by_name=None,
             reviewed_at=None,
             created_at=pending.created_at.isoformat() if pending.created_at else None,
+            evidence_image_url=pending.evidence_image_url,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -290,6 +318,7 @@ def get_my_product_incidences(
             reviewed_by_name=reviewed_by_name,
             reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
             created_at=p.created_at.isoformat() if p.created_at else None,
+            evidence_image_url=p.evidence_image_url,
         ))
 
     return ProductIncidenceListResponse(incidences=items, total=len(items))
