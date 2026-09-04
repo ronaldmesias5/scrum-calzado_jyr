@@ -5,6 +5,7 @@ import {
   Wrench, Plus, Box, Package, AlertCircle, Upload,
 } from 'lucide-react';
 import CameraCapture from '@/components/atoms/CameraCapture';
+import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerModal';
 import {
   getGeneralIncidences,
   createGeneralIncidence,
@@ -49,6 +50,7 @@ export default function EmployeeIncidencesPage() {
   const [productObservations, setProductObservations] = useState('');
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [viewingEvidence, setViewingEvidence] = useState<string | null>(null);
 
   const loadGeneralIncidences = useCallback(async () => {
     setGeneralLoading(true);
@@ -258,7 +260,13 @@ export default function EmployeeIncidencesPage() {
                         {inc.evidence_image_url && (
                           <div className="flex flex-col gap-1">
                             <p className="text-xs text-gray-500 dark:text-gray-400">Evidencia:</p>
-                            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="w-full min-h-[140px] max-h-[260px] rounded-xl object-cover border border-gray-200 dark:border-slate-700" />
+                            <img
+                              src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`}
+                              alt="Evidencia"
+                              title="Click para ver en grande"
+                              onClick={() => setViewingEvidence(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`)}
+                              className="w-full min-h-[140px] max-h-[260px] rounded-xl object-cover border border-gray-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
+                            />
                           </div>
                         )}
                       </div>
@@ -375,6 +383,14 @@ export default function EmployeeIncidencesPage() {
         </div>,
       document.body
     )}
+
+    {/* Lightbox de evidencia fotográfica */}
+    <ImageViewerModal
+      isOpen={!!viewingEvidence}
+      imageUrl={viewingEvidence}
+      productName="Evidencia fotográfica"
+      onClose={() => setViewingEvidence(null)}
+    />
     </div>
   );
 }

@@ -1144,7 +1144,6 @@ function OrderDetailView({
                                   <img
                                     src={productImageUrl}
                                     alt={productName}
-                                    crossOrigin="anonymous"
                                     onError={() => {
                                       handleImageError(productImageUrl);
                                     }}

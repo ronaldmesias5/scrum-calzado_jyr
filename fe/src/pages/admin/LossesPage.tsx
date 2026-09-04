@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import StatCard from '@/features/admin/components/atoms/StatCard';
 import LossFormModal from '@/features/admin/components/molecules/LossFormModal';
+import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerModal';
 import {
   getIncidents,
   getScrapStock,
@@ -222,6 +223,9 @@ export default function LossesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [valeTasks, setValeTasks] = useState<any[]>([]);
   const [valeLoading, setValeLoading] = useState(false);
+
+  // ── Lightbox de evidencia fotográfica ──
+  const [viewingEvidence, setViewingEvidence] = useState<string | null>(null);
 
   const openValeModal = async (inc: PendingProductIncidence) => {
     setValeModalInc(inc);
@@ -1107,7 +1111,9 @@ export default function LossesPage() {
                             <img
                               src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`}
                               alt="Evidencia"
-                              className="w-full min-h-[180px] max-h-[320px] rounded-xl object-cover border border-gray-200 dark:border-slate-700"
+                              title="Click para ver en grande"
+                              onClick={() => setViewingEvidence(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`)}
+                              className="w-full min-h-[180px] max-h-[320px] rounded-xl object-cover border border-gray-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
                             />
                           </div>
                         )}
@@ -1500,9 +1506,17 @@ export default function LossesPage() {
               </button>
             </div>
           </div>
-        </div>,
+          </div>,
         document.body
       )}
+
+      {/* Lightbox de evidencia fotográfica */}
+      <ImageViewerModal
+        isOpen={!!viewingEvidence}
+        imageUrl={viewingEvidence}
+        productName="Evidencia fotográfica"
+        onClose={() => setViewingEvidence(null)}
+      />
     </div>
   );
 }
