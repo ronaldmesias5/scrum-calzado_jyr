@@ -233,32 +233,36 @@ export default function EmployeeIncidencesPage() {
             ) : productIncidences.length === 0 ? (
               <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm transition-all duration-300"><div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-4"><div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center"><Package size={28} className="text-gray-300 dark:text-gray-600" /></div><div><p className="text-gray-900 dark:text-white font-bold text-lg">Sin incidencias de producto</p><p className="text-gray-500 dark:text-gray-400 mt-1">No hay incidencias de producto registradas.</p></div></div></div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                 {productIncidences.map((inc) => {
                   const statusBadge = inc.status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/50' : inc.status === 'approved' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50' : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50';
                   const statusLabel = inc.status === 'pending' ? 'Pendiente' : inc.status === 'approved' ? 'Aprobada' : 'Rechazada';
                   return (
-                    <div key={inc.id} className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div key={inc.id} className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2"><Package className="w-5 h-5 text-purple-600 dark:text-purple-400" /><span className="font-bold text-gray-900 dark:text-white">{inc.product_name || 'Producto'}</span></div>
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${statusBadge}`}>{statusLabel}</span>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3">
-                        <p>Tarea: {inc.task_type} — Talla: {inc.size}</p>
-                        {inc.description && <p>Defecto: {inc.description}</p>}
-                        {!inc.description && inc.defect_code && <p>Defecto: {inc.defect_code} — {inc.defect_name}</p>}
-                        <p>Cantidad: {inc.quantity}</p>
-                      </div>
-                      {inc.observations && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{inc.observations}</p>)}
-                      {inc.status === 'approved' && inc.approved_type && (<p className="text-xs text-green-600 dark:text-green-400 mb-2">Tipo: {inc.approved_type}</p>)}
-                      {inc.status === 'rejected' && inc.rejection_reason && (<p className="text-xs text-red-600 dark:text-red-400 mb-2">Motivo: {inc.rejection_reason}</p>)}
-                      {inc.evidence_image_url && (
-                        <div className="mb-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Evidencia:</p>
-                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="h-32 rounded-lg object-cover border border-gray-200 dark:border-slate-700" />
+                      <div className={`${inc.evidence_image_url ? 'grid grid-cols-1 md:grid-cols-[1fr_240px] gap-4' : ''} flex-1`}>
+                        <div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3">
+                            <p>Tarea: {inc.task_type} — Talla: {inc.size}</p>
+                            {inc.description && <p>Defecto: {inc.description}</p>}
+                            {!inc.description && inc.defect_code && <p>Defecto: {inc.defect_code} — {inc.defect_name}</p>}
+                            <p>Cantidad: {inc.quantity}</p>
+                          </div>
+                          {inc.observations && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-3 italic">"{inc.observations}"</p>)}
+                          {inc.status === 'approved' && inc.approved_type && (<p className="text-xs text-green-600 dark:text-green-400 mb-2">Tipo: {inc.approved_type}</p>)}
+                          {inc.status === 'rejected' && inc.rejection_reason && (<p className="text-xs text-red-600 dark:text-red-400 mb-2">Motivo: {inc.rejection_reason}</p>)}
                         </div>
-                      )}
-                      {inc.reviewed_by_name && (<p className="text-xs text-gray-500 dark:text-gray-400">{inc.status === 'approved' ? 'Aprobado' : 'Rechazado'} por {inc.reviewed_by_name}{inc.reviewed_at && ` — ${formatDate(inc.reviewed_at)}`}</p>)}
+                        {inc.evidence_image_url && (
+                          <div className="flex flex-col gap-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Evidencia:</p>
+                            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="w-full min-h-[140px] max-h-[260px] rounded-xl object-cover border border-gray-200 dark:border-slate-700" />
+                          </div>
+                        )}
+                      </div>
+                      {inc.reviewed_by_name && (<p className="text-xs text-gray-500 dark:text-gray-400 mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">{inc.status === 'approved' ? 'Aprobado' : 'Rechazado'} por {inc.reviewed_by_name}{inc.reviewed_at && ` — ${formatDate(inc.reviewed_at)}`}</p>)}
                       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2"><span className="flex items-center gap-1"><AlertCircle size={12} />{formatDate(inc.created_at)}</span></div>
                     </div>
                   );
@@ -384,14 +388,14 @@ function IncidenceCardGrid({
   formatDate: (d: string | null | undefined) => string;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
       {items.map((inc) => {
         const isMaquinaria = inc.incidence_category === 'maquinaria';
         const badgeClass = isMaquinaria
           ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-900/50'
           : 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50';
         return (
-          <div key={inc.id} className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all duration-300">
+          <div key={inc.id} className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
                 {isMaquinaria ? (
