@@ -47,6 +47,7 @@ import {
   exportProductionPDF
 } from '@/features/admin/utils/reportsUtils';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
+import CategoryFilter from '@/components/atoms/CategoryFilter';
 import axios from '@/services/axios';
 import { API_URL } from '@/services/config';
 
@@ -367,6 +368,7 @@ function ReportGeneratorTab() {
   const [reportError, setReportError] = useState<string | null>(null);
   const [isRoleReport, setIsRoleReport] = useState(false);
   const [isAllCustomers, setIsAllCustomers] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   // Production tasks tab state
   const [productionTab, setProductionTab] = useState<'orders' | 'tasks'>(
@@ -431,7 +433,8 @@ function ReportGeneratorTab() {
               selectedRole,
               startDate,
               endDate,
-              taskStatusFilter
+              taskStatusFilter,
+              categoryFilter ?? undefined
             );
             setEmployeeReport(res);
           } else if (selectedUserId) {
@@ -439,7 +442,8 @@ function ReportGeneratorTab() {
               selectedUserId,
               startDate,
               endDate,
-              taskStatusFilter
+              taskStatusFilter,
+              categoryFilter ?? undefined
             );
             setEmployeeReport(res);
           }
@@ -448,14 +452,16 @@ function ReportGeneratorTab() {
             const res = await getAllCustomersReport(
               startDate,
               endDate,
-              orderStatusFilter
+              orderStatusFilter,
+              categoryFilter ?? undefined
             );
             setCustomerReport(res);
           } else if (selectedUserId) {
             const res = await getCustomerReport(
               selectedUserId,
               startDate,
-              endDate
+              endDate,
+              categoryFilter ?? undefined
             );
             setCustomerReport(res);
           }
@@ -465,7 +471,8 @@ function ReportGeneratorTab() {
             0,
             startDate,
             endDate,
-            orderStatusFilter
+            orderStatusFilter,
+            categoryFilter ?? undefined
           );
           setProductionReport(res);
         }
@@ -498,7 +505,8 @@ function ReportGeneratorTab() {
     isRoleReport,
     isAllCustomers,
     taskStatusFilter,
-    orderStatusFilter
+    orderStatusFilter,
+    categoryFilter
   ]);
 
   // Fetch tasks when production tasks tab is active
@@ -517,7 +525,7 @@ function ReportGeneratorTab() {
         if (prodTaskProcess === 'all') {
           const results = await Promise.all(
             roleNames.map((r) =>
-              getRoleReport(r, startDate, endDate, prodTaskStatusFilter).catch(
+              getRoleReport(r, startDate, endDate, prodTaskStatusFilter, categoryFilter ?? undefined).catch(
                 () => null
               )
             )
@@ -529,7 +537,8 @@ function ReportGeneratorTab() {
             prodTaskProcess,
             startDate,
             endDate,
-            prodTaskStatusFilter
+            prodTaskStatusFilter,
+            categoryFilter ?? undefined
           );
           setProductionTasks(res?.tasks_list ?? []);
         }
@@ -545,6 +554,7 @@ function ReportGeneratorTab() {
     productionTab,
     prodTaskProcess,
     prodTaskStatusFilter,
+    categoryFilter,
     datePreset,
     customStart,
     customEnd
@@ -984,6 +994,8 @@ function ReportGeneratorTab() {
                   </button>
                 ))}
               </div>
+
+              <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} size="sm" />
             </div>
             <div className="flex gap-2">
               <Button
@@ -1309,6 +1321,8 @@ function ReportGeneratorTab() {
                   </button>
                 ))}
               </div>
+
+              <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} size="sm" />
             </div>
             <div className="flex gap-2">
               <Button
@@ -1629,6 +1643,7 @@ function ReportGeneratorTab() {
                 </div>
               </div>
             )}
+            <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => {

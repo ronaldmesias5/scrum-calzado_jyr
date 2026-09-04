@@ -27,6 +27,7 @@ import {
 } from '@/features/employee/utils/reportsUtils';
 import Modal from '@/components/atoms/Modal';
 import { Button } from '@/components/atoms/Button';
+import CategoryFilter from '@/components/atoms/CategoryFilter';
 import { useToast } from '@/store/ToastContext';
 
 const PROCESS_DISPLAY: Record<string, string> = {
@@ -120,6 +121,7 @@ export default function EmployeeReportsPage() {
   );
   const [tasksLoading, setTasksLoading] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   const getDateRange = useCallback(() => {
     const now = new Date();
@@ -157,7 +159,7 @@ export default function EmployeeReportsPage() {
       setLoading(true);
       try {
         const [perf, shr] = await Promise.all([
-          getMyPerformance(),
+          getMyPerformance({ category: categoryFilter ?? undefined }),
           getSharedReports()
         ]);
         setPerformance(perf);
@@ -169,7 +171,7 @@ export default function EmployeeReportsPage() {
       }
     }
     load();
-  }, []);
+  }, [categoryFilter]);
 
   // Polling en tiempo real para reportes compartidos (cada 30s)
   useEffect(() => {
@@ -197,7 +199,8 @@ export default function EmployeeReportsPage() {
         const { start, end } = getDateRange();
         const report = await getMyTasksReport({
           start_date: start,
-          end_date: end
+          end_date: end,
+          category: categoryFilter ?? undefined
         });
         setTasksReport(report);
       } catch (e) {
@@ -208,7 +211,7 @@ export default function EmployeeReportsPage() {
       }
     }
     loadTasks();
-  }, [performance, period, customStart, customEnd, getDateRange]);
+  }, [performance, period, customStart, customEnd, categoryFilter, getDateRange]);
 
   const handleViewShare = async (id: string) => {
     try {
@@ -410,7 +413,7 @@ export default function EmployeeReportsPage() {
 
         {/* Filtro de fecha */}
         <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3 items-center">
             {[
               { key: 'today' as const, label: 'Hoy' },
               { key: 'week' as const, label: 'Semana' },
@@ -429,6 +432,10 @@ export default function EmployeeReportsPage() {
                 {p.label}
               </button>
             ))}
+
+            <div className="ml-2">
+              <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} size="sm" />
+            </div>
           </div>
           {period === 'custom' && (
             <div className="flex flex-wrap items-center gap-4">

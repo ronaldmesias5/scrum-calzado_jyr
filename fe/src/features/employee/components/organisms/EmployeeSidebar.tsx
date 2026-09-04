@@ -91,7 +91,7 @@ export default function EmployeeSidebar({
         className={`
           fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800
           transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto
-          lg:relative lg:translate-x-0 lg:z-0 min-w-[72px]
+          lg:sticky lg:top-16 lg:inset-y-auto lg:self-start lg:h-[calc(100vh-4rem)] lg:translate-x-0 lg:z-auto min-w-[72px]
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >

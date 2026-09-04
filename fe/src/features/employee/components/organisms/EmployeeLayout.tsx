@@ -66,7 +66,7 @@ export default function EmployeeLayout() {
       <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
         <AdminHeader onMenuClick={toggleSidebar} />
 
-      <div className="flex flex-1 min-h-0 overflow-hidden relative">
+      <div className="flex flex-1 min-h-0 relative">
         <EmployeeSidebar
           isOpen={isSidebarOpen}
           onClose={closeSidebar}

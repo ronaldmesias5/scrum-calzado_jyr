@@ -3,6 +3,7 @@ import {
   WholesaleProduct,
   resolveImageUrl
 } from '@/services/wholesaleCatalogApi';
+import { getSizeRangeText } from '@/utils/shoeSizes';
 
 interface WholesaleProductCardProps {
   product: WholesaleProduct;
@@ -13,12 +14,7 @@ export function WholesaleProductCard({
   product,
   onOrderClick
 }: WholesaleProductCardProps) {
-  const sizeStart = product.category_name.toLowerCase().includes('infantil')
-    ? 21
-    : 33;
-  const sizeEnd = product.category_name.toLowerCase().includes('infantil')
-    ? 32
-    : 43;
+  const sizeRange = getSizeRangeText(product.category_name);
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_10px_30px_-18px_rgba(15,23,42,0.45)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
@@ -57,7 +53,7 @@ export function WholesaleProductCard({
         <div className="mt-7 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
           <Package className="h-5 w-5 shrink-0 text-slate-500 dark:text-slate-300" />
           <span className="text-base font-medium text-slate-700 dark:text-slate-200">
-            Tallas {sizeStart} al {sizeEnd}
+            Tallas {sizeRange}
           </span>
         </div>
 

@@ -150,11 +150,13 @@ export interface ClientAllOrdersReport {
 
 export async function getAllMyOrders(
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  category?: string
 ): Promise<ClientAllOrdersReport> {
   const params: Record<string, string> = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
+  if (category) params.category = category;
   const res = await api.get<ClientAllOrdersReport>(
     '/api/v1/client/orders/all',
     { params }

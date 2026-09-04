@@ -146,12 +146,14 @@ export async function getEmployeeReport(
   userId: string,
   startDate?: string,
   endDate?: string,
-  status?: string
+  status?: string,
+  category?: string
 ): Promise<EmployeeReportResponse> {
   const params: any = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
   if (status && status !== 'all') params.status = status;
+  if (category) params.category = category;
   const response = await axios.get<EmployeeReportResponse>(
     `/api/v1/admin/reports/employee/${userId}`,
     { params }
@@ -162,11 +164,13 @@ export async function getEmployeeReport(
 export async function getCustomerReport(
   userId: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  category?: string
 ): Promise<CustomerReportResponse> {
   const params: any = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
+  if (category) params.category = category;
   const response = await axios.get<CustomerReportResponse>(
     `/api/v1/admin/reports/customer/${userId}`,
     { params }
@@ -178,12 +182,14 @@ export async function getGlobalProduction(
   days: number = 30,
   startDate?: string,
   endDate?: string,
-  state?: string
+  state?: string,
+  category?: string
 ): Promise<ProductionGlobalReport> {
   const params: any = { days };
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
   if (state && state !== 'all') params.state = state;
+  if (category) params.category = category;
   const response = await axios.get<ProductionGlobalReport>(
     '/api/v1/admin/reports/global/production',
     { params }
@@ -195,12 +201,14 @@ export async function getRoleReport(
   roleName: string,
   startDate?: string,
   endDate?: string,
-  status?: string
+  status?: string,
+  category?: string
 ): Promise<EmployeeReportResponse> {
   const params: any = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
   if (status && status !== 'all') params.status = status;
+  if (category) params.category = category;
   const response = await axios.get<EmployeeReportResponse>(
     `/api/v1/admin/reports/role/${roleName}`,
     { params }
@@ -211,12 +219,14 @@ export async function getRoleReport(
 export async function getAllCustomersReport(
   startDate?: string,
   endDate?: string,
-  state?: string
+  state?: string,
+  category?: string
 ): Promise<CustomerReportResponse> {
   const params: any = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
   if (state && state !== 'all') params.state = state;
+  if (category) params.category = category;
   const response = await axios.get<CustomerReportResponse>(
     '/api/v1/admin/reports/customer/all/orders',
     { params }
