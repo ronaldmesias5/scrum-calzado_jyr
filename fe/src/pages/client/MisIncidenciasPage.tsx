@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, MessageSquareWarning, Plus } from 'lucide-react';
 import { ReportIncidenceModal } from '@/features/client/components/molecules/ReportIncidenceModal';
+import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerModal';
 import { getMyIncidences, type ClientIncidence } from '@/services/clientApi';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -30,6 +31,7 @@ export default function MisIncidenciasPage() {
   const [incidences, setIncidences] = useState<ClientIncidence[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportOpen, setReportOpen] = useState(false);
+  const [viewingEvidence, setViewingEvidence] = useState<string | null>(null);
 
   const loadIncidences = useCallback(async () => {
     try {
@@ -143,7 +145,7 @@ export default function MisIncidenciasPage() {
                           </p>
                         )}
                         {inc.evidence_image_url && (
-                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="mt-1 h-12 w-12 rounded-md object-cover border border-gray-200 dark:border-slate-700" />
+                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" title="Click para ver en grande" onClick={() => setViewingEvidence(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`)} className="mt-1 h-12 w-12 rounded-md object-cover border border-gray-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity" />
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -197,6 +199,14 @@ export default function MisIncidenciasPage() {
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
         onCreated={loadIncidences}
+      />
+
+      {/* Lightbox de evidencia fotográfica */}
+      <ImageViewerModal
+        isOpen={!!viewingEvidence}
+        imageUrl={viewingEvidence}
+        productName="Evidencia fotográfica"
+        onClose={() => setViewingEvidence(null)}
       />
     </div>
   );

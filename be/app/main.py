@@ -249,5 +249,6 @@ async def serve_image(file_path: str):
         headers={
             "Cache-Control": "public, max-age=86400",
             "Content-Disposition": "inline",
+            "Access-Control-Allow-Origin": "*",
         }
     )
