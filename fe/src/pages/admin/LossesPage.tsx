@@ -1028,7 +1028,7 @@ export default function LossesPage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                 {pendingIncidences.map((inc) => {
                   const statusBadge = inc.status === 'pending'
                     ? 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/50'
@@ -1043,7 +1043,7 @@ export default function LossesPage() {
                   return (
                     <div
                       key={inc.id}
-                      className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all duration-300"
+                      className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -1057,52 +1057,61 @@ export default function LossesPage() {
                         </span>
                       </div>
 
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3">
-                        <p className="flex items-center gap-1.5">
-                          {inc.customer_name ? <Users size={14} className="text-blue-500"/> : <Package size={14} className="text-purple-500"/>}
-                          Reportado por:{" "}
-                          <span className="font-bold text-gray-900 dark:text-white">
-                            {inc.customer_name
-                              ? `Cliente: ${inc.customer_name}`
-                              : inc.employee_name
-                              ? `Empleado: ${inc.employee_name}`
-                              : '—'}
-                          </span>
-                        </p>
-                        {inc.order_id && (
-                          <p className="flex items-center gap-2">
-                            <FileText size={12} /> Pedido:{" "}
-                            <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">#{inc.order_id.slice(0, 8)}</span>
-                            <button
-                              type="button"
-                              onClick={() => openValeModal(inc)}
-                              className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px] font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                            >
-                              <Eye size={10} /> Ver vale de producción
-                            </button>
-                          </p>
-                        )}
-                        <p>Tarea: {inc.task_type || '—'} — Talla: {inc.size} {inc.colour ? `· Color: ${inc.colour}` : ''}</p>
-                        {inc.description && <p>Defecto: {inc.description}</p>}
-                        {!inc.description && inc.defect_code && <p>Defecto: {inc.defect_code} — {inc.defect_name}</p>}
-                        <p>Cantidad: {inc.quantity}</p>
-                      </div>
+                      <div className={`${inc.evidence_image_url ? 'grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4' : ''} flex-1`}>
+                        {/* Left: info */}
+                        <div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3">
+                            <p className="flex items-center gap-1.5">
+                              {inc.customer_name ? <Users size={14} className="text-blue-500"/> : <Package size={14} className="text-purple-500"/>}
+                              Reportado por:{" "}
+                              <span className="font-bold text-gray-900 dark:text-white">
+                                {inc.customer_name
+                                  ? `Cliente: ${inc.customer_name}`
+                                  : inc.employee_name
+                                  ? `Empleado: ${inc.employee_name}`
+                                  : '—'}
+                              </span>
+                            </p>
+                            {inc.order_id && (
+                              <p className="flex items-center gap-2">
+                                <FileText size={12} /> Pedido:{" "}
+                                <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">#{inc.order_id.slice(0, 8)}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => openValeModal(inc)}
+                                  className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px] font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                >
+                                  <Eye size={10} /> Ver vale de producción
+                                </button>
+                              </p>
+                            )}
+                            <p>Tarea: {inc.task_type || '—'} — Talla: {inc.size} {inc.colour ? `· Color: ${inc.colour}` : ''}</p>
+                            {inc.description && <p>Defecto: {inc.description}</p>}
+                            {!inc.description && inc.defect_code && <p>Defecto: {inc.defect_code} — {inc.defect_name}</p>}
+                            <p>Cantidad: {inc.quantity}</p>
+                          </div>
 
-                      {/* Producción — quién hizo cada proceso (vale) — bien ubicado en la card */}
-                      {inc.order_id && <ValeInline orderId={inc.order_id} productId={inc.product_id} />}
+                          {inc.order_id && <ValeInline orderId={inc.order_id} productId={inc.product_id} />}
 
-                      {inc.observations && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 italic">
-                          "{inc.observations}"
-                        </p>
-                      )}
-
-                      {inc.evidence_image_url && (
-                        <div className="mb-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Evidencia:</p>
-                          <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`} alt="Evidencia" className="h-40 rounded-xl object-cover border border-gray-200 dark:border-slate-700" />
+                          {inc.observations && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 italic">
+                              "{inc.observations}"
+                            </p>
+                          )}
                         </div>
-                      )}
+
+                        {/* Right: evidence photo */}
+                        {inc.evidence_image_url && (
+                          <div className="flex flex-col gap-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Evidencia:</p>
+                            <img
+                              src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/${inc.evidence_image_url}`}
+                              alt="Evidencia"
+                              className="w-full min-h-[180px] max-h-[320px] rounded-xl object-cover border border-gray-200 dark:border-slate-700"
+                            />
+                          </div>
+                        )}
+                      </div>
 
                       {/* Actions for pending */}
                       {isPending && (

@@ -1,0 +1,28 @@
+#!/bin/sh
+# .githooks/pre-push — Ejecuta checks de CI antes de cada push
+# Si falla, bloquea el push.
+#
+# Instalacion (una sola vez):
+#   git config core.hooksPath .githooks
+#
+# Para saltarlo en un push urgente:
+#   git push --no-verify
+
+echo ""
+echo "Pre-push: ejecutando checks de CI..."
+echo ""
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Ejecutar check.ps1 via PowerShell
+powershell.exe -ExecutionPolicy Bypass -File "$PROJECT_DIR/scripts/check.ps1"
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Push BLOQUEADO — corrige los errores primero."
+    echo "Para saltar este check (no recomendado): git push --no-verify"
+    exit 1
+fi
+
+exit 0

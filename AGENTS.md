@@ -79,6 +79,17 @@ cd fe && npx tsc -b               # TypeScript strict mode
 cd fe && pnpm build               # ejecuta tsc -b && vite build
 ```
 
+### Verificación pre-push
+```bash
+# Script manual — corre todos los checks de CI localmente
+.\scripts\check.ps1
+
+# El pre-push hook se ejecuta automáticamente al hacer git push.
+# Corre: validación de migration IDs, ruff, pytest (Docker), tsc, pnpm test.
+# Para activarlo: git config core.hooksPath .githooks
+# Para saltarlo: git push --no-verify
+```
+
 ### App móvil
 ```bash
 cd mobile
@@ -206,7 +217,7 @@ fe/src/
 
 8. **Mailpit**: En desarrollo los correos van a http://localhost:8025, no se envían realmente.
 
-9. **No hay CI/CD**: El proyecto no tiene GitHub Actions ni pre-commit hooks.
+9. **Pre-push hook**: Git ejecuta `.githooks/pre-push` automáticamente antes de cada push. Corre los mismos checks que CI (ruff, pytest, tsc, pnpm test, validación de migration IDs). Para activarlo: `git config core.hooksPath .githooks`. Para saltarlo: `git push --no-verify`. Script manual: `.\scripts\check.ps1`.
 
 10. **Script standalone**: `be/scripts/create_admin.py` — crea un admin por fuera de la API. Útil si la BD se corrompe o se pierde el seed.
 11. **Script heal**: `be/scripts/heal_line_groups.py` — repara `line_group` duplicados en `order_details`.
