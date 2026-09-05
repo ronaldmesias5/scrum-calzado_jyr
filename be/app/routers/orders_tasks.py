@@ -16,6 +16,9 @@ from sqlalchemy import and_, desc, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.dependencies import _require_jefe, get_current_user, get_db
+from app.config import settings
+from app.models.notifications import NotificationType
+from app.controllers.notifications import create_notification, get_jefes
 from app.models.order import Order, OrderDetail
 from app.models.tasks import Task
 from app.models.user import User
@@ -304,6 +307,25 @@ def assign_task_employee(
 
     db.commit()
 
+    # Notificar al empleado asignado (no bloquea la asignación si falla)
+    try:
+        product_name = task.product.name_product if task.product else "producto"
+        create_notification(
+            db=db,
+            user_id=request.assigned_to,
+            title="Nueva tarea asignada",
+            message=(
+                f"Se te asignó la tarea de {task.type} del producto {product_name} "
+                f"(vale #{task.vale_number})"
+            ),
+            type_=NotificationType.info,
+            order_id=task.order_id,
+            link_url=f"{settings.FRONTEND_URL}/dashboard/employee/tasks",
+            created_by=current_user.id,
+        )
+    except Exception:
+        logger.exception("No se pudo crear la notificación de asignación")
+
     user_name = f"{employee.name_user} {employee.last_name}"
 
     return ProductionTaskResponse(
@@ -458,6 +480,28 @@ def update_task_status(
 
     # Commit una sola vez
     db.commit()
+
+    # Notificar a los jefes cuando una tarea se completa (no bloquea si falla)
+    if request.status == "completado":
+        try:
+            product_name = task.product.name_product if task.product else "producto"
+            assignee = f"{current_user.name_user} {current_user.last_name}".strip() or current_user.email
+            for jefe in get_jefes(db):
+                create_notification(
+                    db=db,
+                    user_id=jefe.id,
+                    title="Tarea completada",
+                    message=(
+                        f"{assignee} completó la tarea de {task.type} del producto "
+                        f"{product_name} (vale #{task.vale_number})"
+                    ),
+                    type_=NotificationType.exito,
+                    order_id=task.order_id,
+                    link_url=f"{settings.FRONTEND_URL}/dashboard/admin/tasks",
+                    created_by=current_user.id,
+                )
+        except Exception:
+            logger.exception("No se pudo crear la notificación de tarea completada")
 
     # Obtener usuario (puede ser None si assigned_to es None)
     user = None

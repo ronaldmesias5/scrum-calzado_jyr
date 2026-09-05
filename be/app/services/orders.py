@@ -106,8 +106,13 @@ def apply_order_state_inventory(
     - Pedido 'completado' -> SUMAR a reserved (entrada de pares fabricados)
     - Pedido 'entregado' -> RESTAR de reserved (salida de pares fabricados)
     - Pedido vuelve atrás desde 'completado' -> RESTAR de reserved lo sumado
+
+    PEDIDOS PARA STOCK (order.customer_id is None): al completar se suma a
+    `amount` (bodega) en vez de `reserved`, y al revertir se resta de `amount`.
     """
+    is_stock = order.customer_id is None
     # 1. El pedido pasa a 'completado' -> SUMAR A RESERVED (entrada de pares fabricados)
+    #    ...o a AMOUNT (bodega) si es producción para stock.
     if new_state == OrderStatus.completado and order.state != OrderStatus.completado:
         for detail in order.details:
             stmt = (
@@ -124,7 +129,10 @@ def apply_order_state_inventory(
             quantity = Decimal(detail.amount)
 
             if inventory_item:
-                inventory_item.reserved += quantity
+                if is_stock:
+                    inventory_item.amount += quantity
+                else:
+                    inventory_item.reserved += quantity
                 db.add(inventory_item)
             else:
                 inventory_item = Inventory(
@@ -132,8 +140,8 @@ def apply_order_state_inventory(
                     product_id=detail.product_id,
                     size=detail.size,
                     colour=detail.colour,
-                    amount=0,  # Stock bodega se mantiene en 0, solo reserved tiene los del pedido
-                    reserved=quantity,
+                    amount=quantity if is_stock else 0,
+                    reserved=0 if is_stock else quantity,
                     minimum_stock=0,
                 )
                 db.add(inventory_item)
@@ -147,7 +155,11 @@ def apply_order_state_inventory(
                     size=detail.size,
                     colour=detail.colour,
                     amount=quantity,
-                    reason=f"Entrada de pares fabricados - Pedido {order.id}",
+                    reason=(
+                        f"Entrada a stock bodega - Pedido {order.id}"
+                        if is_stock
+                        else f"Entrada de pares fabricados - Pedido {order.id}"
+                    ),
                     movement_date=datetime.now(UTC),
                 )
             )
@@ -208,7 +220,10 @@ def apply_order_state_inventory(
             if inventory_item:
                 quantity = Decimal(detail.amount)
 
-                inventory_item.reserved -= quantity
+                if is_stock:
+                    inventory_item.amount -= quantity
+                else:
+                    inventory_item.reserved -= quantity
                 db.add(inventory_item)
 
                 db.add(
@@ -242,11 +257,13 @@ def apply_detail_state_inventory(
     old_detail: OrderDetail | None,
 ) -> None:
     """Ajusta el inventario (reservas) cuando una línea de detalle cambia de estado en el PUT."""
-    # 1. Si un producto pasa a "entregado" (desde completado)
+    # 1. Si un producto pasa a "entregado" (desde completado).
+    #    Los pedidos para stock nunca se entregan: se omite la salida.
     if (
         old_detail
         and old_detail.state != OrderStatus.entregado
         and detail_data.state == OrderStatus.entregado
+        and order.customer_id is not None
     ):
         stmt = (
             select(Inventory)
@@ -340,9 +357,15 @@ def apply_detail_state_inventory(
                 )
             )
         else:
-            # ─── CASO FABRICACIÓN: sumar a reserved (pares fabricados) ───
+            # ─── CASO FABRICACIÓN ───
+            # Pedido para stock (sin cliente): entra a bodega (amount).
+            # Pedido con cliente: entra a pares fabricados (reserved).
+            is_stock = order.customer_id is None
             if inventory_item:
-                inventory_item.reserved += quantity
+                if is_stock:
+                    inventory_item.amount += quantity
+                else:
+                    inventory_item.reserved += quantity
                 db.add(inventory_item)
             else:
                 inventory_item = Inventory(
@@ -350,8 +373,8 @@ def apply_detail_state_inventory(
                     product_id=detail_data.product_id,
                     size=detail_data.size,
                     colour=detail_data.colour,
-                    amount=0,
-                    reserved=quantity,
+                    amount=quantity if is_stock else 0,
+                    reserved=0 if is_stock else quantity,
                     minimum_stock=0,
                 )
                 db.add(inventory_item)
@@ -366,7 +389,11 @@ def apply_detail_state_inventory(
                     size=detail_data.size,
                     colour=detail_data.colour,
                     amount=quantity,
-                    reason=f"Entrada de pares fabricados - Pedido {order.id}",
+                    reason=(
+                        f"Entrada a stock bodega - Pedido {order.id}"
+                        if is_stock
+                        else f"Entrada de pares fabricados - Pedido {order.id}"
+                    ),
                     movement_date=datetime.now(UTC),
                 )
             )
@@ -404,12 +431,17 @@ def complete_emplantillado(
     current_user_id: uuid.UUID,
     task: Task,
 ) -> None:
-    """Al completar la etapa emplantillado: marca los detalles completados y suma los pares a reserved."""
+    """Al completar la etapa emplantillado: marca los detalles completados.
+
+    Pedido con cliente -> los pares entran a reserved (pares fabricados).
+    Pedido para stock (sin cliente) -> los pares entran a amount (bodega).
+    """
     if task.product_id and task.order_id:
         # Obtener orden para detalles
         order = db.query(Order).filter(Order.id == task.order_id).first()
 
         if order:
+            is_stock = order.customer_id is None
             # Actualizar OrderDetails — filtrar también por line_group
             details = (
                 db.query(OrderDetail)
@@ -437,9 +469,13 @@ def complete_emplantillado(
                 inventory_item = db.execute(stmt).scalar_one_or_none()
 
                 if inventory_item:
-                    # Agregar los pares fabricados a RESERVED
                     quantity = Decimal(detail.amount)
-                    inventory_item.reserved = inventory_item.reserved + quantity
+                    if is_stock:
+                        # Producción para stock: entra a BODEGA
+                        inventory_item.amount = inventory_item.amount + quantity
+                    else:
+                        # Pedido con cliente: entra a PARES FABRICADOS
+                        inventory_item.reserved = inventory_item.reserved + quantity
                     db.add(inventory_item)  # Marcar como actualizado
 
                     # Registrar ENTRADA en movimientos
@@ -452,7 +488,11 @@ def complete_emplantillado(
                             size=detail.size,
                             colour=detail.colour,
                             amount=quantity,
-                            reason=f"Entrada por producción completada - Vale #{task.vale_number}",
+                            reason=(
+                                f"Entrada a stock bodega - Vale #{task.vale_number}"
+                                if is_stock
+                                else f"Entrada por producción completada - Vale #{task.vale_number}"
+                            ),
                             movement_date=datetime.now(UTC),
                         )
                     )
@@ -464,8 +504,8 @@ def complete_emplantillado(
                         product_id=detail.product_id,
                         size=detail.size,
                         colour=detail.colour,
-                        amount=Decimal(0),
-                        reserved=quantity,
+                        amount=quantity if is_stock else Decimal(0),
+                        reserved=Decimal(0) if is_stock else quantity,
                         minimum_stock=0,
                     )
                     db.add(new_inventory)
@@ -480,7 +520,11 @@ def complete_emplantillado(
                             size=detail.size,
                             colour=detail.colour,
                             amount=quantity,
-                            reason=f"Entrada por producción completada - Vale #{task.vale_number}",
+                            reason=(
+                                f"Entrada a stock bodega - Vale #{task.vale_number}"
+                                if is_stock
+                                else f"Entrada por producción completada - Vale #{task.vale_number}"
+                            ),
                             movement_date=datetime.now(UTC),
                         )
                     )
@@ -489,7 +533,7 @@ def complete_emplantillado(
 def create_order(
     *,
     db: Session,
-    customer_id: uuid.UUID,
+    customer_id: uuid.UUID | None,
     total_pairs: int,
     delivery_date: datetime | None,
     details: list[OrderDetailItemCreateRequest],
@@ -501,10 +545,14 @@ def create_order(
     Común al flujo del jefe (POST /admin/orders) y al del cliente
     (POST /client/orders). El `total_pairs` se recalcula en el servidor
     como la suma de los `amount` de los detalles para no confiar en el body.
+
+    Si `customer_id` es None, la orden es producción para stock/bodega
+    (sin cliente asignado).
     """
-    customer_check = db.execute(select(User).where(User.id == customer_id)).scalar_one_or_none()
-    if not customer_check:
-        raise ValueError("Cliente no encontrado")
+    if customer_id is not None:
+        customer_check = db.execute(select(User).where(User.id == customer_id)).scalar_one_or_none()
+        if not customer_check:
+            raise ValueError("Cliente no encontrado")
 
     # Recalcular total de pares desde los detalles (seguridad server-side)
     total_pairs = sum(d.amount for d in details)

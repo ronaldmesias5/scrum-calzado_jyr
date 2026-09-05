@@ -7,6 +7,7 @@ import type {
   TaskDetail,
   DashboardReportResponse
 } from '@/services/reportsApi';
+import type { Product } from '@/services/catalogService';
 import { formatCOP } from '@/utils/format';
 
 const PROCESS_DISPLAY: Record<string, string> = {
@@ -1153,4 +1154,178 @@ export async function exportProductionPDF(
     return doc.output('datauristring');
   }
   doc.save('Reporte_Produccion_Ventas.pdf');
+}
+
+// ─── Inventory PDF ────────────────────────────────────────────────────────────
+
+type InventoryStatus = 'Suficiente' | 'Insuficiente' | 'Sin Stock';
+
+function inventoryStatus(stock: number, threshold: number): InventoryStatus {
+  if (stock === 0) return 'Sin Stock';
+  if (stock < threshold) return 'Insuficiente';
+  return 'Suficiente';
+}
+
+const INVENTORY_STATUS_COLORS: Record<InventoryStatus, [number, number, number]> = {
+  Suficiente: [22, 163, 74], // green-600
+  Insuficiente: [234, 88, 12], // orange-600
+  'Sin Stock': [220, 38, 38] // red-600
+};
+
+/** Espejo en PDF de la tabla de Gestión de Inventario (7 columnas). */
+export async function exportInventoryPDF(products: Product[]): Promise<void> {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pageWidth = 297;
+  const reportTitle = 'Reporte de Inventario';
+
+  const logo = await loadLogoBase64();
+
+  // ── Cabecera corporativa (horizontal) ──────────────────────────────────
+  doc.setFillColor(...COLORS.primary);
+  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generado: ${formatDateTime()}`, pageWidth - 14, 9, { align: 'right' });
+  if (logo) {
+    doc.addImage(logo, 'PNG', 14, 4, 18, 18);
+  }
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CALZADO J&R', 37, 14);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Fábrica de Calzado', 37, 19);
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.3);
+  doc.line(14, 27, pageWidth - 14, 27);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text(reportTitle, 14, 36);
+
+  // ── Resumen (KPIs iguales a la pantalla) ───────────────────────────────
+  const totalStock = products.reduce((sum, p) => sum + (p.stock_total || 0), 0);
+  const sufficient = products.filter(
+    (p) => (p.stock_total || 0) >= (p.insufficient_threshold || 12)
+  ).length;
+  const insufficient = products.filter(
+    (p) =>
+      (p.stock_total || 0) > 0 &&
+      (p.stock_total || 0) < (p.insufficient_threshold || 12)
+  ).length;
+  const outOfStock = products.filter((p) => (p.stock_total || 0) === 0).length;
+
+  const summaryY = 44;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(10, summaryY, pageWidth - 20, 16, 2, 2, 'FD');
+
+  const kpis: Array<{
+    label: string;
+    value: string;
+    color: [number, number, number];
+  }> = [
+    { label: 'PRODUCTOS', value: String(products.length), color: [60, 60, 60] },
+    { label: 'STOCK TOTAL', value: String(totalStock), color: COLORS.primary },
+    { label: 'SUFICIENTES', value: String(sufficient), color: COLORS.green },
+    {
+      label: 'INSUFICIENTES',
+      value: String(insufficient),
+      color: [234, 88, 12]
+    },
+    { label: 'SIN STOCK', value: String(outOfStock), color: COLORS.red }
+  ];
+  const colWidth = (pageWidth - 20) / kpis.length;
+  kpis.forEach((kpi, i) => {
+    const x = 10 + colWidth * i + 6;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text(kpi.label, x, summaryY + 5);
+    doc.setFontSize(12);
+    doc.setTextColor(...kpi.color);
+    doc.text(kpi.value, x, summaryY + 13);
+  });
+
+  // ── Tabla (7 columnas = espejo de la pantalla) ─────────────────────────
+  const tableStartY = summaryY + 21;
+  if (products.length > 0) {
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [
+        [
+          'Producto',
+          'Categoría',
+          'Marca',
+          'Color',
+          'Stock Bodega',
+          'Pares Fabricados',
+          'Estado'
+        ]
+      ],
+      body: products.map((p) => {
+        const stock = p.stock_total || 0;
+        const threshold = p.insufficient_threshold || 12;
+        return [
+          `${p.name}\n${p.style_name || ''} · ${p.brand_name || ''}`,
+          p.category_name || '—',
+          p.brand_name || '—',
+          p.color || '—',
+          String(stock),
+          String(p.manufactured_pairs || 0),
+          inventoryStatus(stock, threshold)
+        ];
+      }),
+      theme: 'grid',
+      headStyles: {
+        fillColor: COLORS.primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8,
+        halign: 'center'
+      },
+      bodyStyles: { fontSize: 7, valign: 'middle' },
+      columnStyles: {
+        0: { halign: 'left', cellWidth: 62 },
+        1: { halign: 'left', cellWidth: 32 },
+        2: { halign: 'left', cellWidth: 32 },
+        3: { halign: 'left', cellWidth: 38 },
+        4: { halign: 'center', cellWidth: 30 },
+        5: { halign: 'center', cellWidth: 34 },
+        6: { halign: 'center', cellWidth: 32, fontStyle: 'bold' }
+      },
+      didParseCell: (hook) => {
+        if (hook.section === 'body' && hook.column.index === 6) {
+          const status = hook.cell.raw as InventoryStatus;
+          const color = INVENTORY_STATUS_COLORS[status];
+          if (color) {
+            hook.cell.styles.textColor = color;
+          }
+        }
+      },
+      margin: { left: 10, right: 10 }
+    });
+  } else {
+    doc.setTextColor(...COLORS.gray);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No hay productos para mostrar con los filtros aplicados.', 14, tableStartY);
+  }
+
+  // ── Pie (horizontal: alto de página 210) ───────────────────────────────
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...COLORS.gray);
+    doc.text(
+      `CALZADO J&R — Reporte generado el ${formatDate(new Date().toISOString())} — Página ${i} de ${pageCount}`,
+      14,
+      200
+    );
+  }
+
+  const filename = `inventario_${new Date().toLocaleDateString('es-CO').replace(/\//g, '-')}.pdf`;
+  doc.save(sanitizeFilename(filename));
 }
