@@ -45,11 +45,14 @@ router = APIRouter(
 logger = logging.getLogger(__name__)
 
 
-def _trigger_notifications(*, db: Session, new_order, customer_check, settings) -> None:
+def _trigger_notifications(*, db: Session, new_order, customer_check, settings, actor_id=None) -> None:
     """
     Fire-and-forget vía thread para no bloquear la respuesta HTTP.
     Crea notificaciones en BD (síncrono, hecho en esta misma transacción),
     y lanza WebSocket + emails en un thread separado con su propio event loop.
+
+    Si `customer_check` es None, la orden es producción para stock/bodega:
+    se notifica a los jefes y se omite el email de confirmación al cliente.
     """
     import asyncio
     import threading
@@ -59,10 +62,20 @@ def _trigger_notifications(*, db: Session, new_order, customer_check, settings) 
     from app.utils.ws_manager import ws_manager
     from app.utils.email import send_order_confirmation_email, send_order_notification_email
 
-    client_full = (
-        f"{customer_check.name_user} {customer_check.last_name}".strip()
-        or customer_check.email
-    )
+    if customer_check is not None:
+        client_full = (
+            f"{customer_check.name_user} {customer_check.last_name}".strip()
+            or customer_check.email
+        )
+        created_by_id = customer_check.id
+        client_email = customer_check.email
+        client_name = customer_check.name_user or customer_check.email
+    else:
+        # Producción para stock: sin cliente que notificar
+        client_full = "Producción para stock (bodega)"
+        created_by_id = actor_id
+        client_email = None
+        client_name = None
     order_date_str = (
         new_order.creation_date.strftime("%d/%m/%Y %H:%M")
         if new_order.creation_date else ""
@@ -85,7 +98,7 @@ def _trigger_notifications(*, db: Session, new_order, customer_check, settings) 
             type_=NotificationType.info,
             order_id=new_order.id,
             link_url=link,
-            created_by=customer_check.id,
+            created_by=created_by_id,
         )
         notifications_data.append({
             "jefe_id": str(jefe.id),
@@ -100,8 +113,6 @@ def _trigger_notifications(*, db: Session, new_order, customer_check, settings) 
         })
 
     # ── Async fire-and-forget en thread separado ──
-    client_email = customer_check.email
-    client_name = customer_check.name_user or customer_check.email
     total_pairs = new_order.total_pairs
 
     def _run_async_tasks() -> None:
@@ -132,14 +143,15 @@ def _trigger_notifications(*, db: Session, new_order, customer_check, settings) 
                         total_pairs=total_pairs,
                         order_date=order_date_str,
                     ))
-                # Email de confirmación al cliente
-                tasks.append(send_order_confirmation_email(
-                    client_email=client_email,
-                    client_name=client_name,
-                    order_id=notifications_data[0]["order_id"] if notifications_data else "",
-                    total_pairs=total_pairs,
-                    delivery_date=delivery_str,
-                ))
+                # Email de confirmación al cliente (solo pedidos con cliente)
+                if client_email and client_name:
+                    tasks.append(send_order_confirmation_email(
+                        client_email=client_email,
+                        client_name=client_name,
+                        order_id=notifications_data[0]["order_id"] if notifications_data else "",
+                        total_pairs=total_pairs,
+                        delivery_date=delivery_str,
+                    ))
                 await asyncio.gather(*tasks, return_exceptions=True)
             loop.run_until_complete(_tasks())
         finally:
@@ -264,10 +276,13 @@ def create_order(
             created_by=current_user.id,
         )
 
-        # Verificar que el cliente existe (para notificaciones)
-        customer_check = db.execute(
-            select(User).where(User.id == order_data.customer_id)
-        ).scalar_one_or_none()
+        # Verificar que el cliente existe (para notificaciones).
+        # None = producción para stock: se omite el email al cliente.
+        customer_check = None
+        if order_data.customer_id is not None:
+            customer_check = db.execute(
+                select(User).where(User.id == order_data.customer_id)
+            ).scalar_one_or_none()
 
         # ─── NOTIFICACIONES: notificar al jefe + email (fire-and-forget vía thread) ───
         _trigger_notifications(
@@ -275,6 +290,7 @@ def create_order(
             new_order=new_order,
             customer_check=customer_check,
             settings=settings,
+            actor_id=current_user.id,
         )
 
         return _order_to_detail_response(new_order)
@@ -307,6 +323,13 @@ def update_order_status(
 
         if not order:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
+
+        # Los pedidos para stock (sin cliente) terminan en 'completado': no se entregan
+        if order.customer_id is None and order_update.state == OrderStatus.entregado:
+            raise HTTPException(
+                status_code=400,
+                detail="Los pedidos para stock no se entregan: terminan en 'completado'",
+            )
 
         # --- Lógica de Inventario Segura con Reservas ---
         # FLUJO:
@@ -367,6 +390,17 @@ def update_order_details(
         raise HTTPException(
             status_code=400,
             detail="El pedido debe tener al menos una línea de detalle",
+        )
+
+    # Pedidos para stock: no se puede "completar desde bodega" (el objetivo
+    # es fabricar para aumentar el stock, no consumirlo).
+    if order.customer_id is None and any(
+        (d.observations or "") and "Completado desde bodega" in (d.observations or "")
+        for d in order_data.details
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Un pedido para stock no puede completarse desde bodega",
         )
 
     try:

@@ -3,7 +3,7 @@
  * Descripción: Página de gestión de pedidos mayoristas del dashboard.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { formatCOP } from '@/utils/format';
@@ -262,7 +262,11 @@ function OrdersTable({
                 </td>
                 <td className="px-4 py-2">
                   <p className="text-sm font-bold text-gray-900 dark:text-white transition-colors">
-                    {order.customer_name && order.customer_last_name ? (
+                    {!order.customer_id ? (
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 uppercase">
+                        Para stock
+                      </span>
+                    ) : order.customer_name && order.customer_last_name ? (
                       `${order.customer_name} ${order.customer_last_name}`
                     ) : (
                       <span className="text-gray-400 font-mono text-xs italic">
@@ -360,6 +364,8 @@ function OrderDetailView({
   onCompleteFromWarehouse: (productId: string, lines: OrderDetailItem[]) => void;
 }) {
   const { showToast } = useToast();
+  // Pedido sin cliente = producción para stock/bodega (completado es el estado final)
+  const isStockOrder = !order?.customer_id;
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
@@ -375,6 +381,9 @@ function OrderDetailView({
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [nextValeNumber, setNextValeNumber] = useState<number | null>(null);
   const [currentTasks, setCurrentTasks] = useState<ProductionTask[]>([]);
+  // Rastrea para qué orden ya se cargaron las tareas: evita refetchs
+  // redundantes entre los efectos del modal y la vista (ráfagas de XHRs).
+  const tasksLoadedForOrder = useRef<string | null>(null);
 
   useEffect(() => {
     if (productionModal) {
@@ -395,42 +404,57 @@ function OrderDetailView({
         .then((n) => setNextValeNumber(n))
         .catch(console.error);
 
-      // Fetch current tasks for this order usando la instancia configurada (con baseURL y auth)
+      // Fetch current tasks for this order usando la instancia configurada (con baseURL y auth).
+      // Si las tareas ya se cargaron para esta orden (efecto de vista), se
+      // reutiliza el estado y se evita un XHR redundante (anti-ráfaga).
       const capturedProductId = productionModal.productId;
-      getOrderTasks(order.id)
-        .then((allOrderTasks) => {
-          // Filtrar en frontend por product_id (comparación normalizada a minúsculas)
-          const tasks = allOrderTasks.filter(
-            (t) =>
-              t.product_id?.toLowerCase() === capturedProductId?.toLowerCase()
-          );
+      const applyProductTasks = (allOrderTasks: ProductionTask[]) => {
+        // Filtrar en frontend por product_id (comparación normalizada a minúsculas)
+        const tasks = allOrderTasks.filter(
+          (t) =>
+            t.product_id?.toLowerCase() === capturedProductId?.toLowerCase()
+        );
 
-          if (tasks.length > 0) {
-            setCurrentTasks(tasks);
-            const newAssignments: Record<string, string> = {};
-            tasks.forEach((t) => {
-              if (t?.type) newAssignments[t.type] = t.assigned_to || '';
-            });
-            setAssignments(newAssignments);
-            // Si hay tareas existentes, mostrar la opción que corresponda según datos guardados
-            // (los faltantes se infieren del metadato de la tarea si existe)
-            setSelectedOption(
-              (productionModal?.missingCount ?? 0) === 0 ? 'B' : 'A'
-            );
-            setProductionStep(2);
-          } else {
-            setCurrentTasks([]);
-            if (capturedProductId && productionModal?.forceProgress)
-              setProductionStep(2);
-          }
-        })
-        .catch((err) => {
-          console.error('Error fetching tasks:', err);
+        if (tasks.length > 0) {
+          setCurrentTasks(tasks);
+          const newAssignments: Record<string, string> = {};
+          tasks.forEach((t) => {
+            if (t?.type) newAssignments[t.type] = t.assigned_to || '';
+          });
+          setAssignments(newAssignments);
+          // Si hay tareas existentes, mostrar la opción que corresponda según datos guardados
+          // (los faltantes se infieren del metadato de la tarea si existe).
+          // En pedidos para stock siempre es lote completo (opción B).
+          setSelectedOption(
+            !order?.customer_id ||
+              (productionModal?.missingCount ?? 0) === 0
+              ? 'B'
+              : 'A'
+          );
+          setProductionStep(2);
+        } else {
           setCurrentTasks([]);
-        })
-        .finally(() => {
-          setLoadingTasks(false);
-        });
+          if (capturedProductId && productionModal?.forceProgress)
+            setProductionStep(2);
+        }
+      };
+      if (tasksLoadedForOrder.current === order.id && currentTasks.length > 0) {
+        applyProductTasks(currentTasks);
+        setLoadingTasks(false);
+      } else {
+        getOrderTasks(order.id)
+          .then((allOrderTasks) => {
+            tasksLoadedForOrder.current = order.id;
+            applyProductTasks(allOrderTasks);
+          })
+          .catch((err) => {
+            console.error('Error fetching tasks:', err);
+            setCurrentTasks([]);
+          })
+          .finally(() => {
+            setLoadingTasks(false);
+          });
+      }
     }
   }, [productionModal, order.id]);
 
@@ -438,11 +462,13 @@ function OrderDetailView({
     getAllUsers('employee').then(setEmployees).catch(console.error);
   }, []);
 
-  // Cargar tareas del orden para mostrar números de vale en las cards
+  // Cargar tareas del orden para mostrar números de vale en las cards.
+  // Es la carga principal: marca el ref para que el modal la reutilice.
   useEffect(() => {
     if (order?.id) {
       getOrderTasks(order.id)
         .then((tasks) => {
+          tasksLoadedForOrder.current = order.id;
           setCurrentTasks(tasks);
         })
         .catch((err) => {
@@ -451,19 +477,14 @@ function OrderDetailView({
     }
   }, [order?.id]);
 
-  // Limpiar estados al cerrar modal y recargar tareas para mostrar en cards
+  // Limpiar estados al cerrar modal. Sin refetch: los handlers (crear,
+  // asignar, prioridades) ya dejan currentTasks al día, y la deduplicación
+  // del servicio colapsa cualquier petición paralela residual.
   useEffect(() => {
     if (!productionModal) {
       setProductionStep(1);
       setAssignments({});
       setLoadingTasks(false);
-
-      // Recargar todas las tareas para mostrar números de vale en las cards
-      if (order?.id) {
-        getOrderTasks(order.id)
-          .then((tasks) => setCurrentTasks(tasks))
-          .catch((err) => console.error('Error fetching tasks:', err));
-      }
     }
   }, [productionModal, order?.id]);
 
@@ -536,15 +557,17 @@ function OrderDetailView({
       }
     }
 
-    // 2. Fallback: Cálculo dinámico basado en stock (para nuevos vales o vales sin metadato)
+    // 2. Fallback: Cálculo dinámico basado en stock (para nuevos vales o vales sin metadato).
+    // En pedidos para stock siempre va el lote completo (sin descontar bodega).
+    const isStock = !order?.customer_id;
     const filtered = order.details
       .filter((d) => d.product_id === productionModal.productId)
       .map((d) => ({
         ...d,
         amount:
-          selectedOption === 'A'
-            ? Math.max(0, d.amount - (d.stock_available || 0))
-            : d.amount
+          isStock || selectedOption === 'B'
+            ? d.amount
+            : Math.max(0, d.amount - (d.stock_available || 0))
       }))
       .filter((d) => d.amount > 0);
 
@@ -777,8 +800,10 @@ function OrderDetailView({
             (d) => d.product_id === productId
           );
           for (const detail of productDetails) {
+            // En pedidos para stock nunca se descuenta bodega al iniciar
+            // producción (el objetivo es aumentar el stock).
             const quantityToDiscount =
-              selectedOption === 'A'
+              selectedOption === 'A' && !isStockOrder
                 ? Math.min(detail.amount, detail.stock_available || 0)
                 : 0;
             if (quantityToDiscount > 0) {
@@ -925,8 +950,10 @@ function OrderDetailView({
   const progressText =
     order.state === 'entregado'
       ? 'Completado y Entregado al Cliente'
-      : completedProducts === productCount
-        ? 'Todos los productos terminados y listos para entregar'
+      : isStockOrder && completedProducts === productCount
+        ? 'Producción terminada — pares en stock (bodega)'
+        : completedProducts === productCount
+          ? 'Todos los productos terminados y listos para entregar'
         : completedProducts > 0
           ? `${completedProducts} de ${productCount} productos terminados`
           : inProgressProducts > 0
@@ -1018,21 +1045,39 @@ function OrderDetailView({
                   {order.total_pairs}
                 </p>
               </div>
-
               <div>
                 <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">
-                  Entrega Estimada
+                  Cliente
                 </p>
-                <p className="font-bold text-gray-900 dark:text-gray-100">
-                  {order.delivery_date ? (
-                    new Date(order.delivery_date).toLocaleDateString('es-CO')
-                  ) : (
-                    <span className="text-gray-400 dark:text-gray-500">
-                      No definida
-                    </span>
-                  )}
-                </p>
+                {isStockOrder ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    Para stock
+                  </span>
+                ) : (
+                  <p className="font-bold text-gray-900 dark:text-gray-100">
+                    {order.customer_name
+                      ? `${order.customer_name} ${order.customer_last_name ?? ''}`.trim()
+                      : <span className="text-gray-400 dark:text-gray-500">Sin asignar</span>}
+                  </p>
+                )}
               </div>
+
+              {!isStockOrder && (
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold mb-1">
+                    Entrega Estimada
+                  </p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">
+                    {order.delivery_date ? (
+                      new Date(order.delivery_date).toLocaleDateString('es-CO')
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500">
+                        No definida
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1087,16 +1132,21 @@ function OrderDetailView({
                       (s, l) => s + l.amount,
                       0
                     );
-                    const totalToProduce = lines.reduce(
-                      (acc, l) =>
-                        acc +
-                        Math.max(
-                          0,
-                          l.amount -
-                            Math.max(0, Math.floor(l.stock_available ?? 0))
-                        ),
-                      0
-                    );
+                    // Pedido para stock: siempre se fabrica el lote completo
+                    // (la bodega existente no descuenta; el objetivo es
+                    // aumentar el stock).
+                    const totalToProduce = isStockOrder
+                      ? totalProductPairs
+                      : lines.reduce(
+                          (acc, l) =>
+                            acc +
+                            Math.max(
+                              0,
+                              l.amount -
+                                Math.max(0, Math.floor(l.stock_available ?? 0))
+                            ),
+                          0
+                        );
                     const allAvailable = lines.every(
                       (l) => (l.stock_available ?? 0) >= l.amount
                     );
@@ -1176,7 +1226,8 @@ function OrderDetailView({
                                     {productName}
                                   </p>
                                   {productState === 'pendiente' &&
-                                    allAvailable && (
+                                    allAvailable &&
+                                    !isStockOrder && (
                                       <span className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-green-200 dark:border-green-900/50">
                                         <CheckCircle size={10} />
                                         Todo en Bodega
@@ -1231,7 +1282,7 @@ function OrderDetailView({
                                     <span>Iniciar Producción</span>
                                   </button>
 
-                                  {allAvailable && (
+                                  {allAvailable && !isStockOrder && (
                                     <button
                                       onClick={() =>
                                         onCompleteFromWarehouse(
@@ -1293,7 +1344,7 @@ function OrderDetailView({
                                   )}
                                   <div className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50 rounded-lg text-xs font-black uppercase flex items-center gap-2">
                                     <Package size={14} />
-                                    Listo para Entrega
+                                    {isStockOrder ? 'En Stock (Bodega)' : 'Listo para Entrega'}
                                   </div>
                                 </div>
                               )}
@@ -1388,7 +1439,10 @@ function OrderDetailView({
                                   parseInt(b.size || '0')
                               )
                               .map((line) => {
+                                // En pedidos para stock no hay referencia a bodega:
+                                // cards siempre neutras y sin fila "En Bodega".
                                 const hasStock =
+                                  !isStockOrder &&
                                   (line.stock_available ?? 0) >= line.amount;
                                 const stockColor = hasStock
                                   ? 'text-green-600 dark:text-green-400'
@@ -1415,7 +1469,7 @@ function OrderDetailView({
                                         {line.amount} pares
                                       </span>
                                     </div>
-                                    {productState === 'pendiente' && (
+                                    {productState === 'pendiente' && !isStockOrder && (
                                       <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 mt-1 pt-1 font-bold">
                                         <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">
                                           En Bodega:
@@ -1446,20 +1500,26 @@ function OrderDetailView({
                                 ✓ Producto Fabricado y Listo
                               </h3>
                             </div>
-                            <button
-                              onClick={() =>
-                                onUpdateItemsStatus(productId, 'entregado')
-                              }
-                              disabled={isUpdating}
-                              className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 text-sm"
-                            >
-                              {isUpdating ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                              Entregar al Cliente
-                            </button>
+                            {/*
+                              Solo pedidos con cliente pueden entregarse.
+                              Los pedidos para stock terminan en completado (bodega).
+                            */}
+                            {!isStockOrder && (
+                              <button
+                                onClick={() =>
+                                  onUpdateItemsStatus(productId, 'entregado')
+                                }
+                                disabled={isUpdating}
+                                className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 text-sm"
+                              >
+                                {isUpdating ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                                Entregar al Cliente
+                              </button>
+                            )}
                           </div>
                         ) : productState === 'entregado' ? (
                           <div className="px-5 py-4 bg-emerald-50/50 dark:bg-emerald-950/20 border-t border-emerald-100 dark:border-emerald-900/30 space-y-3">
@@ -1473,9 +1533,13 @@ function OrderDetailView({
                           <>
                             {/* Métricas de Insumos para Producción */}
                             {(() => {
+                              // Pedido para stock: siempre se fabrica el lote
+                              // completo; el banner "Todo disponible en bodega"
+                              // no aplica.
                               if (
                                 productState === 'pendiente' &&
-                                totalToProduce === 0
+                                totalToProduce === 0 &&
+                                !isStockOrder
                               )
                                 return (
                                   <div className="px-5 py-3 bg-green-50/50 dark:bg-green-950/10 border-t border-green-100 dark:border-green-900/30 flex items-center gap-2">
@@ -1778,8 +1842,10 @@ function OrderDetailView({
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 gap-6">
-                          {/* Opción A: Solo Faltantes (oculta si no hay faltantes) */}
-                          {(productionModal?.missingCount ?? 0) > 0 && (
+                          {/* Opción A: Solo Faltantes (oculta si no hay faltantes
+                              o si el pedido es para stock: siempre lote completo) */}
+                          {(productionModal?.missingCount ?? 0) > 0 &&
+                            !isStockOrder && (
                             <div
                               className={`relative group p-6 rounded-[2rem] border-2 transition-all cursor-pointer ${selectedOption === 'A' ? 'border-blue-500 bg-blue-50/30 ring-4 ring-blue-500/10' : 'border-gray-100 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'}`}
                               onClick={() => setSelectedOption('A')}
@@ -2056,8 +2122,9 @@ function OrderDetailView({
                               <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
                                 Cliente:{' '}
                                 <span className="text-gray-900 dark:text-white uppercase">
-                                  {order.customer_name}{' '}
-                                  {order.customer_last_name}
+                                  {order.customer_name
+                                    ? `${order.customer_name} ${order.customer_last_name ?? ''}`
+                                    : 'Para stock (bodega)'}
                                 </span>
                               </p>
                               <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
@@ -2349,7 +2416,7 @@ function OrderDetailView({
                                                     🎉 Producto Terminado
                                                   </span>
                                                   <span className="text-[9px] font-bold opacity-80 block">
-                                                    Listo para Entrega
+                                                    {isStockOrder ? 'En Stock (Bodega)' : 'Listo para Entrega'}
                                                   </span>
                                                 </div>
                                               );
@@ -2619,7 +2686,7 @@ function OrderDetailView({
           <div className="bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm transition-all duration-300 stagger-reveal">
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              Información del Cliente
+              {isStockOrder ? 'Destino de Producción' : 'Información del Cliente'}
             </h2>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-3">
@@ -2632,12 +2699,18 @@ function OrderDetailView({
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-gray-100 transition-colors">
-                    {order.customer_name && order.customer_last_name
-                      ? `${order.customer_name} ${order.customer_last_name}`
-                      : 'Sin nombre'}
+                    {isStockOrder ? (
+                      'Producción para stock'
+                    ) : order.customer_name && order.customer_last_name ? (
+                      `${order.customer_name} ${order.customer_last_name}`
+                    ) : (
+                      'Sin nombre'
+                    )}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                    {order.customer_id.substring(0, 16)}...
+                    {order.customer_id
+                      ? `${order.customer_id.substring(0, 16)}...`
+                      : 'Sin cliente — va a bodega'}
                   </p>
                 </div>
               </div>
@@ -2768,14 +2841,16 @@ function OrderDetailView({
                 </div>
               )}
 
-              {/* Contactar Cliente */}
-              <button
-                onClick={onContactClient}
-                className="w-full py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors font-bold flex items-center justify-center gap-2 text-sm transition-all"
-              >
-                <Mail className="w-4 h-4" />
-                Contactar Cliente
-              </button>
+              {/* Contactar Cliente (solo pedidos con cliente) */}
+              {!isStockOrder && (
+                <button
+                  onClick={onContactClient}
+                  className="w-full py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors font-bold flex items-center justify-center gap-2 text-sm transition-all"
+                >
+                  <Mail className="w-4 h-4" />
+                  Contactar Cliente
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -2928,11 +3003,15 @@ export default function OrdersPage() {
               );
 
               // Si existen tareas, usar su amount como la cantidad real a mostrar (fuente de verdad)
-              let displayMissingCount = itemsForProduct.reduce(
-                (sum, d) =>
-                  sum + Math.max(0, d.amount - (d.stock_available || 0)),
-                0
-              );
+              // En pedidos para stock siempre va el lote completo.
+              const isStockForVale = !selectedOrder?.customer_id;
+              let displayMissingCount = isStockForVale
+                ? totalProductPairsForProduct
+                : itemsForProduct.reduce(
+                    (sum, d) =>
+                      sum + Math.max(0, d.amount - (d.stock_available || 0)),
+                    0
+                  );
               if (productsTasksForModal.length > 0) {
                 // Las tareas ya fueron creadas: usar su amount como cantidad definitiva
                 displayMissingCount =
@@ -2960,11 +3039,13 @@ export default function OrdersPage() {
                 (sum, d) => sum + d.amount,
                 0
               );
-              const missingCountForProduct = itemsForProduct.reduce(
-                (sum, d) =>
-                  sum + Math.max(0, d.amount - (d.stock_available || 0)),
-                0
-              );
+              const missingCountForProduct = !selectedOrder?.customer_id
+                ? totalProductPairsForProduct
+                : itemsForProduct.reduce(
+                    (sum, d) =>
+                      sum + Math.max(0, d.amount - (d.stock_available || 0)),
+                    0
+                  );
               setProductionModal({
                 productId: item.product_id,
                 productName: item.product_name || 'Producto',

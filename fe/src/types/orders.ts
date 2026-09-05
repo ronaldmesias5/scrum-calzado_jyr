@@ -29,7 +29,7 @@ export interface OrderDetailItem {
 
 export interface Order {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   customer_name?: string | null;
   customer_last_name?: string | null;
   customer_email?: string | null;
@@ -48,7 +48,7 @@ export interface OrderDetail extends Order {
 }
 
 export interface OrderCreateRequest {
-  customer_id: string;
+  customer_id: string | null;
   details: Array<{
     product_id: string;
     size: string;

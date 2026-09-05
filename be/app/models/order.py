@@ -53,13 +53,13 @@ class Order(Base):
         default=uuid.uuid4,
     )
 
-    # Cliente
-    customer_id: Mapped[uuid.UUID] = mapped_column(
+    # Cliente (NULL = pedido para stock/bodega, sin cliente asignado)
+    customer_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id"),
-        nullable=False,
+        nullable=True,
         index=True,
-        comment="Referencia al cliente que realizó el pedido",
+        comment="Referencia al cliente que realizó el pedido (NULL = producción para stock)",
     )
 
     # Detalles del pedido

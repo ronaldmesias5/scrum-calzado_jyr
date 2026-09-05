@@ -72,7 +72,7 @@ export const getRecentOrders = async (): Promise<RecentOrder[]> => {
     id: string;
     customer_name?: string | null;
     customer_last_name?: string | null;
-    customer_id: string;
+    customer_id: string | null;
     total_pairs: number;
     state: RecentOrder['status'];
     created_at: string;
@@ -82,7 +82,9 @@ export const getRecentOrders = async (): Promise<RecentOrder[]> => {
     clientName:
       o.customer_name && o.customer_last_name
         ? `${o.customer_name} ${o.customer_last_name}`
-        : `#${o.customer_id.substring(0, 8)}`,
+        : o.customer_id
+          ? `#${o.customer_id.substring(0, 8)}`
+          : 'Para stock',
     quantity: o.total_pairs,
     status: o.state,
     date: new Date(o.created_at).toLocaleDateString('es-CO', {

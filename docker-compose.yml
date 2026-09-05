@@ -166,6 +166,8 @@ services:
       # El navegador (host) necesita localhost para conectarse al backend.
       # IMPORTANTE: Vite en dev server reemplaza estas variables al compilar.
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # axios usa URLs relativas y Vite proxea /api -> be:8000 (sin CORS).
+      VITE_USE_PROXY: "true"
 
     ports:
       - "${FE_PORT:-5173}:5173"
