@@ -618,8 +618,9 @@ def get_all_customers_report(
 ):
     """Obtiene el reporte de todos los pedidos de todos los clientes"""
     _require_admin_or_jefe(current_user)
-    
-    query = select(Order)
+
+    # Los pedidos para stock (sin cliente) no son pedidos de clientes
+    query = select(Order).where(Order.customer_id.is_not(None))
     
     if start_date:
         query = query.where(Order.created_at >= start_date)
@@ -763,6 +764,8 @@ def get_global_production(
         )
     else:
         sales_query = db.query(Order).filter(Order.created_at >= start_date, Order.created_at <= end_date)
+    # Ventas = pedidos de clientes: los pedidos para stock (sin cliente) quedan fuera
+    sales_query = sales_query.filter(Order.customer_id.is_not(None))
     if state:
         sales_query = sales_query.filter(Order.state == state)
     
@@ -904,7 +907,8 @@ def get_global_sales(
     orders = db.query(Order).filter(
         Order.created_at >= start_date,
         Order.created_at <= end_date,
-        Order.state.in_([OrderStatus.completado, OrderStatus.entregado])
+        Order.state.in_([OrderStatus.completado, OrderStatus.entregado]),
+        Order.customer_id.is_not(None),
     ).all()
     
     total_orders_period = len(orders)

@@ -57,7 +57,7 @@ class OrderDetailItemCreateRequest(BaseModel):
 class OrderResponse(BaseModel):
     """Esquema para mostrar una orden en listados."""
     id: UUID
-    customer_id: UUID
+    customer_id: UUID | None = None
     customer_name: str | None = None
     customer_last_name: str | None = None
     customer_email: str | None = None
@@ -75,7 +75,7 @@ class OrderResponse(BaseModel):
 class OrderDetailResponse(BaseModel):
     """Esquema detallado de una orden con todos sus items."""
     id: UUID
-    customer_id: UUID
+    customer_id: UUID | None = None
     customer_name: str | None = None
     customer_last_name: str | None = None
     customer_email: str | None = None
@@ -103,7 +103,7 @@ class OrderListResponse(BaseModel):
 
 class OrderCreateRequest(BaseModel):
     """Esquema para crear una nueva orden."""
-    customer_id: UUID = Field(..., description="ID del cliente que realiza el pedido")
+    customer_id: UUID | None = Field(None, description="ID del cliente (None = producción para stock)")
     total_pairs: int = Field(..., gt=0, description="Total de pares en el pedido")
     delivery_date: datetime | None = Field(None, description="Fecha estimada de entrega")
     details: list[OrderDetailItemCreateRequest] = Field(default_factory=list, description="Líneas del pedido")

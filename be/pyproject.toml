@@ -95,6 +95,7 @@ ignore = [
     "C401",   # unnecessary generator (baseline heredado)
     "C414",   # unnecessary list() in sorted() (baseline heredado)
     "DTZ003", # datetime.utcnow() (baseline heredado)
+    "DTZ005", # datetime.now() sin tz (baseline heredado — task_priority.py:18)
     "FURB157",# Decimal constructor verbose (baseline heredado)
     "G201",   # logging .error con exc_info (baseline heredado)
     "I001",   # import block sorting (baseline heredado)

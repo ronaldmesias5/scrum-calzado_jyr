@@ -58,7 +58,7 @@ def complete_emplantillado(db: Annotated[Session, ...], current_user_id: uuid.UU
 def create_order(
     *,
     db: Annotated[Session, ...],
-    customer_id: uuid.UUID,
+    customer_id: uuid.UUID | None,
     total_pairs: int,
     delivery_date,
     details,

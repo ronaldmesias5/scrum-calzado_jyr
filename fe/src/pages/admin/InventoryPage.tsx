@@ -29,7 +29,8 @@ import {
   Search,
   RefreshCw,
   Maximize2,
-  Download
+  Download,
+  FileText
 } from 'lucide-react';
 import {
   Product,
@@ -40,6 +41,7 @@ import AdjustInventoryModal from '@/features/admin/components/molecules/AdjustIn
 import ViewManufacturedModal from '@/features/admin/components/molecules/ViewManufacturedModal';
 import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerModal';
 import StatCard from '@/features/admin/components/atoms/StatCard';
+import { exportInventoryPDF } from '@/features/admin/utils/reportsUtils';
 import { useToast } from '@/store/ToastContext';
 
 export default function InventoryPage() {
@@ -253,6 +255,21 @@ export default function InventoryPage() {
     XLSX.writeFile(wb, filename);
   };
 
+  const handleExportPDF = async () => {
+    if (filteredProducts.length === 0) {
+      showToast('Sin productos para exportar con los filtros aplicados', 'error');
+      return;
+    }
+
+    try {
+      await exportInventoryPDF(filteredProducts);
+      showToast('PDF de inventario descargado', 'success');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      showToast('Error al generar el PDF', 'error');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -273,6 +290,13 @@ export default function InventoryPage() {
           >
             <Download size={18} />
             Exportar Excel
+          </button>
+          <button
+            onClick={handleExportPDF}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-xl hover:bg-red-700 dark:hover:bg-red-600 transition-all font-bold shadow-lg hover:shadow-red-500/20 active:scale-95"
+          >
+            <FileText size={18} />
+            Exportar PDF
           </button>
           <button
             onClick={loadProducts}

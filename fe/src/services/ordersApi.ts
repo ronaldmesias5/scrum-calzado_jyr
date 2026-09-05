@@ -38,7 +38,7 @@ export interface OrderDetailItem {
 
 export interface Order {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   customer_name?: string | null;
   customer_last_name?: string | null;
   customer_email?: string | null;
@@ -76,7 +76,7 @@ export interface OrderDetailItemCreateRequest {
 }
 
 export interface OrderCreateRequest {
-  customer_id: string;
+  customer_id: string | null;
   total_pairs: number;
   delivery_date?: string | null;
   details: OrderDetailItemCreateRequest[];
@@ -300,10 +300,18 @@ export async function createProductionTasks(
   return response.data;
 }
 
-/** Obtiene las tareas de producción de una orden */
-export async function getOrderTasks(
-  order_id: string
-): Promise<ProductionTask[]> {
+/** Obtiene las tareas de producción de una orden.
+ * Deduplica peticiones paralelas (misma orden en vuelo = misma promesa)
+ * y reintenta 1 vez ante fallos de red sin respuesta (caídas transitorias
+ * del port-forward de Docker que Chrome reporta como error CORS). */
+const inflightTasksRequests = new Map<string, Promise<ProductionTask[]>>();
+
+function isNetworkFailure(err: unknown): boolean {
+  const e = err as { response?: unknown; request?: unknown };
+  return e?.response === undefined && e?.request !== undefined;
+}
+
+async function fetchOrderTasks(order_id: string): Promise<ProductionTask[]> {
   const response = await axios.get<ProductionTask[]>(
     `/api/v1/admin/orders/${order_id}/tasks`,
     {
@@ -312,6 +320,28 @@ export async function getOrderTasks(
     }
   );
   return response.data;
+}
+
+export function getOrderTasks(order_id: string): Promise<ProductionTask[]> {
+  const pending = inflightTasksRequests.get(order_id);
+  if (pending) return pending;
+  const req = (async () => {
+    try {
+      return await fetchOrderTasks(order_id);
+    } catch (err) {
+      // Solo se reintenta si nunca hubo respuesta HTTP (red caída a mitad
+      // de ráfaga). Un 4xx/5xx real no se reintenta.
+      if (isNetworkFailure(err)) {
+        await new Promise((r) => setTimeout(r, 600));
+        return await fetchOrderTasks(order_id);
+      }
+      throw err;
+    } finally {
+      inflightTasksRequests.delete(order_id);
+    }
+  })();
+  inflightTasksRequests.set(order_id, req);
+  return req;
 }
 
 /** Obtiene el siguiente número de vale disponible */

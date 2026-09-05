@@ -28,7 +28,7 @@ import {
   type OrderDetail,
   type OrderDetailItem
 } from '@/services/ordersApi';
-import { createMyOrder } from '@/services/clientApi';
+import { createMyOrder, type OrderCreateRequest as ClientOrderCreateRequest } from '@/services/clientApi';
 import { resolveImageUrl } from '@/services/catalogService';
 import ImageViewerModal from '../molecules/ImageViewerModal';
 import SummarySizer from '../molecules/SummarySizer';
@@ -149,6 +149,8 @@ export default function OrderFormModal({
   const [addLoading, setAddLoading] = useState(false);
   const [hasAddedProducts, setHasAddedProducts] = useState(false);
   const [selectedClient, setSelectedClient] = useState<string>('');
+  // true = fabricar para stock/bodega (sin cliente). Solo en creación del jefe.
+  const [isStockOrder, setIsStockOrder] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState('');
   const todayLocal = new Date().toLocaleDateString('en-CA');
   const [clients, setClients] = useState<Client[]>([]);
@@ -232,7 +234,8 @@ export default function OrderFormModal({
         setSelectedClient(fixedCustomerId);
       }
       if (editOrder) {
-        setSelectedClient(editOrder.customer_id);
+        setSelectedClient(editOrder.customer_id ?? '');
+        setIsStockOrder(editOrder.customer_id == null);
         const preloaded: OrderLineItem[] = [];
         const seen = new Map<string, number>();
         editOrder.details.forEach((d: OrderDetailItem) => {
@@ -263,6 +266,7 @@ export default function OrderFormModal({
         setItems(preloaded);
       } else {
         setSelectedClient('');
+        setIsStockOrder(false);
         setItems([]);
       }
       setEditingUid(null);
@@ -604,8 +608,8 @@ export default function OrderFormModal({
   };
 
   const handleSubmit = async () => {
-    if (!isEditMode && !selectedClient) {
-      showToast('Por favor selecciona un cliente', 'error');
+    if (!isEditMode && !selectedClient && !isStockOrder) {
+      showToast('Por favor selecciona un cliente o elige fabricar para stock', 'error');
       return;
     }
     if (!isEditMode && deliveryDate && deliveryDate < todayLocal) {
@@ -636,7 +640,7 @@ export default function OrderFormModal({
           details
         });
       } else if (isSelfServiceMode) {
-        const orderData: OrderCreateRequest = {
+        const orderData: ClientOrderCreateRequest = {
           customer_id: selectedClient,
           total_pairs: totalPairs,
           delivery_date: deliveryDate || null,
@@ -645,7 +649,7 @@ export default function OrderFormModal({
         await createMyOrder(orderData);
       } else {
         const orderData: OrderCreateRequest = {
-          customer_id: selectedClient,
+          customer_id: isStockOrder ? null : selectedClient,
           total_pairs: totalPairs,
           delivery_date: deliveryDate || null,
           details
@@ -655,6 +659,7 @@ export default function OrderFormModal({
       showToast('Operación exitosa');
       setTimeout(() => {
         setSelectedClient('');
+        setIsStockOrder(false);
         setItems([]);
         onClose();
         onSuccess?.();
@@ -724,7 +729,7 @@ export default function OrderFormModal({
       ? items.length === 0
         ? 2
         : 3
-      : !selectedClient
+      : !selectedClient && !isStockOrder
         ? 1
         : items.length === 0
           ? 2
@@ -1019,17 +1024,44 @@ export default function OrderFormModal({
               <div className="space-y-8 min-w-0">
                 {/* Sección 1: Cliente y Fecha de entrega */}
                 {!isEditMode && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all h-full flex flex-col">
-                      <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex-shrink-0">
-                        <span className="text-blue-600 dark:text-blue-400">
-                          Paso 1 ·
-                        </span>{' '}
-                        Cliente del Pedido{' '}
-                        <span className="text-red-600">*</span>
-                      </label>
-                      <div className="mt-auto">
-                        {isSelfServiceMode ? (
+                  <>
+                    {!isSelfServiceMode && (
+                      <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl">
+                        <button
+                          type="button"
+                          onClick={() => setIsStockOrder(false)}
+                          className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${!isStockOrder ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow' : 'text-gray-500 dark:text-gray-400'}`}
+                        >
+                          Para cliente
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsStockOrder(true);
+                            setSelectedClient('');
+                          }}
+                          className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${isStockOrder ? 'bg-amber-500 text-white shadow' : 'text-gray-500 dark:text-gray-400'}`}
+                        >
+                          <Package className="w-4 h-4" />
+                          Fabricar para stock
+                        </button>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all h-full flex flex-col">
+                        <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex-shrink-0">
+                          <span className="text-blue-600 dark:text-blue-400">
+                            Paso 1 ·
+                          </span>{' '}
+                          {isStockOrder ? 'Destino' : 'Cliente del Pedido'}{' '}
+                          <span className="text-red-600">*</span>
+                        </label>
+                        <div className="mt-auto">
+                          {isStockOrder ? (
+                            <div className="w-full px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm font-bold text-amber-800 dark:text-amber-300">
+                              Producción para bodega — al completarse pasará a stock disponible
+                            </div>
+                          ) : isSelfServiceMode ? (
                           <div className="w-full px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm font-bold text-blue-800 dark:text-blue-300">
                             {selectedClient
                               ? 'Pedido a tu nombre (cliente autenticado)'
@@ -1060,7 +1092,8 @@ export default function OrderFormModal({
                         )}
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all h-full flex flex-col">
+                    {!isStockOrder && (
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-1 transition-all h-full flex flex-col">
                       <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex-shrink-0">
                         Fecha estimada de entrega{' '}
                         <span className="text-gray-400 font-normal">
@@ -1086,8 +1119,10 @@ export default function OrderFormModal({
                           className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-bold transition-all shadow-sm"
                         />
                       </div>
+                      </div>
+                      )}
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {/* Sección 2: Agregar Producto */}
@@ -1112,7 +1147,7 @@ export default function OrderFormModal({
                       <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        disabled={!isEditMode && !selectedClient}
+                        disabled={!isEditMode && !selectedClient && !isStockOrder}
                         className="w-full px-3 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:text-gray-200 font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <option value="">Categoría</option>
@@ -1643,7 +1678,7 @@ export default function OrderFormModal({
               disabled={
                 loading ||
                 items.length === 0 ||
-                (!isEditMode && !selectedClient)
+                (!isEditMode && !selectedClient && !isStockOrder)
               }
               className={`px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all font-bold flex items-center gap-2 disabled:opacity-50`}
             >
