@@ -112,6 +112,14 @@ services:
       # Entorno: development (imprime emails en consola) | production (envía SMTP real)
       ENVIRONMENT: ${ENVIRONMENT:-development}
 
+      # IA — Fase 0/1 (Groq/Gemini/Ollama)
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-openai/gpt-oss-20b}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-nomic-embed-text}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-512}
+      AI_EMBEDDING_DIM: ${AI_EMBEDDING_DIM:-768}
+
     ports:
       - "${BE_PORT:-8000}:8000"
 
