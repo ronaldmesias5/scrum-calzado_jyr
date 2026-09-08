@@ -77,11 +77,11 @@ El empleado o jefe puede marcar una tarea como completada, lo que dispara la cre
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/modules/dashboard_empleado/router.py` | 5 endpoints para dashboard, tareas, vales |
-| `be/app/modules/orders/router.py` | Endpoint PATCH status con auto-creación de etapa siguiente |
+| `be/app/routers/dashboard_empleado.py` | 5 endpoints para dashboard, tareas, vales |
+| `be/app/routers/orders_tasks.py` | Endpoint PATCH status con auto-creación de etapa siguiente |
 | `be/app/models/task.py` | Modelo `Task` con relaciones a producto y usuario |
 | `be/app/models/inventory.py` | Modelo `InventoryMovement` para registrar producción |
-| `be/app/modules/orders/schemas.py` | Schemas de tareas, vale, dashboard |
+| `be/app/schemas/orders.py` | Schemas de tareas, vale, dashboard |
 | `fe/src/pages/employee/DashboardPage.tsx` | Resumen con KPIs y últimas tareas |
 | `fe/src/pages/employee/TasksPage.tsx` | Lista de tareas con filtros y botón completar |
 | `fe/src/pages/employee/AvailableTasksPage.tsx` | Tareas disponibles con reclamar |

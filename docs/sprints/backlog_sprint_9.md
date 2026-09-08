@@ -29,11 +29,11 @@ Registro de pérdidas de calzado por defectos de fabricación con códigos de de
 
 **Tareas:**
 1. Crear modelo `Scrap` (incidentes de scrap) y `DefectCode` en la base de datos
-2. Implementar `be/app/modules/scrap/service.py` con lógica de negocio:
+2. Implementar `be/app/services/scrap.py` con lógica de negocio:
    - `register_incident()`: descuenta del inventario al registrar
    - `repair_incident()`, `approve_loss()`, `reject_loss()` para máquina de estados
    - `get_scrap_stock()` para consultar stock de scrap
-3. Implementar `be/app/modules/scrap/router.py` con 9 endpoints REST (ver cambios técnicos)
+3. Implementar `be/app/routers/scrap.py` con 9 endpoints REST (ver cambios técnicos)
 4. Crear frontend `LossesPage.tsx` con tabla de pérdidas y acciones de aprobar/rechazar
 5. Integrar filtros por tipo de incidente, producto y rango de fechas
 
@@ -61,7 +61,7 @@ Máquina de estados para reparar calzado defectuoso y reincorporarlo al inventar
 
 ## Cambios Técnicos
 
-### Endpoints creados (`be/app/modules/scrap/router.py`, 228 líneas total)
+### Endpoints creados (`be/app/routers/scrap.py`, 228 líneas total)
 
 | Endpoint | Líneas | Descripción |
 |----------|--------|-------------|
@@ -79,10 +79,10 @@ Máquina de estados para reparar calzado defectuoso y reincorporarlo al inventar
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/modules/scrap/__init__.py` | Nuevo módulo scrap |
-| `be/app/modules/scrap/router.py` | 9 endpoints REST |
-| `be/app/modules/scrap/service.py` | Lógica de negocio: registro, reparación, aprobación, rechazo |
-| `be/app/modules/scrap/schemas.py` | Schemas: DefectCode, Incident, RepairRequest, ScrapStock |
+| `be/app/routers/scrap.py` | Router principal del módulo scrap |
+| `be/app/routers/scrap.py` | 9 endpoints REST |
+| `be/app/services/scrap.py` | Lógica de negocio: registro, reparación, aprobación, rechazo |
+| `be/app/schemas/scrap.py` | Schemas: DefectCode, Incident, RepairRequest, ScrapStock |
 | `be/app/models/scrap.py` | Modelos: `Scrap`, `DefectCode` |
 | `be/alembic/versions/XXX_scrap_tables.py` | Migración para tablas de scrap |
 | `fe/src/pages/admin/LossesPage.tsx` | Frontend con tabla, filtros y acciones |

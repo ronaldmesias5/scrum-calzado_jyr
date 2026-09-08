@@ -24,9 +24,9 @@ El administrador/jefe puede revisar usuarios pendientes de validación (registra
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/modules/admin/router.py:105-135` | `GET /admin/users/pending-validation` — lista usuarios con `is_validated=False`, ordenados por fecha de creación |
-| `be/app/modules/admin/router.py:137-167` | `PATCH /admin/users/{id}/validate` — aprueba usuario: setea `is_active=True`, `is_validated=True`, envía email de bienvenida |
-| `be/app/modules/admin/router.py:170-209` | `PATCH /admin/users/{id}/reject` — rechaza usuario: recibe `rejection_reason` en body, envía email de rechazo, elimina o marca como rechazado |
+| `be/app/routers/admin.py:105-135` | `GET /admin/users/pending-validation` — lista usuarios con `is_validated=False`, ordenados por fecha de creación |
+| `be/app/routers/admin.py:137-167` | `PATCH /admin/users/{id}/validate` — aprueba usuario: setea `is_active=True`, `is_validated=True`, envía email de bienvenida |
+| `be/app/routers/admin.py:170-209` | `PATCH /admin/users/{id}/reject` — rechaza usuario: recibe `rejection_reason` en body, envía email de rechazo, elimina o marca como rechazado |
 | `be/app/models/user.py` | `User.is_validated` (bool), `User.is_active` (bool) — flags que controlan el estado de la cuenta |
 | `be/app/utils/email.py` | `send_validation_approved_email()` — email de cuenta activada; `send_validation_rejected_email()` — email con motivo de rechazo |
 
@@ -70,9 +70,9 @@ Los usuarios pueden solicitar un restablecimiento de contraseña si la olvidan. 
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/modules/auth/router.py:171-184` | `POST /auth/forgot-password` — recibe email, verifica que el usuario exista, genera token UUID con expiración, almacena en BD, envía email |
-| `be/app/modules/auth/router.py:187-198` | `POST /auth/reset-password` — recibe token + nueva contraseña, verifica token vigente, actualiza contraseña, incrementa `session_version`, invalida token |
-| `be/app/modules/auth/schemas.py` | `ForgotPasswordRequest(email)`, `ResetPasswordRequest(token, new_password)` |
+| `be/app/routers/auth.py:171-184` | `POST /auth/forgot-password` — recibe email, verifica que el usuario exista, genera token UUID con expiración, almacena en BD, envía email |
+| `be/app/routers/auth.py:187-198` | `POST /auth/reset-password` — recibe token + nueva contraseña, verifica token vigente, actualiza contraseña, incrementa `session_version`, invalida token |
+| `be/app/schemas/auth.py` | `ForgotPasswordRequest(email)`, `ResetPasswordRequest(token, new_password)` |
 | `be/app/models/password_reset.py` | Modelo `PasswordResetToken`: `id` (UUID), `user_id` (FK), `token` (UUID único), `expires_at` (datetime), `used` (bool), `created_at` |
 | `be/app/utils/email.py` | `send_password_reset_email()` — envía email con enlace de restablecimiento (en desarrollo: imprime en consola) |
 

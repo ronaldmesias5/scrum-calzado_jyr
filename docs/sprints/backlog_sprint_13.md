@@ -33,7 +33,7 @@
 
 ### Implementación
 
-**Backend — `be/app/modules/dashboard_jefe/router.py`:**
+**Backend — `be/app/routers/dashboard_jefe.py`:**
 - Endpoint `GET /alerts` (líneas 117-155): consulta incidencias con estado `abierta` y `deleted_at == None`, obtiene el nombre del empleado reportero mediante join con `Task` → `User`, y retorna objetos `AlertSchema` con tipo `"error"`, título, mensaje y hora
 - Dependencia: `_require_jefe` para restringir acceso solo al jefe
 - Modelos implicados: `Incidence`, `IncidenceStatus`, `Task`, `User`
@@ -86,7 +86,7 @@
 
 ### Implementación
 
-**Backend — `be/app/modules/admin/reports_router.py`:**
+**Backend — `be/app/routers/reports.py`:**
 - 908 líneas total, router completo de reportes
 - Función auxiliar `_build_order_items()` (líneas 49-73): agrupa `OrderDetails` por `(product_id, colour)` para incluir categoría y color
 - Endpoints protegidos con `_require_admin_or_jefe`
@@ -119,10 +119,10 @@
 ## Cambios Técnicos
 
 **Archivos creados/modificados en el backend:**
-- `be/app/modules/admin/reports_router.py` — Nuevo router con 7 endpoints (908 líneas)
-- `be/app/modules/admin/reports_schemas.py` — Schemas: `DashboardReportResponse`, `KPIResponse`, `CategorySalesResponse`, `TopProductResponse`, `TopCustomerResponse`, `TopEmployeeResponse`, `ProductionGlobalReport`, `ProductionWeeklyMetric`, `SalesGlobalReport`, `SalesWeeklyMetric`, `CustomerReportResponse`, `EmployeeReportResponse`, `TaskBreakdown`, `TaskDetail`, `TaskPriceDetail`, `SendReportEmailRequest`, `ShareInternalRequest`
-- `be/app/modules/dashboard_jefe/router.py` — Endpoint `GET /alerts` (líneas 117-155)
-- `be/app/modules/dashboard_jefe/schemas.py` — Schemas `AlertSchema`, `AlertsResponse`
+- `be/app/routers/reports.py` — Nuevo router con 7 endpoints (908 líneas)
+- `be/app/schemas/reports.py` — Schemas: `DashboardReportResponse`, `KPIResponse`, `CategorySalesResponse`, `TopProductResponse`, `TopCustomerResponse`, `TopEmployeeResponse`, `ProductionGlobalReport`, `ProductionWeeklyMetric`, `SalesGlobalReport`, `SalesWeeklyMetric`, `CustomerReportResponse`, `EmployeeReportResponse`, `TaskBreakdown`, `TaskDetail`, `TaskPriceDetail`, `SendReportEmailRequest`, `ShareInternalRequest`
+- `be/app/routers/dashboard_jefe.py` — Endpoint `GET /alerts` (líneas 117-155)
+- `be/app/schemas/dashboard_jefe.py` — Schemas `AlertSchema`, `AlertsResponse`
 - `be/app/utils/email.py` — Función `send_report_email` para envío de PDFs
 - `be/app/models/report_share.py` — Modelo `ReportShare` para reportes compartidos
 

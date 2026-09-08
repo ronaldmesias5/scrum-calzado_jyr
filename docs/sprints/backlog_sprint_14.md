@@ -38,7 +38,7 @@
 
 ### Implementación
 
-**Backend — `be/app/modules/admin/reports_router.py`:**
+**Backend — `be/app/routers/reports.py`:**
 
 - `GET /employee/{user_id}` (líneas 261-394):
   - Subconsulta `order_pairs_sub`: suma de `OrderDetail.amount` agrupado por `(order_id, product_id)` para obtener pares totales por pedido/producto
@@ -104,7 +104,7 @@
 
 ### Implementación
 
-**Backend — `be/app/modules/dashboard_empleado/router.py`:**
+**Backend — `be/app/routers/dashboard_empleado_tasks.py`:**
 
 - `GET /report/my-performance` (líneas 518-571):
   - Consulta tareas del empleado con status `completado` o `pagado`
@@ -151,10 +151,10 @@
 ## Cambios Técnicos
 
 **Archivos modificados en el backend:**
-- `be/app/modules/admin/reports_router.py` — Endpoints `GET /employee/{user_id}`, `GET /role/{role_name}`, `PATCH /tasks/mark-paid`
-- `be/app/modules/admin/reports_schemas.py` — Schemas: `EmployeeReportResponse`, `TaskBreakdown`, `TaskDetail`, `TaskPriceDetail`
-- `be/app/modules/dashboard_empleado/router.py` — Endpoints `GET /report/my-performance`, `GET /report/my-tasks`, `GET /reports/shared`
-- `be/app/modules/dashboard_empleado/schemas.py` — Schemas: `MyPerformanceResponse`, `MyPerformanceTaskBreakdown`, `MyTasksReportResponse`, `MyTaskDetail`
+- `be/app/routers/reports.py` — Endpoints `GET /employee/{user_id}`, `GET /role/{role_name}`, `PATCH /tasks/mark-paid`
+- `be/app/schemas/reports.py` — Schemas: `EmployeeReportResponse`, `TaskBreakdown`, `TaskDetail`, `TaskPriceDetail`
+- `be/app/routers/dashboard_empleado_tasks.py` — Endpoints `GET /report/my-performance`, `GET /report/my-tasks`, `GET /reports/shared`
+- `be/app/schemas/dashboard_empleado.py` — Schemas: `MyPerformanceResponse`, `MyPerformanceTaskBreakdown`, `MyTasksReportResponse`, `MyTaskDetail`
 
 **Archivos modificados en el frontend:**
 - `fe/src/pages/employee/EmployeeReportsPage.tsx` — Nueva página (555 líneas)
