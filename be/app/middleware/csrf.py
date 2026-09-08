@@ -7,7 +7,7 @@ Descripción: Middleware de protección CSRF (Cross-Site Request Forgery).
   1. Genera un token CSRF y lo envía como cookie HttpOnly
   2. El frontend lo lee y lo envía en el header X-CSRF-Token
   3. El middleware compara ambos valores en cada mutation (POST/PUT/PATCH/DELETE)
-  
+
 ¿Para qué?
   - Proteger contra ataques CSRF donde un sitio malicioso puede hacer
     peticiones autenticadas en nombre del usuario
@@ -40,7 +40,9 @@ CSRF_EXEMPT_PATHS = {
     "/api/v1/auth/reset-password",
     "/api/v1/auth/request-reactivation",
     "/api/v1/auth/request-new-invitation",
-    "/api/v1/catalog/",        # Catálogo público (solo lectura)
+    "/api/v1/catalog/",  # Catálogo público (solo lectura)
+    "/api/v1/ai/chat",  # Chat IA público (Fase 1, rate limit propio)
+    "/api/v1/ai/health",  # Health check público
 }
 
 # Nombres de cookies y headers
@@ -51,7 +53,7 @@ CSRF_HEADER_NAME = "x-csrf-token"
 class CSRFMiddleware(BaseHTTPMiddleware):
     """
     Middleware CSRF usando Double-Submit Cookie Pattern.
-    
+
     Flujo:
     1. En cada respuesta, se genera/renueva un token CSRF en cookie
     2. El frontend lee la cookie y la envía en X-CSRF-Token header
@@ -79,10 +81,10 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         response.set_cookie(
             key=CSRF_COOKIE_NAME,
             value=token,
-            max_age=3600,          # 1 hora
-            httponly=False,         # Frontend necesita leerla
-            samesite="strict",      # No se envía en cross-origin
-            secure=False,           # TODO: True en producción con HTTPS
+            max_age=3600,  # 1 hora
+            httponly=False,  # Frontend necesita leerla
+            samesite="strict",  # No se envía en cross-origin
+            secure=False,  # TODO: True en producción con HTTPS
             path="/",
         )
 

@@ -6,6 +6,7 @@ import { Breadcrumbs } from '@/components/atoms/Breadcrumbs';
 import PageTransition from '@/components/atoms/PageTransition';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { EmployeeBadgeCountsProvider } from '@/store/EmployeeBadgeCountsContext';
+import ChatWidget from '@/features/ai/components/organisms/ChatWidget';
 
 const LS_KEY = 'employee_sidebar_width';
 const MIN_WIDTH = 72;
@@ -89,6 +90,7 @@ export default function EmployeeLayout() {
             <DashboardFooter className="shrink-0 border-t border-gray-100 dark:border-slate-800/50" />
         </main>
       </div>
+        <ChatWidget />
       </div>
     </EmployeeBadgeCountsProvider>
   );
