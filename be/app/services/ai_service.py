@@ -1,6 +1,6 @@
 """
 Archivo: be/app/services/ai_service.py
-Descripción: Servicio RAG + LLM agnóstico para asistente IA (Fase 1 + Fase 2).
+Descripción: Servicio RAG + LLM agnóstico para asistente IA (Fase 1 + Fase 2 + Fase 3).
 
 ¿Qué?
   - get_embedding(text): genera vector 768 dims (hash determinístico, $0, sin API).
@@ -9,18 +9,23 @@ Descripción: Servicio RAG + LLM agnóstico para asistente IA (Fase 1 + Fase 2).
   - build_prompt(query, contexts, user_context): arma mensajes para LLM con system_prompt + contexto RAG + contexto por rol.
   - call_llm(messages): llama a Groq/Gemini/Ollama/OpenAI según AI_PROVIDER, con fallback mock.
   - chat(db, message, k, user): orquesta RAG completo → ChatResponse (Fase 2: con user para tools).
+  - semantic_search(db, query, k): búsqueda semántica en ai_embeddings (Fase 3).
+  - recommend_similar(db, product_id, k): recomienda productos similares (Fase 3).
+  - generate_product_description(db, product_id, tone, max_length): genera descripción vía LLM (Fase 3, solo jefe).
+  - classify_incidence(text): clasifica incidencia en categoría + defecto (Fase 3).
 
 ¿Para qué?
   - RAG del ChatWidget en LandingPage (Fase 1, público, sin auth) y layouts autenticados (Fase 2, con JWT).
-  - Base para Fase 3 (búsqueda semántica).
+  - Búsqueda semántica, recomendador, generador y clasificador (Fase 3).
 
 ¿Impacto?
-  Fase 1/2 — sin este servicio no hay chatbot. Si falla:
+  Fase 1/2/3 — sin este servicio no hay chatbot ni búsqueda. Si falla:
   - POST /api/ai/chat → 500 o alucina sin contexto.
   Modificar get_embedding dim rompe: ai_embeddings.embedding, seed script, migración 048.
   Modificar call_llm rompe: ai_chat.py, tests con mock.
-  Dependencias: config.py (AI_*), models/ai_embedding.py, models/user.py, services/ai_tools.py,
-               prompts/system_prompt.txt, pgvector, openai, groq, google-generativeai (opcionales)
+  Dependencias: config.py (AI_*), models/ai_embedding.py, models/user.py, models/product.py,
+               services/ai_tools.py, prompts/system_prompt.txt, pgvector, openai, groq,
+               google-generativeai (opcionales)
 """
 
 import hashlib
@@ -411,3 +416,202 @@ def get_embeddings_count(db: Session) -> int:
 def is_ai_enabled() -> bool:
     """True si AI_API_KEY configurada y provider no es disabled."""
     return bool(settings.AI_API_KEY) and settings.AI_PROVIDER != "disabled"
+
+
+# ──────────────────────────────────────────────────────────────
+# Fase 3 — Búsqueda semántica, recomendador, generador, clasificador
+# ──────────────────────────────────────────────────────────────
+
+
+def semantic_search(db: Session, query: str, k: int = 10) -> list[tuple[AIEmbedding, float]]:
+    """Búsqueda semántica en ai_embeddings (reutiliza search_similar)."""
+    return search_similar(db, query, k=k)
+
+
+def recommend_similar(db: Session, product_id: str, k: int = 5) -> list[tuple[AIEmbedding, float]]:
+    """
+    Recomienda productos similares a `product_id` buscando por contenido del producto.
+    Filtra solo source == product y excluye el propio producto.
+    """
+    try:
+        import uuid as _uuid
+
+        _uuid.UUID(product_id)
+    except ValueError:
+        return []
+
+    # Buscar embedding del producto base
+    try:
+        base = (
+            db.query(AIEmbedding)
+            .filter(AIEmbedding.extra_metadata["product_id"].astext == product_id)  # type: ignore
+            .first()
+        )
+        if not base:
+            # Fallback: buscar por content que contenga product_id
+            base = db.query(AIEmbedding).filter(AIEmbedding.content.contains(product_id)).first()
+        if not base:
+            return []
+
+        # Buscar similares al contenido del producto base
+        results = search_similar(db, base.content, k=k + 1)
+        # Excluir el propio producto
+        filtered = [(emb, score) for emb, score in results if emb.id != base.id]
+        # Solo productos
+        product_only = [
+            (emb, score)
+            for emb, score in filtered
+            if (emb.extra_metadata or {}).get("source") == "product"
+        ]
+        return product_only[:k]
+    except Exception as e:
+        logger.warning(f"[ai] recommend_similar falló: {e}")
+        return []
+
+
+def generate_product_description(
+    db: Session,
+    product_id: str,
+    tone: str = "profesional",
+    max_length: int = 200,
+) -> str:
+    """
+    Genera descripción para producto vía LLM. Solo jefe (validado en router).
+    Usa datos del producto + prompt por tono.
+    """
+    try:
+        from app.models.product import Product
+
+        product = db.get(Product, product_id)
+        if not product:
+            raise ValueError("Producto no encontrado")
+
+        brand_name = (
+            product.brand.name_brand if hasattr(product, "brand") and product.brand else "Sin marca"
+        )
+        category_name = (
+            product.category.name_category
+            if hasattr(product, "category") and product.category
+            else "Sin categoría"
+        )
+        style_name = (
+            product.style.name_style
+            if hasattr(product, "style") and product.style
+            else "Sin estilo"
+        )
+
+        tone_instructions = {
+            "profesional": "Tono profesional, técnico y confiable.",
+            "casual": "Tono casual, cercano y amigable.",
+            "tecnico": "Tono técnico, detallado con especificaciones.",
+            "vendedor": "Tono vendedor, persuasivo y atractivo para mayoristas.",
+        }
+        tone_text = tone_instructions.get(tone, tone_instructions["profesional"])
+
+        prompt = (
+            f"Genera una descripción para este producto de Calzado J&R:\n"
+            f"- Nombre: {product.name_product}\n"
+            f"- Marca: {brand_name}\n"
+            f"- Estilo: {style_name}\n"
+            f"- Categoría: {category_name}\n"
+            f"- Color: {product.color or 'varios'}\n"
+            f"- Descripción actual: {product.description_product or 'Sin descripción'}\n"
+            f"- Estado: {'disponible' if product.state else 'no disponible'}\n"
+            f"Instrucciones: {tone_text} Máximo {max_length} caracteres. Solo la descripción, sin explicaciones."
+        )
+
+        messages = [
+            {
+                "role": "system",
+                "content": "Eres redactor experto en calzado mayorista colombiano. Genera descripciones concisas y atractivas.",
+            },
+            {"role": "user", "content": prompt},
+        ]
+        answer = call_llm(messages, contexts=None)
+        # Truncar si excede
+        if len(answer) > max_length:
+            answer = answer[: max_length - 3] + "..."
+        return answer.strip()
+    except Exception as e:
+        logger.error(f"[ai] generate_product_description falló: {e}")
+        raise
+
+
+def classify_incidence(text: str) -> dict:
+    """
+    Clasifica texto de incidencia en categoría + defecto sugerido.
+    Usa LLM con prompt estructurado, fallback a reglas si no hay API key.
+    """
+    categories = ["falla", "faltante", "perdida", "en_reparacion", "devuelto", "otro"]
+
+    # Fallback sin LLM: reglas simples
+    if not is_ai_enabled():
+        lowered = text.lower()
+        if any(kw in lowered for kw in ["máquina", "maquina", "falla", "daño", "roto", "defecto"]):
+            return {
+                "category": "falla",
+                "confidence": 0.6,
+                "suggested_defect_code": "DEF-FAB",
+                "reasoning": "Clasificación por reglas (sin LLM): menciona falla/máquina.",
+            }
+        if any(kw in lowered for kw in ["faltante", "falta", "insumo", "material"]):
+            return {
+                "category": "faltante",
+                "confidence": 0.6,
+                "suggested_defect_code": None,
+                "reasoning": "Clasificación por reglas (sin LLM): menciona faltante/insumo.",
+            }
+        if any(kw in lowered for kw in ["pérdida", "perdida", "extraviado"]):
+            return {
+                "category": "perdida",
+                "confidence": 0.6,
+                "suggested_defect_code": "DEF-PRO",
+                "reasoning": "Clasificación por reglas (sin LLM): menciona pérdida.",
+            }
+        return {
+            "category": "otro",
+            "confidence": 0.5,
+            "suggested_defect_code": None,
+            "reasoning": "Clasificación por reglas (sin LLM): no se detectó categoría clara.",
+        }
+
+    prompt = (
+        f"Clasifica esta incidencia de calzado en una categoría: {', '.join(categories)}.\n"
+        f'Texto: "{text}"\n'
+        f'Responde SOLO en JSON con: {{"category": "...", "confidence": 0.0-1.0, "suggested_defect_code": "DEF-FAB|DEF-ALM|DEF-PRO|DEF-DEV|DEV-CLT|ENR-REP o null", "reasoning": "breve explicación"}}'
+    )
+    messages = [
+        {
+            "role": "system",
+            "content": "Eres clasificador de incidencias de calzado. Responde solo JSON válido.",
+        },
+        {"role": "user", "content": prompt},
+    ]
+    try:
+        raw = call_llm(messages, contexts=None)
+        # Extraer JSON del raw (puede venir con markdown)
+        import json
+        import re as _re
+
+        json_match = _re.search(r"\{.*\}", raw, _re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group(0))
+            cat = data.get("category", "otro")
+            if cat not in categories:
+                cat = "otro"
+            return {
+                "category": cat,
+                "confidence": float(data.get("confidence", 0.5)),
+                "suggested_defect_code": data.get("suggested_defect_code"),
+                "reasoning": data.get("reasoning", "")[:200],
+            }
+    except Exception as e:
+        logger.warning(f"[ai] classify_incidence LLM falló, fallback a reglas: {e}")
+
+    # Fallback final
+    return {
+        "category": "otro",
+        "confidence": 0.5,
+        "suggested_defect_code": None,
+        "reasoning": "No se pudo clasificar con LLM, revisa manualmente.",
+    }

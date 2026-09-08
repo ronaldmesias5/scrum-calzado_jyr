@@ -43,6 +43,8 @@ CSRF_EXEMPT_PATHS = {
     "/api/v1/catalog/",  # Catálogo público (solo lectura)
     "/api/v1/ai/chat",  # Chat IA público (Fase 1, rate limit propio)
     "/api/v1/ai/health",  # Health check público
+    "/api/v1/ai/search/semantic",  # Búsqueda semántica pública (Fase 3)
+    "/api/v1/ai/recommend",  # Recomendador público (Fase 3)
 }
 
 # Nombres de cookies y headers
