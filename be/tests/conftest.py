@@ -53,7 +53,7 @@ def _reset_schema() -> None:
     """Limpia el esquema público para arrancar cada sesión de tests desde cero.
 
     Recrea también las extensiones que en desarrollo instala `db/init/init.sql`
-    (uuid-ossp, pg_trgm), porque `DROP SCHEMA public CASCADE` elimina sus objetos
+    (uuid-ossp, pg_trgm, vector), porque `DROP SCHEMA public CASCADE` elimina sus objetos
     y las migraciones Alembic asumen que `uuid_generate_v4()` existe.
     """
     engine = create_engine(TEST_DATABASE_URL, isolation_level="AUTOCOMMIT")
@@ -64,6 +64,11 @@ def _reset_schema() -> None:
         conn.execute(text('CREATE EXTENSION "uuid-ossp"'))
         conn.execute(text("DROP EXTENSION IF EXISTS pg_trgm CASCADE"))
         conn.execute(text("CREATE EXTENSION pg_trgm"))
+        # IA Fase 0 — pgvector (no falla si imagen PG no lo trae)
+        try:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        except Exception:
+            pass
     engine.dispose()
 
 
@@ -73,7 +78,9 @@ def test_database():
     _ensure_test_database_exists()
     _reset_schema()
 
-    assert run_migrations(TEST_DATABASE_URL, raise_on_error=True), "Las migraciones Alembic fallaron en la BD de tests"
+    assert run_migrations(TEST_DATABASE_URL, raise_on_error=True), (
+        "Las migraciones Alembic fallaron en la BD de tests"
+    )
 
     from app.init.seed_data import seed_all
 
