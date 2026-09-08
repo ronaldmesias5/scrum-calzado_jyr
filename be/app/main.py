@@ -59,13 +59,14 @@ from app.routers.supplies import router as supplies_router
 from app.routers.type_document import router as type_document_router
 from app.routers.admin import router as admin_router
 from app.routers.users import router as users_router
+from app.routers.ai_chat import router as ai_chat_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Gestiona el ciclo de vida de la aplicación FastAPI."""
     print("🚀 CALZADO J&R — Backend iniciando...")
-    
+
     # ══════════════════════════════════════════════════════════
     # PASO 1: Ejecutar migraciones Alembic
     # ══════════════════════════════════════════════════════════
@@ -81,9 +82,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     #   - Sin historial de cambios
     # ══════════════════════════════════════════════════════════
     from app.init_db import run_migrations
+
     run_migrations(settings.DATABASE_URL)
     print("✅ Migraciones Alembic aplicadas correctamente.")
-    
+
     # ══════════════════════════════════════════════════════════
     # PASO 2: Verificar datos iniciales (fallback)
     # ══════════════════════════════════════════════════════════
@@ -92,17 +94,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     db = SessionLocal()
     try:
         from app.init.seed_data import seed_all
+
         seed_all(db)
     except Exception as e:
         print(f"⚠️  Error en verificación de datos iniciales: {e!s}")
     finally:
         db.close()
-    
+
     print(f"📡 CORS habilitado para: {settings.FRONTEND_URL}")
     print("✨ Sistema listo.")
-    
+
     yield
-    
+
     print("🛑 CALZADO J&R — Backend cerrando...")
 
 
@@ -135,15 +138,20 @@ app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(CSRFMiddleware)
 
 # CORSMiddleware debe ser el último (el más externo) para manejar OPTIONS correctamente
-app.add_middleware(CORSMiddleware,
+app.add_middleware(
+    CORSMiddleware,
     allow_origins=[
         settings.FRONTEND_URL,
-        *([] if settings.ENVIRONMENT == "production" else [
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5175",
-            "http://localhost:8081",
-        ]),
+        *(
+            []
+            if settings.ENVIRONMENT == "production"
+            else [
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175",
+                "http://localhost:8081",
+            ]
+        ),
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -157,16 +165,23 @@ app.add_middleware(CORSMiddleware,
 # FastAPI maneja RequestValidationError ANTES de que llegue al middleware,
 # así que registramos un handler explícito para controlar la respuesta.
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     content = {"detail": "Los datos enviados son incorrectos"}
     if settings.ENVIRONMENT != "production":
         content["errors"] = jsonable_encoder(exc.errors())
     return JSONResponse(status_code=422, content=content)
 
+
 # ────────────────────────────
 # � Archivos estáticos (imágenes de productos)
 # ────────────────────────────
-_uploads_path = Path(settings.UPLOAD_DIR) if settings.UPLOAD_DIR else Path(__file__).resolve().parent.parent / "uploads"
+_uploads_path = (
+    Path(settings.UPLOAD_DIR)
+    if settings.UPLOAD_DIR
+    else Path(__file__).resolve().parent.parent / "uploads"
+)
 _uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_uploads_path)), name="uploads")
 
@@ -193,6 +208,8 @@ app.include_router(client_router)
 app.include_router(notifications_router)
 app.include_router(scrap_router, prefix="/api/v1/scrap", tags=["Scrap / Incidencias"])
 app.include_router(bulk_import_router)
+app.include_router(ai_chat_router)
+
 
 # ────────────────────────────
 # 📍 Endpoint raíz de bienvenida
@@ -236,19 +253,19 @@ from fastapi.responses import FileResponse
 async def serve_image(file_path: str):
     """Sirve una imagen desde el directorio de uploads con CORS explícito."""
     file_location = _uploads_path / file_path
-    
+
     # Seguridad: prevenir path traversal
     if not file_location.resolve().is_relative_to(_uploads_path.resolve()):
         raise HTTPException(status_code=403, detail="Acceso denegado")
-    
+
     if not file_location.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    
+
     return FileResponse(
         path=file_location,
         headers={
             "Cache-Control": "public, max-age=86400",
             "Content-Disposition": "inline",
             "Access-Control-Allow-Origin": "*",
-        }
+        },
     )
