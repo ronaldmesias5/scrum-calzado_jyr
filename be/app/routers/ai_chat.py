@@ -1,20 +1,24 @@
 """
 Archivo: be/app/routers/ai_chat.py
-Descripción: Router FastAPI para asistente IA (Fase 1 RAG + Fase 2 contexto por rol).
+Descripción: Router FastAPI para asistente IA (Fase 1 RAG + Fase 2 contexto por rol + Fase 3 avanzado).
 
 ¿Qué?
   - POST /api/v1/ai/chat (público, rate limit 10/min por IP, validación 500 chars, anti injection, JWT opcional para contexto por rol)
   - GET  /api/v1/ai/health (público, estado del servicio)
   - POST /api/v1/ai/embeddings/reindex (solo jefe/admin, reindexa catálogo + FAQs)
+  - GET  /api/v1/ai/search/semantic (público, búsqueda semántica, Fase 3)
+  - GET  /api/v1/ai/recommend (público, recomendador, Fase 3)
+  - POST /api/v1/ai/generate-description (solo jefe, generador, Fase 3)
+  - POST /api/v1/ai/classify-incidence (autenticado, clasificador, Fase 3)
 
 ¿Para qué?
   - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2, con JWT).
-  - Health para monitoreo y CI.
-  - Reindex para que el jefe actualice RAG tras crear productos.
+  - Búsqueda semántica, recomendador, generador y clasificador (Fase 3).
+  - Health para monitoreo y CI, reindex para jefe.
 
 ¿Impacto?
-  Fase 1/2 — sin este router no hay chatbot. Si falla:
-  - ChatWidget → 404 o 500.
+  Fase 1/2/3 — sin este router no hay chatbot ni búsqueda. Si falla:
+  - ChatWidget → 404 o 500, búsqueda semántica → 404.
   Modificar prefix rompe: aiApi.ts, useChat.ts, tests.
   Dependencias: schemas/ai.py, services/ai_service.py, services/ai_tools.py, dependencies.py, config.py
 """
@@ -211,3 +215,137 @@ def reindex_embeddings(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error en reindex: {str(e)}",
         ) from e
+
+
+# ──────────────────────────────────────────────────────────────
+# Fase 3 — Búsqueda semántica, recomendador, generador, clasificador
+# ──────────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/search/semantic",
+    summary="Búsqueda semántica en catálogo (RAG)",
+    description="Público. Busca en ai_embeddings por similitud. Query 2-200 chars.",
+)
+def semantic_search(
+    q: str,
+    db: Annotated[Session, Depends(get_db)],
+    k: int = 10,
+) -> dict:
+    """Búsqueda semántica: query → top-k fragmentos similares."""
+    from app.schemas.ai import SemanticSearchResponse, SourceItem as AISourceItem
+
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=422, detail="Query debe tener al menos 2 caracteres")
+    if len(q) > 200:
+        raise HTTPException(status_code=422, detail="Query no puede exceder 200 caracteres")
+    if k < 1 or k > 20:
+        raise HTTPException(status_code=422, detail="k debe estar entre 1 y 20")
+
+    results = ai_service.semantic_search(db, q.strip(), k=k)
+    items = [
+        AISourceItem(content=emb.content, metadata=emb.extra_metadata, score=float(score))
+        for emb, score in results
+    ]
+    return SemanticSearchResponse(query=q.strip(), results=items, total=len(items)).model_dump()
+
+
+@router.get(
+    "/recommend",
+    summary="Recomendar productos similares",
+    description="Público. Recomienda productos similares a product_id (solo productos activos).",
+)
+def recommend(
+    product_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    k: int = 5,
+) -> dict:
+    """Recomienda productos similares a product_id."""
+    from app.schemas.ai import RecommendResponse, SourceItem as AISourceItem
+
+    if k < 1 or k > 10:
+        raise HTTPException(status_code=422, detail="k debe estar entre 1 y 10")
+
+    # Validar UUID
+    import uuid as _uuid
+
+    try:
+        _uuid.UUID(product_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="product_id debe ser un UUID válido")
+
+    results = ai_service.recommend_similar(db, product_id, k=k)
+    items = [
+        AISourceItem(content=emb.content, metadata=emb.extra_metadata, score=float(score))
+        for emb, score in results
+    ]
+    return RecommendResponse(
+        product_id=product_id, recommendations=items, total=len(items)
+    ).model_dump()
+
+
+@router.post(
+    "/generate-description",
+    summary="Generar descripción de producto con IA (solo jefe)",
+    description="Solo jefe/admin. Genera descripción vía LLM con tono y longitud configurables.",
+)
+def generate_description(
+    body: dict,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
+    """Genera descripción para producto vía LLM."""
+    from app.dependencies import _require_admin_or_jefe
+    from app.schemas.ai import GenerateDescriptionRequest, GenerateDescriptionResponse
+
+    try:
+        _require_admin_or_jefe(current_user)
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de jefe o administrador",
+        )
+
+    # Validar con schema
+    try:
+        req = GenerateDescriptionRequest(**body)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    try:
+        desc = ai_service.generate_product_description(
+            db, req.product_id, tone=req.tone or "profesional", max_length=req.max_length or 200
+        )
+        return GenerateDescriptionResponse(
+            product_id=req.product_id, generated_description=desc, model=settings.AI_MODEL
+        ).model_dump()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando descripción: {str(e)}")
+
+
+@router.post(
+    "/classify-incidence",
+    summary="Clasificar incidencia con IA",
+    description="Autenticado. Clasifica texto de incidencia en categoría y sugiere código de defecto.",
+)
+def classify_incidence(
+    body: dict,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
+    """Clasifica incidencia vía LLM o reglas."""
+    from app.schemas.ai import ClassifyIncidenceRequest, ClassifyIncidenceResponse
+
+    # Validar con schema
+    try:
+        req = ClassifyIncidenceRequest(**body)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    try:
+        result = ai_service.classify_incidence(req.text)
+        return ClassifyIncidenceResponse(**result).model_dump()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clasificando incidencia: {str(e)}")
