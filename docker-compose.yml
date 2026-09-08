@@ -192,6 +192,25 @@ services:
     networks:
       - calzado_jyr_net
 
+  # ──────────────────────────────────────────────────────────
+  # 🤖 ollama — LLM local opcional (Fase 4, dev, $0 sin internet)
+  # ¿Qué?    Llama 3.2 3B local para IA sin Groq/Gemini.
+  # ¿Para?   Probar IA offline en dev. Requiere 8GB RAM.
+  # ¿Cómo?   docker compose --profile ollama up -d
+  #          En .env: AI_PROVIDER=ollama
+  # ──────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: calzado_jyr_ollama
+    restart: unless-stopped
+    profiles: ["ollama"]
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - calzado_jyr_net
+
 # ──────────────────────────────────────────────────────────
 # 🔗 Red interna privada
 # ¿Qué?    Red virtual bridge exclusiva para este proyecto.
@@ -213,3 +232,4 @@ networks:
 # ──────────────────────────────────────────────────────────
 volumes:
   calzado_jyr_data:
+  ollama_data:

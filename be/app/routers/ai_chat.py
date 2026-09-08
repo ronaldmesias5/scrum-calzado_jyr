@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.dependencies import get_current_user, get_db
+from app.logging_config import ai_logger
 from app.models.user import User
 from app.schemas.ai import ChatRequest, ChatResponse, HealthResponse, ReindexResponse, SourceItem
 from app.services import ai_service
@@ -127,9 +128,21 @@ def chat(
     """Chat RAG: busca contexto en ai_embeddings y llama a LLM (con contexto por rol si hay JWT)."""
     _check_rate_limit(request)
 
+    # Fase 4: log estructurado
+    try:
+        ai_logger.info(
+            "ai_chat request | ip=%s | user=%s | msg_len=%d",
+            request.client.host if request.client else "unknown",
+            str(current_user.id) if current_user else "anon",
+            len(body.message),
+        )
+    except Exception:
+        pass
+
     try:
         result = ai_service.chat(db, body.message, k=5, user=current_user)
     except Exception as e:
+        ai_logger.error("ai_chat error | %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error del asistente: {str(e)}",
