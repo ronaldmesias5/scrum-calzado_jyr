@@ -75,6 +75,9 @@ from app.models.product_supplies import ProductSupply  # noqa: F401
 # Reportes compartidos
 from app.models.report_share import ReportShare  # noqa: F401
 
+# IA — RAG embeddings (Fase 0, pgvector)
+from app.models.ai_embedding import AIEmbedding  # noqa: F401
+
 config = context.config
 
 if config.config_file_name is not None:

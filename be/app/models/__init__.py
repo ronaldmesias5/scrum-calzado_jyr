@@ -49,6 +49,9 @@ from app.models.scrap import DefectCode, LossRecord, ScrapStock
 # Incidencias pendientes de aprobación (depende de User, Task, Product, DefectCode, LossRecord)
 from app.models.pending_incidence import PendingProductIncidence
 
+# IA — RAG embeddings (Fase 0, pgvector)
+from app.models.ai_embedding import AIEmbedding
+
 __all__ = [
     "Base",
     "Brand",
@@ -75,4 +78,5 @@ __all__ = [
     "LossRecord",
     "ScrapStock",
     "PendingProductIncidence",
+    "AIEmbedding",
 ]

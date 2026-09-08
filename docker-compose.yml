@@ -24,7 +24,7 @@ services:
   #           "connection refused" al arrancar).
   # ──────────────────────────────────────────────────────────
   db:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: calzado_jyr_db
     restart: unless-stopped
 
