@@ -25,6 +25,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- PostgreSQL Text Search / Full-Text Search: Para búsquedas de productos
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- IA — pgvector: búsqueda semántica para asistente (Fase 0)
+-- Requiere imagen pgvector/pgvector:pg17 (ver docker-compose.yml)
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- ============================================================================
 -- PASO 2: Configuraciones de la Base de Datos
 -- ============================================================================

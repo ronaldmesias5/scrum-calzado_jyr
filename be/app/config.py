@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # ────────────────────────────
     DATABASE_URL: str = Field(
         ...,
-        description="URL de conexión PostgreSQL (formato: postgresql://user:pass@host:port/dbname)"
+        description="URL de conexión PostgreSQL (formato: postgresql://user:pass@host:port/dbname)",
     )
 
     # ────────────────────────────
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # ────────────────────────────
     SECRET_KEY: str = Field(
         ...,
-        description="Clave secreta para firmar JWT tokens (generar con: python -c \"import secrets; print(secrets.token_urlsafe(48))\")"
+        description='Clave secreta para firmar JWT tokens (generar con: python -c "import secrets; print(secrets.token_urlsafe(48))")',
     )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -36,18 +36,11 @@ class Settings(BaseSettings):
     # 📧 Email
     # ────────────────────────────
     MAIL_SERVER: str = Field(
-        ...,
-        description="Servidor SMTP para enviar emails (ej: smtp.gmail.com)"
+        ..., description="Servidor SMTP para enviar emails (ej: smtp.gmail.com)"
     )
     MAIL_PORT: int = 587
-    MAIL_USERNAME: str = Field(
-        ...,
-        description="Usuario/email SMTP"
-    )
-    MAIL_PASSWORD: str = Field(
-        ...,
-        description="Contraseña o app password SMTP"
-    )
+    MAIL_USERNAME: str = Field(..., description="Usuario/email SMTP")
+    MAIL_PASSWORD: str = Field(..., description="Contraseña o app password SMTP")
     MAIL_FROM: str = "noreply@calzadojyr.com"
     MAIL_FROM_NAME: str = "CALZADO J&R"
 
@@ -55,10 +48,9 @@ class Settings(BaseSettings):
     # 🌐 URLs (REQUERIDAS para CORS)
     # ────────────────────────────
     FRONTEND_URL: str = Field(
-        ...,
-        description="URL del frontend para configurar CORS (ej: http://localhost:5173)"
+        ..., description="URL del frontend para configurar CORS (ej: http://localhost:5173)"
     )
-    
+
     # ────────────────────────────
     # 🏢 Ambiente
     # ────────────────────────────
@@ -69,7 +61,35 @@ class Settings(BaseSettings):
     # ────────────────────────────
     UPLOAD_DIR: str = Field(
         default="",
-        description="Directorio para archivos subidos (vacío = be/uploads junto al código)"
+        description="Directorio para archivos subidos (vacío = be/uploads junto al código)",
+    )
+
+    # ────────────────────────────
+    # 🤖 IA — Asistente (Fase 0, pgvector + LLM agnóstico)
+    # ────────────────────────────
+    AI_PROVIDER: str = Field(
+        default="groq",
+        description="Proveedor LLM: groq | gemini | ollama | openai",
+    )
+    AI_API_KEY: str = Field(
+        default="",
+        description="API key del proveedor LLM (vacío = IA deshabilitada hasta Fase 1)",
+    )
+    AI_MODEL: str = Field(
+        default="llama-3.3-70b-versatile",
+        description="Modelo LLM (ej: llama-3.3-70b-versatile, gemini-2.0-flash)",
+    )
+    AI_EMBEDDING_MODEL: str = Field(
+        default="nomic-embed-text",
+        description="Modelo de embeddings local ($0, 768 dims)",
+    )
+    AI_MAX_TOKENS: int = Field(
+        default=512,
+        description="Máx tokens por respuesta del LLM",
+    )
+    AI_EMBEDDING_DIM: int = Field(
+        default=768,
+        description="Dimensión del vector de embeddings (debe coincidir con ai_embeddings.embedding)",
     )
 
     @field_validator("DATABASE_URL")
@@ -93,7 +113,7 @@ class Settings(BaseSettings):
         if v in placeholder_keys or len(v) < 32:
             raise ValueError(
                 "SECRET_KEY inválida. Debe cambiar el valor en .env y tener al menos 32 caracteres. "
-                "Generar con: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+                'Generar con: python -c "import secrets; print(secrets.token_urlsafe(48))"'
             )
         return v
 
@@ -105,6 +125,23 @@ class Settings(BaseSettings):
             raise ValueError(
                 "FRONTEND_URL inválida. Formato: http://localhost:5173 o https://ejemplo.com"
             )
+        return v
+
+    @field_validator("AI_PROVIDER")
+    @classmethod
+    def validate_ai_provider(cls, v: str) -> str:
+        """Validar que AI_PROVIDER es un proveedor soportado."""
+        allowed = {"groq", "gemini", "ollama", "openai", "disabled"}
+        if v not in allowed:
+            raise ValueError(f"AI_PROVIDER inválido. Permitidos: {', '.join(sorted(allowed))}")
+        return v
+
+    @field_validator("AI_EMBEDDING_DIM")
+    @classmethod
+    def validate_ai_embedding_dim(cls, v: int) -> int:
+        """Validar dimensión de embeddings."""
+        if v not in (384, 768, 1024, 1536):
+            raise ValueError("AI_EMBEDDING_DIM inválido. Permitidos: 384, 768, 1024, 1536")
         return v
 
     model_config = SettingsConfigDict(

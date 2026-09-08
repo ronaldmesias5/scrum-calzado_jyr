@@ -58,6 +58,13 @@ dependencies = [
     
     # 📧 Email
     "aiosmtplib>=3.0.0",
+
+    # 🤖 IA — RAG + LLM (Fase 0, pgvector)
+    "pgvector>=0.3.0",
+    "openai>=1.0.0",
+    "groq>=0.11.0",
+    "google-generativeai>=0.8.0",
+    "tiktoken>=0.7.0",
 ]
 
 [project.optional-dependencies]
