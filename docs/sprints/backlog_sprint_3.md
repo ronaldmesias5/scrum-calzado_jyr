@@ -24,8 +24,8 @@ Los usuarios cuya cuenta ha sido desactivada pueden solicitar su reactivación. 
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/modules/auth/router.py:201-267` | `POST /auth/request-reactivation` — usuario desactivado envía solicitud con motivo. Verifica que el email exista y la cuenta esté inactiva. Crea ticket de reactivación. |
-| `be/app/modules/admin/router.py:577-680` | Gestión de tickets de reactivación: `GET /admin/reactivation-tickets` lista tickets pendientes, `PATCH .../approve` aprueba, `PATCH .../reject` rechaza con motivo. |
+| `be/app/routers/auth.py:201-267` | `POST /auth/request-reactivation` — usuario desactivado envía solicitud con motivo. Verifica que el email exista y la cuenta esté inactiva. Crea ticket de reactivación. |
+| `be/app/routers/admin.py:577-680` | Gestión de tickets de reactivación: `GET /admin/reactivation-tickets` lista tickets pendientes, `PATCH .../approve` aprueba, `PATCH .../reject` rechaza con motivo. |
 | `be/app/models/reactivation_ticket.py` | Modelo `ReactivationTicket`: `id`, `user_id` (FK), `reason` (texto), `status` (pending/approved/rejected), `admin_id` (nullable), `admin_note` (nullable), `created_at`, `resolved_at` |
 | `be/app/utils/email.py` | `send_reactivation_approved_email()`, `send_reactivation_rejected_email()` — notificaciones de resultado |
 
@@ -70,10 +70,10 @@ Sistema centralizado de notificaciones para todos los roles del sistema. Soporta
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/modules/notifications/router.py` | Endpoints REST: `GET /notifications`, `GET /unread-count`, `PATCH /{id}/read`, `PATCH /read-all`, `DELETE /{id}` |
-| `be/app/modules/notifications/service.py` | Capa de servicio: `create_notification()`, `get_user_notifications()`, `mark_as_read()`, `dismiss_notification()`, `get_unread_count()` |
-| `be/app/modules/notifications/ws_manager.py` | Gestor de conexiones WebSocket: `connect()`, `disconnect()`, `broadcast_to_user()` |
-| `be/app/modules/notifications/schemas.py` | `NotificationResponse`, `NotificationCreate`, `UnreadCountResponse` |
+| `be/app/routers/notifications.py` | Endpoints REST: `GET /notifications`, `GET /unread-count`, `PATCH /{id}/read`, `PATCH /read-all`, `DELETE /{id}` |
+| `be/app/services/notifications.py` | Capa de servicio: `create_notification()`, `get_user_notifications()`, `mark_as_read()`, `dismiss_notification()`, `get_unread_count()` |
+| `be/app/utils/ws_manager.py` | Gestor de conexiones WebSocket: `connect()`, `disconnect()`, `broadcast_to_user()` |
+| `be/app/schemas/notifications.py` | `NotificationResponse`, `NotificationCreate`, `UnreadCountResponse` |
 | `be/app/models/notification.py` | Modelo `Notification`: `id`, `user_id` (FK), `title`, `message`, `type` (info/warning/success/error), `is_read` (default False), `related_entity_type`, `related_entity_id`, `created_at` |
 
 ### Endpoints REST
@@ -93,7 +93,7 @@ Sistema centralizado de notificaciones para todos los roles del sistema. Soporta
   - `unread_count`: actualización del contador de no leídas
 - **Mecanismo**: `ws_manager.py` mantiene un diccionario `{user_id: [WebSocket connections]}`. El service llama `ws_manager.broadcast_to_user()` después de crear una notificación.
 
-### Service Layer (`be/app/modules/notifications/service.py`)
+### Service Layer (`be/app/services/notifications.py`)
 ```python
 def create_notification(db, user_id, title, message, type="info", related_entity_type=None, related_entity_id=None):
     # Crea Notification en BD
@@ -137,7 +137,7 @@ def get_unread_count(db, user_id):
 
 ## Cambios Técnicos
 
-- **Nuevo módulo**: `be/app/modules/notifications/` con router, service, ws_manager, schemas
+- **Nuevo módulo**: `be/app/routers/notifications.py`, `be/app/services/notifications.py`, `be/app/utils/ws_manager.py`, `be/app/schemas/notifications.py`
 - **Nuevo modelo**: `Notification` en `be/app/models/notification.py` con migración Alembic
 - **WebSocket**: Implementación con `ws_manager.py` para conexiones en tiempo real
 - **Nuevo modelo**: `ReactivationTicket` en `be/app/models/reactivation_ticket.py` con migración

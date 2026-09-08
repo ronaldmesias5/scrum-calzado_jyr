@@ -81,9 +81,9 @@ El jefe/admin puede modificar el estado y la asignación de las tareas, pero fal
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/modules/dashboard_empleado/router.py` | +2 endpoints (observación, incidencias) |
-| `be/app/modules/orders/router.py` | Endpoints PATCH status y PATCH assign existentes |
-| `be/app/modules/dashboard_empleado/schemas.py` | Schemas: `TaskObservationUpdate`, `EmployeeIncidenceSchema` |
+| `be/app/routers/dashboard_empleado.py` | +2 endpoints (observación, incidencias) |
+| `be/app/routers/orders_tasks.py` | Endpoints PATCH status y PATCH assign existentes |
+| `be/app/schemas/dashboard_empleado.py` | Schemas: `TaskObservationUpdate`, `EmployeeIncidenceSchema` |
 | `be/app/models/incidence.py` | Modelo `Incidence` con campos de incidencia |
 | `fe/src/pages/employee/IncidencesPage.tsx` | Lista de incidencias con filtro de estado |
 | `fe/src/pages/employee/TasksPage.tsx` | Vista de tareas con observación y estado |

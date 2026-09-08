@@ -28,7 +28,7 @@
 
 ### Detalle de Implementación
 
-**Función `_trigger_notifications()`** en `be/app/modules/orders/router.py` (líneas 284-385):
+**Función `_trigger_notifications()`** en `be/app/routers/orders.py` (líneas 284-385):
 
 ```
 Fase 1 (síncrona, misma transacción):
@@ -55,9 +55,9 @@ _trigger_notifications(
 
 ### Archivos Clave Modificados
 
-- `be/app/modules/orders/router.py` — `_trigger_notifications()` (líneas 284-385), llamado desde `create_order()` (línea 448)
-- `be/app/modules/notifications/service.py` — `create_notification()`, `get_jefes()`
-- `be/app/modules/notifications/ws_manager.py` — `ws_manager.broadcast_to_user()`
+- `be/app/routers/orders.py` — `_trigger_notifications()` (líneas 284-385), llamado desde `create_order()` (línea 448)
+- `be/app/services/notifications.py` — `create_notification()`, `get_jefes()`
+- `be/app/utils/ws_manager.py` — `ws_manager.broadcast_to_user()`
 - `be/app/models/notifications.py` — Modelo `Notification` con tipos (`NotificationType`)
 - `be/app/utils/email.py` — `send_order_notification_email()`, `send_order_confirmation_email()`
 
@@ -101,8 +101,8 @@ Transiciones:
 
 ### Archivos Clave Modificados
 
-- `be/app/modules/orders/router.py` — `update_order_status()` (líneas 462-620)
-- `be/app/modules/orders/schemas.py` — `OrderUpdateStatusRequest`
+- `be/app/routers/orders.py` — `update_order_status()` (líneas 462-620)
+- `be/app/schemas/orders.py` — `OrderUpdateStatusRequest`
 - `be/app/models/order.py` — `OrderStatus` enum con valores: `pendiente`, `en_progreso`, `completado`, `entregado`, `cancelado`
 - `be/app/models/inventory.py` — Campo `reserved` en modelo Inventory
 - `be/app/models/inventory_movement.py` — `InventoryMovementType` enum (`entrada`, `salida`)

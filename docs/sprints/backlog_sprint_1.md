@@ -17,7 +17,7 @@
 
 ## HU-001: Creación de Cuentas (13 SP)
 
-**Endpoint:** `POST /api/v1/auth/register` (`be/app/modules/auth/router.py:53`)
+**Endpoint:** `POST /api/v1/auth/register` (`be/app/routers/auth.py:53`)
 
 ### Descripción
 Registro de nuevos usuarios (clientes) en el sistema. El usuario proporciona nombre, correo electrónico, contraseña y tipo de documento. La cuenta se crea en estado inactivo (`is_active=False`, `is_validated=False`) y se envía un correo de validación.
@@ -26,12 +26,12 @@ Registro de nuevos usuarios (clientes) en el sistema. El usuario proporciona nom
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/modules/auth/router.py:53-81` | Endpoint `POST /register`. Recibe `RegisterRequest`, valida email único, hashea contraseña, crea `User` con rol `cliente` (id=3). Devuelve `UserResponse` con código 201. |
-| `be/app/modules/auth/schemas.py` | `RegisterRequest` (name_user, last_name, id_type, id_number, email, password, phone, address), `UserResponse` (id, email, name_user, last_name, role, is_active, is_validated, avatar_url, created_at) |
-| `be/app/modules/users/service.py` | `create_user()` — lógica de negocio: validación de email duplicado, creación del usuario en BD |
+| `be/app/routers/auth.py:53-81` | Endpoint `POST /register`. Recibe `RegisterRequest`, valida email único, hashea contraseña, crea `User` con rol `cliente` (id=3). Devuelve `UserResponse` con código 201. |
+| `be/app/schemas/auth.py` | `RegisterRequest` (name_user, last_name, id_type, id_number, email, password, phone, address), `UserResponse` (id, email, name_user, last_name, role, is_active, is_validated, avatar_url, created_at) |
+| `be/app/services/auth.py` | `create_user()` — lógica de negocio: validación de email duplicado, creación del usuario en BD |
 | `be/app/models/user.py` | Modelo `User`: `is_active` (default False), `is_validated` (default False), `session_version` (default 0), `must_change_password` (default False) |
 | `be/app/utils/email.py` | `send_validation_email()` — envía correo con enlace de validación (en desarrollo: imprime en consola; en producción: SMTP real con aiosmtplib) |
-| `be/app/modules/auth/security.py` | `hash_password()` — bcrypt con `passlib.context.CryptContext` |
+| `be/app/utils/security.py` | `hash_password()` — bcrypt con `passlib.context.CryptContext` |
 | `be/alembic/versions/` | Migraciones iniciales que crean tabla `users` con todos los campos necesarios |
 
 ### Endpoints relacionados
@@ -56,7 +56,7 @@ Registro de nuevos usuarios (clientes) en el sistema. El usuario proporciona nom
 
 ## HU-003: Inicio de Sesión (8 SP)
 
-**Endpoint:** `POST /api/v1/auth/login` (`be/app/modules/auth/router.py:85-104`)
+**Endpoint:** `POST /api/v1/auth/login` (`be/app/routers/auth.py:85-104`)
 
 ### Descripción
 Autenticación de usuarios mediante JWT con access y refresh tokens almacenados en cookies HttpOnly. Soporta renovación de tokens y cierre de sesión. Incluye control de versión de sesión para invalidación remota.
@@ -65,10 +65,10 @@ Autenticación de usuarios mediante JWT con access y refresh tokens almacenados 
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/modules/auth/router.py:85-104` | `POST /login` — valida credenciales, verifica `is_active`, actualiza `last_login`, genera tokens, setea cookies HttpOnly |
-| `be/app/modules/auth/router.py:107-129` | `POST /refresh` — refresca access token usando refresh token válido |
-| `be/app/modules/auth/router.py:131-138` | `POST /logout` — limpia cookies, NO invalida tokens (se espera expiración natural) |
-| `be/app/modules/auth/security.py` | `create_access_token()`, `create_refresh_token()`, `verify_password()`, `decode_token()` — JWT con HS256, expiración configurable vía `.env` |
+| `be/app/routers/auth.py:85-104` | `POST /login` — valida credenciales, verifica `is_active`, actualiza `last_login`, genera tokens, setea cookies HttpOnly |
+| `be/app/routers/auth.py:107-129` | `POST /refresh` — refresca access token usando refresh token válido |
+| `be/app/routers/auth.py:131-138` | `POST /logout` — limpia cookies, NO invalida tokens (se espera expiración natural) |
+| `be/app/utils/security.py` | `create_access_token()`, `create_refresh_token()`, `verify_password()`, `decode_token()` — JWT con HS256, expiración configurable vía `.env` |
 | `be/app/core/dependencies.py` | `get_current_user()` — dependencia FastAPI que decodifica token JWT de la cookie `access_token`, verifica `session_version` del usuario contra la del token |
 | `be/app/models/user.py` | `session_version: int` — se incrementa al cambiar contraseña o invalidar sesiones manualmente |
 
@@ -113,7 +113,7 @@ Autenticación de usuarios mediante JWT con access y refresh tokens almacenados 
 
 ## Cambios Técnicos
 
-- **Arquitectura**: Se crearon los módulos `auth/` y `users/` dentro de `be/app/modules/`, cada uno con `router.py`, `service.py` (sin controller/repository aún — patrón 4-capas incompleto)
+- **Arquitectura**: Se crearon los módulos `auth/` y `users/` dentro de `be/app/routers/`, cada uno con `router.py`, `service.py` (sin controller/repository aún — patrón 4-capas incompleto)
 - **Seguridad**: Configuración inicial de JWT, bcrypt, cookies HttpOnly, rate limiting básico
 - **Modelos**: Tabla `users` con campos `is_active`, `is_validated`, `session_version`, `must_change_password`
 - **Frontend**: Store de autenticación con Zustand, sistema de redirección por rol, interceptores Axios para refresh automático

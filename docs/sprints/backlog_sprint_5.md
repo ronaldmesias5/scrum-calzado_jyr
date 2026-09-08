@@ -40,8 +40,8 @@
 
 ### Archivos Clave Modificados
 
-- `be/app/modules/admin/catalog_router.py` — Endpoints CRUD de marcas y estilos (líneas 51-465)
-- `be/app/modules/admin/catalog_schemas.py` — Schemas `BrandCreateRequest`, `BrandResponse`, `StyleCreateRequest`, `StyleResponse`
+- `be/app/routers/catalog_brands.py` y `be/app/routers/catalog_styles.py` — Endpoints CRUD de marcas y estilos (líneas 51-465)
+- `be/app/schemas/catalog_admin.py` — Schemas `BrandCreateRequest`, `BrandResponse`, `StyleCreateRequest`, `StyleResponse`
 - `be/app/models/brand.py` — Modelo `Brand` con `deleted_at` para soft-delete
 - `be/app/models/style.py` — Modelo `Style` con `deleted_at` para soft-delete
 - `fe/src/pages/admin/CatalogPage.tsx` — Interfaz de gestión de marcas y estilos
@@ -76,13 +76,13 @@
 
 ### Archivos Clave Modificados
 
-- `be/app/modules/catalog/router.py` — 7 endpoints públicos del catálogo (294 líneas total)
-- `be/app/modules/catalog/schemas.py` — Schemas de respuesta: `CategoriesListResponse`, `StylesListResponse`, `StyleInventoryResponse`, `BrandsListResponse`, `ProductsListResponse`, `ProductDetailResponse`
+- `be/app/routers/catalog.py` — 7 endpoints públicos del catálogo (294 líneas total)
+- `be/app/schemas/catalog.py` — Schemas de respuesta: `CategoriesListResponse`, `StylesListResponse`, `StyleInventoryResponse`, `BrandsListResponse`, `ProductsListResponse`, `ProductDetailResponse`
 - `fe/src/pages/public/CatalogPage.tsx` — Página pública del catálogo en el módulo landing
 
 ## Cambios Técnicos
 
-- Se creó el módulo `be/app/modules/catalog/` con router público y schemas
+- Se creó el módulo `be/app/routers/catalog.py` con router público y schemas
 - Los endpoints admin de marcas/estilos usan `_require_admin_or_jefe` para autorización
 - Soft-delete implementado con columna `deleted_at` en modelos `Brand` y `Style`
 - Los endpoints públicos filtran por `deleted_at == None` y `state == True` (productos)

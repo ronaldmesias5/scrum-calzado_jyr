@@ -29,7 +29,7 @@
 
 ### Detalles de Implementación
 
-**Flujo de actualización automática** en `be/app/modules/orders/router.py` (líneas 1193-1260):
+**Flujo de actualización automática** en `be/app/routers/orders.py` (líneas 1193-1260):
 
 ```
 1. Tarea de tipo "emplantillado" cambia a estado "completado"
@@ -57,7 +57,7 @@
 
 ### Archivos Clave Modificados
 
-- `be/app/modules/orders/router.py` — Auto-inventario en emplantillado (líneas 1193-1260), completado desde bodega (líneas 736-753), entregado (líneas 535-564)
+- `be/app/routers/orders.py` — Auto-inventario en emplantillado (líneas 1193-1260), completado desde bodega (líneas 736-753), entregado (líneas 535-564)
 - `be/app/models/inventory.py` — Modelo Inventory con campos `amount`, `reserved`
 - `be/app/models/inventory_movement.py` — Modelo InventoryMovement
 - `be/app/models/order.py` — Modelo OrderDetail con campo `state` y `line_group`
@@ -110,8 +110,8 @@ def get_global_sales(
 
 ### Archivos Clave
 
-- `be/app/modules/admin/reports_router.py` — `get_global_sales()` (líneas 816-859)
-- `be/app/modules/admin/reports_schemas.py` — `SalesGlobalReport`, `SalesWeeklyMetric`
+- `be/app/routers/reports.py` — `get_global_sales()` (líneas 816-859)
+- `be/app/schemas/reports.py` — `SalesGlobalReport`, `SalesWeeklyMetric`
 - `fe/src/pages/admin/ReportsPage.tsx` — Interfaz de reportes con métricas de ventas
 
 ## Cambios Técnicos

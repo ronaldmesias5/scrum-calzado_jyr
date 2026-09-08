@@ -37,7 +37,7 @@
 
 ### Implementación
 
-**Backend — `be/app/modules/client/router.py`:**
+**Backend — `be/app/routers/client.py`:**
 
 - `GET /orders` (líneas 53-76):
   - Consulta `Order` con `selectinload(Order.details).selectinload(OrderDetail.product).selectinload(Product.inventory)` para eager loading completo
@@ -72,7 +72,7 @@
 - Loading spinner mientras carga
 - Estado vacío cuando no hay pedidos
 
-**Esquemas (`be/app/modules/client/schemas.py`):**
+**Esquemas (`be/app/schemas/client.py`):**
 - `ClientOrderListResponse`: `total` (int) + `items` (list[ClientOrderResponse])
 - `ClientOrderResponse`: id, customer_id, total_pairs, state, creation_date, delivery_date, created_at, updated_at, details (list[ClientOrderDetailItem])
 - `ClientOrderDetailItem`: id, product_id, product_name, style_name, category_name, brand_name, image_url, size, colour, amount, state
@@ -109,7 +109,7 @@
 
 ### Implementación Actual (Parcial)
 
-**Backend — `be/app/modules/dashboard_empleado/router.py`:**
+**Backend — `be/app/routers/dashboard_empleado_incidences.py`:**
 
 - `GET /incidences` (líneas 208-258):
   - Join de `Incidence` con `Task` para filtrar por `task.assigned_to == current_user.id`
@@ -160,9 +160,9 @@
 ## Cambios Técnicos
 
 **Archivos creados/modificados en el backend:**
-- `be/app/modules/client/router.py` — Nuevo router con 2 endpoints (99 líneas)
-- `be/app/modules/client/schemas.py` — Schemas de cliente: `ClientOrderListResponse`, `ClientOrderResponse`, `ClientOrderDetailItem`
-- `be/app/modules/dashboard_empleado/router.py` — Endpoint `GET /incidences` (líneas 208-258)
+- `be/app/routers/client.py` — Nuevo router con 2 endpoints (99 líneas)
+- `be/app/schemas/client.py` — Schemas de cliente: `ClientOrderListResponse`, `ClientOrderResponse`, `ClientOrderDetailItem`
+- `be/app/routers/dashboard_empleado_incidences.py` — Endpoint `GET /incidences` (líneas 208-258)
 
 **Archivos creados/modificados en el frontend:**
 - `fe/src/pages/client/OrdersPage.tsx` — Nueva página (232 líneas)
