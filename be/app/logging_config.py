@@ -16,36 +16,33 @@ from pathlib import Path
 
 def configure_logging():
     """Configura y retorna loggers para la aplicación."""
-    
+
     # Crear directorio de logs
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
-    
+
     # ────────────────────────────
     # 1. Logger de AUDITORÍA (eventos de seguridad)
     # ────────────────────────────
     audit_logger = logging.getLogger("audit")
     audit_logger.setLevel(logging.INFO)
-    
+
     audit_handler = logging.handlers.RotatingFileHandler(
         logs_dir / "audit.log",
         maxBytes=10 * 1024 * 1024,  # 10MB
         backupCount=10,  # Mantener 10 backups
     )
     audit_handler.setFormatter(
-        logging.Formatter(
-            '%(asctime)s | %(levelname)s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
+        logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     )
     audit_logger.addHandler(audit_handler)
-    
+
     # ────────────────────────────
     # 2. Logger de ERRORES (stack traces, excepciones)
     # ────────────────────────────
     error_logger = logging.getLogger("error")
     error_logger.setLevel(logging.ERROR)
-    
+
     error_handler = logging.handlers.RotatingFileHandler(
         logs_dir / "error.log",
         maxBytes=10 * 1024 * 1024,  # 10MB
@@ -53,43 +50,54 @@ def configure_logging():
     )
     error_handler.setFormatter(
         logging.Formatter(
-            '%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            "%(asctime)s | %(levelname)s | %(name)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
     )
     error_logger.addHandler(error_handler)
-    
+
     # También enviar a consola en desarrollo
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.ERROR)
-    console_handler.setFormatter(
-        logging.Formatter('%(levelname)s: %(message)s')
-    )
+    console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
     error_logger.addHandler(console_handler)
-    
+
     # ────────────────────────────
     # 3. Logger general (info, debug)
     # ────────────────────────────
     app_logger = logging.getLogger("app")
     app_logger.setLevel(logging.INFO)
-    
+
     app_handler = logging.handlers.RotatingFileHandler(
         logs_dir / "app.log",
         maxBytes=10 * 1024 * 1024,  # 10MB
         backupCount=5,
     )
     app_handler.setFormatter(
-        logging.Formatter(
-            '%(asctime)s | %(levelname)s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
+        logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     )
     app_logger.addHandler(app_handler)
-    
+
+    # ────────────────────────────
+    # 4. Logger IA (Fase 4, asistente)
+    # ────────────────────────────
+    ai_logger = logging.getLogger("ai")
+    ai_logger.setLevel(logging.INFO)
+
+    ai_handler = logging.handlers.RotatingFileHandler(
+        logs_dir / "ai.log",
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,
+    )
+    ai_handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    )
+    ai_logger.addHandler(ai_handler)
+
     return {
         "audit": audit_logger,
         "error": error_logger,
         "app": app_logger,
+        "ai": ai_logger,
     }
 
 
@@ -99,3 +107,4 @@ _loggers = configure_logging()
 audit_logger = _loggers["audit"]
 error_logger = _loggers["error"]
 app_logger = _loggers["app"]
+ai_logger = _loggers["ai"]

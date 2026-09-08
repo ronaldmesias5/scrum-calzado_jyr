@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 logger = logging.getLogger(__name__)
+ai_logger = logging.getLogger("ai")
 
 # ──────────────────────────────────────────────────────────────
 # System prompt
@@ -397,6 +398,19 @@ def chat(
                     "metadata": meta,
                 }
             )
+
+    # Fase 4: logging estructurado
+    try:
+        ai_logger.info(
+            "ai_chat | user=%s | role=%s | q_len=%d | ctx=%d | answer_len=%d",
+            str(user.id) if user else "anon",
+            getattr(getattr(user, "role", None), "name_role", None) if user else "anon",
+            len(message),
+            len(contexts),
+            len(answer),
+        )
+    except Exception:
+        pass
 
     return {
         "answer": answer,
