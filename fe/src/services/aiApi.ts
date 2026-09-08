@@ -1,22 +1,22 @@
 /**
  * Archivo: fe/src/services/aiApi.ts
- * Descripción: Cliente HTTP para asistente IA (Fase 1, RAG).
+ * Descripción: Cliente HTTP para asistente IA (Fase 1 RAG + Fase 2 contexto por rol).
  *
  * ¿Qué?
- *   - postChat(message): POST /api/v1/ai/chat (público, 500 chars, rate limit 10/min)
+ *   - postChat(message): POST /api/v1/ai/chat (público, 500 chars, rate limit 10/min, JWT opcional para contexto por rol)
  *   - getHealth(): GET /api/v1/ai/health
  *   - reindexEmbeddings(): POST /api/v1/ai/embeddings/reindex (solo jefe)
  *
  * ¿Para qué?
- *   - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2).
+ *   - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2, con JWT auto vía axios interceptor).
  *   - Health para monitoreo.
  *   - Reindex para que el jefe actualice RAG tras crear productos.
  *
  * ¿Impacto?
- *   Fase 1 — sin este servicio no hay chat. Si falla:
+ *   Fase 1/2 — sin este servicio no hay chat. Si falla:
  *   - ChatWidget → error de red.
  *   Modificar firmas rompe: useChat.ts, ChatWidget.tsx.
- *   Dependencias: services/axios.ts, services/config.ts
+ *   Dependencias: services/axios.ts (inyecta Authorization Bearer si hay token), services/config.ts
  */
 
 import api from '@/services/axios';

@@ -6,6 +6,7 @@ import { BadgeCountsProvider } from '@/store/BadgeCountsContext';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { Breadcrumbs } from '@/components/atoms/Breadcrumbs';
 import PageTransition from '@/components/atoms/PageTransition';
+import ChatWidget from '@/features/ai/components/organisms/ChatWidget';
 
 const LS_KEY = 'admin_sidebar_width';
 const MIN_WIDTH = 72;
@@ -93,6 +94,7 @@ export default function AdminLayout() {
             <DashboardFooter className="shrink-0 border-t border-gray-100 dark:border-slate-800/50" />
           </main>
         </div>
+        <ChatWidget />
       </div>
     </BadgeCountsProvider>
   );

@@ -1,22 +1,22 @@
 """
 Archivo: be/app/routers/ai_chat.py
-Descripción: Router FastAPI para asistente IA (Fase 1, RAG).
+Descripción: Router FastAPI para asistente IA (Fase 1 RAG + Fase 2 contexto por rol).
 
 ¿Qué?
-  - POST /api/v1/ai/chat (público, rate limit 10/min por IP, validación 500 chars, anti injection)
+  - POST /api/v1/ai/chat (público, rate limit 10/min por IP, validación 500 chars, anti injection, JWT opcional para contexto por rol)
   - GET  /api/v1/ai/health (público, estado del servicio)
   - POST /api/v1/ai/embeddings/reindex (solo jefe/admin, reindexa catálogo + FAQs)
 
 ¿Para qué?
-  - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2).
+  - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2, con JWT).
   - Health para monitoreo y CI.
   - Reindex para que el jefe actualice RAG tras crear productos.
 
 ¿Impacto?
-  Fase 1 — sin este router no hay chatbot. Si falla:
+  Fase 1/2 — sin este router no hay chatbot. Si falla:
   - ChatWidget → 404 o 500.
   Modificar prefix rompe: aiApi.ts, useChat.ts, tests.
-  Dependencias: schemas/ai.py, services/ai_service.py, dependencies.py, config.py
+  Dependencias: schemas/ai.py, services/ai_service.py, services/ai_tools.py, dependencies.py, config.py
 """
 
 import time
@@ -24,6 +24,8 @@ from collections import defaultdict
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -31,6 +33,7 @@ from app.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.ai import ChatRequest, ChatResponse, HealthResponse, ReindexResponse, SourceItem
 from app.services import ai_service
+from app.utils.security import decode_token
 
 router = APIRouter(
     prefix="/api/v1/ai",
@@ -68,7 +71,40 @@ def _clear_rate_limit_for_tests() -> None:
 
 
 # ──────────────────────────────────────────────────────────────
-# POST /chat — público
+# JWT opcional para Fase 2 (no rompe Fase 1 público)
+# ──────────────────────────────────────────────────────────────
+
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+def _get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_optional_bearer)],
+    db: Annotated[Session, Depends(get_db)],
+) -> User | None:
+    """Extrae usuario si hay JWT válido, None si no hay token o es inválido (no lanza 401)."""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+        if not payload or payload.get("type") != "access":
+            return None
+        email: str | None = payload.get("sub")
+        if not email:
+            return None
+        stmt = select(User).where(User.email == email)
+        user = db.execute(stmt).scalar_one_or_none()
+        if not user or not user.is_active:
+            return None
+        token_version = payload.get("version")
+        if token_version is not None and token_version != user.session_version:
+            return None
+        return user
+    except Exception:
+        return None
+
+
+# ──────────────────────────────────────────────────────────────
+# POST /chat — público (Fase 1) + JWT opcional (Fase 2)
 # ──────────────────────────────────────────────────────────────
 
 
@@ -76,18 +112,19 @@ def _clear_rate_limit_for_tests() -> None:
     "/chat",
     response_model=ChatResponse,
     summary="Chat con asistente IA (RAG)",
-    description="Público. Valida 500 chars, anti prompt-injection, rate limit 10/min por IP.",
+    description="Público. Valida 500 chars, anti prompt-injection, rate limit 10/min por IP. Si envías JWT, añade contexto por rol (pedidos/tareas).",
 )
 def chat(
     body: ChatRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User | None, Depends(_get_optional_user)] = None,
 ) -> ChatResponse:
-    """Chat RAG: busca contexto en ai_embeddings y llama a LLM."""
+    """Chat RAG: busca contexto en ai_embeddings y llama a LLM (con contexto por rol si hay JWT)."""
     _check_rate_limit(request)
 
     try:
-        result = ai_service.chat(db, body.message, k=5)
+        result = ai_service.chat(db, body.message, k=5, user=current_user)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

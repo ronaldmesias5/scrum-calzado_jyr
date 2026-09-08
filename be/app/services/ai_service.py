@@ -1,26 +1,26 @@
 """
 Archivo: be/app/services/ai_service.py
-Descripción: Servicio RAG + LLM agnóstico para asistente IA (Fase 1).
+Descripción: Servicio RAG + LLM agnóstico para asistente IA (Fase 1 + Fase 2).
 
 ¿Qué?
   - get_embedding(text): genera vector 768 dims (hash determinístico, $0, sin API).
     Reemplazable por nomic-embed-text/Ollama sin cambiar interfaz.
   - search_similar(db, query, k=5): busca top-k en ai_embeddings por distancia coseno.
-  - build_prompt(query, contexts): arma mensajes para LLM con system_prompt + contexto.
+  - build_prompt(query, contexts, user_context): arma mensajes para LLM con system_prompt + contexto RAG + contexto por rol.
   - call_llm(messages): llama a Groq/Gemini/Ollama/OpenAI según AI_PROVIDER, con fallback mock.
-  - chat(db, message): orquesta RAG completo → ChatResponse.
+  - chat(db, message, k, user): orquesta RAG completo → ChatResponse (Fase 2: con user para tools).
 
 ¿Para qué?
-  - RAG del ChatWidget en LandingPage (Fase 1, público, sin auth).
-  - Base para Fase 2 (tools con JWT) y Fase 3 (búsqueda semántica).
+  - RAG del ChatWidget en LandingPage (Fase 1, público, sin auth) y layouts autenticados (Fase 2, con JWT).
+  - Base para Fase 3 (búsqueda semántica).
 
 ¿Impacto?
-  Fase 1 — sin este servicio no hay chatbot. Si falla:
+  Fase 1/2 — sin este servicio no hay chatbot. Si falla:
   - POST /api/ai/chat → 500 o alucina sin contexto.
   Modificar get_embedding dim rompe: ai_embeddings.embedding, seed script, migración 048.
   Modificar call_llm rompe: ai_chat.py, tests con mock.
-  Dependencias: config.py (AI_*), models/ai_embedding.py, prompts/system_prompt.txt,
-               pgvector, openai, groq, google-generativeai (opcionales)
+  Dependencias: config.py (AI_*), models/ai_embedding.py, models/user.py, services/ai_tools.py,
+               prompts/system_prompt.txt, pgvector, openai, groq, google-generativeai (opcionales)
 """
 
 import hashlib
@@ -28,13 +28,16 @@ import logging
 import math
 import re
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.ai_embedding import AIEmbedding
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -185,9 +188,14 @@ def search_similar(db: Session, query: str, k: int = 5) -> list[tuple[AIEmbeddin
 # ──────────────────────────────────────────────────────────────
 
 
-def build_prompt(query: str, contexts: list[tuple[AIEmbedding, float]]) -> list[dict[str, str]]:
+def build_prompt(
+    query: str,
+    contexts: list[tuple[AIEmbedding, float]],
+    user_context: str | None = None,
+) -> list[dict[str, str]]:
     """
-    Arma mensajes para LLM: system + contexto RAG + user query.
+    Arma mensajes para LLM: system + contexto RAG + contexto por rol + user query.
+    Fase 2: user_context viene de ai_tools.format_tool_context (con JWT).
     """
     system = _load_system_prompt()
 
@@ -197,6 +205,9 @@ def build_prompt(query: str, contexts: list[tuple[AIEmbedding, float]]) -> list[
             for i, (emb, _score) in enumerate(contexts)
         )
         system += f"\n\nContexto del catálogo y FAQs (usa solo esto):\n{context_text}"
+
+    if user_context:
+        system += f"\n\nContexto del usuario y datos relevantes:\n{user_context}"
 
     return [
         {"role": "system", "content": system},
@@ -335,13 +346,30 @@ def call_llm(
 # ──────────────────────────────────────────────────────────────
 
 
-def chat(db: Session, message: str, k: int = 5) -> dict[str, Any]:
+def chat(
+    db: Session,
+    message: str,
+    k: int = 5,
+    user: "User | None" = None,
+) -> dict[str, Any]:
     """
-    Orquesta RAG completo: search → build_prompt → call_llm → respuesta.
+    Orquesta RAG completo: search → build_prompt (con user_context) → call_llm → respuesta.
+    Fase 2: si `user` viene (JWT válido), añade contexto por rol vía ai_tools.format_tool_context.
     Retorna dict con answer, sources, suggested_products.
     """
     contexts = search_similar(db, message, k=k)
-    messages = build_prompt(message, contexts)
+
+    # Fase 2: contexto por rol (pedidos/tareas/productos) si hay usuario autenticado
+    user_context: str | None = None
+    if user is not None:
+        try:
+            from app.services.ai_tools import format_tool_context
+
+            user_context = format_tool_context(user, db, message)
+        except Exception as e:
+            logger.warning(f"[ai] format_tool_context falló: {e}")
+
+    messages = build_prompt(message, contexts, user_context=user_context)
     answer = call_llm(messages, contexts)
 
     sources = [

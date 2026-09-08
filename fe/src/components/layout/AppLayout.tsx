@@ -26,6 +26,7 @@ import { LogOut, User } from 'lucide-react';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { ThemeToggle } from '@/components/atoms/ThemeToggle';
 import { LanguageSwitcher } from '@/components/atoms/LanguageSwitcher';
+import ChatWidget from '@/features/ai/components/organisms/ChatWidget';
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -80,6 +81,7 @@ export function AppLayout() {
 
       {/* Footer */}
       <DashboardFooter />
+      <ChatWidget />
     </div>
   );
 }
