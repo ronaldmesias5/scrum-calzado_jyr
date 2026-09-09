@@ -6,6 +6,8 @@ Descripción: Tools con JWT para asistente IA (Fase 2, contexto por rol).
   - buscar_productos(db, query, limit=5): búsqueda por texto en products + brands/styles.
   - consultar_mis_pedidos(db, user_id, limit=5): pedidos del cliente autenticado.
   - consultar_mis_tareas(db, user_id, limit=5): tareas asignadas al empleado.
+  - consultar_inventario(db, query, limit=5): consulta stock de productos (solo jefe).
+  - consultar_mis_incidencias(db, user_id, limit=5): incidencias del empleado/cliente.
   - get_user_context(user): contexto de rol/ocupación para prompt.
   - format_tool_context(user, db, query): orquesta tools según query y rol.
 
@@ -35,22 +37,66 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_context(user: User | None) -> str:
-    """Retorna descripción de rol/ocupación para el prompt."""
+    """Retorna descripción de rol/ocupación para el prompt, con instrucciones de navegación por rol."""
     if not user:
-        return "Usuario: visitante no autenticado (sin acceso a pedidos/tareas privadas)."
+        return (
+            "Usuario: visitante no autenticado (sin acceso a pedidos/tareas privadas). "
+            "Para hacer pedidos debe registrarse en la landing (RF-001). "
+            "Puede ver catálogo público en /catalog sin registrarse. "
+            "INSTRUCCIÓN: Si pregunta cómo hacer un pedido, dile que se registre en la landing como mayorista. "
+            "El jefe validará su cuenta y tendrá acceso al catálogo mayorista para pedidos."
+        )
 
     role_name = user.role.name_role if hasattr(user, "role") and user.role else "sin rol"
     occupation = user.occupation or "sin ocupación"
     name = f"{user.name_user} {user.last_name}".strip()
 
     if role_name == "client":
-        return f"Usuario: cliente autenticado, nombre {name}, email {user.email}, rol client."
-    elif role_name == "employee":
-        return f"Usuario: empleado autenticado, nombre {name}, email {user.email}, ocupación {occupation}, rol employee."
+        return (
+            f"Usuario: cliente autenticado, nombre {name}, email {user.email}, rol client. "
+            f"INSTRUCCIÓN: Este usuario YA está autenticado como cliente. NO le digas que inicie sesión. "
+            f"Si pregunta cómo hacer un pedido, dile que vaya a Dashboard Cliente > Catálogo Mayorista, "
+            f"elija productos por talla/cantidad (mín 12 pares por estilo/talla) y confirme. "
+            f"Sus pedidos están en Dashboard Cliente > Mis Pedidos (solo lectura, no puede editar ni cancelar). "
+            f"Si reporta una incidencia, dile que vaya a Dashboard Cliente > Mis Incidencias > Reportar. "
+            f"Si consulta reportes, dile que vaya a Dashboard Cliente > Reportes."
+        )
     elif role_name == "admin" or occupation == "jefe":
-        return f"Usuario: jefe/admin autenticado, nombre {name}, email {user.email}, ocupación {occupation}, rol {role_name}."
+        return (
+            f"Usuario: jefe/admin autenticado, nombre {name}, email {user.email}, ocupación {occupation}, rol {role_name}. "
+            f"INSTRUCCIÓN: Este usuario YA está autenticado como jefe. NO le digas que inicie sesión. "
+            f"Si pregunta cómo hacer un pedido, dile que vaya a Dashboard Jefe > Pedidos > Nuevo Pedido, "
+            f"seleccione cliente (o vacío para Stock), añada productos por talla/cantidad (mín 12 pares por estilo/talla), "
+            f"confirme y luego asigne tareas en Dashboard Jefe > Tareas. "
+            f"Él crea pedidos para clientes o para stock. "
+            f"Gestiona catálogo en Dashboard Jefe > Catálogo, inventario en Dashboard Jefe > Inventario, "
+            f"empleados en Dashboard Jefe > Empleados, clientes en Dashboard Jefe > Clientes, "
+            f"usuarios en Dashboard Jefe > Usuarios, pérdidas en Dashboard Jefe > Pérdidas, "
+            f"reportes en Dashboard Jefe > Reportes, alertas en Dashboard Jefe > Alertas, "
+            f"insumos en Dashboard Jefe > Insumos y configuración en Dashboard Jefe > Configuración."
+        )
+    elif role_name == "employee":
+        return (
+            f"Usuario: empleado autenticado, nombre {name}, email {user.email}, ocupación {occupation}, rol employee. "
+            f"INSTRUCCIÓN: Este usuario es empleado ({occupation}), NO crea pedidos. NO le digas que inicie sesión. "
+            f"Si pregunta cómo hacer un pedido, explícale que los pedidos los crean el jefe o los clientes. "
+            f"Él solo ejecuta tareas en Dashboard Empleado > Mis Tareas. "
+            f"Como {occupation}, solo puede ver y reclamar tareas de {
+                'corte' if occupation == 'cortador'
+                else 'guarnición (costura)' if occupation == 'guarnecedor'
+                else 'soladura (pegado de suelas)' if occupation == 'solador'
+                else 'emplantillado (acabado)' if occupation == 'emplantillador'
+                else 'su etapa'
+            }. "
+            f"Tareas disponibles en Dashboard Empleado > Tareas Disponibles. "
+            f"Incidencias en Dashboard Empleado > Incidencias. "
+            f"Reportes de rendimiento en Dashboard Empleado > Reportes."
+        )
     else:
-        return f"Usuario: autenticado, nombre {name}, email {user.email}, rol {role_name}, ocupación {occupation}."
+        return (
+            f"Usuario: autenticado, nombre {name}, email {user.email}, rol {role_name}, ocupación {occupation}. "
+            f"INSTRUCCIÓN: NO le digas que inicie sesión."
+        )
 
 
 def buscar_productos(db: Session, query: str, limit: int = 5) -> list[dict[str, Any]]:
@@ -172,11 +218,110 @@ def consultar_mis_tareas(db: Session, user_id: UUID, limit: int = 5) -> list[dic
         return []
 
 
+def consultar_inventario(
+    db: Session, query: str, limit: int = 5
+) -> list[dict[str, Any]]:
+    """
+    Consulta inventario de productos (solo jefe/admin).
+    Busca por nombre de producto y retorna stock por talla.
+    """
+    if not query.strip():
+        return []
+
+    try:
+        from app.models.inventory import Inventory
+
+        pattern = f"%{query.strip()}%"
+        stmt = (
+            select(Product)
+            .where(
+                (Product.deleted_at.is_(None))
+                & (
+                    (Product.name_product.ilike(pattern))
+                    | (Product.color.ilike(pattern))
+                )
+            )
+            .limit(limit)
+        )
+        products = db.execute(stmt).scalars().all()
+
+        results: list[dict[str, Any]] = []
+        for p in products:
+            inv_stmt = select(Inventory).where(Inventory.product_id == p.id)
+            inventories = db.execute(inv_stmt).scalars().all()
+            stock_by_size = [
+                {
+                    "size": inv.size,
+                    "colour": inv.colour,
+                    "amount": inv.amount,
+                    "reserved": inv.reserved,
+                }
+                for inv in inventories
+            ]
+            brand_name = p.brand.name_brand if hasattr(p, "brand") and p.brand else "Sin marca"
+            results.append(
+                {
+                    "product_id": str(p.id),
+                    "name": p.name_product,
+                    "brand": brand_name,
+                    "color": p.color,
+                    "state": "disponible" if p.state else "no disponible",
+                    "stock": stock_by_size,
+                }
+            )
+        return results
+    except Exception as e:
+        logger.warning(f"[ai_tools] consultar_inventario falló: {e}")
+        return []
+
+
+def consultar_mis_incidencias(
+    db: Session, user_id: UUID, limit: int = 5
+) -> list[dict[str, Any]]:
+    """
+    Consulta incidencias del empleado o cliente autenticado.
+    Para empleados: incidencias de sus tareas.
+    Para clientes: incidencias de sus pedidos.
+    """
+    try:
+        from app.models.incidence import Incidence
+
+        stmt = (
+            select(Incidence)
+            .where(
+                (Incidence.reported_by == user_id)
+                & (Incidence.deleted_at.is_(None))
+            )
+            .order_by(Incidence.created_at.desc())
+            .limit(limit)
+        )
+        incidences = db.execute(stmt).scalars().all()
+
+        results: list[dict[str, Any]] = []
+        for inc in incidences:
+            results.append(
+                {
+                    "id": str(inc.id),
+                    "id_short": str(inc.id)[:8],
+                    "type": inc.type if hasattr(inc, "type") else "general",
+                    "state": inc.state if hasattr(inc, "state") else "pendiente",
+                    "description": (inc.description[:100] if hasattr(inc, "description") and inc.description else ""),
+                    "created_at": inc.created_at.isoformat() if hasattr(inc, "created_at") and inc.created_at else None,
+                }
+            )
+        return results
+    except Exception as e:
+        logger.warning(f"[ai_tools] consultar_mis_incidencias falló: {e}")
+        return []
+
+
 def format_tool_context(user: User | None, db: Session, query: str) -> str:
     """
     Orquesta tools según query y rol. Retorna texto para añadir al prompt.
     - Si query contiene "pedido" o "orden" y user es client/jefe → consulta pedidos.
     - Si query contiene "tarea" y user es employee/jefe → consulta tareas.
+    - Si query contiene "inventario" o "stock" y user es jefe → consulta inventario.
+    - Si query contiene "incidencia" y user es employee/client → consulta incidencias.
     - Si query parece búsqueda de producto → buscar_productos.
     Siempre incluye get_user_context.
     """
@@ -204,21 +349,46 @@ def format_tool_context(user: User | None, db: Session, query: str) -> str:
                 parts.append("No tienes pedidos registrados.")
 
     # Detectar intención de tareas
-    if any(kw in lowered for kw in ["tarea", "task", "vale", "producción", "produccion"]):
-        if (
-            user.occupation in ("jefe", "cortador", "guarnecedor", "solador", "emplantillador")
-            or (hasattr(user, "role") and user.role and user.role.name_role == "employee")
-            or user.occupation == "jefe"
-        ):
-            tareas = consultar_mis_tareas(db, user.id, limit=5)
-            if tareas:
-                tareas_text = "\n".join(
-                    f"- Tarea #{t['id_short']} tipo {t['type']} estado {t['status']} prioridad {t['priority']} {t['amount']} pares"
-                    for t in tareas
+    if any(kw in lowered for kw in ["tarea", "task", "vale", "producción", "produccion"]) and (
+        user.occupation in ("jefe", "cortador", "guarnecedor", "solador", "emplantillador")
+        or (hasattr(user, "role") and user.role and user.role.name_role == "employee")
+        or user.occupation == "jefe"
+    ):
+        tareas = consultar_mis_tareas(db, user.id, limit=5)
+        if tareas:
+            tareas_text = "\n".join(
+                f"- Tarea #{t['id_short']} tipo {t['type']} estado {t['status']} prioridad {t['priority']} {t['amount']} pares"
+                for t in tareas
+            )
+            parts.append(f"Tus tareas recientes:\n{tareas_text}")
+        else:
+            parts.append("No tienes tareas asignadas.")
+
+    # Detectar intención de inventario (solo jefe/admin)
+    if any(kw in lowered for kw in ["inventario", "stock", "bodega", "pares"]):
+        role_name = user.role.name_role if hasattr(user, "role") and user.role else ""
+        if user.occupation == "jefe" or role_name == "admin":
+            inventario = consultar_inventario(db, query, limit=3)
+            if inventario:
+                inv_text = "\n".join(
+                    f"- {p['name']} ({p['brand']} {p['color'] or 'varios'}): {len(p['stock'])} registros de stock"
+                    for p in inventario
                 )
-                parts.append(f"Tus tareas recientes:\n{tareas_text}")
+                parts.append(f"Inventario encontrado:\n{inv_text}")
+
+    # Detectar intención de incidencias
+    if any(kw in lowered for kw in ["incidencia", "problema", "defecto", "perdida"]):
+        role_name = user.role.name_role if hasattr(user, "role") and user.role else ""
+        if role_name in ("employee", "client"):
+            incidencias = consultar_mis_incidencias(db, user.id, limit=5)
+            if incidencias:
+                inc_text = "\n".join(
+                    f"- Incidencia #{i['id_short']} tipo {i['type']} estado {i['state']}"
+                    for i in incidencias
+                )
+                parts.append(f"Tus incidencias recientes:\n{inc_text}")
             else:
-                parts.append("No tienes tareas asignadas.")
+                parts.append("No tienes incidencias registradas.")
 
     # Búsqueda de productos si query parece producto (opcional, siempre útil)
     # Solo si no es pedido/tarea específico, para no saturar prompt

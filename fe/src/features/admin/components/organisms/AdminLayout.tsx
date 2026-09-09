@@ -94,7 +94,7 @@ export default function AdminLayout() {
             <DashboardFooter className="shrink-0 border-t border-gray-100 dark:border-slate-800/50" />
           </main>
         </div>
-        <ChatWidget />
+        <ChatWidget position="right" />
       </div>
     </BadgeCountsProvider>
   );

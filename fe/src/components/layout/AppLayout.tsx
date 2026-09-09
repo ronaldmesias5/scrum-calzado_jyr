@@ -81,7 +81,7 @@ export function AppLayout() {
 
       {/* Footer */}
       <DashboardFooter />
-      <ChatWidget />
+      <ChatWidget position="right" />
     </div>
   );
 }

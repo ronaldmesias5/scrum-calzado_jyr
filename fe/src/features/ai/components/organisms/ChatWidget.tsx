@@ -20,15 +20,39 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, Trash2, Bot, User } from 'lucide-react';
+import { X, Send, Trash2, Bot, User, Sparkles } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 
-export default function ChatWidget() {
+interface ChatWidgetProps {
+  position?: 'left' | 'right';
+}
+
+export default function ChatWidget({ position = 'left' }: ChatWidgetProps) {
+  const isRight = position === 'right';
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(() => {
+    try {
+      return localStorage.getItem('aguila_interacted') === '1';
+    } catch {
+      return false;
+    }
+  });
   const { messages, isLoading, sendMessage, clearMessages } = useChat();
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const markInteracted = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      try {
+        localStorage.setItem('aguila_interacted', '1');
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Auto-scroll al final
   useEffect(() => {
@@ -54,6 +78,28 @@ export default function ChatWidget() {
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen]);
 
+  // Tooltip: aparece 2s después de cargar, se oculta al abrir o tras 8s, no molesta si ya chateó
+  useEffect(() => {
+    if (isOpen || messages.length > 0 || hasInteracted) {
+      setShowTooltip(false);
+      return;
+    }
+    const showTimer = setTimeout(() => setShowTooltip(true), 2000);
+    const hideTimer = setTimeout(() => setShowTooltip(false), 10000);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
+  }, [isOpen, messages.length, hasInteracted]);
+
+  // Marcar interacción al abrir o enviar mensaje
+  useEffect(() => {
+    if (isOpen) markInteracted();
+  }, [isOpen]);
+  useEffect(() => {
+    if (messages.length > 0) markInteracted();
+  }, [messages.length]);
+
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
@@ -70,32 +116,101 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* FAB — abajo-izquierda, opuesto a WhatsApp (derecha) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        className="fixed bottom-6 left-6 z-40 w-14 h-14 bg-[#1e40af] hover:bg-[#1e3a8a] text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 flex items-center justify-center cursor-pointer transform hover:scale-110 active:scale-95"
-        aria-label={isOpen ? 'Cerrar asistente' : 'Abrir asistente Calzado J&R'}
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-      >
-        {isOpen ? <X className="w-7 h-7" aria-hidden="true" /> : <MessageCircle className="w-7 h-7" aria-hidden="true" />}
-      </button>
+      {/* FAB — Águila Robot — left en landing, right en dashboards */}
+      <div className={`fixed bottom-6 z-40 flex items-center gap-3 ${isRight ? 'right-6 flex-row-reverse' : 'left-6'}`}>
+        {/* Tooltip invitación */}
+        {showTooltip && !isOpen && (
+          <div
+            className={`bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 text-sm px-4 py-2.5 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-[220px] animate-in fade-in duration-500 ${isRight ? 'order-2 slide-in-from-right-2' : 'order-2 slide-in-from-left-2'}`}
+          >
+            <p className="font-semibold text-xs flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" aria-hidden="true" /> ¡Hola! Soy Águila J&R 🦅
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pregúntame por tallas, marcas o pedidos</p>
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="mt-2 text-xs font-medium text-[#1e40af] dark:text-blue-400 hover:underline"
+            >
+              Chatear ahora →
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTooltip(false);
+                markInteracted();
+              }}
+              className="absolute -top-1 -right-1 w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600"
+              aria-label="Cerrar invitación"
+            >
+              <X className="w-3 h-3" aria-hidden="true" />
+            </button>
+            {/* Flecha */}
+            <div
+              className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-gray-900 border-l border-b border-gray-200 dark:border-gray-700 rotate-45 ${isRight ? 'right-0 translate-x-1.5' : 'left-0 -translate-x-1.5'}`}
+            />
+          </div>
+        )}
+
+        {/* Label flotante "¿Necesitas ayuda?" — solo desktop, sin tooltip, sin interacción previa */}
+        {!isOpen && !showTooltip && !hasInteracted && (
+          <div
+            className={`hidden md:flex items-center gap-1.5 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs font-medium px-3 py-1.5 rounded-full shadow-md border border-gray-200 dark:border-gray-700 animate-in fade-in duration-500 ${isRight ? 'order-2' : 'order-2'}`}
+          >
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true" />
+            ¿Necesitas ayuda?
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsOpen((v) => !v)}
+          className={`order-1 relative w-14 h-14 bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#92400e] hover:from-[#1e3a8a] hover:to-[#78350f] text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 flex items-center justify-center cursor-pointer transform hover:scale-110 active:scale-95 ring-2 ring-white/20 ${!isOpen && !showTooltip && !hasInteracted ? 'animate-pulse' : ''}`}
+          aria-label={isOpen ? 'Cerrar asistente' : 'Abrir Águila J&R — Chat con IA'}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+        >
+          {isOpen ? (
+            <X className="w-7 h-7" aria-hidden="true" />
+          ) : (
+            <span className="relative flex items-center justify-center">
+              <Bot className="w-7 h-7" aria-hidden="true" />
+              <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-amber-300" aria-hidden="true" />
+              {/* Punto verde "en línea" */}
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" aria-hidden="true" />
+            </span>
+          )}
+          {/* Badge "1" primera vez — notificación */}
+          {!hasInteracted && !isOpen && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-gray-900 animate-bounce">
+              1
+            </span>
+          )}
+          {/* Badge "IA" después de interactuar */}
+          {hasInteracted && !isOpen && !showTooltip && (
+            <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-md pointer-events-none">
+              IA
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Panel */}
       {isOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Asistente Calzado J&R"
-          className="fixed bottom-24 left-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[70vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300"
+          aria-label="Águila J&R — Asistente Calzado J&R"
+          className={`fixed bottom-24 z-40 w-[380px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[70vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 ${isRight ? 'right-6' : 'left-6'}`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-[#1e40af] text-white shrink-0">
+          {/* Header — Águila J&R */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#1e40af] to-[#92400e] text-white shrink-0">
             <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5" aria-hidden="true" />
-              <span className="font-semibold text-sm">Asistente J&R</span>
-              <span className="text-xs opacity-80 hidden sm:inline">· Catálogo y FAQs</span>
+              <span className="relative flex items-center justify-center w-7 h-7 bg-white/20 rounded-full">
+                <Bot className="w-4 h-4" aria-hidden="true" />
+              </span>
+              <span className="font-semibold text-sm">Águila J&R</span>
+              <span className="text-xs opacity-80 hidden sm:inline">· Asistente IA</span>
             </div>
             <div className="flex items-center gap-1">
               {messages.length > 0 && (
@@ -124,8 +239,10 @@ export default function ChatWidget() {
           <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50 dark:bg-gray-800">
             {messages.length === 0 && (
               <div className="text-center py-8">
-                <Bot className="w-10 h-10 mx-auto text-gray-400 dark:text-gray-500 mb-3" aria-hidden="true" />
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">¡Hola! Soy el asistente de Calzado J&R</p>
+                <span className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-[#1e40af] to-[#92400e] mb-3">
+                  <Bot className="w-6 h-6 text-white" aria-hidden="true" />
+                </span>
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">¡Hola! Soy Águila J&R 🦅</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Pregúntame por productos, tallas, marcas o cómo ser cliente mayorista.</p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center">
                   {['¿Tienen botas talla 42?', '¿Cómo ser cliente mayorista?', '¿Qué marcas manejan?'].map((q) => (

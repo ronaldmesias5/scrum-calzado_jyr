@@ -105,23 +105,23 @@ export function ChatWidget() {
 
   return (
     <>
-      {/* FAB */}
+      {/* FAB — Águila Robot */}
       <Pressable
         onPress={() => setIsOpen((v) => !v)}
-        className="absolute bottom-6 left-6 w-14 h-14 bg-[#1e40af] rounded-full items-center justify-center shadow-lg"
-        accessibilityLabel={isOpen ? 'Cerrar asistente' : 'Abrir asistente Calzado J&R'}
+        className="absolute bottom-6 left-6 w-14 h-14 bg-[#1e40af] rounded-full items-center justify-center shadow-lg border-2 border-white/20"
+        accessibilityLabel={isOpen ? 'Cerrar asistente' : 'Abrir Águila J&R'}
         accessibilityRole="button"
       >
-        <Text className="text-white text-xl">{isOpen ? '✕' : '💬'}</Text>
+        <Text className="text-white text-xl">{isOpen ? '✕' : '🦅'}</Text>
       </Pressable>
 
       {/* Modal */}
       <Modal visible={isOpen} transparent animationType="slide" onRequestClose={() => setIsOpen(false)}>
         <View className="flex-1 bg-black/40 justify-end">
           <View className="bg-white dark:bg-slate-900 rounded-t-2xl h-[70%] overflow-hidden">
-            {/* Header */}
+            {/* Header — Águila J&R */}
             <View className="flex-row items-center justify-between px-4 py-3 bg-[#1e40af]">
-              <Text className="text-white font-semibold text-sm">Asistente J&R · Catálogo y FAQs</Text>
+              <Text className="text-white font-semibold text-sm">🦅 Águila J&R · Asistente IA</Text>
               <View className="flex-row gap-2">
                 {messages.length > 0 && (
                   <Pressable onPress={() => setMessages([])} className="p-2">
@@ -138,9 +138,9 @@ export function ChatWidget() {
             <ScrollView ref={scrollRef} className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800" contentContainerStyle={{ gap: 12 }}>
               {messages.length === 0 && (
                 <View className="items-center py-8">
-                  <Text className="text-2xl mb-2">🤖</Text>
+                  <Text className="text-2xl mb-2">�</Text>
                   <Text className="text-sm text-gray-600 dark:text-gray-300 font-medium text-center">
-                    ¡Hola! Soy el asistente de Calzado J&R
+                    ¡Hola! Soy Águila J&R 🦅
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
                     Pregúntame por productos, tallas, marcas o cómo ser cliente mayorista.

@@ -127,6 +127,8 @@ services:
       # Montar el código fuente para hot-reload (solo en dev).
       # En producción el código se copia dentro de la imagen (stage prod).
       - ./be:/app
+      # IA — conocimiento para RAG (CONOCIMIENTO_SISTEMA_PARA_IA.md)
+      - ./docs:/app/docs:ro
 
     networks:
       - calzado_jyr_net
