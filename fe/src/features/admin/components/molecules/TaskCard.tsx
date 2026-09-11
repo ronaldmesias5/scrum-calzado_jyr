@@ -10,7 +10,8 @@ import {
   Loader2,
   UserPlus,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from 'lucide-react';
 import { ProductionTask } from '@/services/ordersApi';
 import { formatCOP } from '@/utils/format';
@@ -84,6 +85,8 @@ interface TaskCardProps {
   completable?: boolean;
   /** Callback cuando el empleado completa su tarea */
   onCompleteTask?: (taskId: string) => void;
+  /** Callback para editar detalles de la tarea (solo jefe) */
+  onEdit?: (task: ProductionTask) => void;
   /** ID de tarea en proceso de acción (para spinner) */
   actionLoadingId?: string | null;
 }
@@ -107,6 +110,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onClaim,
   completable,
   onCompleteTask,
+  onEdit,
   actionLoadingId
 }) => {
   const StageIcon = STAGE_ICONS[task.type] || Package;
@@ -188,6 +192,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 </span>
               )}
             </>
+          )}
+          {onEdit && isEditable && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+              className="p-1 rounded-md text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              title="Editar tarea"
+            >
+              <Pencil size={13} />
+            </button>
           )}
           {selectable && (
             <div

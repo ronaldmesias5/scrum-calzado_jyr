@@ -43,6 +43,7 @@ from app.models import (  # noqa: F401
 from app.routers.auth import router as auth_router
 from app.routers.bulk_import import router as bulk_import_router
 from app.routers.catalog_brands import router as catalog_brands_router
+from app.routers.catalog_categories import router as catalog_categories_router
 from app.routers.catalog_inventory import router as catalog_inventory_router
 from app.routers.catalog_products import router as catalog_products_router
 from app.routers.catalog import router as catalog_router
@@ -193,6 +194,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
 app.include_router(catalog_brands_router)
+app.include_router(catalog_categories_router)
 app.include_router(catalog_styles_router)
 app.include_router(catalog_products_router)
 app.include_router(catalog_inventory_router)

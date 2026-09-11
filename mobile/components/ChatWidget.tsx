@@ -81,7 +81,7 @@ export function ChatWidget() {
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: `⚠️ ${msg}. Intenta de nuevo o contáctanos por WhatsApp al 573001234567.`,
+        content: `⚠️ ${msg}. Intenta de nuevo o contáctanos por WhatsApp al 3137061602.`,
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, errorMsg]);

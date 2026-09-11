@@ -69,6 +69,7 @@ export interface InventoryItem {
   product_id: string;
   product_name: string;
   size: string;
+  colour?: string | null;
   quantity: number;
   created_at?: string;
 }
@@ -265,11 +266,13 @@ export const listInventory = async (
 export const createOrUpdateInventory = async (
   product_id: string,
   size: string,
-  quantity: number
+  quantity: number,
+  colour?: string | null
 ): Promise<InventoryItem> => {
   const res = await axios.post('/api/v1/admin/catalog/inventory', {
     product_id,
     size,
+    colour: colour || null,
     quantity
   });
   return res.data;

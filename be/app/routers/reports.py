@@ -16,6 +16,7 @@ from typing import List as TypingList
 
 from app.schemas.reports import (
     CategorySalesResponse,
+    CustomerMonthlyReportResponse,
     CustomerReportResponse,
     DashboardReportResponse,
     EmployeeReportResponse,
@@ -25,6 +26,7 @@ from app.schemas.reports import (
     ProductionGlobalReport,
     ProductionWeeklyMetric,
     SalesGlobalReport,
+    SalesMonthlyMetric,
     SalesWeeklyMetric,
     SendReportEmailRequest,
     ShareInternalRequest,
@@ -727,6 +729,72 @@ def get_customer_report(
         total_pairs=int(total_pairs),
         total_spent=float(total_spent),
         orders=orders_metric
+    )
+
+
+@router.get("/customer/{user_id}/monthly", response_model=CustomerMonthlyReportResponse)
+def get_customer_monthly_report(
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+):
+    """Obtiene el reporte de compras de un cliente agrupado por mes"""
+    _require_admin_or_jefe(current_user)
+
+    customer = db.query(User).filter(User.id == user_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    query = select(Order).where(Order.customer_id == user_id)
+
+    if start_date:
+        query = query.where(Order.created_at >= start_date)
+    if end_date:
+        query = query.where(Order.created_at <= end_date)
+
+    query = query.order_by(desc(Order.created_at))
+    orders = db.execute(query).scalars().all()
+
+    orders_metric = []
+    monthly_map: dict[str, dict] = {}
+
+    for o in orders:
+        summary = _build_order_summary(o)
+        if summary is not None:
+            orders_metric.append(summary)
+            month_key = o.created_at.strftime("%Y-%m")
+            if month_key not in monthly_map:
+                monthly_map[month_key] = {"orders": 0, "pairs": 0, "spent": 0.0}
+            monthly_map[month_key]["orders"] += 1
+            monthly_map[month_key]["pairs"] += summary.total_pairs
+            monthly_map[month_key]["spent"] += summary.total_price
+
+    monthly_metrics = sorted(
+        [
+            SalesMonthlyMetric(
+                month=month,
+                orders_created=data["orders"],
+                pairs_ordered=data["pairs"],
+                total_spent=round(data["spent"], 2),
+            )
+            for month, data in monthly_map.items()
+        ],
+        key=lambda x: x.month,
+    )
+
+    total_pairs = sum(o.total_pairs for o in orders_metric)
+    total_spent = sum(o.total_price for o in orders_metric)
+
+    return CustomerMonthlyReportResponse(
+        user_id=customer.id,
+        name=f"{customer.name_user} {customer.last_name}",
+        total_orders=len(orders_metric),
+        total_pairs=int(total_pairs),
+        total_spent=round(float(total_spent), 2),
+        monthly_metrics=monthly_metrics,
+        orders=orders_metric,
     )
 
 @router.get("/global/production", response_model=ProductionGlobalReport)

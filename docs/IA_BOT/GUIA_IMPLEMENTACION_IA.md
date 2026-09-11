@@ -128,7 +128,7 @@ git checkout -b feat/ai-chatbot
 ```
 
 **Primer prompt a usar en `be/app/services/prompts/system_prompt.txt`:**
-> Eres asistente Calzado J&R, experto calzado mayorista colombiano. Responde solo con info del catálogo y FAQs proporcionadas. Si no sabes, deriva a WhatsApp 573001234567. Nunca inventes tallas, precios o stock. Tono amable, conciso.
+> Eres asistente Calzado J&R, experto calzado mayorista colombiano. Responde solo con info del catálogo y FAQs proporcionadas. Si no sabes, deriva a WhatsApp 3137061602. Nunca inventes tallas, precios o stock. Tono amable, conciso.
 
 **Verificación MVP:** `uv run ruff check && uv run pytest tests/test_ai_chat.py -v` (mock LLM), `npx tsc -b && pnpm test` (ChatWidget), rate limit 11 req/min → 429, prompt injection rechazado.
 

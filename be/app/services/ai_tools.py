@@ -157,13 +157,16 @@ def consultar_mis_pedidos(db: Session, user_id: UUID, limit: int = 5) -> list[di
     Solo con JWT válido. Retorna lista de dicts con id, state, total_pairs, delivery_date.
     """
     try:
+        from sqlalchemy.orm import selectinload
+
         stmt = (
             select(Order)
             .where((Order.customer_id == user_id) & (Order.deleted_at.is_(None)))
+            .options(selectinload(Order.details))
             .order_by(Order.creation_date.desc())
             .limit(limit)
         )
-        orders = db.execute(stmt).scalars().all()
+        orders = db.execute(stmt).scalars().unique().all()
 
         results: list[dict[str, Any]] = []
         for o in orders:
@@ -280,35 +283,72 @@ def consultar_mis_incidencias(
 ) -> list[dict[str, Any]]:
     """
     Consulta incidencias del empleado o cliente autenticado.
-    Para empleados: incidencias de sus tareas.
-    Para clientes: incidencias de sus pedidos.
+    Para empleados: incidencias de sus tareas (Incidence → Task.assigned_to).
+    Para clientes: incidencias de producto (PendingProductIncidence → customer_id).
     """
     try:
         from app.models.incidence import Incidence
+        from app.models.pending_incidence import PendingProductIncidence
+        from app.models.tasks import Task
 
-        stmt = (
-            select(Incidence)
-            .where(
-                (Incidence.reported_by == user_id)
-                & (Incidence.deleted_at.is_(None))
-            )
-            .order_by(Incidence.created_at.desc())
-            .limit(limit)
-        )
-        incidences = db.execute(stmt).scalars().all()
+        # Determinar el rol del usuario
+        user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+        if not user:
+            return []
+
+        role_name = user.role.name_role if hasattr(user, "role") and user.role else ""
 
         results: list[dict[str, Any]] = []
-        for inc in incidences:
-            results.append(
-                {
-                    "id": str(inc.id),
-                    "id_short": str(inc.id)[:8],
-                    "type": inc.type if hasattr(inc, "type") else "general",
-                    "state": inc.state if hasattr(inc, "state") else "pendiente",
-                    "description": (inc.description[:100] if hasattr(inc, "description") and inc.description else ""),
-                    "created_at": inc.created_at.isoformat() if hasattr(inc, "created_at") and inc.created_at else None,
-                }
+
+        if role_name == "employee":
+            # Incidencias vinculadas a tareas del empleado
+            stmt = (
+                select(Incidence)
+                .join(Task, Incidence.task_id == Task.id)
+                .where(
+                    (Task.assigned_to == user_id)
+                    & (Incidence.deleted_at.is_(None))
+                )
+                .order_by(Incidence.created_at.desc())
+                .limit(limit)
             )
+            incidences = db.execute(stmt).scalars().all()
+            for inc in incidences:
+                results.append(
+                    {
+                        "id": str(inc.id),
+                        "id_short": str(inc.id)[:8],
+                        "type": inc.type_incidence,
+                        "state": inc.state,
+                        "description": (inc.description_incidence[:100] if inc.description_incidence else ""),
+                        "created_at": inc.created_at.isoformat() if inc.created_at else None,
+                    }
+                )
+
+        elif role_name == "client":
+            # Incidencias de producto reportadas por el cliente
+            stmt = (
+                select(PendingProductIncidence)
+                .where(
+                    (PendingProductIncidence.customer_id == user_id)
+                    & (PendingProductIncidence.deleted_at.is_(None))
+                )
+                .order_by(PendingProductIncidence.created_at.desc())
+                .limit(limit)
+            )
+            pendings = db.execute(stmt).scalars().all()
+            for p in pendings:
+                results.append(
+                    {
+                        "id": str(p.id),
+                        "id_short": str(p.id)[:8],
+                        "type": "producto",
+                        "state": p.status,
+                        "description": (p.description[:100] if p.description else ""),
+                        "created_at": p.created_at.isoformat() if p.created_at else None,
+                    }
+                )
+
         return results
     except Exception as e:
         logger.warning(f"[ai_tools] consultar_mis_incidencias falló: {e}")

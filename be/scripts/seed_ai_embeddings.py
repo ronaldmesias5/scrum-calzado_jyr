@@ -52,11 +52,11 @@ BASE_FAQS: list[dict] = [
         "metadata": {"source": "faq", "topic": "tallas", "roles": ["visitante", "cliente", "jefe"]},
     },
     {
-        "content": "¿Hacen envíos a todo Colombia? Sí, enviamos a Bogotá, Medellín, Cali, Barranquilla y todo el país. El tiempo de entrega depende del pedido y la producción. Contacta por WhatsApp 573001234567 para cotizar envío.",
+        "content": "¿Hacen envíos a todo Colombia? Sí, enviamos a Bogotá, Medellín, Cali, Barranquilla y todo el país. El tiempo de entrega depende del pedido y la producción. Contacta por WhatsApp 3137061602 para cotizar envío.",
         "metadata": {"source": "faq", "topic": "envios", "roles": ["visitante", "cliente"]},
     },
     {
-        "content": "¿Cómo contacto a Calzado J&R? WhatsApp: 573001234567. Email: jyrcalzado@gmail.com. Horario: lunes a sábado 8am-6pm. También puedes escribir al asistente aquí para dudas del catálogo.",
+        "content": "¿Cómo contacto a Calzado J&R? WhatsApp: 3137061602. Email: jyrcalzado@gmail.com. Horario: lunes a sábado 8am-6pm. También puedes escribir al asistente aquí para dudas del catálogo.",
         "metadata": {
             "source": "faq",
             "topic": "contacto",
@@ -76,7 +76,7 @@ BASE_FAQS: list[dict] = [
         },
     },
     {
-        "content": "¿Qué es el catálogo mayorista? Es el catálogo exclusivo para clientes validados con disponibilidad por talla (sin precio de venta en el sistema; la cotización es por WhatsApp 573001234567). Incluye productos combinando marcas, estilos y categorías. Solo clientes y jefe lo ven.",
+        "content": "¿Qué es el catálogo mayorista? Es el catálogo exclusivo para clientes validados con disponibilidad por talla (sin precio de venta en el sistema; la cotización es por WhatsApp 3137061602). Incluye productos combinando marcas, estilos y categorías. Solo clientes y jefe lo ven.",
         "metadata": {
             "source": "faq",
             "topic": "catalogo_mayorista",
@@ -112,7 +112,7 @@ ROLE_FAQS: list[dict] = [
         "metadata": {"source": "faq", "topic": "visitante_catalogo", "roles": ["visitante"]},
     },
     {
-        "content": "Visitante: ¿Cuánto cuesta un par de zapatos? El sistema no maneja precios de venta. La cotización se hace por WhatsApp al 573001234567. El asistente no puede darte precios; contacta directamente para cotizar.",
+        "content": "Visitante: ¿Cuánto cuesta un par de zapatos? El sistema no maneja precios de venta. La cotización se hace por WhatsApp al 3137061602. El asistente no puede darte precios; contacta directamente para cotizar.",
         "metadata": {"source": "faq", "topic": "visitante_precio", "roles": ["visitante"]},
     },
     # ── JEFE ──
@@ -133,7 +133,7 @@ ROLE_FAQS: list[dict] = [
         "metadata": {"source": "faq", "topic": "jefe_vale_etapas", "roles": ["jefe", "empleado"]},
     },
     {
-        "content": "Jefe: ¿Cómo gestionar catálogo? Dashboard Jefe > Catálogo: CRUD productos (crear, editar, eliminar, activar/desactivar), subir fotos, gestionar marcas, estilos y categorías, definir task_prices (pago a empleados en COP por docena por etapa: corte, guarnición, soladura, emplantillado, NO es precio de venta), umbral de alerta stock bajo, importación masiva por CSV. El sistema NO tiene precio de venta de productos; la cotización se hace por WhatsApp 573001234567.",
+        "content": "Jefe: ¿Cómo gestionar catálogo? Dashboard Jefe > Catálogo: CRUD productos (crear, editar, eliminar, activar/desactivar), subir fotos, gestionar marcas, estilos y categorías, definir task_prices (pago a empleados en COP por docena por etapa: corte, guarnición, soladura, emplantillado, NO es precio de venta), umbral de alerta stock bajo, importación masiva por CSV. El sistema NO tiene precio de venta de productos; la cotización se hace por WhatsApp 3137061602.",
         "metadata": {"source": "faq", "topic": "jefe_catalogo", "roles": ["jefe"]},
     },
     {
@@ -194,7 +194,7 @@ ROLE_FAQS: list[dict] = [
         "metadata": {"source": "faq", "topic": "cliente_reportes", "roles": ["cliente"]},
     },
     {
-        "content": "Cliente: ¿Cuánto cuesta un par de zapatos? El sistema no maneja precios de venta. La cotización se hace por WhatsApp al 573001234567. El asistente no puede darte precios; contacta directamente para cotizar.",
+        "content": "Cliente: ¿Cuánto cuesta un par de zapatos? El sistema no maneja precios de venta. La cotización se hace por WhatsApp al 3137061602. El asistente no puede darte precios; contacta directamente para cotizar.",
         "metadata": {"source": "faq", "topic": "cliente_precio", "roles": ["cliente"]},
     },
     # ── EMPLEADO ──
@@ -228,7 +228,7 @@ ROLE_FAQS: list[dict] = [
     },
     # ── REGLAS NEGOCIO ──
     {
-        "content": "Reglas de negocio: Estados del pedido pendiente → en_progreso → completado → entregado (+ cancelado). Pedido con cliente es venta: al terminar producción pares van a pares fabricados (reserved) y al entregar se descuentan. Pedido para stock sin cliente es para inventario: al terminar producción pares entran a stock en bodega (amount) y termina en completado, nunca a entregado. Vale número único global. 4 etapas en orden corte→guarnición→soladura→emplantillado. Completar desde bodega solo en pedidos con cliente. Incidencias siempre pendientes del jefe. Pérdidas aprobadas alimentan scrap. Task_prices es pago a empleados en COP por docena por etapa (corte, guarnición, soladura, emplantillado), NO es precio de venta; el sistema no tiene precio de venta, se cotiza por WhatsApp 573001234567. Liquidación por_liquidar→pagado. Mínimo 12 pares por estilo/talla.",
+        "content": "Reglas de negocio: Estados del pedido pendiente → en_progreso → completado → entregado (+ cancelado). Pedido con cliente es venta: al terminar producción pares van a pares fabricados (reserved) y al entregar se descuentan. Pedido para stock sin cliente es para inventario: al terminar producción pares entran a stock en bodega (amount) y termina en completado, nunca a entregado. Vale número único global. 4 etapas en orden corte→guarnición→soladura→emplantillado. Completar desde bodega solo en pedidos con cliente. Incidencias siempre pendientes del jefe. Pérdidas aprobadas alimentan scrap. Task_prices es pago a empleados en COP por docena por etapa (corte, guarnición, soladura, emplantillado), NO es precio de venta; el sistema no tiene precio de venta, se cotiza por WhatsApp 3137061602. Liquidación por_liquidar→pagado. Mínimo 12 pares por estilo/talla.",
         "metadata": {
             "source": "faq",
             "topic": "reglas_negocio",
@@ -236,7 +236,7 @@ ROLE_FAQS: list[dict] = [
         },
     },
     {
-        "content": "Glosario: Vale comprobante con número único. Pares fabricados (reserved) pendientes de entrega. Stock en bodega (amount) disponible. Pedido para stock sin cliente. Línea de pedido producto+talla+color+cantidad (line_group agrupa). Insumo material (cueros, suelas, hilos). Scrap pares defectuosos no vendibles. Pérdida registro administrativo. Incidencia pendiente esperando jefe. Task prices es pago a empleados en COP por docena por etapa (corte, guarnición, soladura, emplantillado), NO precio de venta. Talla 33-42, color ej NEGRO X BLANCO. El sistema no tiene precio de venta; cotización por WhatsApp 573001234567.",
+        "content": "Glosario: Vale comprobante con número único. Pares fabricados (reserved) pendientes de entrega. Stock en bodega (amount) disponible. Pedido para stock sin cliente. Línea de pedido producto+talla+color+cantidad (line_group agrupa). Insumo material (cueros, suelas, hilos). Scrap pares defectuosos no vendibles. Pérdida registro administrativo. Incidencia pendiente esperando jefe. Task prices es pago a empleados en COP por docena por etapa (corte, guarnición, soladura, emplantillado), NO precio de venta. Talla 33-42, color ej NEGRO X BLANCO. El sistema no tiene precio de venta; cotización por WhatsApp 3137061602.",
         "metadata": {
             "source": "faq",
             "topic": "glosario",

@@ -65,7 +65,7 @@ def _load_system_prompt() -> str:
     except FileNotFoundError:
         _SYSTEM_PROMPT_CACHE = (
             "Eres asistente de Calzado J&R, experto en calzado mayorista colombiano. "
-            "Responde solo con info del catálogo proporcionado. Si no sabes, deriva a WhatsApp 573001234567."
+            "Responde solo con info del catálogo proporcionado. Si no sabes, deriva a WhatsApp 3137061602."
         )
     return _SYSTEM_PROMPT_CACHE
 
@@ -307,13 +307,13 @@ def _mock_response(query: str, contexts: list[tuple[AIEmbedding, float]]) -> str
     if not contexts:
         return (
             "Gracias por tu consulta. Por el momento no tengo información específica sobre eso en el catálogo. "
-            "Te invito a contactarnos por WhatsApp al 573001234567 para atención personalizada."
+            "Te invito a contactarnos por WhatsApp al 3137061602 para atención personalizada."
         )
     # Respuesta basada en contexto recuperado
     top_content = contexts[0][0].content[:300]
     return (
         f"Basado en nuestro catálogo: {top_content}... "
-        f"Si necesitas más detalles, contáctanos por WhatsApp al 573001234567."
+        f"Si necesitas más detalles, contáctanos por WhatsApp al 3137061602."
     )
 
 

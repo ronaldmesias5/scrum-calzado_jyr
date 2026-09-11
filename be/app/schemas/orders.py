@@ -144,6 +144,13 @@ class TaskPriorityUpdateRequest(BaseModel):
             raise ValueError(f"Prioridad inválida: {v}. Permitidas: {', '.join(sorted(allowed))}")
         return v
 
+class TaskDetailUpdateRequest(BaseModel):
+    """Esquema para editar detalles de una tarea (solo jefe)."""
+    amount: int | None = Field(None, description="Cantidad de pares", gt=0)
+    description_task: str | None = Field(None, description="Descripción de la tarea")
+    deadline: datetime | None = Field(None, description="Fecha límite")
+    observation: str | None = Field(None, description="Observación")
+
 class ProductionTaskCreate(BaseModel):
     """Esquema para crear una tarea de producción vinculada a una orden."""
     product_id: UUID = Field(..., description="ID del producto especifico de este pedido")

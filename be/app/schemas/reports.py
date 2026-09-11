@@ -126,6 +126,21 @@ class SalesWeeklyMetric(BaseModel):
     orders_created: int
     pairs_ordered: int
 
+class SalesMonthlyMetric(BaseModel):
+    month: str
+    orders_created: int
+    pairs_ordered: int
+    total_spent: float = 0.0
+
+class CustomerMonthlyReportResponse(BaseModel):
+    user_id: UUID
+    name: str
+    total_orders: int
+    total_pairs: int
+    total_spent: float
+    monthly_metrics: List[SalesMonthlyMetric]
+    orders: List[OrderSummary]
+
 class SalesGlobalReport(BaseModel):
     total_orders_period: int
     total_pairs_period: int

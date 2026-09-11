@@ -69,6 +69,9 @@ const normalize = (str: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
+const isRealCategory = (name: string, globalStage?: string) =>
+  normalize(name) !== normalize(globalStage || '');
+
 // ─── Subcomponente: Modal Crear/Editar ──────────────────────
 interface SupplyFormModalProps {
   isOpen: boolean;
@@ -181,8 +184,8 @@ function SupplyFormModal({
         <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors">
           {/* Row 1: Etapa Global y Tipo */}
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+              <div className="space-y-4 min-w-0">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">
                     1. Etapa de Producción
@@ -195,9 +198,10 @@ function SupplyFormModal({
                           type="button"
                           onClick={() => {
                             setSelectedStage(stage.key);
-                            // @ts-ignore
                             const firstInStage = categories.find(
-                              (c) => c.global_stage === stage.key
+                              (c) =>
+                                c.global_stage === stage.key &&
+                                isRealCategory(c.name, c.global_stage)
                             );
                             setForm((p) => ({
                               ...p,
@@ -218,25 +222,26 @@ function SupplyFormModal({
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">
                     2. Tipo de Insumo (Categoría)
                   </label>
                   {categoryMode === 'select' ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 min-w-0">
                       <select
                         value={form.category}
                         onChange={(e) =>
                           setForm((p) => ({ ...p, category: e.target.value }))
                         }
-                        className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        className="flex-1 min-w-0 px-4 py-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                       >
                         {categories
                           .filter(
                             (c) =>
                               normalize(c.global_stage || 'otros') ===
-                              normalize(selectedStage)
+                                normalize(selectedStage) &&
+                              isRealCategory(c.name, c.global_stage)
                           )
                           .map((cat) => (
                             <option key={cat.name} value={cat.name}>
@@ -247,7 +252,8 @@ function SupplyFormModal({
                         {categories.filter(
                           (c) =>
                             normalize(c.global_stage || 'otros') ===
-                            normalize(selectedStage)
+                              normalize(selectedStage) &&
+                            isRealCategory(c.name, c.global_stage)
                         ).length === 0 && (
                           <option value="">No hay tipos en esta etapa</option>
                         )}
@@ -264,14 +270,14 @@ function SupplyFormModal({
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 min-w-0">
                       <input
                         value={form.category}
                         onChange={(e) =>
                           setForm((p) => ({ ...p, category: e.target.value }))
                         }
                         autoFocus
-                        className="flex-1 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-400 dark:border-blue-600 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        className="flex-1 min-w-0 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-400 dark:border-blue-600 text-gray-900 dark:text-white rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         placeholder="Escribe el nuevo tipo..."
                       />
                       <button
@@ -1024,7 +1030,8 @@ export default function InsumosPage() {
             .filter(
               (c) =>
                 normalize(c.global_stage || 'otros') ===
-                normalize(activeCategory)
+                  normalize(activeCategory) &&
+                isRealCategory(c.name, c.global_stage)
             )
             .map((cat) => (
               <button
