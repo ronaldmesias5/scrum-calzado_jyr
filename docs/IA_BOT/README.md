@@ -12,9 +12,6 @@
 | `knowledge.md` | **Fuente de verdad del RAG.** Flujos completos por rol (visitante, cliente, empleado por cargo, jefe), reglas de negocio, glosario, rutas exactas, límites y permisos. | `be/scripts/seed_ai_embeddings.py` lo lee, lo trocea en chunks <700 chars y lo indexa en `ai_embeddings` con `metadata.source=knowledge`. |
 | `README.md` | Este archivo. Explica la carpeta y cómo se implementó la IA. | Humanos (SENA, devs). |
 
-> **Nota:** Antes había 4 archivos (`CONOCIMIENTO_SISTEMA_PARA_IA.md`, `FUNCIONALIDADES_POR_ROL.md`, `GUIA_IMPLEMENTACION_IA.md`, `PLAN_FASES_IA.md`). Se consolidó en `knowledge.md` como única fuente RAG para simplificar. La guía por rol y el plan de fases viven ahora en `knowledge.md` y en este README.
-
----
 
 ## Cómo se implementó la IA
 
