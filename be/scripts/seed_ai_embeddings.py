@@ -267,14 +267,15 @@ ROLE_FAQS: list[dict] = [
 
 
 def _load_knowledge_fragments() -> list[dict]:
-    """Lee CONOCIMIENTO_SISTEMA_PARA_IA.md y lo trocea por secciones y sub-secciones."""
+    """Lee knowledge.md (antes CONOCIMIENTO_SISTEMA_PARA_IA.md) y lo trocea por secciones y sub-secciones."""
     fragments: list[dict] = []
-    # Buscar archivo en varias ubicaciones
+    # Buscar archivo en varias ubicaciones (knowledge.md es el nombre actual, el largo es legacy)
     candidates = [
+        Path(__file__).parent.parent.parent / "docs" / "IA_BOT" / "knowledge.md",
+        Path(__file__).parent.parent / "docs" / "IA_BOT" / "knowledge.md",
+        Path("docs/IA_BOT/knowledge.md"),
         Path(__file__).parent.parent.parent / "docs" / "IA_BOT" / "CONOCIMIENTO_SISTEMA_PARA_IA.md",
-        Path(__file__).parent.parent / "docs" / "IA_BOT" / "CONOCIMIENTO_SISTEMA_PARA_IA.md",
         Path("docs/IA_BOT/CONOCIMIENTO_SISTEMA_PARA_IA.md"),
-        Path("docs/project-documentation/CONOCIMIENTO_SISTEMA_PARA_IA.md"),
     ]
     content = None
     for p in candidates:
@@ -286,7 +287,7 @@ def _load_knowledge_fragments() -> list[dict]:
             except Exception as e:
                 print(f"⚠️  Error leyendo {p}: {e}")
     if not content:
-        print("⚠️  CONOCIMIENTO_SISTEMA_PARA_IA.md no encontrado, usando solo FAQs")
+        print("⚠️  knowledge.md no encontrado, usando solo FAQs")
         return fragments
 
     # Trocear por secciones ## y ###
