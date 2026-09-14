@@ -59,6 +59,7 @@ export default function DashboardPage() {
 
     loadOrders();
     window.addEventListener('orders-updated', loadOrders);
+
     return () => window.removeEventListener('orders-updated', loadOrders);
   }, []);
 

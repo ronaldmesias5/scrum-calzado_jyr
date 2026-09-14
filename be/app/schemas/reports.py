@@ -69,6 +69,8 @@ class OrderItemSummary(BaseModel):
     amount: int
     category_name: Optional[str] = None
     colour: Optional[str] = None
+    unit_price: Optional[float] = None
+    subtotal: Optional[float] = None
 
 class OrderSummary(BaseModel):
     id: UUID
@@ -125,6 +127,21 @@ class SalesWeeklyMetric(BaseModel):
     week: str
     orders_created: int
     pairs_ordered: int
+
+class SalesMonthlyMetric(BaseModel):
+    month: str
+    orders_created: int
+    pairs_ordered: int
+    total_spent: float = 0.0
+
+class CustomerMonthlyReportResponse(BaseModel):
+    user_id: UUID
+    name: str
+    total_orders: int
+    total_pairs: int
+    total_spent: float
+    monthly_metrics: List[SalesMonthlyMetric]
+    orders: List[OrderSummary]
 
 class SalesGlobalReport(BaseModel):
     total_orders_period: int

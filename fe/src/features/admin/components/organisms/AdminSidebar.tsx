@@ -15,7 +15,9 @@ import {
   Package2,
   X,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  Tag,
+  DollarSign
 } from 'lucide-react';
 import { useBadgeCounts } from '@/store/BadgeCountsContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +33,7 @@ const ICON_COLORS: Record<string, string> = {
   '/dashboard/admin': 'text-indigo-500 dark:text-indigo-400',
   '/dashboard/admin/orders': 'text-blue-500 dark:text-blue-400',
   '/dashboard/admin/catalog': 'text-purple-500 dark:text-purple-400',
+  '/dashboard/admin/categories': 'text-fuchsia-500 dark:text-fuchsia-400',
   '/dashboard/admin/inventory': 'text-emerald-500 dark:text-emerald-400',
   '/dashboard/admin/losses': 'text-red-500 dark:text-red-400',
   '/dashboard/admin/insumos': 'text-teal-500 dark:text-teal-400',
@@ -40,7 +43,8 @@ const ICON_COLORS: Record<string, string> = {
   '/dashboard/admin/usuarios': 'text-violet-500 dark:text-violet-400',
   '/dashboard/admin/alerts': 'text-rose-500 dark:text-rose-400',
   '/dashboard/admin/reports': 'text-orange-500 dark:text-orange-400',
-  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400'
+  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400',
+  '/dashboard/admin/client-prices': 'text-emerald-500 dark:text-emerald-400'
 };
 
 export default function AdminSidebar({
@@ -70,6 +74,12 @@ export default function AdminSidebar({
       label: t('dashboard.sidebar.catalog'),
       icon: Layers,
       path: '/dashboard/admin/catalog',
+      badgeKey: null
+    },
+    {
+      label: 'Categorías',
+      icon: Tag,
+      path: '/dashboard/admin/categories',
       badgeKey: null
     },
     {
@@ -106,6 +116,12 @@ export default function AdminSidebar({
       label: t('dashboard.sidebar.clients'),
       icon: UserCheck,
       path: '/dashboard/admin/clients',
+      badgeKey: null
+    },
+    {
+      label: 'Precios por Cliente',
+      icon: DollarSign,
+      path: '/dashboard/admin/client-prices',
       badgeKey: null
     },
     {

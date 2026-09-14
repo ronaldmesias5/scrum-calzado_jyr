@@ -26,6 +26,7 @@ import {
   getDashboardReports,
   getEmployeeReport,
   getCustomerReport,
+  getCustomerMonthlyReport,
   getGlobalProduction,
   markTasksAsPaid,
   getRoleReport,
@@ -35,6 +36,7 @@ import {
   DashboardReportResponse,
   EmployeeReportResponse,
   CustomerReportResponse,
+  CustomerMonthlyReportResponse,
   ProductionGlobalReport,
   TaskDetail
 } from '@/services/reportsApi';
@@ -320,6 +322,8 @@ function ReportGeneratorTab() {
     useState<EmployeeReportResponse | null>(null);
   const [customerReport, setCustomerReport] =
     useState<CustomerReportResponse | null>(null);
+  const [customerMonthlyReport, setCustomerMonthlyReport] =
+    useState<CustomerMonthlyReportResponse | null>(null);
   const [productionReport, setProductionReport] =
     useState<ProductionGlobalReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
@@ -464,6 +468,12 @@ function ReportGeneratorTab() {
               categoryFilter ?? undefined
             );
             setCustomerReport(res);
+            const monthlyRes = await getCustomerMonthlyReport(
+              selectedUserId,
+              startDate,
+              endDate
+            );
+            setCustomerMonthlyReport(monthlyRes);
           }
         } else if (reportType === 'production') {
           const { startDate, endDate } = getDateRange();
@@ -1413,6 +1423,57 @@ function ReportGeneratorTab() {
                     </p>
                   </div>
                 </div>
+
+                {customerMonthlyReport &&
+                  customerMonthlyReport.monthly_metrics.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
+                        <BarChart className="w-4 h-4" />
+                        Tendencia Mensual de Compras
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {customerMonthlyReport.monthly_metrics.map((m) => (
+                          <div
+                            key={m.month}
+                            className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm"
+                          >
+                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2">
+                              {new Date(m.month + '-01').toLocaleDateString(
+                                'es-CO',
+                                { year: 'numeric', month: 'long' }
+                              )}
+                            </p>
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-500">
+                                  Pedidos
+                                </span>
+                                <span className="text-sm font-black text-gray-900 dark:text-white">
+                                  {m.orders_created}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-500">
+                                  Pares
+                                </span>
+                                <span className="text-sm font-black text-blue-600">
+                                  {m.pairs_ordered}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-500">
+                                  Total
+                                </span>
+                                <span className="text-sm font-black text-green-600">
+                                  {formatCOP(m.total_spent)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                 <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">
                   Listado de Pedidos

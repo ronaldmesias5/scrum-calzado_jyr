@@ -100,6 +100,23 @@ export interface CustomerReportResponse {
   orders: OrderSummary[];
 }
 
+export interface SalesMonthlyMetric {
+  month: string;
+  orders_created: number;
+  pairs_ordered: number;
+  total_spent: number;
+}
+
+export interface CustomerMonthlyReportResponse {
+  user_id: string;
+  name: string;
+  total_orders: number;
+  total_pairs: number;
+  total_spent: number;
+  monthly_metrics: SalesMonthlyMetric[];
+  orders: OrderSummary[];
+}
+
 export interface ProductionWeeklyMetric {
   week: string;
   tasks_completed: number;
@@ -173,6 +190,21 @@ export async function getCustomerReport(
   if (category) params.category = category;
   const response = await axios.get<CustomerReportResponse>(
     `/api/v1/admin/reports/customer/${userId}`,
+    { params }
+  );
+  return response.data;
+}
+
+export async function getCustomerMonthlyReport(
+  userId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<CustomerMonthlyReportResponse> {
+  const params: any = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  const response = await axios.get<CustomerMonthlyReportResponse>(
+    `/api/v1/admin/reports/customer/${userId}/monthly`,
     { params }
   );
   return response.data;

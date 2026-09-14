@@ -13,6 +13,7 @@ export interface ClientOrderDetailItem {
   amount: number;
   state: string;
   observations?: string | null;
+  unit_price?: number | null;
 }
 
 export interface ClientOrder {
@@ -128,6 +129,8 @@ export interface ClientOrderItemSummary {
   amount: number;
   category_name: string | null;
   colour: string | null;
+  unit_price: number | null;
+  subtotal: number | null;
 }
 
 export interface ClientOrderSummary {

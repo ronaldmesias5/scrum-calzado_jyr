@@ -26,6 +26,7 @@ from app.schemas.orders import (
     AssignTaskEmployeeRequest,
     ProductionBatchTasksRequest,
     ProductionTaskResponse,
+    TaskDetailUpdateRequest,
     TaskPriorityUpdateRequest,
     TaskStatusUpdateRequest,
 )
@@ -548,6 +549,66 @@ def update_task_priority(
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
 
     task.priority = request.priority
+    db.commit()
+
+    user_name = "Sin asignar"
+    user_occupation = None
+    if task.assigned_user:
+        user_name = f"{task.assigned_user.name_user} {task.assigned_user.last_name}"
+        user_occupation = task.assigned_user.occupation
+
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        line_group=task.line_group,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=user_occupation,
+        type=task.type,
+        status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        deadline=task.deadline,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {},
+    )
+
+
+@router.put("/tasks/{task_id}", response_model=ProductionTaskResponse)
+def update_task_detail(
+    task_id: uuid.UUID,
+    request: TaskDetailUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Edita detalles de una tarea (cantidad, descripción, fecha límite, observación).
+    Solo el jefe puede editar."""
+    _require_jefe(current_user)
+
+    query = select(Task).options(
+        joinedload(Task.product), joinedload(Task.assigned_user)
+    ).where(Task.id == task_id)
+    task = db.execute(query).unique().scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    if task.status in ("completado", "pagado", "cancelado"):
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede editar una tarea completada, pagada o cancelada",
+        )
+
+    if request.amount is not None:
+        task.amount = request.amount
+    if request.description_task is not None:
+        task.description_task = request.description_task
+    if request.deadline is not None:
+        task.deadline = request.deadline
+    if request.observation is not None:
+        task.observation = request.observation
+
     db.commit()
 
     user_name = "Sin asignar"

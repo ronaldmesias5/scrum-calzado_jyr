@@ -76,8 +76,8 @@ class Settings(BaseSettings):
         description="API key del proveedor LLM (vacío = IA deshabilitada hasta Fase 1)",
     )
     AI_MODEL: str = Field(
-        default="llama-3.3-70b-versatile",
-        description="Modelo LLM (ej: llama-3.3-70b-versatile, gemini-2.0-flash)",
+        default="openai/gpt-oss-20b",
+        description="Modelo LLM (ej: openai/gpt-oss-20b, gemini-2.0-flash)",
     )
     AI_EMBEDDING_MODEL: str = Field(
         default="nomic-embed-text",

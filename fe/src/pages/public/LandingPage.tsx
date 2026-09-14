@@ -14,6 +14,7 @@ import AsessoriaSection from '@/features/landing/components/organisms/AsessoriaS
 import WhyChooseUsSection from '@/features/landing/components/organisms/WhyChooseUsSection';
 import CTAFinalSection from '@/features/landing/components/organisms/CTAFinalSection';
 import WhatsAppButton from '@/features/landing/components/atoms/WhatsAppButton';
+import ChatWidget from '@/features/ai/components/organisms/ChatWidget';
 import {
   AuthModals,
   useAuthModals
@@ -55,6 +56,7 @@ export default function LandingPage() {
       </main>
       <LandingFooter />
       <WhatsAppButton />
+      <ChatWidget />
 
       <AuthModals
         view={view}

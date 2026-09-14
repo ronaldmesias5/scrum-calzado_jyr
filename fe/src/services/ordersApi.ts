@@ -34,6 +34,8 @@ export interface OrderDetailItem {
   order_date?: string;
   observations?: string | null;
   line_group?: number;
+  unit_price?: number | null;
+  subtotal?: number | null;
 }
 
 export interface Order {
@@ -275,6 +277,7 @@ export interface ProductionTask {
   priority?: string;
   created_at: string;
   deadline?: string | null;
+  observation?: string;
   task_prices?: {
     corte?: number;
     guarnicion?: number;
@@ -379,6 +382,15 @@ export async function assignTaskEmployee(
 /** Actualiza la prioridad de una tarea de producción */
 export async function updateTaskPriority(task_id: string, priority: string): Promise<ProductionTask> {
   const response = await axios.patch<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}/priority`, { priority });
+  return response.data;
+}
+
+/** Editar detalles de una tarea (solo jefe) */
+export async function updateTaskDetail(
+  task_id: string,
+  data: { amount?: number; description_task?: string; deadline?: string | null; observation?: string }
+): Promise<ProductionTask> {
+  const response = await axios.put<ProductionTask>(`/api/v1/admin/orders/tasks/${task_id}`, data);
   return response.data;
 }
 

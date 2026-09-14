@@ -17,6 +17,25 @@ class TaskPrices(BaseModel):
 
 
 # ─────────────────────────────────────────
+# CATEGORÍAS
+# ─────────────────────────────────────────
+
+class CategoryCreateRequest(BaseModel):
+    """Request para crear/actualizar una categoría"""
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=500)
+
+
+class CategoryAdminResponse(BaseModel):
+    """Response de una categoría (admin)"""
+    id: str
+    name: str
+    description: Optional[str]
+    product_count: int = 0
+    created_at: Optional[str]
+
+
+# ─────────────────────────────────────────
 # MARCAS
 # ─────────────────────────────────────────
 
@@ -97,6 +116,7 @@ class InventoryCreateRequest(BaseModel):
     """Request para crear/actualizar inventario"""
     product_id: str = Field(..., description="UUID del producto")
     size: str = Field(..., min_length=1, max_length=50, description="Talla (ej: XS, S, M, L, XL, 36, 37, 38, etc.)")
+    colour: str | None = Field(None, max_length=100, description="Color (ej: negro x blanco). None = sin color")
     quantity: int = Field(..., ge=0, description="Cantidad disponible")
 
 
@@ -106,6 +126,7 @@ class InventoryResponse(BaseModel):
     product_id: str
     product_name: str
     size: str
+    colour: str | None = None
     quantity: int
     created_at: Optional[str]
 

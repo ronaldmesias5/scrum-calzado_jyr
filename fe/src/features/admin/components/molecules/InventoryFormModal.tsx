@@ -32,6 +32,7 @@ export default function InventoryFormModal({
   const [formData, setFormData] = useState({
     product_id: '',
     size: '',
+    colour: '',
     quantity: 0
   });
   const [loading, setLoading] = useState(false);
@@ -70,12 +71,14 @@ export default function InventoryFormModal({
       setFormData({
         product_id: inventory.product_id,
         size: inventory.size,
+        colour: inventory.colour || '',
         quantity: inventory.quantity
       });
     } else {
       setFormData({
         product_id: '',
         size: '',
+        colour: '',
         quantity: 0
       });
     }
@@ -97,7 +100,8 @@ export default function InventoryFormModal({
       await createOrUpdateInventory(
         formData.product_id,
         formData.size,
-        formData.quantity
+        formData.quantity,
+        formData.colour || null
       );
       onSave();
       onClose();
@@ -186,6 +190,21 @@ export default function InventoryFormModal({
                 className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase tracking-wide">
+              Color (opcional)
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: negro x blanco"
+              value={formData.colour}
+              onChange={(e) =>
+                setFormData({ ...formData, colour: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 font-medium transition-all"
+            />
           </div>
 
           <div>

@@ -55,6 +55,7 @@ def list_inventory(
                 "product_id": str(inv.product_id),
                 "product_name": inv.product.name_product if inv.product else "Unknown",
                 "size": inv.size,
+                "colour": inv.colour,
                 "quantity": inv.amount,
                 "created_at": inv.created_at.isoformat() if inv.created_at else None,
             }
@@ -90,6 +91,7 @@ def create_or_update_inventory(
         select(Inventory).where(
             (Inventory.product_id == product_uuid)
             & (Inventory.size == req.size)
+            & (Inventory.colour == (req.colour or None))
             & (Inventory.deleted_at == None)
         )
     ).scalars().all()
@@ -131,6 +133,7 @@ def create_or_update_inventory(
             "product_id": str(existing_inv.product_id),
             "product_name": product.name_product,
             "size": existing_inv.size,
+            "colour": existing_inv.colour,
             "quantity": existing_inv.amount,
             "message": "Inventario actualizado exitosamente"
         }
@@ -140,6 +143,7 @@ def create_or_update_inventory(
             id=uuid.uuid4(),
             product_id=product_uuid,
             size=req.size,
+            colour=req.colour or None,
             amount=req.quantity,
         )
         db.add(inventory)
@@ -164,6 +168,7 @@ def create_or_update_inventory(
             "product_id": str(inventory.product_id),
             "product_name": product.name_product,
             "size": inventory.size,
+            "colour": inventory.colour,
             "quantity": inventory.amount,
             "message": "Inventario creado exitosamente"
         }
@@ -243,6 +248,7 @@ def bulk_update_inventory(
                 select(Inventory).where(
                     (Inventory.product_id == product_uuid) &
                     (Inventory.size == size) &
+                    (Inventory.colour.is_(None)) &
                     (Inventory.deleted_at == None)
                 )
             ).scalars().all()

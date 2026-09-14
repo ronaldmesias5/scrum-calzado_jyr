@@ -71,7 +71,7 @@ router = APIRouter(
 # Helper interno
 # ─────────────────────────────────────────
 
-def _build_user_response(user: User) -> UserResponse:
+def _build_user_response(user: User, temporary_password: str | None = None) -> UserResponse:
     return UserResponse(
         id=user.id,
         email=user.email,
@@ -95,6 +95,7 @@ def _build_user_response(user: User) -> UserResponse:
         rejected_by=str(user.rejected_by) if user.rejected_by else None,
         rejected_at=user.rejected_at,
         rejection_reason=user.rejection_reason,
+        temporary_password=temporary_password,
     )
 
 
@@ -415,9 +416,7 @@ async def create_employee(
         name=f"{data.name} {data.last_name}",
     )
 
-    response = _build_user_response(new_user)
-    # La contraseña temporal se envía por email, NO en la respuesta HTTP
-    return response
+    return _build_user_response(new_user, temporary_password=temp_password)
 
 
 @router.post(
@@ -475,9 +474,7 @@ async def create_client(
         name=f"{data.name} {data.last_name}",
     )
 
-    response = _build_user_response(new_user)
-    # La contraseña temporal se envía por email, NO en la respuesta HTTP
-    return response
+    return _build_user_response(new_user, temporary_password=temp_password)
 
 
 @router.post(
@@ -541,9 +538,7 @@ async def create_jefe(
         name=f"{data.name} {data.last_name}",
     )
 
-    response = _build_user_response(new_user)
-    # La contraseña temporal se envía por email, NO en la respuesta HTTP
-    return response
+    return _build_user_response(new_user, temporary_password=temp_password)
 
 
 # ─────────────────────────────────────────
@@ -585,9 +580,7 @@ async def renew_invitation(
         name=f"{user.name_user} {user.last_name}",
     )
 
-    response = _build_user_response(user)
-    # La contraseña temporal se envía por email, NO en la respuesta HTTP
-    return response
+    return _build_user_response(user, temporary_password=temp_password)
 
 
 @router.post(

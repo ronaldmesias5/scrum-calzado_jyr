@@ -7,7 +7,7 @@ Descripción: Router FastAPI con endpoints del panel de administración del jefe
   - GET /metrics: Retorna KPIs (pedidos pendientes, producción, stock, alertas)
   - GET /recent-orders: Lista últimos 5 pedidos
   - GET /alerts: Lista alertas activas
-  
+
 ¿Para qué?
   - Proveer datos para dashboard AdminDashboardPage (frontend)
   - La lógica de negocio vive en service.py (Sprint 4+)
@@ -92,3 +92,4 @@ def get_alerts(
     """Retorna las alertas basadas en incidencias abiertas."""
     _require_jefe(current_user)
     return get_alerts_data(db)
+

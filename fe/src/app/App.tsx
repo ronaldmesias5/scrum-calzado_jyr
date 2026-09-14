@@ -83,6 +83,12 @@ import ClientsPage from '@/pages/admin/ClientsPage';
 // Sprint 7 - Supplies module
 import InsumosPage from '@/pages/admin/InsumosPage';
 
+// HU-007 - Categories management
+import CategoriesPage from '@/pages/admin/CategoriesPage';
+
+// Per-Client Pricing
+import ClientPricesPage from '@/pages/admin/ClientPricesPage';
+
 // RF-019 - Losses module
 import LossesPage from '@/pages/admin/LossesPage';
 
@@ -205,6 +211,8 @@ function App() {
                 <Route path="clients" element={<ClientsPage />} />
                 <Route path="usuarios" element={<UsersManagementPage />} />
                 <Route path="insumos" element={<InsumosPage />} />
+                <Route path="categories" element={<CategoriesPage />} />
+                <Route path="client-prices" element={<ClientPricesPage />} />
                 <Route path="losses" element={<LossesPage />} />
                 <Route path="alerts" element={<AlertsPage />} />
                 <Route path="reports" element={<ReportsPage />} />

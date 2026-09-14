@@ -75,3 +75,6 @@ be/logs/
 be/tmp_*.py
 be/sql_check.py
 *.log
+
+# Temp curl cookies (Fase 3 testing)
+cookies.txt

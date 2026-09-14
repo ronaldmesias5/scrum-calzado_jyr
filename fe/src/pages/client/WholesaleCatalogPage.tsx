@@ -6,13 +6,15 @@ import { ProductDetailModal } from '@/features/client/components/molecules/Produ
 import { useCart } from '@/store/CartContext';
 import { WholesaleProductCard } from '@/features/client/components/molecules/WholesaleProductCard';
 import { WholesaleCatalogFilters } from '@/features/client/components/molecules/WholesaleCatalogFilters';
+import { useAuth } from '@/hooks/useAuth';
 import {
   getWholesaleProducts,
   getWholesaleCategories,
   getWholesaleBrands,
   getWholesaleStyles,
   getWholesaleColors,
-  type WholesaleProduct,
+  getClientCatalogProducts,
+  type WholesaleProductWithPrice,
   type Category,
   type Brand,
   type Style,
@@ -23,11 +25,12 @@ const PAGE_SIZE = 12;
 
 export default function WholesaleCatalogPage() {
   const { cart } = useCart();
+  const { user } = useAuth();
   const [cartModalOpen, setCartModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] =
-    useState<WholesaleProduct | null>(null);
+    useState<WholesaleProductWithPrice | null>(null);
 
-  const [products, setProducts] = useState<WholesaleProduct[]>([]);
+  const [products, setProducts] = useState<WholesaleProductWithPrice[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
@@ -116,10 +119,17 @@ export default function WholesaleCatalogPage() {
         color: selectedColor || undefined,
         search: searchTerm || undefined
       };
-      const data = await getWholesaleProducts(filters, page, PAGE_SIZE);
-      setProducts(data.products);
-      setTotal(data.total);
-      setTotalPages(data.total_pages);
+      if (user?.role_name === 'client') {
+        const data = await getClientCatalogProducts(filters, page, PAGE_SIZE);
+        setProducts(data.products);
+        setTotal(data.total);
+        setTotalPages(data.total_pages);
+      } else {
+        const data = await getWholesaleProducts(filters, page, PAGE_SIZE);
+        setProducts(data.products);
+        setTotal(data.total);
+        setTotalPages(data.total_pages);
+      }
     } catch (err) {
       console.error('Error cargando productos:', err);
       setError('No se pudieron cargar los productos');
@@ -141,7 +151,7 @@ export default function WholesaleCatalogPage() {
     !!selectedColor ||
     !!searchTerm;
 
-  const handleOrderClick = (product: WholesaleProduct) => {
+  const handleOrderClick = (product: WholesaleProductWithPrice) => {
     setSelectedProduct(product);
   };
 

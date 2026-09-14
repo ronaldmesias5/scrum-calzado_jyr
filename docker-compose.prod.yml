@@ -48,6 +48,13 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # IA — Fase 4 prod (Groq por defecto, Ollama opcional con --profile ollama)
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-openai/gpt-oss-20b}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-nomic-embed-text}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-512}
+      AI_EMBEDDING_DIM: ${AI_EMBEDDING_DIM:-768}
     depends_on:
       db:
         condition: service_healthy
@@ -83,6 +90,23 @@ services:
     # No necesita puertos — nginx sirve los archivos compilados
 
   # ──────────────────────────────────────────────────────────
+  # 🤖 ollama — LLM local opcional (Fase 4, $0 para siempre, sin internet)
+  # ¿Qué?    Llama 3.2 3B local para IA sin depender de Groq/Gemini.
+  # ¿Para?   Fallback offline, datos no salen del servidor.
+  # ¿Cómo?   docker compose -f docker-compose.prod.yml --profile ollama up -d
+  #          Requiere 8GB RAM, 30GB SSD. En .env: AI_PROVIDER=ollama
+  # ──────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: calzado_jyr_ollama
+    restart: unless-stopped
+    profiles: ["ollama"]
+    volumes:
+      - ollama_data:/root/.ollama
+    # No exponer puerto en prod — solo be lo usa vía http://ollama:11434
+    # Para pull inicial: docker compose --profile ollama exec ollama ollama pull llama3.2:3b
+
+  # ──────────────────────────────────────────────────────────
   # 🔒 certbot — Let's Encrypt SSL
   # ──────────────────────────────────────────────────────────
   certbot:
@@ -101,3 +125,4 @@ volumes:
   calzado_jyr_data:
   certbot-conf:
   certbot-www:
+  ollama_data:

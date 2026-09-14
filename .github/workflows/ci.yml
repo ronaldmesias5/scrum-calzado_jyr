@@ -37,6 +37,13 @@ jobs:
       MAIL_PORT: 1025
       MAIL_USERNAME: ci@example.com
       MAIL_PASSWORD: ci-password
+      # IA — Fase 4 (mock en CI, sin API key real)
+      AI_PROVIDER: groq
+      AI_API_KEY: ""
+      AI_MODEL: openai/gpt-oss-20b
+      AI_EMBEDDING_MODEL: nomic-embed-text
+      AI_MAX_TOKENS: 512
+      AI_EMBEDDING_DIM: 768
     defaults:
       run:
         working-directory: be

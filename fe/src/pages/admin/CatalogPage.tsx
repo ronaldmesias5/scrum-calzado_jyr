@@ -9,7 +9,8 @@ import {
   Filter,
   Search,
   Layers,
-  Maximize2
+  Maximize2,
+  FileDown
 } from 'lucide-react';
 import {
   Product,
@@ -32,6 +33,7 @@ import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerM
 import StatCard from '@/features/admin/components/atoms/StatCard';
 import Pagination from '@/components/atoms/Pagination';
 import { useToast } from '@/store/ToastContext';
+import { exportCatalogPDF } from '@/features/admin/utils/catalogPdfUtils';
 
 export default function CatalogPage() {
   const { showToast } = useToast();
@@ -57,6 +59,7 @@ export default function CatalogPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const pageSize = 10;
 
   // Cargar productos
@@ -450,12 +453,36 @@ export default function CatalogPage() {
             Administra todos los productos del catálogo • {total} en total
           </p>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95"
-        >
-          <Plus size={18} /> Agregar Producto
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={async () => {
+              if (filteredProducts.length === 0) {
+                showToast('No hay productos para exportar', 'warning');
+                return;
+              }
+              setExportingPdf(true);
+              try {
+                await exportCatalogPDF(filteredProducts);
+                showToast('PDF del catálogo generado', 'success');
+              } catch {
+                showToast('Error al generar el PDF', 'error');
+              } finally {
+                setExportingPdf(false);
+              }
+            }}
+            disabled={exportingPdf}
+            className="px-4 py-2.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 transition-all font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            <FileDown size={18} />
+            {exportingPdf ? 'Generando...' : 'Exportar PDF'}
+          </button>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95"
+          >
+            <Plus size={18} /> Agregar Producto
+          </button>
+        </div>
       </div>
 
       {/* Métricas */}

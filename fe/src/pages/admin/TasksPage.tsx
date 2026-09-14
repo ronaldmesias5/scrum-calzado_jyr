@@ -7,7 +7,8 @@ import {
   ProductionTask,
   updateProductionTaskStatus,
   assignTaskEmployee,
-  updateTaskPriority
+  updateTaskPriority,
+  updateTaskDetail
 } from '@/services/ordersApi';
 import { getAllUsers } from '@/services/adminApi';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
@@ -33,6 +34,8 @@ export default function ProductionTaskDashboard() {
   const [employees, setEmployees] = useState<
     { id: string; name: string; occupation: string }[]
   >([]);
+  const [editingTask, setEditingTask] = useState<ProductionTask | null>(null);
+  const [editForm, setEditForm] = useState({ amount: '', description_task: '', deadline: '', observation: '' });
 
   // Cargar lista de empleados para poder asignarlos a tareas pendientes
   const loadEmployees = useCallback(async () => {
@@ -108,6 +111,28 @@ export default function ProductionTaskDashboard() {
     } catch (e) {
       console.error(e);
       showToast('Error al actualizar prioridad', 'error');
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTask) return;
+    try {
+      setUpdatingTaskId(editingTask.id);
+      const payload: { amount?: number; description_task?: string; deadline?: string | null; observation?: string } = {};
+      if (editForm.amount) payload.amount = parseInt(editForm.amount, 10);
+      if (editForm.description_task) payload.description_task = editForm.description_task;
+      if (editForm.deadline) payload.deadline = editForm.deadline;
+      else payload.deadline = null;
+      if (editForm.observation) payload.observation = editForm.observation;
+      const updatedTask = await updateTaskDetail(editingTask.id, payload);
+      setTasks(prev => prev.map(t => t.id === editingTask.id ? updatedTask : t));
+      setEditingTask(null);
+      showToast('Tarea actualizada');
+    } catch (e) {
+      console.error(e);
+      showToast('Error al editar tarea', 'error');
     } finally {
       setUpdatingTaskId(null);
     }
@@ -347,10 +372,60 @@ export default function ProductionTaskDashboard() {
               employees={employees.filter(
                 (e) => e.occupation === TYPE_TO_OCCUPATION[task.type]
               )}
+              onEdit={isAdmin ? (task) => {
+                setEditingTask(task);
+                setEditForm({
+                  amount: task.amount?.toString() || '',
+                  description_task: task.description_task ?? '',
+                  deadline: (task.deadline ?? '').split('T')[0] || '',
+                  observation: task.observation ?? '',
+                });
+              } : undefined}
             />
           ))
         )}
       </div>
+
+      {/* Modal Editar Tarea */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-slate-700">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Editar Tarea</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Vale #{editingTask.vale_number} — {editingTask.product_name}</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Cantidad (pares)</label>
+                <input type="number" min="1" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/50 text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Descripción</label>
+                <input type="text" value={editForm.description_task} onChange={(e) => setEditForm({ ...editForm, description_task: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/50 text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Fecha límite</label>
+                <input type="date" value={editForm.deadline} onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/50 text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Observación</label>
+                <textarea rows={3} value={editForm.observation} onChange={(e) => setEditForm({ ...editForm, observation: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/50 text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500 resize-none" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3">
+              <button onClick={() => setEditingTask(null)} className="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-colors">Cancelar</button>
+              <button onClick={handleSaveEdit} disabled={updatingTaskId === editingTask.id}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50">
+                {updatingTaskId === editingTask.id ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
