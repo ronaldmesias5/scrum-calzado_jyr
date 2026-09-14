@@ -21,7 +21,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, DateTime, Enum as SQLEnum, ForeignKey, Text
+from sqlalchemy import String, Integer, Numeric, DateTime, Enum as SQLEnum, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -210,6 +210,12 @@ class OrderDetail(Base):
         nullable=False,
         default=0,
         comment="Agrupa filas que pertenecen a una misma adición de producto al pedido",
+    )
+
+    unit_price: Mapped[float | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+        comment="Precio unitario al momento del pedido",
     )
 
     # Estado

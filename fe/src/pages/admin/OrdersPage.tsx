@@ -1262,6 +1262,16 @@ function OrderDetailView({
                             <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
                               {totalProductPairs} pares pedidos
                             </span>
+                            {first.unit_price != null && first.unit_price > 0 && (
+                              <>
+                                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-2">
+                                  {formatCOP(first.unit_price)} / par
+                                </span>
+                                <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 whitespace-nowrap border border-purple-200 dark:border-purple-900/50 flex items-center gap-2">
+                                  Subtotal: {formatCOP(first.unit_price * totalProductPairs)}
+                                </span>
+                              </>
+                            )}
 
                             {/* Acciones de Producción por Producto */}
                             <div className="flex items-center gap-2 flex-wrap">

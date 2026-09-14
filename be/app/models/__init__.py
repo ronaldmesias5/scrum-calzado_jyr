@@ -31,6 +31,9 @@ from app.models.product_supplies import ProductSupply
 # Modelos de órdenes
 from app.models.order import Order
 
+# Precios personalizados por cliente
+from app.models.client_price import ClientPrice
+
 # Modelos de vales
 from app.models.vale import Vale
 
@@ -70,6 +73,7 @@ __all__ = [
     "SuppliesMovement",
     "ProductSupply",
     "Order",
+    "ClientPrice",
     "Vale",
     "Task",
     "Incidence",

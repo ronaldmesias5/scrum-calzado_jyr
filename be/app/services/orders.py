@@ -88,6 +88,8 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
                 state=d.state,
                 order_date=d.order_date,
                 observations=d.observations,
+                unit_price=float(d.unit_price) if d.unit_price else None,
+                subtotal=float(d.unit_price * d.amount) if d.unit_price else None,
             )
             for d in order.details
         ],
@@ -567,6 +569,20 @@ def create_order(
     )
 
     for detail_data in details:
+        # Auto-fill unit_price from client_prices if available
+        unit_price = None
+        if customer_id is not None:
+            from app.models.client_price import ClientPrice
+            cp = db.execute(
+                select(ClientPrice).where(
+                    ClientPrice.client_id == customer_id,
+                    ClientPrice.product_id == detail_data.product_id,
+                    ClientPrice.deleted_at.is_(None),
+                )
+            ).scalar_one_or_none()
+            if cp:
+                unit_price = float(cp.unit_price)
+
         detail = OrderDetail(
             product_id=detail_data.product_id,
             size=detail_data.size,
@@ -577,6 +593,7 @@ def create_order(
             created_by=created_by,
             line_group=detail_data.line_group,
             observations=detail_data.observations,
+            unit_price=unit_price,
         )
         new_order.details.append(detail)
 

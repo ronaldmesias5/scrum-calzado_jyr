@@ -69,6 +69,8 @@ class OrderItemSummary(BaseModel):
     amount: int
     category_name: Optional[str] = None
     colour: Optional[str] = None
+    unit_price: Optional[float] = None
+    subtotal: Optional[float] = None
 
 class OrderSummary(BaseModel):
     id: UUID

@@ -34,6 +34,8 @@ export interface OrderDetailItem {
   order_date?: string;
   observations?: string | null;
   line_group?: number;
+  unit_price?: number | null;
+  subtotal?: number | null;
 }
 
 export interface Order {

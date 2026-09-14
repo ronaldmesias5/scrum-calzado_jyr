@@ -15,14 +15,15 @@ import { useCart } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import {
   resolveImageUrl,
-  type WholesaleProduct
+  type WholesaleProductWithPrice
 } from '@/services/wholesaleCatalogApi';
 import { getSizesList, getSizeRangeText } from '@/utils/shoeSizes';
+import { formatCOP } from '@/utils/format';
 
 interface ProductDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: WholesaleProduct | null;
+  product: WholesaleProductWithPrice | null;
   onAdded?: () => void;
 }
 
@@ -192,6 +193,13 @@ export function ProductDetailModal({
                   </span>
                 )}
               </div>
+              {'unit_price' in product && product.unit_price != null && product.unit_price > 0 && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-900/30">
+                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                    {formatCOP(product.unit_price)} /par
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

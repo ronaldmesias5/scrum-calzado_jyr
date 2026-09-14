@@ -33,6 +33,8 @@ class OrderDetailItemResponse(BaseModel):
     order_date: datetime | None = None
     observations: str | None = None
     line_group: int = 0
+    unit_price: float | None = None
+    subtotal: float | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

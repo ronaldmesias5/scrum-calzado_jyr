@@ -6,6 +6,7 @@ import {
   type ClientOrder
 } from '@/services/clientApi';
 import { resolveImageUrl } from '@/services/wholesaleCatalogApi';
+import { formatCOP } from '@/utils/format';
 import Modal from '@/components/atoms/Modal';
 import Pagination from '@/components/atoms/Pagination';
 
@@ -93,6 +94,7 @@ export default function OrdersPage() {
         category_name: string | null;
         image_url: string | null;
         total: number;
+        unit_price: number | null;
         sizes: { size: string; amount: number; colour: string | null }[];
         observations: string[];
       }
@@ -105,10 +107,14 @@ export default function OrdersPage() {
         category_name: d.category_name,
         image_url: d.image_url,
         total: 0,
+        unit_price: d.unit_price ?? null,
         sizes: [],
         observations: []
       };
       group.total += d.amount;
+      if (d.unit_price != null && group.unit_price == null) {
+        group.unit_price = d.unit_price;
+      }
       group.sizes.push({ size: d.size, amount: d.amount, colour: d.colour });
       if (d.observations && !group.observations.includes(d.observations)) {
         group.observations.push(d.observations);
@@ -296,6 +302,21 @@ export default function OrdersPage() {
                     : 'Por definir'}
                 </p>
               </div>
+              {groupedProducts.some((g) => g.unit_price != null && g.unit_price > 0) && (
+                <div className="col-span-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                    Total Pedido
+                  </p>
+                  <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                    {formatCOP(
+                      groupedProducts.reduce(
+                        (sum, g) => sum + (g.unit_price != null ? g.unit_price * g.total : 0),
+                        0
+                      )
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -334,6 +355,16 @@ export default function OrdersPage() {
                       <span className="inline-flex shrink-0 items-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/50">
                         {group.total} pares
                       </span>
+                      {group.unit_price != null && group.unit_price > 0 && (
+                        <>
+                          <span className="inline-flex shrink-0 items-center bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-emerald-100 dark:border-emerald-900/50">
+                            {formatCOP(group.unit_price)} / par
+                          </span>
+                          <span className="inline-flex shrink-0 items-center bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-purple-100 dark:border-purple-900/50">
+                            Subtotal: {formatCOP(group.unit_price * group.total)}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {group.sizes.map((s) => (

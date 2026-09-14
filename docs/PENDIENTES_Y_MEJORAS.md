@@ -10,8 +10,8 @@
 
 | # | Feature | Descripción | Esfuerzo |
 |---|---------|-------------|----------|
-| 1 | **Exportación catálogo PDF** | Generar PDF del catálogo para enviar a clientes mayoristas | Medio |
-| 2 | **Dashboard analytics tiempo real** | Gráficos de pedidos por día/semana con Chart.js o Recharts | Medio |
+| 1 | **Exportación catálogo PDF** | Generar PDF del catálogo para enviar a clientes mayoristas | ✅ Completado |
+| 2 | **Dashboard analytics tiempo real** | Gráficos de pedidos/producción/ingresos por semana con Recharts | ✅ Completado |
 | 3 | **Sistema de cotizaciones** | Cliente solicita cotización desde catálogo, jefe responde con precio | Alto |
 
 ### Prioridad Media

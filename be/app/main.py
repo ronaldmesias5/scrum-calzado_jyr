@@ -59,6 +59,7 @@ from app.routers.scrap import router as scrap_router
 from app.routers.supplies import router as supplies_router
 from app.routers.type_document import router as type_document_router
 from app.routers.admin import router as admin_router
+from app.routers.client_prices import router as client_prices_router
 from app.routers.users import router as users_router
 from app.routers.ai_chat import router as ai_chat_router
 
@@ -193,6 +194,7 @@ app.mount("/uploads", StaticFiles(directory=str(_uploads_path)), name="uploads")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
+app.include_router(client_prices_router)
 app.include_router(catalog_brands_router)
 app.include_router(catalog_categories_router)
 app.include_router(catalog_styles_router)

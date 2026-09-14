@@ -16,7 +16,8 @@ import {
   X,
   LogOut,
   AlertTriangle,
-  Tag
+  Tag,
+  DollarSign
 } from 'lucide-react';
 import { useBadgeCounts } from '@/store/BadgeCountsContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,7 +43,8 @@ const ICON_COLORS: Record<string, string> = {
   '/dashboard/admin/usuarios': 'text-violet-500 dark:text-violet-400',
   '/dashboard/admin/alerts': 'text-rose-500 dark:text-rose-400',
   '/dashboard/admin/reports': 'text-orange-500 dark:text-orange-400',
-  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400'
+  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400',
+  '/dashboard/admin/client-prices': 'text-emerald-500 dark:text-emerald-400'
 };
 
 export default function AdminSidebar({
@@ -114,6 +116,12 @@ export default function AdminSidebar({
       label: t('dashboard.sidebar.clients'),
       icon: UserCheck,
       path: '/dashboard/admin/clients',
+      badgeKey: null
+    },
+    {
+      label: 'Precios por Cliente',
+      icon: DollarSign,
+      path: '/dashboard/admin/client-prices',
       badgeKey: null
     },
     {

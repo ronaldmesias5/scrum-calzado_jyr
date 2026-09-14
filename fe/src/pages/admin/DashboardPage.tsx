@@ -30,11 +30,7 @@ import RecentOrdersTable from '@/features/admin/components/organisms/RecentOrder
 import AlertsPanel from '@/features/admin/components/organisms/AlertsPanel';
 import QuickActionsSection from '@/features/admin/components/organisms/QuickActionsSection';
 import AvailableTasksPanel from '@/features/admin/components/organisms/AvailableTasksPanel';
-import {
-  getMetrics,
-  getRecentOrders,
-  getAlerts
-} from '@/services/dashboardService';
+import { getMetrics, getRecentOrders, getAlerts } from '@/services/dashboardService';
 import type { Metric, RecentOrder, Alert } from '@/types/dashboard';
 
 export default function DashboardPage() {

@@ -62,6 +62,7 @@ def _order_to_client_response(order: Order) -> ClientOrderResponse:
                 amount=d.amount,
                 state=d.state,
                 observations=d.observations,
+                unit_price=float(d.unit_price) if d.unit_price else None,
             )
             for d in order.details
         ],
@@ -155,8 +156,13 @@ def _build_order_items(details: list, category: str | None = None) -> list:
                 amount=0,
                 category_name=cat_name,
                 colour=detail.colour or None,
+                unit_price=getattr(detail, 'unit_price', None),
             )
         items_map[key].amount += (detail.amount or 0)
+        # Update subtotal based on accumulated amount
+        up = items_map[key].unit_price
+        if up is not None:
+            items_map[key].subtotal = up * items_map[key].amount
     return list(items_map.values())
 
 
@@ -429,3 +435,111 @@ def list_shared_incidences(
         )
 
     return ClientSharedIncidenceListResponse(items=items, total=len(items))
+
+
+# ────────────────────────────────────────────────
+# Catálogo con precios personalizados
+# ────────────────────────────────────────────────
+
+@router.get("/catalog/products", summary="Productos del catálogo con precios personalizados del cliente")
+def get_client_catalog(
+    category_id: str | None = None,
+    brand_id: str | None = None,
+    style_id: str | None = None,
+    color: str | None = None,
+    search: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retorna productos del catálogo con precios personalizados si el cliente tiene asignado un precio."""
+    from app.models.client_price import ClientPrice
+    from app.models.inventory import Inventory
+    from app.models.brand import Brand
+    from app.models.style import Style
+
+    base_where = (Product.deleted_at == None) & (Product.state == True)
+    stmt = select(Product).where(*[base_where])
+    count_stmt = select(func.count(Product.id)).where(*[base_where])
+
+    if category_id:
+        stmt = stmt.where(Product.category_id == category_id)
+        count_stmt = count_stmt.where(Product.category_id == category_id)
+    if brand_id:
+        stmt = stmt.where(Product.brand_id == brand_id)
+        count_stmt = count_stmt.where(Product.brand_id == brand_id)
+    if style_id:
+        stmt = stmt.where(Product.style_id == style_id)
+        count_stmt = count_stmt.where(Product.style_id == style_id)
+    if color:
+        stmt = stmt.where(Product.color == color)
+        count_stmt = count_stmt.where(Product.color == color)
+    if search:
+        search_filter = (
+            Product.name_product.ilike(f"%{search}%") |
+            Brand.name_brand.ilike(f"%{search}%") |
+            Style.name_style.ilike(f"%{search}%")
+        )
+        stmt = stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
+        stmt = stmt.where(search_filter)
+        count_stmt = count_stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
+        count_stmt = count_stmt.where(search_filter)
+
+    total = db.execute(count_stmt).scalar() or 0
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    offset = (page - 1) * page_size
+
+    products = db.execute(stmt.offset(offset).limit(page_size)).scalars().all()
+
+    # Stock total por producto
+    product_ids = [p.id for p in products]
+    available_by_product: dict = {}
+    if product_ids:
+        inventory_rows = db.execute(
+            select(Inventory.product_id, func.sum(Inventory.amount))
+            .where(
+                (Inventory.product_id.in_(product_ids)) &
+                (Inventory.deleted_at.is_(None))
+            )
+            .group_by(Inventory.product_id)
+        ).all()
+        available_by_product = {str(pid): int(qty or 0) for pid, qty in inventory_rows}
+
+    # Precios personalizados del cliente
+    prices_by_product: dict = {}
+    if product_ids:
+        price_rows = db.execute(
+            select(ClientPrice).where(
+                (ClientPrice.client_id == current_user.id) &
+                (ClientPrice.product_id.in_(product_ids)) &
+                (ClientPrice.deleted_at.is_(None))
+            )
+        ).scalars().all()
+        prices_by_product = {str(cp.product_id): float(cp.unit_price) for cp in price_rows}
+
+    return {
+        "products": [
+            {
+                "id": str(product.id),
+                "name": product.name_product,
+                "style_id": str(product.style_id),
+                "style_name": product.style.name_style if product.style else "Unknown",
+                "category_id": str(product.category_id),
+                "category_name": product.category.name_category if product.category else "Unknown",
+                "brand_id": str(product.brand_id),
+                "brand_name": product.brand.name_brand if product.brand else "Unknown",
+                "image_url": product.image_url,
+                "color": product.color,
+                "available": available_by_product.get(str(product.id), 0),
+                "unit_price": prices_by_product.get(str(product.id)),
+            }
+            for product in products
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
+
+

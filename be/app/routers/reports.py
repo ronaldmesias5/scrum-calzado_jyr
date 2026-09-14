@@ -70,8 +70,12 @@ def _build_order_items(details: list, category: Optional[str] = None) -> list:
                 amount=0,
                 category_name=cat_name,
                 colour=detail.colour or None,
+                unit_price=getattr(detail, 'unit_price', None),
             )
         items_map[key].amount += (detail.amount or 0)
+        up = items_map[key].unit_price
+        if up is not None:
+            items_map[key].subtotal = up * items_map[key].amount
     return list(items_map.values())
 
 

@@ -1,13 +1,14 @@
-import { ShoppingCart, Package } from 'lucide-react';
+import { ShoppingCart, Package, Tag } from 'lucide-react';
 import {
-  WholesaleProduct,
+  WholesaleProductWithPrice,
   resolveImageUrl
 } from '@/services/wholesaleCatalogApi';
 import { getSizeRangeText } from '@/utils/shoeSizes';
+import { formatCOP } from '@/utils/format';
 
 interface WholesaleProductCardProps {
-  product: WholesaleProduct;
-  onOrderClick: (product: WholesaleProduct) => void;
+  product: WholesaleProductWithPrice;
+  onOrderClick: (product: WholesaleProductWithPrice) => void;
 }
 
 export function WholesaleProductCard({
@@ -50,7 +51,17 @@ export function WholesaleProductCard({
           <span className="font-bold">Estilo:</span> {product.style_name}
         </p>
 
-        <div className="mt-7 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
+        {product.unit_price != null && product.unit_price > 0 && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-900/30">
+            <Tag className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+              {formatCOP(product.unit_price)}
+            </span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400">/par</span>
+          </div>
+        )}
+
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
           <Package className="h-5 w-5 shrink-0 text-slate-500 dark:text-slate-300" />
           <span className="text-base font-medium text-slate-700 dark:text-slate-200">
             Tallas {sizeRange}

@@ -2,6 +2,12 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ClientAllOrdersReport } from '@/services/clientApi';
 
+const COP_FORMAT = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0
+});
+
 const COLORS = {
   primary: [30, 64, 175] as [number, number, number],
   gray: [107, 114, 128] as [number, number, number],
@@ -200,6 +206,8 @@ export async function exportMyOrdersPDF(
           item.category_name || '—',
           item.colour || '—',
           String(item.amount),
+          item.unit_price != null ? COP_FORMAT.format(item.unit_price) : '—',
+          item.subtotal != null ? COP_FORMAT.format(item.subtotal) : '—',
           i === 0
             ? (STATUS_LABELS[order.state] || order.state || '').toUpperCase()
             : ''
@@ -218,6 +226,8 @@ export async function exportMyOrdersPDF(
           'Categoría',
           'Color',
           'Cant.',
+          'P. Unitario',
+          'Subtotal',
           'Estado'
         ]
       ],
