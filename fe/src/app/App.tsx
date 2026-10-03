@@ -89,6 +89,9 @@ import CategoriesPage from '@/pages/admin/CategoriesPage';
 // Per-Client Pricing
 import ClientPricesPage from '@/pages/admin/ClientPricesPage';
 
+// Calendario de entregas de pedidos
+import CalendarPage from '@/pages/admin/CalendarPage';
+
 // RF-019 - Losses module
 import LossesPage from '@/pages/admin/LossesPage';
 
@@ -204,6 +207,7 @@ function App() {
               >
                 <Route index element={<AdminDashboardPage />} />
                 <Route path="orders" element={<OrdersPage />} />
+                <Route path="calendar" element={<CalendarPage />} />
                 <Route path="catalog" element={<CatalogPage />} />
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="tasks" element={<ProductionTaskDashboard />} />

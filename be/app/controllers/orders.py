@@ -17,6 +17,11 @@ def _order_to_response(order: Order, db=None):
     return orders_service._order_to_response(order, db)
 
 
+def get_orders_for_calendar(db: Annotated[Session, ...], start, end):
+    """Wrapper del servicio de calendario de entregas (routers/orders.py)."""
+    return orders_service.get_orders_for_calendar(db=db, start=start, end=end)
+
+
 def _order_to_detail_response(order: Order):
     return orders_service._order_to_detail_response(order)
 

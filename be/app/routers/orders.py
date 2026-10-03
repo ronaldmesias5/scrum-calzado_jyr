@@ -23,6 +23,7 @@ from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.product import Product
 from app.models.user import User
 from app.schemas.orders import (
+    CalendarOrderItem,
     OrderCreateRequest,
     OrderDetailResponse,
     OrderListResponse,
@@ -34,6 +35,7 @@ from app.controllers.orders import (
     _order_to_response,
     apply_detail_state_inventory,
     apply_order_state_inventory,
+    get_orders_for_calendar,
     resolve_order_state_from_details,
 )
 
@@ -218,6 +220,28 @@ def list_orders(
         logger.exception("Error al listar órdenes")
         # Retornar respuesta vacía en caso de error
         return OrderListResponse(total=0, page=page, page_size=page_size, total_pages=0, items=[])
+
+
+@router.get("/calendar", response_model=list[CalendarOrderItem])
+def list_orders_calendar(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    start: Annotated[datetime, Query(description="Inicio del rango (ISO 8601)")],
+    end: Annotated[datetime, Query(description="Fin del rango, exclusivo (ISO 8601)")],
+) -> list[CalendarOrderItem]:
+    """
+    Calendario de entregas: pedidos con `delivery_date` en el rango [start, end)
+    más los pedidos sin fecha de entrega (`delivery_date = NULL`).
+
+    Incluye agregación de producción por pedido: `has_production`, `vale_numbers`,
+    `task_count` y `pending_tasks` (sin N+1).
+    """
+    _require_jefe(current_user)
+    try:
+        return get_orders_for_calendar(db=db, start=start, end=end)
+    except Exception:
+        logger.exception("Error al construir el calendario de pedidos")
+        raise HTTPException(status_code=500, detail="Error al obtener el calendario de pedidos")
 
 
 @router.get("/{order_id}", response_model=OrderDetailResponse)

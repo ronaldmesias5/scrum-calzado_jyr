@@ -17,7 +17,8 @@ import {
   LogOut,
   AlertTriangle,
   Tag,
-  DollarSign
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 import { useBadgeCounts } from '@/store/BadgeCountsContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,7 +45,8 @@ const ICON_COLORS: Record<string, string> = {
   '/dashboard/admin/alerts': 'text-rose-500 dark:text-rose-400',
   '/dashboard/admin/reports': 'text-orange-500 dark:text-orange-400',
   '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400',
-  '/dashboard/admin/client-prices': 'text-emerald-500 dark:text-emerald-400'
+  '/dashboard/admin/client-prices': 'text-emerald-500 dark:text-emerald-400',
+  '/dashboard/admin/calendar': 'text-lime-500 dark:text-lime-400'
 };
 
 export default function AdminSidebar({
@@ -69,6 +71,12 @@ export default function AdminSidebar({
       icon: ShoppingCart,
       path: '/dashboard/admin/orders',
       badgeKey: 'pedidos'
+    },
+    {
+      label: 'Calendario',
+      icon: Calendar,
+      path: '/dashboard/admin/calendar',
+      badgeKey: null
     },
     {
       label: t('dashboard.sidebar.catalog'),

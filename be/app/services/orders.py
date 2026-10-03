@@ -10,17 +10,18 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.orm import Session
 
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement, InventoryMovementType
 from app.models.order import Order, OrderDetail, OrderStatus
-from app.models.tasks import Task
+from app.models.tasks import Task, TaskStatus
 from app.models.user import User
 from app.utils.task_priority import calculate_task_priority
 from app.schemas.orders import (
+    CalendarOrderItem,
     OrderDetailItemCreateRequest,
     OrderDetailItemResponse,
     OrderDetailResponse,
@@ -94,6 +95,83 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
             for d in order.details
         ],
     )
+
+
+def get_orders_for_calendar(
+    db: Session,
+    start: datetime,
+    end: datetime,
+) -> list[CalendarOrderItem]:
+    """Pedidos con entrega en [start, end) más los que no tienen fecha de entrega.
+
+    La agregación de producción (tareas/vales) se hace en una segunda query
+    agrupada por order_id, evitando N+1 al renderizar el calendario.
+    """
+    range_cond = and_(
+        Order.delivery_date.is_not(None),
+        Order.delivery_date >= start,
+        Order.delivery_date < end,
+    )
+    orders = (
+        db.execute(
+            select(Order)
+            .where(
+                Order.deleted_at.is_(None),
+                or_(range_cond, Order.delivery_date.is_(None)),
+            )
+            .order_by(Order.delivery_date.is_(None), Order.delivery_date.asc())
+        )
+        .scalars()
+        .all()
+    )
+    if not orders:
+        return []
+
+    order_ids = [o.id for o in orders]
+    task_rows = db.execute(
+        select(Task.order_id, Task.vale_number, Task.status).where(
+            Task.order_id.in_(order_ids),
+            Task.deleted_at.is_(None),
+        )
+    ).all()
+
+    active_statuses = {
+        TaskStatus.pendiente.value,
+        TaskStatus.por_liquidar.value,
+        TaskStatus.en_progreso.value,
+    }
+    agg: dict[uuid.UUID, dict] = {}
+    for order_id, vale_number, task_status in task_rows:
+        entry = agg.setdefault(order_id, {"count": 0, "vales": set(), "pending": 0})
+        entry["count"] += 1
+        if vale_number is not None:
+            entry["vales"].add(int(vale_number))
+        status_value = task_status.value if isinstance(task_status, TaskStatus) else task_status
+        if status_value in active_statuses:
+            entry["pending"] += 1
+
+    items: list[CalendarOrderItem] = []
+    for order in orders:
+        customer = order.customer
+        entry = agg.get(order.id, {"count": 0, "vales": set(), "pending": 0})
+        items.append(
+            CalendarOrderItem(
+                id=order.id,
+                customer_id=order.customer_id,
+                customer_name=customer.name_user if customer else None,
+                customer_last_name=customer.last_name if customer else None,
+                total_pairs=order.total_pairs,
+                state=order.state,
+                priority=calculate_task_priority(order.delivery_date),
+                delivery_date=order.delivery_date,
+                creation_date=order.creation_date,
+                has_production=entry["count"] > 0,
+                vale_numbers=sorted(entry["vales"]),
+                task_count=entry["count"],
+                pending_tasks=entry["pending"],
+            )
+        )
+    return items
 
 
 def apply_order_state_inventory(
