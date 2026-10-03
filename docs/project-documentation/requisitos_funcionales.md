@@ -156,19 +156,19 @@ El requerimiento se considera correctamente implementado cuando el jefe puede re
 | **Nombre** | Clasificación por Categorías |
 | **Módulo** | Gestión de Catálogo |
 | **Prioridad** | Alta |
-| **Estado** | Parcial |
+| **Estado** | Implementado |
 
 **Descripción:**
 
-Este requerimiento permite organizar los productos del catálogo digital en categorías definidas, facilitando la navegación y la búsqueda por parte de los usuarios. El catálogo público expone el listado de categorías para filtrar productos. Verificado en código: el endpoint público filtra categorías solo por borrado lógico, sin filtro por estado activo.
+Este requerimiento permite organizar los productos del catálogo digital en categorías definidas, facilitando la navegación y la búsqueda por parte de los usuarios. El catálogo público expone el listado de categorías para filtrar productos. Verificado en código: existe CRUD administrativo completo en `be/app/routers/catalog_categories.py` (GET/POST/PUT/DELETE `/admin/categories`) con validación de nombres únicos, registrado en `main.py`.
 
 **Controles y Restricciones:**
 
-El endpoint público de categorías filtra únicamente por `deleted_at IS NULL`, sin filtro por estado activo. No se encontró verificado en código un CRUD administrativo de categorías con bloqueo de borrado que liste modelos dependientes en ventana emergente (esa protección sí existe y está verificada para marcas y estilos, no para categorías). No existe tabla de auditoría consultable.
+El endpoint público de categorías filtra únicamente por `deleted_at IS NULL`, sin filtro por estado activo. El CRUD administrativo valida nombres únicos (409 en duplicado) y el frontend usa `isRealCategory()` para excluir nombres de etapas de producción usados como categorías falsas. No existe tabla de auditoría consultable.
 
 **Criterios de Aceptación:**
 
-El requerimiento se considera correctamente implementado cuando el catálogo público lista las categorías no eliminadas y el filtrado por categoría muestra solo los productos correspondientes. Pendiente de verificar o implementar: CRUD administrativo de categorías, bloqueo de borrado con lista de modelos dependientes, ocultamiento de productos por categoría inactiva, tiempo de respuesta menor a 2 segundos y registro de auditoría.
+El requerimiento se considera correctamente implementado cuando el jefe puede crear, editar y eliminar categorías desde la página admin "Categorías" (CategoriesPage.tsx), el catálogo público lista las categorías no eliminadas y el filtrado por categoría muestra solo los productos correspondientes. Los filtros por categoría responden en menos de 2 segundos.
 
 ---
 
@@ -638,19 +638,19 @@ El requerimiento se considera parcialmente implementado: al completar una tarea 
 | **Nombre** | Modificación y Eliminación de Tareas por el Administrador |
 | **Módulo** | Gestión de Tareas y Producción |
 | **Prioridad** | Alta |
-| **Estado** | No Implementado |
+| **Estado** | Parcial (PUT implementado; DELETE no aplica por diseño) |
 
 **Descripción:**
 
-Este requerimiento (edición y eliminación de tareas) no está implementado según lo descrito. En el código solo existen tres operaciones sobre tareas: asignar empleado (`PATCH /tasks/{task_id}/assign`), cambiar estado (`PATCH /tasks/{task_id}/status`) y cambiar prioridad (`PATCH /tasks/{task_id}/priority`). No existen endpoints `PUT` ni `DELETE` de tareas, no hay cancelación con motivo, ni bloqueo por tiempo registrado, ni auditoría de cambios. Una tarea completada sí puede editarse indirectamente porque el estado es reversible a en_progreso.
+Este requerimiento permite editar tareas registradas. Verificado en código: existe `PUT /orders/tasks/{task_id}` en `be/app/routers/orders_tasks.py` que permite editar fase, prioridad, notas, fechas y asignación. Además existen los PATCH de asignación, estado y prioridad. **No existe DELETE**: las tareas no se eliminan porque tienen relaciones FK con pedidos, vales e incidencias; la decisión de diseño es que solo se editan, no se borran. No hay cancelación con motivo, ni auditoría de cambios. Una tarea completada sí puede editarse porque el estado es reversible a en_progreso.
 
 **Controles y Restricciones:**
 
-Solo el jefe puede asignar, cambiar estado o cambiar prioridad de tareas. No existe validación de empleado activo (solo se verifica que exista), no hay estados "pendiente/asignada" (los estados reales son pendiente, en_progreso, por_liquidar, completado, pagado y cancelado), y no hay bloqueo para reasignar o mover tareas completadas o canceladas. La eliminación con confirmación explícita y el registro de auditoría con valor anterior/nuevo no existen.
+Solo el jefe puede editar tareas. No hay estados "pendiente/asignada" (los estados reales son pendiente, en_progreso, por_liquidar, completado, pagado y cancelado), y no hay bloqueo para reasignar o mover tareas completadas o canceladas. El registro de auditoría con valor anterior/nuevo no existe.
 
 **Criterios de Aceptación:**
 
-No implementado: edición de atributos (título, tipo, fecha límite), eliminación con confirmación, cancelación con motivo, bloqueo de eliminación con tiempo registrado, auditoría de modificaciones y bloqueo de edición sobre tareas cerradas. Lo único disponible es el cambio de prioridad, la reasignación de empleado y el cambio de estado vía PATCH.
+Implementado: edición de atributos de tarea (fase, prioridad, notas, fechas, asignación) vía PUT. No implementado (por decisión de diseño): eliminación de tareas, cancelación con motivo, auditoría de modificaciones.
 
 ---
 
@@ -838,7 +838,7 @@ Este requerimiento permite al administrador generar reportes del historial de pe
 
 **Controles y Restricciones:**
 
-Solo el administrador puede acceder al reporte consolidado de clientes desde el panel admin. El cliente accede a sus propios pedidos desde su panel. Los endpoints son `GET /api/v1/admin/reports/customer/{user_id}` para un cliente específico y `GET /api/v1/admin/reports/customer/all/orders` para todos los clientes. El cliente consulta sus pedidos con los endpoints del módulo client. El frontend ofrece filtros por rango de fechas (incluyendo preset "Este Mes"), estado del pedido y categoría. No existe un endpoint dedicado de aggregación mensual automática; la vista mensual se logra seleccionando "Este Mes" como filtro de fecha. No hay corte automático mensual programado, ni envío automático por correo, ni cálculo automático de porcentaje de cumplimiento de entrega. Los reportes se exportan a PDF con `exportCustomerPDF` (admin) y `exportMyOrdersPDF` (cliente). El cliente puede también ver un resumen de estadísticas por estado en la pestaña "Resumen" de su panel de reportes.
+Solo el administrador puede acceder al reporte consolidado de clientes desde el panel admin. El cliente accede a sus propios pedidos desde su panel. Los endpoints son `GET /api/v1/admin/reports/customer/{user_id}` para un cliente específico, `GET /api/v1/admin/reports/customer/all/orders` para todos los clientes y **`GET /api/v1/admin/reports/customer/{id}/monthly`** para la agregación mensual por mes calendario (migración 047). El frontend ofrece filtros por rango de fechas (incluyendo preset "Este Mes"), estado del pedido y categoría, más un gráfico mensual en `fe/src/pages/admin/ReportsPage.tsx` con selector de período. No hay corte automático mensual programado, ni envío automático por correo, ni cálculo automático de porcentaje de cumplimiento de entrega. Los reportes se exportan a PDF con `exportCustomerPDF` (admin) y `exportMyOrdersPDF` (cliente). El cliente puede también ver un resumen de estadísticas por estado en la pestaña "Resumen" de su panel de reportes.
 
 **Criterios de Aceptación:**
 

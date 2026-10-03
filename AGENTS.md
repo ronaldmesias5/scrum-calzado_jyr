@@ -108,7 +108,7 @@ pnpm lint                         # expo lint
 - Las migraciones de Alembic se ejecutan **automáticamente al iniciar el backend** (`be/app/init_db.py`), tanto en Docker como local.
 - Los datos semilla también se insertan automáticamente (roles, tipos de documento, catálogo con 65 productos, usuarios de prueba).
 - **Nunca ejecutes `alembic upgrade head` manualmente** a menos que estés depurando algo muy específico.
-- Hay 42 migraciones en `be/alembic/versions/`. Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
+- Hay 50 migraciones en `be/alembic/versions/` (001–049, con 043 duplicado intencionalmente: `email_verification_tokens` y `task_priority_remove_media`). Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
 
 ### Usuario admin de prueba
 ```
@@ -131,17 +131,18 @@ Un solo `.env` en la raíz. Copiar de `.env.example`. Los `.env` individuales en
 ### Backend — capas por funcionalidad
 ```
 be/app/
-├── routers/           # 21 routers FastAPI (endpoint definitions)
-├── controllers/       # 14 controllers (business logic delegation)
-├── services/          # 8 services (domain logic)
-├── models/            # 23 modelos SQLAlchemy
-├── schemas/           # 13 esquemas Pydantic (request/response)
+├── routers/           # 25 routers FastAPI (22 registrados en main.py)
+├── controllers/       # 7 controllers (business logic delegation)
+├── services/          # 10 services (domain logic)
+├── models/            # 26 modelos SQLAlchemy (30 tablas)
+├── schemas/           # 15 esquemas Pydantic (request/response)
 ├── middleware/        # Rate limiting, error handling, security headers
 ├── utils/             # Email, seguridad, crypto
 ├── init_db.py         # Auto-migraciones + seed al arrancar
 └── main.py            # Punto de entrada
 ```
-- Modelos centralizados en `be/app/models/` (23 modelos) — no dentro de cada módulo.
+- Modelos centralizados en `be/app/models/` (26 modelos, 30 tablas) — no dentro de cada módulo.
+- Routers nuevos sin registrar en docs anteriores: `client_prices.py`, `catalog_categories.py`, `bulk_import.py`, `ai_chat.py`.
 - No existe directorio `be/app/modules/` — la estructura es por capa (routers/, controllers/, services/).
 
 ### Frontend — import alias `@`
@@ -160,7 +161,7 @@ fe/src/
 │   ├── atoms/            # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
 │   └── layout/           # Layouts globales (AppLayout, AuthLayout…)
 ├── features/             # Features de negocio (Atomic Design por feature)
-│   ├── admin/            # Panel admin (14 páginas)
+│   ├── admin/            # Panel admin (15 páginas)
 │   │   ├── components/
 │   │   │   ├── atoms/    # StatCard, StatusBadgeComponent
 │   │   │   ├── molecules/  # SummarySizer, TaskCard, CreateUserForm, modales (DeleteConfirmModal,
@@ -171,7 +172,8 @@ fe/src/
 │   │   │   │              #   ProductFormModal, StyleFormModal)
 │   │   │   └── organisms/  # OrderFormModal, home/ (AlertsPanel, AvailableTasksPanel…), layout/ (AdminHeader,
 │   │   │                  #   AdminLayout, AdminSidebar, NotificationsPanel)
-│   │   └── utils/        # reportsUtils.ts
+│   │   └── utils/        # reportsUtils.ts, catalogPdfUtils.ts (export PDF catálogo)
+│   ├── ai/               # Chatbot IA (Águila J&R) con embeddings deterministas Dim 768
 │   ├── auth/             # Login, Register, Password Reset
 │   │   └── components/   # molecules/ (LoginForm, RegisterForm…), organisms/ (AuthModals)
 │   ├── client/           # Panel cliente
@@ -183,11 +185,11 @@ fe/src/
 │       ├── components/   # atoms/ (WhatsAppButton), molecules/ (ProductCard, CatalogFilters), organisms/ (LandingHeader…)
 │       └── config/      # whatsappConfig.ts
 ├── pages/                # Páginas enrutables
-│   ├── admin/            # 14 páginas del panel admin
-│   ├── auth/             # 7 páginas (login, register, password reset…)
+│   ├── admin/            # 15 páginas del panel admin
+│   ├── auth/             # 8 páginas (login, register, password reset…)
 │   ├── client/           # 6 páginas (DashboardPage, OrdersPage, WholesaleCatalogPage, ReportsPage, SettingsPage, MisIncidenciasPage)
 │   ├── employee/         # 6 páginas (Dashboard, Tasks, AvailableTasks, Incidences, Reports, Settings)
-│   └── public/           # 2 páginas (LandingPage, ReactivationPage)
+│   └── public/           # 2 páginas (LandingPage, CatalogPage)
 ├── hooks/                # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
 ├── services/             # Servicios de API globales (adminApi, authService, ordersApi, employeeApi, clientApi…)
 ├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
@@ -196,6 +198,19 @@ fe/src/
 ├── styles/               # Estilos globales (TailwindCSS)
 └── locales/              # Traducciones (en, es)
 ```
+
+---
+
+## Features implementadas (últimos sprints)
+
+- **Precios por cliente** (migración 049, `client_prices`): cada cliente puede tener precio propio por producto. Endpoint `GET /client/prices/product/{id}` (cliente autenticado) y CRUD en `client_prices.py` (admin). La columna `client_prices.sale_price` almacena el precio congelado cuando se crea un pedido (no se actualiza si el precio de tabla cambia).
+- **Precio unitario en detalle de pedido**: `OrderDetailItem.unit_price` en responses de admin y cliente; badges de precio/subtotal en `OrdersPage.tsx` (admin y cliente) y fila "Total Pedido".
+- **Export PDF del catálogo**: `fe/src/features/admin/utils/catalogPdfUtils.ts` (jspdf + autotable) para exportar productos del catálogo admin.
+- **CRUD de categorías** (HU-007 / RF-007): endpoints `GET/POST/PUT/DELETE /admin/categories` en `catalog_categories.py`, con validación de nombres únicos y filtrado `isRealCategory()` en el frontend para excluir nombres de etapas de producción usados como categoría falsos.
+- **Edición de tareas** (HU-027 / RF-027): `PUT /orders/tasks/{task_id}` en `orders_tasks.py` permite editar fase, prioridad, notas, fechas y asignación. **No existe DELETE** — las tareas no se eliminan (FK a pedidos, vales, incidencias); solo se editan.
+- **Reportes mensuales** (HU-035 / RF-035): `GET /admin/reports/customer/{id}/monthly` (migración 047 + `reports.py`) devuelve órdenes agrupadas por mes calendario; gráfico mensual en `fe/src/pages/admin/ReportsPage.tsx`.
+- **Catálogo mayorista con precios**: `WholesaleCatalogPage` y `WholesaleProductCard` muestran precio por docena/par con precio personalizado del cliente si existe.
+- **Chatbot IA "Águila J&R"**: embeddings deterministas Dim 768 (`fe/src/features/ai/`), router `ai_chat.py` con rate limit e inyección de instrucciones protegida. Scripts: `be/scripts/seed_ai_embeddings.py`.
 
 ---
 

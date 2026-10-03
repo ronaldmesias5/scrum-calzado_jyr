@@ -82,38 +82,25 @@ El catálogo se siembra automáticamente al iniciar el backend con **65 producto
 ### Lo que SÍ está implementado
 - **Modelo `Category`** en `be/app/models/category.py`: `id`, `name`, `description`, `is_active`, `deleted_at`
 - **Endpoint público**: `GET /api/v1/catalog/categories` — lista categorías activas (consumido por el catálogo público y filtros)
+- **CRUD Admin** en `be/app/routers/catalog_categories.py` (registrado en `main.py`):
+  | Método | Ruta | Estado |
+  |--------|------|--------|
+  | `GET` | `/api/v1/admin/categories` | ✅ IMPLEMENTADO |
+  | `POST` | `/api/v1/admin/categories` | ✅ IMPLEMENTADO (valida nombre único → 409) |
+  | `PUT` | `/api/v1/admin/categories/{id}` | ✅ IMPLEMENTADO |
+  | `DELETE` | `/api/v1/admin/categories/{id}` | ✅ IMPLEMENTADO |
+- **Página admin**: `fe/src/pages/admin/CategoriesPage.tsx` con listado, modal de formulario y confirmación de borrado, integrada en el sidebar y rutas del dashboard
+- **Filtro frontend**: `isRealCategory()` excluye nombres de etapas de producción usados como categorías falsas
 - **Seed data**: 7 categorías sembradas automáticamente (Zapatillas, Botas, Sandalias, Zapatos, Tacones, Deportivos, Accesorios)
 - **Asignación a productos**: `Product.id_category` (FK) ya se usa en la creación de productos
 - **Validación de categoría existente** al crear/editar productos
 
-### Lo que NO está implementado (pendiente)
-
-#### Backend — CRUD Admin de Categorías
-No existen endpoints de administración para gestionar categorías:
-| Método | Ruta | Estado |
-|--------|------|--------|
-| `POST` | `/api/v1/admin/catalog/categories` | ❌ FALTA |
-| `PUT` | `/api/v1/admin/catalog/categories/{id}` | ❌ FALTA |
-| `DELETE` | `/api/v1/admin/catalog/categories/{id}` | ❌ FALTA |
-| `GET` | `/api/v1/admin/catalog/categories` (admin, con inactivos) | ❌ FALTA |
-
-Actualmente el único endpoint GET existente es público y solo retorna categorías activas. No hay forma de crear, editar, desactivar o eliminar categorías desde la API de administración.
-
-#### Frontend — Página de Gestión de Categorías
-No existe una página o sección en el dashboard de administración para gestionar categorías:
-- ❌ No hay página de administración de categorías
-- ❌ No hay formulario para crear/editar categorías
-- ❌ No hay forma de activar/desactivar categorías desde la UI
-- ❌ No hay integración con el sistema de navegación del dashboard
+### Lo que NO está implementado (por diseño / fuera de alcance)
+- Ocultamiento de productos por categoría inactiva (el endpoint público filtra solo por `deleted_at`)
+- Registro de auditoría en tabla (los eventos van a `audit.log`)
 
 ### Dependencia con HU-006
-HU-007 es parcialmente dependiente de HU-006 porque las categorías son un atributo del producto. Sin embargo, la funcionalidad básica (asignar categoría a producto) funciona mediante seed data y validación. Lo que falta es la gestión CRUD independiente de categorías.
-
-### Recomendación para completar HU-007
-1. **Backend**: Agregar endpoints CRUD en `be/app/routers/catalog_products.py` (o mejor, en un nuevo archivo separado siguiendo el patrón 4-capas)
-2. **Frontend**: Crear página `CategoryManagementPage.tsx` en `fe/src/pages/admin/` con tabla CRUD
-3. **Seeder**: Ya existen categorías iniciales, pero agregar opción de crear más desde admin
-4. **Navegación**: Agregar enlace en el sidebar del dashboard de administración
+HU-007 es parcialmente dependiente de HU-006 porque las categorías son un atributo del producto. La gestión CRUD independiente de categorías ya existe.
 
 ---
 
@@ -129,9 +116,8 @@ HU-007 es parcialmente dependiente de HU-006 porque las categorías son un atrib
 ## Problemas Conocidos
 
 1. **God file**: `catalog_router.py` (~1365 líneas) concentra CRUD de productos, marcas, inventario. Debería dividirse en `router → controller → service → repository`.
-2. **Sin unique constraint en Inventory**: La tabla `inventory` no tiene unique constraint en `(product_id, size, colour)`, lo que permite duplicados y causa problemas de stock negativo.
+2. **Unique constraint en Inventory**: ✅ Resuelto — restricción única en `(product_id, size, colour)` agregada (migración 039).
 3. **Color mismatch**: Inventory almacena `colour = ""` (string vacío) mientras que `order_details` usa nombres completos ("negro x blanco"). Esto causa fallos en lookups de inventario desde pedidos.
-4. **HU-007 incompleta**: Falta CRUD admin de categorías (ver sección HU-007).
 
 ## Logros
 
@@ -140,7 +126,8 @@ HU-007 es parcialmente dependiente de HU-006 porque las categorías son un atrib
 - Catálogo público visible para clientes
 - Sistema de marcas y estilos asociados a productos
 - Soft-delete y toggle de estado activo/inactivo
+- CRUD completo de categorías (backend + frontend)
 
 ## Resumen
 
-El Sprint 4 implementó la gestión completa del catálogo de productos (HU-006) con CRUD administrativo y vista pública. La clasificación por categorías (HU-007) quedó parcialmente implementada: el modelo, seed data y asignación a productos funcionan, pero falta el CRUD administrativo de categorías tanto en backend como en frontend. Se identificaron problemas técnicos (god file, falta de unique constraint, color mismatch) que deberán abordarse en sprints futuros para garantizar la integridad del inventario.
+El Sprint 4 implementó la gestión completa del catálogo de productos (HU-006) con CRUD administrativo y vista pública. La clasificación por categorías (HU-007) está completa: modelo, seed data, asignación a productos, CRUD administrativo (`catalog_categories.py`) y página `CategoriesPage.tsx`. Se identificaron problemas técnicos (god file, color mismatch); el unique constraint de inventario ya fue resuelto.
