@@ -170,11 +170,11 @@ Servicios:
 
 ---
 
-## 🎯 6. ESTADO DEL PROYECTO (Sprint 7 — Junio 2026)
+## 🎯 6. ESTADO DEL PROYECTO (Sprints 1-16 completados — Octubre 2026)
 
 | Aspecto | Estado |
 |---------|--------|
-| Sprints completados | 1-7 (backlog), 8-16 (código implementado) |
+| Sprints completados | 1-16 (funcionalidad completa) |
 | Migraciones BD | 37 |
 | Modelos | 23 |
 | Módulos backend | 12 |

@@ -7,11 +7,11 @@
 Sistema integral para la gestión y producción de calzado, diseñado con una arquitectura modular para escalar eficientemente.
 
 **Dashboards implementados:**
-- **Dashboard Jefe**: Supervisión total (15 páginas), validación de clientes, gestión de empleados, catálogo, categorías, pedidos, inventario, insumos, tareas de producción, incidencias (scrap, pérdidas, pendientes), reportes con PDF export, alertas, precios por cliente.
+- **Dashboard Jefe**: Supervisión total (16 páginas), validación de clientes, gestión de empleados, catálogo, categorías, pedidos, calendario de pedidos, inventario, insumos, tareas de producción, incidencias (scrap, pérdidas, pendientes), reportes con PDF export, alertas, precios por cliente.
 - **Dashboard Empleados**: Operativo (6 páginas) — tareas disponibles, mis tareas, incidencias (maquinaria, producto), reportes de rendimiento con PDF export, configuración de perfil con avatar.
 - **Dashboard Clientes**: Operativo (6 páginas) — dashboard, catálogo mayorista con precios personalizados, pedidos con precio unitario y subtotal, reportes, incidencias, configuración.
 
-**Estado actual:** Sprints 1-16 con funcionalidad completa. Features adicionales: precios por cliente, export PDF del catálogo, CRUD categorías, edición de tareas, reportes mensuales. Notificaciones, incidencias, vales de producción, y badges de conteo implementados.
+**Estado actual:** Sprints 1-16 con funcionalidad completa. Features adicionales: calendario de pedidos, precios por cliente, export PDF del catálogo, CRUD categorías, edición de tareas, reportes mensuales, chatbot IA (Águila J&R). Notificaciones, incidencias, vales de producción, y badges de conteo implementados.
 
 ---
 
@@ -21,12 +21,14 @@ Sistema integral para la gestión y producción de calzado, diseñado con una ar
 scrum/
 ├── be/                          # 🐍 Backend - FastAPI + Python (uv)
 │   ├── app/
-│   │   ├── core/                # Configuración, BD, dependencias y seguridad
+│   │   ├── config.py / database.py / dependencies.py  # Configuración, BD y dependencias (raíz de app/)
 │   │   ├── init_db.py           # Auto-migraciones + seed data al arrancar
 │   │   ├── models/              # Modelos SQLAlchemy (26 archivos, 30 tablas)
 │   │   ├── routers/             # 📦 25 routers FastAPI (22 registrados en main.py)
 │   │   │   ├── admin.py         # Catálogo admin, reportes, usuarios, creación sin contraseña
+│   │   │   ├── ai_chat.py       # Chatbot IA "Águila J&R" (/api/v1/ai)
 │   │   │   ├── auth.py          # Login, registro, JWT, logout global, cambio de contraseña
+│   │   │   ├── bulk_import.py   # Importación masiva CSV de productos y usuarios
 │   │   │   ├── catalog*.py      # Catálogo público (6 routers: catalog, products, brands, styles, categories, inventory)
 │   │   │   ├── client.py        # Dashboard cliente, pedidos y catálogo con precios
 │   │   │   ├── client_prices.py # Precios personalizados por cliente (CRUD)
@@ -56,13 +58,13 @@ scrum/
 │   │   │   ├── atoms/            # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
 │   │   │   └── layout/           # Layouts globales (AppLayout, AuthLayout…)
 │   │   ├── features/             # Features de negocio (Atomic Design por feature)
-│   │   │   ├── admin/            # Panel admin (15 páginas) — components/{atoms,molecules,organisms}, utils/reportsUtils.ts
+│   │   │   ├── admin/            # Panel admin (16 páginas) — components/{atoms,molecules,organisms}, utils/{reportsUtils,catalogPdfUtils}.ts
 │   │   │   ├── ai/               # Chatbot IA con embeddings deterministas
 │   │   │   ├── auth/             # Login, Register, Password Reset — components/{molecules,organisms}
 │   │   │   ├── client/           # Panel cliente — components/{molecules,organisms}
 │   │   │   ├── employee/         # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
 │   │   │   └── landing/          # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
-│   │   ├── pages/                # Páginas enrutables: admin(15), auth(8), client(6), employee(6), public(2)
+│   │   ├── pages/                # Páginas enrutables: admin(16), auth(8), client(6), employee(6), public(2)
 │   │   ├── hooks/                # Hooks reutilizables
 │   │   ├── services/             # Servicios de API globales
 │   │   ├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
@@ -77,16 +79,16 @@ scrum/
 │   └── init/                    # init.sql — solo extensiones (no esquema)
 │
 ├── docs/                        # 📚 Documentación
+│   ├── IA_BOT/                  # Conocimiento del chatbot (knowledge.md, README)
 │   ├── project-documentation/   # Arquitectura, diccionario datos, requisitos, presentación
 │   └── sprints/                 # Backlogs de 16 sprints y plan de trabajo
 │
-├── .opencode/                   # Configuración opencode
+├── .opencode/                   # Configuración opencode (local, gitignored)
 │   └── skills/                  # Skills personalizadas
 │       └── doc-sync/            # Sincronización automática de docs
 │
-├── .agents/skills/              # 8 skills externas (accessibility, seo, etc.)
+├── .agents/skills/              # 8 skills externas (accessibility, seo, etc.) (local, gitignored)
 ├── docker-compose.yml           # db + be + fe + mailpit
-├── opencode.json                # Configuración agente AI
 └── .env.example                 # Variables de entorno
 ```
 

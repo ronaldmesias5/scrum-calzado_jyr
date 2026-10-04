@@ -41,7 +41,7 @@ pnpm install                      # NUNCA npm ni yarn
 pnpm dev
 ```
 - **pnpm es OBLIGATORIO para el frontend.** `npm` y `yarn` rompen la resolución de dependencias.
-- En Windows con Docker, Vite usa polling (`vite.config.ts:55`) porque inotify no funciona.
+- En Windows con Docker, Vite usa polling (`vite.config.ts:52`) porque inotify no funciona.
 
 ### Pruebas
 ```bash
@@ -120,7 +120,7 @@ Contraseña: Test123456!
 
 ## Variables de entorno
 
-Un solo `.env` en la raíz. Copiar de `.env.example`. Los `.env` individuales en `be/` y `fe/` son obsoletos (ignorar).
+Un solo `.env` en la raíz. Copiar de `.env.example`. No existen `.env` en `be/` ni `fe/`.
 
 **Dato clave para Docker**: `DATABASE_URL` usa `db` como hostname (nombre del servicio), no `localhost`. En local sin Docker debe ser `localhost`.
 
@@ -161,7 +161,7 @@ fe/src/
 │   ├── atoms/            # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
 │   └── layout/           # Layouts globales (AppLayout, AuthLayout…)
 ├── features/             # Features de negocio (Atomic Design por feature)
-│   ├── admin/            # Panel admin (15 páginas)
+│   ├── admin/            # Panel admin (16 páginas)
 │   │   ├── components/
 │   │   │   ├── atoms/    # StatCard, StatusBadgeComponent
 │   │   │   ├── molecules/  # SummarySizer, TaskCard, CreateUserForm, modales (DeleteConfirmModal,
@@ -185,7 +185,7 @@ fe/src/
 │       ├── components/   # atoms/ (WhatsAppButton), molecules/ (ProductCard, CatalogFilters), organisms/ (LandingHeader…)
 │       └── config/      # whatsappConfig.ts
 ├── pages/                # Páginas enrutables
-│   ├── admin/            # 15 páginas del panel admin
+│   ├── admin/            # 16 páginas del panel admin
 │   ├── auth/             # 8 páginas (login, register, password reset…)
 │   ├── client/           # 6 páginas (DashboardPage, OrdersPage, WholesaleCatalogPage, ReportsPage, SettingsPage, MisIncidenciasPage)
 │   ├── employee/         # 6 páginas (Dashboard, Tasks, AvailableTasks, Incidences, Reports, Settings)
@@ -203,7 +203,7 @@ fe/src/
 
 ## Features implementadas (últimos sprints)
 
-- **Precios por cliente** (migración 049, `client_prices`): cada cliente puede tener precio propio por producto. Endpoint `GET /client/prices/product/{id}` (cliente autenticado) y CRUD en `client_prices.py` (admin). La columna `client_prices.sale_price` almacena el precio congelado cuando se crea un pedido (no se actualiza si el precio de tabla cambia).
+- **Precios por cliente** (migración 049, `client_prices`): cada cliente puede tener precio propio por producto. CRUD admin `GET/POST/PUT/DELETE /api/v1/admin/client-prices` (más `POST /bulk`) en `client_prices.py`; el catálogo cliente (`GET /api/v1/client/catalog/products`) devuelve `unit_price`. La columna `client_prices.unit_price` guarda el precio por par; al crear un pedido se congela en `order_details.unit_price` (no se actualiza si el precio de tabla cambia).
 - **Precio unitario en detalle de pedido**: `OrderDetailItem.unit_price` en responses de admin y cliente; badges de precio/subtotal en `OrdersPage.tsx` (admin y cliente) y fila "Total Pedido".
 - **Export PDF del catálogo**: `fe/src/features/admin/utils/catalogPdfUtils.ts` (jspdf + autotable) para exportar productos del catálogo admin.
 - **CRUD de categorías** (HU-007 / RF-007): endpoints `GET/POST/PUT/DELETE /admin/categories` en `catalog_categories.py`, con validación de nombres únicos y filtrado `isRealCategory()` en el frontend para excluir nombres de etapas de producción usados como categoría falsos.
@@ -211,6 +211,7 @@ fe/src/
 - **Reportes mensuales** (HU-035 / RF-035): `GET /admin/reports/customer/{id}/monthly` (migración 047 + `reports.py`) devuelve órdenes agrupadas por mes calendario; gráfico mensual en `fe/src/pages/admin/ReportsPage.tsx`.
 - **Catálogo mayorista con precios**: `WholesaleCatalogPage` y `WholesaleProductCard` muestran precio por docena/par con precio personalizado del cliente si existe.
 - **Chatbot IA "Águila J&R"**: embeddings deterministas Dim 768 (`fe/src/features/ai/`), router `ai_chat.py` con rate limit e inyección de instrucciones protegida. Scripts: `be/scripts/seed_ai_embeddings.py`.
+- **Calendario de Pedidos**: `GET /api/v1/admin/orders/calendar` (solo jefe, en `orders.py`), devuelve pedidos con `delivery_date` en el rango + pedidos sin fecha, con `vale_numbers` y tareas pendientes. Frontend: `fe/src/pages/admin/CalendarPage.tsx`, ruta `/dashboard/admin/calendar`, entrada "Calendario" en `AdminSidebar.tsx`.
 
 ---
 
@@ -274,5 +275,4 @@ const { isOpen, open, close } = useModalDialog();
 - `COMO_CORRER_PROYECTO.md` — instrucciones en español para arrancar el proyecto
 - `docs/project-documentation/` — arquitectura, diccionario de datos, requerimientos
 - `docs/sprints/` — plan de trabajo y backlogs de sprints
-- `docs/project-documentation/GUIA_DISENO.md` — guía de diseño visual, consistencia de UI y plantilla para nuevas secciones
 - `README.md` (raíz) — descripción general del sistema

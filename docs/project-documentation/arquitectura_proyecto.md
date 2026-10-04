@@ -1,8 +1,8 @@
 # Arquitectura del Proyecto - Sistema de Gestión y Producción de Calzado - CALZADO J&R
 
 **Arquitecto:** Ronald Guerrero
-**Última Actualización:** 13 de Junio de 2026
-**Estado:** ✅ MVP Fase 1 (Sprints 1-7) | Dashboard Jefe, Empleado y Cliente operativos
+**Última Actualización:** 3 de Octubre de 2026
+**Estado:** ✅ Sprints 1-16 completados | Dashboards Jefe, Empleado y Cliente operativos + chatbot IA
 
 ---
 
@@ -18,11 +18,11 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
                               │ HTTP/HTTPS (JWT)
                     Backend (FastAPI + Python)
                       - REST API asincrónica
-                      - 21 routers modulares
+                      - 25 routers modulares
                       - Middleware (auth, CORS)
                               │ SQL/TCP
                     PostgreSQL 17
-                      - 24 tablas + audit columns
+                      - 30 tablas + audit columns
 ```
 
 ---
@@ -36,7 +36,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Python** | 3.12-slim | Runtime principal del servidor |
 | **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
 | **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
-| **Alembic** | 1.14.0 | Sistema de migraciones de BD (42 migraciones) |
+| **Alembic** | 1.14.0 | Sistema de migraciones de BD (50 migraciones) |
 | **Pydantic** | 2.0+ | Validación y serialización de datos |
 | **PyJWT (python-jose)** | 3.3+ | Creación y validación de JWT tokens |
 | **bcrypt / passlib** | 4.0+ | Hash criptográfico de contraseñas |
@@ -46,6 +46,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **python-multipart** | 0.0.18+ | Soporte para formularios multipart |
 | **ruff** | 0.8+ | Linter + formateador (line-length 100) |
 | **pytest + httpx** | 8.0+ | Testing unitario e integración |
+| **pgvector + openai/groq/generativeai** | 0.3+ | Embeddings IA (Dim 768) para el chatbot |
 
 **Gestor de dependencias:** `uv` (NO requirements.txt). Las dependencias se declaran en `pyproject.toml`.
 
@@ -67,6 +68,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Vitest** | 4.0+ | Testing unitario |
 | **React Testing Library** | 16.3+ | Testing de componentes |
 | **Prettier** | 3.8+ | Formateo de código |
+| **jspdf + jspdf-autotable** | 3.x | Export PDF (reportes + catálogo) |
 
 ### Base de Datos
 
@@ -103,33 +105,34 @@ scrum/
 │
 ├── be/                         # Backend - FastAPI + Python
 │   ├── app/
-│   │   ├── core/               # Config, BD, seguridad, dependencias
-│   │   │   ├── config.py
-│   │   │   ├── database.py
-│   │   │   ├── dependencies.py
-│   │   │   ├── security_config.py
-│   │   │   └── logging_config.py
+│   │   ├── config.py            # Config (pydantic-settings)
+│   │   ├── database.py          # Engine + SessionLocal
+│   │   ├── dependencies.py      # Dependencias inyectables
+│   │   ├── logging_config.py    # Logging
 │   │   │
 │   │   ├── middleware/          # Middleware personalizado
-│   │   │   ├── audit_logger.py
+│   │   │   ├── csrf.py
 │   │   │   ├── error_handler.py
 │   │   │   ├── rate_limit.py
 │   │   │   └── security_headers.py
 │   │   │
-│   │   ├── models/             # 22 modelos SQLAlchemy centralizados
+│   │   ├── models/             # 26 modelos SQLAlchemy centralizados (30 tablas)
 │   │   │   ├── user.py, role.py, type_document.py
 │   │   │   ├── product.py, category.py, brand.py, style.py
-│   │   │   ├── order.py, tasks.py
+│   │   │   ├── order.py, tasks.py, client_price.py
 │   │   │   ├── inventory.py, inventory_movement.py
 │   │   │   ├── supplies.py, supply_categories.py, product_supplies.py, supplies_movement.py
-│   │   │   ├── notifications.py, incidence.py
-│   │   │   ├── vale.py, password_reset_token.py
+│   │   │   ├── notifications.py, incidence.py, pending_incidence.py, scrap.py
+│   │   │   ├── vale.py, password_reset_token.py, email_verification_token.py
+│   │   │   ├── reactivation_ticket.py, report_share.py, ai_embedding.py
 │   │   │   └── ...
 │   │   │
-│   │   ├── routers/             # 21 routers FastAPI (endpoint definitions)
+│   │   ├── routers/             # 25 routers FastAPI (endpoint definitions)
 │   │   │   ├── auth.py          # Autenticación JWT
 │   │   │   ├── admin.py         # Catálogo admin + reportes + usuarios
 │   │   │   ├── catalog*.py      # Catálogo público (5 routers)
+│   │   │   ├── catalog_categories.py # CRUD categorías (admin)
+│   │   │   ├── client_prices.py # Precios por cliente (admin)
 │   │   │   ├── dashboard_*.py   # Dashboards jefe/empleado (5 routers)
 │   │   │   ├── orders*.py       # Pedidos + producción (3 routers)
 │   │   │   ├── client.py        # Dashboard cliente
@@ -138,26 +141,29 @@ scrum/
 │   │   │   ├── reports.py       # Reportes admin
 │   │   │   ├── notifications.py # Notificaciones WebSocket
 │   │   │   ├── type_document.py # Tipos de documento
-│   │   │   └── users.py         # CRUD usuarios
+│   │   │   ├── users.py         # CRUD usuarios
+│   │   │   ├── bulk_import.py   # Importación masiva CSV
+│   │   │   └── ai_chat.py       # Chatbot IA (Águila J&R)
 │   │   │
-│   │   ├── controllers/         # 14 controllers (business logic delegation)
-│   │   ├── services/            # 8 services (domain logic)
-│   │   ├── schemas/             # 13 esquemas Pydantic (request/response)
-│   │   ├── middleware/          # Rate limiting, error handling, security headers
+│   │   ├── controllers/         # 7 controllers (business logic delegation)
+│   │   ├── services/            # 10 services (domain logic)
+│   │   ├── schemas/             # 15 esquemas Pydantic (request/response)
 │   │   │
 │   │   ├── utils/              # Utilidades compartidas
 │   │   │
 │   │   ├── init/               # Seed data
-│   │   │   ├── init_db_simple.py
 │   │   │   └── seed_data.py
 │   │   │
 │   │   ├── init_db.py          # Auto-migraciones + seed al arrancar
 │   │   └── main.py             # Punto de entrada FastAPI
 │   │
-│   ├── alembic/versions/       # 42 migraciones progresivas
-│   ├── scripts/                # Utilidades standalone
+│   ├── alembic/versions/       # 50 migraciones progresivas (001–049, 043 duplicado)
+│   ├── scripts/                # Utilidades standalone (7)
 │   │   ├── create_admin.py     # Crear admin fuera de API
-│   │   └── heal_line_groups.py # Reparar line_group duplicados
+│   │   ├── heal_line_groups.py # Reparar line_group duplicados
+│   │   ├── seed_ai_embeddings.py # Semilla de embeddings IA
+│   │   ├── seed_full_flow.py, update_prices.py, advance_tasks.py, fix_assignments.py
+│   │   └── ...
 │   ├── tests/                  # Tests unitarios e integración
 │   ├── pyproject.toml          # Dependencias + tooling config (uv)
 │   └── Dockerfile
@@ -186,21 +192,22 @@ scrum/
 │   │   │       └── DashboardFooter.tsx
 │   │   │
 │   │   ├── features/            # Features de negocio (Atomic Design por feature)
-│   │   │   ├── admin/           # Panel admin (14 páginas) — components/{atoms,molecules,organisms}, utils/reportsUtils.ts
+│   │   │   ├── admin/           # Panel admin (16 páginas) — components/{atoms,molecules,organisms}, utils/{reportsUtils,catalogPdfUtils}.ts
 │   │   │   │   ├── components/  # molecules: modales CRUD, SummarySizer, TaskCard; organisms: OrderFormModal, home/, layout/
 │   │   │   │   │   ├── layout/  # AdminLayout, AdminSidebar, AdminHeader, NotificationsPanel
 │   │   │   │   │   ├── home/    # AlertsPanel, AvailableTasksPanel, etc.
 │   │   │   │   │   └── ...
-│   │   │   │   └── utils/       # reportsUtils.ts (export PDF reportes)
+│   │   │   │   └── utils/       # reportsUtils.ts (PDF reportes), catalogPdfUtils.ts (PDF catálogo)
+│   │   │   ├── ai/              # Chatbot IA (Águila J&R) — ChatWidget, aiApi, useChat
 │   │   │   ├── auth/            # Login, Register, Password Reset — components/{molecules,organisms}
 │   │   │   ├── client/          # Panel cliente — components/{molecules,organisms}
 │   │   │   ├── employee/        # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
 │   │   │   └── landing/         # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
 │   │   │
-│   │   ├── pages/               # Páginas enrutables: admin(14), auth(7), client(3), employee(6), public(2)
-│   │   │   ├── admin/           # DashboardPage, ClientsPage, CatalogPage, OrdersPage, TasksPage, InventoryPage, …
+│   │   ├── pages/               # Páginas enrutables: admin(16), auth(8), client(6), employee(6), public(2)
+│   │   │   ├── admin/           # DashboardPage, OrdersPage, CalendarPage, CategoriesPage, ClientPricesPage, ReportsPage, …
 │   │   │   ├── auth/            # LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, …
-│   │   │   ├── client/          # DashboardPage, OrdersPage
+│   │   │   ├── client/          # DashboardPage, OrdersPage, WholesaleCatalogPage, MisIncidenciasPage, ReportsPage, SettingsPage
 │   │   │   ├── employee/        # DashboardPage, TasksPage, AvailableTasksPage, IncidencesPage, ReportsPage, SettingsPage
 │   │   │   └── public/          # LandingPage, CatalogPage
 │   │   │
@@ -231,7 +238,7 @@ scrum/
 │   │       └── en/              # Inglés
 │   │
 │   ├── public/                  # Logo, favicon, imágenes
-│   ├── __tests__/               # Tests frontend
+│   ├── src/__tests__/           # Tests frontend
 │   ├── package.json             # pnpm (NUNCA npm/yarn)
 │   ├── vite.config.ts           # Proxy, polling, aliases @
 │   ├── tsconfig.json
@@ -240,14 +247,21 @@ scrum/
 ├── db/                          # Solo bootstrap PostgreSQL
 │   └── init/init.sql            # Extensiones (no esquema - lo crea Alembic)
 │
+├── mobile/                      # App móvil (Expo SDK 54 + React Native)
+├── test/                        # pruebas_bd (SQL) + selenium (E2E)
+├── scripts/                     # check.ps1 (verificación pre-push)
+├── .githooks/                   # Hook pre-push
+├── .github/workflows/           # CI (ruff, pytest, tsc, vitest)
+│
 ├── docs/                        # Documentación
 │   ├── project-documentation/   # Arquitectura, MER, requisitos, historias
+│   ├── IA_BOT/                  # Conocimiento del chatbot (knowledge.md)
 │   └── sprints/                 # Backlogs por sprint
 │
 ├── docker-compose.yml           # db + be + fe + mailpit
+├── docker-compose.prod.yml      # Compose de producción
 ├── .env.example                 # Variables de entorno
 ├── .gitignore
-├── opencode.json                # Config AI agent
 ├── AGENTS.md                    # Instrucciones para agentes OpenCode
 ├── COMO_CORRER_PROYECTO.md
 └── README.md
@@ -259,7 +273,7 @@ scrum/
 
 ### Backend (Capas por funcionalidad)
 
-El backend tiene **21 routers** organizados por funcionalidad. La estructura usa capas (routers → controllers → services):
+El backend tiene **25 routers** organizados por funcionalidad. La estructura usa capas (routers → controllers → services):
 
 | Router | Ruta base | Propósito |
 |--------|----------|-----------|
@@ -267,23 +281,27 @@ El backend tiene **21 routers** organizados por funcionalidad. La estructura usa
 | **admin** | `/api/v1/admin` | CRUD usuarios, reportes, gestión de clientes/empleados |
 | **catalog** | `/api/v1/catalog` | Catálogo público (productos visibles sin auth) |
 | **catalog_products** | `/api/v1/admin/catalog` | CRUD productos (admin) |
-| **catalog_brands** | `/api/v1/admin/brands` | CRUD marcas (admin) |
-| **catalog_styles** | `/api/v1/admin/styles` | CRUD estilos (admin) |
-| **catalog_inventory** | `/api/v1/admin/inventory` | Gestión inventario (admin) |
-| **dashboard_jefe** | `/api/v1/dashboard` | Métricas, stats, resúmenes del dashboard principal |
+| **catalog_brands** | `/api/v1/admin/catalog` | CRUD marcas (admin) |
+| **catalog_styles** | `/api/v1/admin/catalog` | CRUD estilos (admin) |
+| **catalog_inventory** | `/api/v1/admin/catalog` | Gestión inventario (admin) |
+| **catalog_categories** | `/api/v1/admin/catalog` | CRUD categorías (admin) |
+| **dashboard_jefe** | `/api/v1/dashboard/admin` | Métricas, stats, resúmenes del dashboard principal |
 | **dashboard_empleado** | `/api/v1/dashboard/employee` | Métricas del empleado |
 | **dashboard_empleado_tasks** | `/api/v1/dashboard/employee/tasks` | Tareas del empleado |
 | **dashboard_empleado_metrics** | `/api/v1/dashboard/employee/metrics` | Métricas del empleado |
 | **dashboard_empleado_incidences** | `/api/v1/dashboard/employee/incidences` | Incidencias del empleado |
-| **orders** | `/api/v1/orders` | Pedidos CRUD |
-| **orders_tasks** | `/api/v1/orders/tasks` | Tareas de producción |
+| **orders** | `/api/v1/admin/orders` | Pedidos CRUD + calendario |
+| **orders_tasks** | `/api/v1/admin/orders/tasks` | Tareas de producción |
 | **client** | `/api/v1/client` | Dashboard cliente y pedidos |
-| **supplies** | `/api/v1/supplies` | Gestión de insumos y movimientos |
+| **client_prices** | `/api/v1/admin/client-prices` | Precios por cliente (admin CRUD + bulk) |
+| **supplies** | `/api/v1` | Gestión de insumos (`/supplies…`, `/products/{id}/supplies`) |
 | **scrap** | `/api/v1/scrap` | Incidencias (scrap, pérdidas, pendientes) |
 | **reports** | `/api/v1/admin/reports` | Reportes (dashboard, empleados, clientes, producción) |
 | **notifications** | `/api/v1/notifications` | Notificaciones en tiempo real (WebSocket) |
-| **type_document** | `/api/v1/type-documents` | Tipos de documento (catálogo) |
+| **type_document** | `/api/v1/document-types` | Tipos de documento (catálogo) |
 | **users** | `/api/v1/users` | CRUD de usuarios del sistema |
+| **bulk_import** | `/api/v1/admin/bulk` | Importación masiva CSV (productos, usuarios) |
+| **ai_chat** | `/api/v1/ai` | Chatbot IA (Águila J&R) |
 
 **Patrón por capa:**
 ```
@@ -292,18 +310,19 @@ be/app/{capa}/
 └── service.py      # Lógica de negocio (opcional, algunos inyectan directo)
 ```
 
-A diferencia de la estructura documentada inicialmente, los módulos actuales **no tienen carpetas separadas** controllers/, models/ ni services/ — los modelos están centralizados en `be/app/models/` y la lógica se inyecta directamente desde el router o desde un service simplificado.
+Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `controllers/` (7), `services/` (10) y `schemas/` (15).
 
 ### Frontend (Features)
 
-El frontend tiene **5 features**:
+El frontend tiene **6 features**:
 
 | Feature | Propósito |
 |---------|----------|
-| **auth** | Login, registro, recuperación de contraseña (5 páginas) |
-| **admin** | Panel administrativo completo (14 páginas + ~20 componentes) |
+| **auth** | Login, registro, recuperación de contraseña (8 páginas) |
+| **admin** | Panel administrativo completo (16 páginas + ~20 componentes) |
 | **employee** | Panel empleado (6 páginas: tareas, incidencias, reportes con PDF, configuración con avatar) |
-| **client** | Panel cliente (3 páginas: dashboard, pedidos y catálogo mayorista) |
+| **client** | Panel cliente (6 páginas: dashboard, pedidos, catálogo mayorista, incidencias, reportes, ajustes) |
+| **ai** | Chatbot IA "Águila J&R" (ChatWidget, embeddings) |
 | **landing** | Landing page pública + catálogo público visible |
 
 ---
@@ -345,11 +364,11 @@ En la tabla `order_details`, cuando un mismo producto aparece múltiples veces e
 
 ### 5. 4 etapas de producción vía tasks table
 
-El sistema rastrea la producción en 4 etapas usando la tabla `tasks`:
-1. **Corte** (material prima)
-2. **Armado** (ensamblaje)
-3. **Empaque** (preparación)
-4. **Entregado** (finalizado)
+El sistema rastrea la producción en 4 etapas usando la tabla `tasks` (enum `task_type`):
+1. **Corte** (corte de material)
+2. **Guarnición** (ensamblaje)
+3. **Soladura** (pegado de suela)
+4. **Emplantillado** (plantilla final)
 
 Cada tarea está vinculada a un `order_detail` específico y tiene su propio estado, fechas y asignación. Esto permite al dashboard mostrar el progreso granular de cada pedido.
 
@@ -370,7 +389,7 @@ Tailwind v4 se configura mediante la directiva `@theme` directamente en `index.c
 ### 7. Auto-migraciones + seed al arrancar
 
 El backend ejecuta automáticamente en `init_db.py`:
-1. Migraciones Alembic pendientes (`alembic upgrade head`) — 42 migraciones
+1. Migraciones Alembic pendientes (`alembic upgrade head`) — 50 migraciones
 2. Datos semilla (roles, tipos documento, catálogo 65 productos, usuarios de prueba)
 
 **No ejecutar `alembic upgrade head` manualmente** a menos que se esté depurando.
@@ -385,10 +404,10 @@ Traducciones ES/EN vía `i18next` + `react-i18next`. Archivos en `fe/src/locales
 
 | Middleware | Archivo | Propósito |
 |-----------|---------|----------|
+| **CSRF** | `middleware/csrf.py` | Protección CSRF en peticiones mutantes |
 | **Error Handler** | `middleware/error_handler.py` | Captura excepciones no controladas y responde JSON consistente |
 | **Security Headers** | `middleware/security_headers.py` | CSP, X-Frame-Options, X-Content-Type-Options |
 | **Rate Limiting** | `middleware/rate_limit.py` | Límite de peticiones por IP para prevenir abusos |
-| **Audit Logger** | `middleware/audit_logger.py` | Registro de acciones críticas para trazabilidad |
 
 ---
 
@@ -430,16 +449,28 @@ Traducciones ES/EN vía `i18next` + `react-i18next`. Archivos en `fe/src/locales
 ## Estados del Sistema (Order → Task Progression)
 
 ```
-Pedido ──▶ Corte ──▶ Armado ──▶ Empaque ──▶ Entregado
-  │          │          │           │
-  ▼          ▼          ▼           ▼
-pendiente   corte     armado     empaque
-aprobado    (en progreso)
-rechazado   completado
-pagado
+Pedido (order_status): pendiente → en_progreso → completado → entregado
+                                                   ↘ cancelado
+
+Tarea (task_status): pendiente → por_liquidar → en_progreso → completado → pagado
+                                                                 ↘ cancelado
+
+Etapas (task_type): corte → guarnicion → soladura → emplantillado
 ```
 
-Cada `order_detail` tiene una etapa global (`global_stage`) que avanza solo cuando todas las tareas de esa etapa están completadas. Las tareas individuales tienen su propio estado y seguimiento.
+Las tareas individuales (`tasks`) tienen su propio estado y seguimiento; el estado del pedido se deriva del avance de sus tareas. No existe una columna `global_stage` en `order_details`.
+
+---
+
+## Features Clave Añadidas (post-sprints)
+
+- **Calendario de Pedidos** — `GET /api/v1/admin/orders/calendar`, `CalendarPage.tsx`, entrada "Calendario" en el sidebar.
+- **Precios por cliente** — tabla `client_prices` (mig 049), CRUD `/api/v1/admin/client-prices`, precio congelado en `order_details.unit_price`.
+- **Export PDF del catálogo** — `fe/src/features/admin/utils/catalogPdfUtils.ts`.
+- **CRUD de categorías** — `catalog_categories.py` + `CategoriesPage.tsx`.
+- **Chatbot IA "Águila J&R"** — `ai_chat.py`, `ai_embeddings` pgvector Dim 768, `docs/IA_BOT/knowledge.md`.
+- **Importación masiva CSV** — `bulk_import.py` (productos y usuarios).
+- **App móvil** — `mobile/` (Expo SDK 54), consume la misma API.
 
 ---
 

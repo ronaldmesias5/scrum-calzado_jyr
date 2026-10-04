@@ -182,7 +182,7 @@ CALZADO-J&R/
 ├── STACK_TECNOLOGICO.md      # Este documento
 ├── be/                       # Backend — FastAPI (Python 3.12)
 ├── db/                       # Base de datos — PostgreSQL 17 (Docker)
-├── docs/                     # Documentación: arquitectura, casos de uso, sprints, guía de diseño
+├── docs/                     # Documentación: arquitectura, casos de uso, sprints
 └── fe/                       # Frontend — React + Vite + TypeScript
 ```
 
@@ -200,7 +200,7 @@ be/
 │   ├── controllers/          # (14) Adaptadores entre routers y services (thin controllers)
 │   ├── init/                 # Datos semilla (roles, tipos de documento, catálogo, usuarios demo)
 │   ├── middleware/           # error_handler, rate_limit, security_headers
-│   ├── models/               # (24 archivos) Modelos ORM SQLAlchemy 2.0
+│   ├── models/               # (26 archivos, 30 tablas) Modelos ORM SQLAlchemy 2.0
 │   │   ├── user.py  role.py  type_document.py  password_reset_token.py
 │   │   ├── order.py  product.py  brand.py  style.py  category.py
 │   │   ├── inventory.py  inventory_movement.py  supplies.py  supply_categories.py
