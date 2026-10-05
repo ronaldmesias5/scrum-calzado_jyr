@@ -4,7 +4,7 @@ Descripción: Lógica de negocio del panel del jefe (métricas, pedidos reciente
 """
 
 from sqlalchemy import desc, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.incidence import Incidence, IncidenceStatus
 from app.models.inventory import Inventory
@@ -48,7 +48,13 @@ def get_metrics_data(db: Session) -> DashboardMetricsResponse:
 
 def get_recent_orders_data(db: Session) -> RecentOrdersResponse:
     """Retorna los últimos 5 pedidos registrados desde la BD (vacío si no hay datos)."""
-    orders = db.query(Order).order_by(desc(Order.created_at)).limit(5).all()
+    orders = (
+        db.query(Order)
+        .options(joinedload(Order.customer))
+        .order_by(desc(Order.created_at))
+        .limit(5)
+        .all()
+    )
     return RecentOrdersResponse(
         orders=[
             RecentOrderSchema(
@@ -70,13 +76,27 @@ def get_alerts_data(db: Session) -> AlertsResponse:
         Incidence.deleted_at == None
     ).order_by(Incidence.created_at.desc()).all()
 
+    # Cargar tareas y usuarios en lote (evita N+1: 2 queries por incidencia)
+    task_ids = [inc.task_id for inc in open_incidences if inc.task_id]
+    tasks = (
+        {t.id: t for t in db.query(Task).filter(Task.id.in_(task_ids)).all()}
+        if task_ids
+        else {}
+    )
+    user_ids = [t.assigned_to for t in tasks.values() if t.assigned_to]
+    users = (
+        {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()}
+        if user_ids
+        else {}
+    )
+
     alerts = []
     for inc in open_incidences:
         # Obtener información del empleado que reportó (a través de la tarea)
-        task = db.query(Task).filter(Task.id == inc.task_id).first()
+        task = tasks.get(inc.task_id)
         reporter_name = "Desconocido"
         if task and task.assigned_to:
-            user = db.query(User).filter(User.id == task.assigned_to).first()
+            user = users.get(task.assigned_to)
             if user:
                 reporter_name = f"{user.name_user} {user.last_name}"
 

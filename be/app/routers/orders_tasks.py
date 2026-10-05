@@ -51,9 +51,9 @@ def get_next_vale_number(
     try:
         max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
         return {"next_number": int(max_vale) + 1}
-    except Exception as e:
+    except Exception:
         logger.exception("Error al calcular número de vale")
-        raise HTTPException(status_code=500, detail=f"Error al calcular número de vale: {e!s}")
+        raise HTTPException(status_code=500, detail="Error al calcular número de vale")
 
 
 @router.get("/tasks/all", response_model=list[ProductionTaskResponse])
@@ -124,9 +124,9 @@ def list_all_production_tasks(
 
         return tasks_list
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error al listar tareas")
-        raise HTTPException(status_code=500, detail=f"Error al listar tareas: {e!s}")
+        raise HTTPException(status_code=500, detail="Error al listar tareas")
 
 
 @router.post("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
@@ -159,20 +159,32 @@ def create_production_tasks(
         new_tasks = []
         now = datetime.now(UTC)
 
+        # Precargar en lote lo que el loop consulta por tarea (evita N+1)
+        active_rows = db.execute(
+            select(Task).where(
+                Task.order_id == order_id,
+                Task.status != 'cancelado',
+                Task.deleted_at == None,
+            )
+        ).scalars().all()
+        active_by_key = {(t.product_id, t.line_group, t.type): t for t in active_rows}
+        vale_rows = db.execute(
+            select(Task.product_id, Task.line_group, func.min(Task.vale_number))
+            .where(
+                Task.order_id == order_id,
+                Task.vale_number.isnot(None),
+            )
+            .group_by(Task.product_id, Task.line_group)
+        ).all()
+        vale_map = {(row[0], row[1]): row[2] for row in vale_rows}
+
         for t_data in request.tasks:
             # 1. Verificar si ya existe una tarea ACTIVA de este tipo para este order+product+line_group
             # (Evitar duplicados si el usuario hace clic varias veces)
             # Solo consideramos activas las que NO están canceladas
-            existing_task = db.execute(
-                select(Task).where(
-                    Task.order_id == order_id,
-                    Task.product_id == t_data.product_id,
-                    Task.line_group == t_data.line_group,
-                    Task.type == t_data.type,
-                    Task.status != 'cancelado',
-                    Task.deleted_at == None,
-                )
-            ).scalar_one_or_none()
+            existing_task = active_by_key.get(
+                (t_data.product_id, t_data.line_group, t_data.type)
+            )
 
             if existing_task:
                 # Ya existe una tarea activa: actualizamos el assigned_to si cambió,
@@ -184,14 +196,7 @@ def create_production_tasks(
                 continue
 
             # 2. Reutilizar el vale_number si ya existe una tarea para el mismo order+product
-            existing_vale = db.execute(
-                select(func.min(Task.vale_number)).where(
-                    Task.order_id == order_id,
-                    Task.product_id == t_data.product_id,
-                    Task.line_group == t_data.line_group,
-                    Task.vale_number.isnot(None)
-                )
-            ).scalar()
+            existing_vale = vale_map.get((t_data.product_id, t_data.line_group))
             task_vale = int(existing_vale) if existing_vale is not None else next_vale
 
             task = Task(
@@ -272,10 +277,10 @@ def create_production_tasks(
         return results
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
         logger.exception("Error al crear tareas")
-        raise HTTPException(status_code=500, detail=f"Error al crear tareas: {e!s}")
+        raise HTTPException(status_code=500, detail="Error al crear tareas")
 
 
 @router.patch("/tasks/{task_id}/assign", response_model=ProductionTaskResponse)
@@ -402,9 +407,9 @@ def get_order_tasks(
                 product_image=t.product.image_url if t.product else None,
             ) for t, total in tasks_data
         ]
-    except Exception as e:
+    except Exception:
         logger.exception("Error al listar tareas de la orden")
-        raise HTTPException(status_code=500, detail=f"Error al listar tareas: {e!s}")
+        raise HTTPException(status_code=500, detail="Error al listar tareas")
 
 
 @router.patch("/tasks/{task_id}/status", response_model=ProductionTaskResponse)

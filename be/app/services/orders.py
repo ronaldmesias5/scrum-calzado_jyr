@@ -679,6 +679,20 @@ def create_order(
     # Recalcular total de pares desde los detalles (seguridad server-side)
     total_pairs = sum(d.amount for d in details)
 
+    # Precios por cliente en UNA sola consulta (evita N+1 por detalle)
+    from app.models.client_price import ClientPrice
+
+    client_prices: dict[uuid.UUID, float] = {}
+    if customer_id is not None:
+        price_rows = db.execute(
+            select(ClientPrice.product_id, ClientPrice.unit_price).where(
+                ClientPrice.client_id == customer_id,
+                ClientPrice.product_id.in_([d.product_id for d in details]),
+                ClientPrice.deleted_at.is_(None),
+            )
+        ).all()
+        client_prices = {row[0]: float(row[1]) for row in price_rows}
+
     new_order = Order(
         customer_id=customer_id,
         total_pairs=total_pairs,
@@ -690,18 +704,7 @@ def create_order(
 
     for detail_data in details:
         # Auto-fill unit_price from client_prices if available
-        unit_price = None
-        if customer_id is not None:
-            from app.models.client_price import ClientPrice
-            cp = db.execute(
-                select(ClientPrice).where(
-                    ClientPrice.client_id == customer_id,
-                    ClientPrice.product_id == detail_data.product_id,
-                    ClientPrice.deleted_at.is_(None),
-                )
-            ).scalar_one_or_none()
-            if cp:
-                unit_price = float(cp.unit_price)
+        unit_price = client_prices.get(detail_data.product_id)
 
         detail = OrderDetail(
             product_id=detail_data.product_id,

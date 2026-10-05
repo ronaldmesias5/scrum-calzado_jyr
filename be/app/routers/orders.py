@@ -310,13 +310,18 @@ def create_order(
             ).scalar_one_or_none()
 
         # ─── NOTIFICACIONES: notificar al jefe + email (fire-and-forget vía thread) ───
-        _trigger_notifications(
-            db=db,
-            new_order=new_order,
-            customer_check=customer_check,
-            settings=settings,
-            actor_id=current_user.id,
-        )
+        # Best-effort: un fallo aquí NO debe abortar la respuesta (la orden ya está
+        # guardada) porque el cliente podría reintentar y duplicar el pedido.
+        try:
+            _trigger_notifications(
+                db=db,
+                new_order=new_order,
+                customer_check=customer_check,
+                settings=settings,
+                actor_id=current_user.id,
+            )
+        except Exception:
+            logger.exception("Notificaciones fallidas para el pedido %s", new_order.id)
 
         return _order_to_detail_response(new_order)
 
@@ -325,9 +330,10 @@ def create_order(
         raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al crear la orden: {e!s}")
+        logger.exception("Error al crear la orden")
+        raise HTTPException(status_code=500, detail="Error al crear la orden")
 
 
 @router.patch("/{order_id}/status", response_model=OrderDetailResponse)
@@ -492,9 +498,10 @@ def update_order_details(
         return _order_to_detail_response(order)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al actualizar la orden: {e!s}")
+        logger.exception("Error al actualizar la orden")
+        raise HTTPException(status_code=500, detail="Error al actualizar la orden")
 
 
 @router.delete("/{order_id}", status_code=status.HTTP_204_NO_CONTENT)

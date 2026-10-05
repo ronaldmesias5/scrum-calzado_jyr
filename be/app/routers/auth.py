@@ -440,7 +440,8 @@ async def resend_verification(
             token=verification_token,
         )
     except Exception:
-        pass  # No revelar errores al usuario
+        # No revelar errores al usuario, pero dejar traza para diagnóstico
+        audit_logger.exception("Fallo al enviar email de verificación a %s", user.email)
 
     return MessageResponse(
         message="Si tu correo está registrado, recibirás un enlace de verificación."

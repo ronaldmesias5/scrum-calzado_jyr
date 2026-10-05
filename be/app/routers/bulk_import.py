@@ -65,19 +65,29 @@ def import_users_from_csv(
 
     results = {"created": 0, "skipped": 0, "errors": []}
 
-    for i, row in enumerate(reader, start=2):
+    rows = list(reader)
+    # Lotes previos al loop (evita N+1: 2 queries por fila)
+    roles_by_name = {r.name_role: r for r in db.query(Role).all()}
+    csv_emails = {row['email'].strip().lower() for row in rows}
+    existing_emails: set[str] = set()
+    if csv_emails:
+        existing_emails = {
+            r[0]
+            for r in db.query(User.email).filter(User.email.in_(csv_emails)).all()
+        }
+
+    for i, row in enumerate(rows, start=2):
         try:
             email = row['email'].strip().lower()
 
             # Check if user already exists
-            existing = db.query(User).filter(User.email == email).first()
-            if existing:
+            if email in existing_emails:
                 results["skipped"] += 1
                 results["errors"].append(f"Fila {i}: Email ya existe ({email})")
                 continue
 
             # Find role
-            role = db.query(Role).filter(Role.name_role == row['role_name'].strip()).first()
+            role = roles_by_name.get(row['role_name'].strip())
             if not role:
                 results["skipped"] += 1
                 results["errors"].append(f"Fila {i}: Rol no encontrado ({row['role_name']})")
@@ -104,13 +114,16 @@ def import_users_from_csv(
             )
 
             db.add(new_user)
+            # Commit por fila: un IntegrityError sin rollback deja la sesión en
+            # pending rollback y haría fallar todas las filas siguientes.
+            db.commit()
+            existing_emails.add(email)
             results["created"] += 1
 
         except Exception as e:
+            db.rollback()
             results["skipped"] += 1
             results["errors"].append(f"Fila {i}: {str(e)}")
-
-    db.commit()
 
     logger.info(
         f"Importación masiva de usuarios por {_get_email(current_user)}: "
@@ -159,41 +172,56 @@ def import_products_from_csv(
 
     results = {"created": 0, "skipped": 0, "errors": []}
 
-    for i, row in enumerate(reader, start=2):
-        try:
-            name = row['name_product'].strip()
+    rows = list(reader)
+    # Catálogo y existentes en lote (evita N+1: 4 queries por fila)
+    csv_names = {row['name_product'].strip() for row in rows}
+    existing_names: set[str] = set()
+    if csv_names:
+        existing_names = {
+            r[0]
+            for r in db.query(Product.name_product)
+            .filter(Product.name_product.in_(csv_names))
+            .all()
+        }
+    brands_by_name = {b.name_brand: b for b in db.query(Brand).all()}
+    categories_by_name = {c.name_category: c for c in db.query(Category).all()}
+    styles_by_name = {s.name_style: s for s in db.query(Style).all()}
 
+    for i, row in enumerate(rows, start=2):
+        name = row['name_product'].strip()
+        try:
             # Check if product exists
-            existing = db.query(Product).filter(Product.name_product == name).first()
-            if existing:
+            if name in existing_names:
                 results["skipped"] += 1
                 results["errors"].append(f"Fila {i}: Producto ya existe ({name})")
                 continue
 
             # Find or create brand
-            brand = db.query(Brand).filter(Brand.name_brand == row['brand_name'].strip()).first()
+            brand_name = row['brand_name'].strip()
+            brand = brands_by_name.get(brand_name)
             if not brand:
-                brand = Brand(name_brand=row['brand_name'].strip())
+                brand = Brand(name_brand=brand_name)
                 db.add(brand)
                 db.flush()
+                brands_by_name[brand_name] = brand
 
             # Find or create category
-            category = (
-                db.query(Category)
-                .filter(Category.name_category == row['category_name'].strip())
-                .first()
-            )
+            category_name = row['category_name'].strip()
+            category = categories_by_name.get(category_name)
             if not category:
-                category = Category(name_category=row['category_name'].strip())
+                category = Category(name_category=category_name)
                 db.add(category)
                 db.flush()
+                categories_by_name[category_name] = category
 
             # Find or create style (vinculado a la marca de la fila)
-            style = db.query(Style).filter(Style.name_style == row['style_name'].strip()).first()
+            style_name = row['style_name'].strip()
+            style = styles_by_name.get(style_name)
             if not style:
-                style = Style(name_style=row['style_name'].strip(), brand_id=brand.id)
+                style = Style(name_style=style_name, brand_id=brand.id)
                 db.add(style)
                 db.flush()
+                styles_by_name[style_name] = style
 
             new_product = Product(
                 name_product=name,
@@ -205,13 +233,22 @@ def import_products_from_csv(
             )
 
             db.add(new_product)
+            # Commit por fila: un IntegrityError sin rollback deja la sesión en
+            # pending rollback y haría fallar todas las filas siguientes.
+            db.commit()
+            existing_names.add(name)
             results["created"] += 1
 
         except Exception as e:
+            db.rollback()
+            # El rollback invalida objetos creados con flush: recargar cachés
+            brands_by_name = {b.name_brand: b for b in db.query(Brand).all()}
+            categories_by_name = {c.name_category: c for c in db.query(Category).all()}
+            styles_by_name = {s.name_style: s for s in db.query(Style).all()}
+            if name in existing_names:
+                existing_names.discard(name)
             results["skipped"] += 1
             results["errors"].append(f"Fila {i}: {str(e)}")
-
-    db.commit()
 
     logger.info(
         f"Importación masiva de productos por {_get_email(current_user)}: "

@@ -102,15 +102,16 @@ def get_style_inventory(style_id: str, db: Session = Depends(get_db)) -> StyleIn
     ).scalars().all()
     
     sizes = {}
-    for product in products:
-        # Obtener inventario para cada producto
+    product_ids = [product.id for product in products]
+    if product_ids:
+        # Una sola consulta para todo el estilo (evita N+1 por producto)
         inventory = db.execute(
             select(Inventory).where(
-                (Inventory.product_id == product.id) &
-                (Inventory.deleted_at == None)
+                (Inventory.product_id.in_(product_ids))
+                & (Inventory.deleted_at == None)
             )
         ).scalars().all()
-        
+
         for inv in inventory:
             if inv.size not in sizes:
                 sizes[inv.size] = inv.amount

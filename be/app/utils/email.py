@@ -88,6 +88,8 @@ async def _send_email(
             "port": settings.MAIL_PORT,
             "use_tls": settings.MAIL_PORT == 465,
             "start_tls": settings.MAIL_PORT == 587,
+            # Sin timeout el SMTP puede colgar manteniendo la transacción DB abierta
+            "timeout": 10,
         }
         if username and password:
             kwargs["username"] = username
@@ -418,6 +420,8 @@ async def send_report_email(
             "port": settings.MAIL_PORT,
             "use_tls": settings.MAIL_PORT == 465,
             "start_tls": settings.MAIL_PORT == 587,
+            # Sin timeout el SMTP puede colgar manteniendo la transacción DB abierta
+            "timeout": 10,
         }
         if settings.MAIL_USERNAME and settings.MAIL_PASSWORD:
             kwargs["username"] = settings.MAIL_USERNAME

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select, func
 
 from app.config import settings
@@ -45,7 +45,15 @@ def list_products(
     """Obtiene productos con filtros opcionales"""
     _require_admin_or_jefe(current_user)
     
-    query = select(Product).where(Product.deleted_at == None)
+    query = (
+        select(Product)
+        .where(Product.deleted_at == None)
+        .options(
+            selectinload(Product.brand),
+            selectinload(Product.style),
+            selectinload(Product.category),
+        )
+    )
     count_query = select(func.count(Product.id)).where(Product.deleted_at == None)
     
     if brand_id:
@@ -81,20 +89,35 @@ def list_products(
     offset = (page - 1) * page_size
     
     products = db.execute(query.order_by(Product.name_product).offset(offset).limit(page_size)).scalars().all()
-    
+
+    # Stock por producto en UNA sola consulta agrupada (evita N+1)
+    product_ids = [prod.id for prod in products]
+    stock_by_product: dict[uuid.UUID, tuple[int, int]] = {}
+    if product_ids:
+        rows = (
+            db.execute(
+                select(
+                    Inventory.product_id,
+                    func.sum(Inventory.amount),
+                    func.sum(Inventory.reserved),
+                )
+                .where(
+                    Inventory.product_id.in_(product_ids),
+                    Inventory.deleted_at.is_(None),
+                )
+                .group_by(Inventory.product_id)
+            )
+            .all()
+        )
+        stock_by_product = {
+            row[0]: (int(row[1] or 0), int(row[2] or 0)) for row in rows
+        }
+
     # Calcular stock total para cada producto
     products_response = []
     for prod in products:
-        stock_total = db.execute(
-            select(func.sum(Inventory.amount).label("total"))
-            .where((Inventory.product_id == prod.id) & (Inventory.deleted_at == None))
-        ).scalar() or 0
-        
-        manufactured_pairs = db.execute(
-            select(func.sum(Inventory.reserved).label("total"))
-            .where((Inventory.product_id == prod.id) & (Inventory.deleted_at == None))
-        ).scalar() or 0
-        
+        stock_total, manufactured_pairs = stock_by_product.get(prod.id, (0, 0))
+
         products_response.append({
             "id": str(prod.id),
             "name": prod.name_product,
@@ -110,8 +133,8 @@ def list_products(
             "style_name": prod.style.name_style if prod.style else "Unknown",
             "category_id": str(prod.category_id),
             "category_name": prod.category.name_category if prod.category else "Unknown",
-            "stock_total": int(stock_total),
-            "manufactured_pairs": int(manufactured_pairs),
+            "stock_total": stock_total,
+            "manufactured_pairs": manufactured_pairs,
             "task_prices": prod.task_prices or {},
             "created_at": prod.created_at.isoformat() if prod.created_at else None,
         })
