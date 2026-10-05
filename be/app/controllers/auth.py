@@ -9,14 +9,16 @@ from app.models.user import User
 from app.services import auth as auth_service
 
 
-async def register_user(db: Annotated[Session, ...], user_data: UserCreate) -> User:
-    """Registra un usuario (delegado a services.auth.register_user)."""
+async def register_user(db: Annotated[Session, ...], user_data: UserCreate) -> User | None:
+    """Registra un usuario (delegado a services.auth.register_user). None si el email ya existe."""
     return await auth_service.register_user(db=db, user_data=user_data)
 
 
-def login_user(db: Annotated[Session, ...], login_data: UserLogin) -> TokenResponse:
+def login_user(
+    db: Annotated[Session, ...], login_data: UserLogin, client_ip: str = "unknown"
+) -> TokenResponse:
     """Autentica y retorna tokens (delegado a services.auth.login_user)."""
-    return auth_service.login_user(db=db, login_data=login_data)
+    return auth_service.login_user(db=db, login_data=login_data, client_ip=client_ip)
 
 
 def logout_from_all_devices(db: Annotated[Session, ...], user: User) -> None:

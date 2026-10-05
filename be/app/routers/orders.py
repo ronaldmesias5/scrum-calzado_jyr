@@ -37,6 +37,7 @@ from app.controllers.orders import (
     apply_order_state_inventory,
     get_orders_for_calendar,
     resolve_order_state_from_details,
+    validate_order_transition,
 )
 
 router = APIRouter(
@@ -355,6 +356,10 @@ def update_order_status(
                 detail="Los pedidos para stock no se entregan: terminan en 'completado'",
             )
 
+        # Máquina de estados: solo transiciones permitidas (p.ej. bloquea
+        # cancelado → completado, que sumaría reservas que nunca existieron)
+        validate_order_transition(order.state, order_update.state)
+
         # --- Lógica de Inventario Segura con Reservas ---
         # FLUJO:
         # - Pedido 'completado' -> SUMAR a reserved (entrada de pares fabricados)
@@ -378,6 +383,9 @@ def update_order_status(
         return _order_to_detail_response(order)
     except HTTPException:
         raise
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error al actualizar el estado")

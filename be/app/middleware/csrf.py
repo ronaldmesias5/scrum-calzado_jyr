@@ -27,6 +27,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from app.config import settings
+
 
 # Métodos HTTP que modifican estado (requieren CSRF protection)
 STATE_CHANGING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -86,7 +88,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             max_age=3600,  # 1 hora
             httponly=False,  # Frontend necesita leerla
             samesite="strict",  # No se envía en cross-origin
-            secure=False,  # TODO: True en producción con HTTPS
+            secure=settings.ENVIRONMENT == "production",
             path="/",
         )
 

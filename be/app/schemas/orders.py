@@ -11,6 +11,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.order import OrderStatus
+from app.models.tasks import TaskStatus
 
 # ────────────────────────────────────────────────
 # Esquemas para OrderDetail (línea de pedido)
@@ -153,7 +154,22 @@ class OrderUpdateDetailsRequest(BaseModel):
 # ────────────────────────────────────────────────
 
 class TaskStatusUpdateRequest(BaseModel):
-    status: str = Field(..., description="Nuevo estado (por_liquidar, en_progreso, completado, pagado, cancelado)")
+    status: str = Field(
+        ...,
+        description=(
+            "Nuevo estado (pendiente, por_liquidar, en_progreso, completado, pagado, cancelado)"
+        ),
+    )
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        allowed = {s.value for s in TaskStatus}
+        if v not in allowed:
+            raise ValueError(
+                f"Estado inválido: {v}. Permitidos: {', '.join(sorted(allowed))}"
+            )
+        return v
 
 class TaskPriorityUpdateRequest(BaseModel):
     priority: str = Field(..., description="Nueva prioridad (alta, baja)")

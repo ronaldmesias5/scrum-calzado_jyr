@@ -44,6 +44,10 @@ def deduct_supplies_for_production(
         if not supply or supply.deleted_at:
             continue
 
+        # FOR UPDATE: bloquea la fila del insumo mientras se deduce (evita
+        # que dos producciones concurrentes consuman el mismo stock)
+        db.refresh(supply, with_for_update=True)
+
         # Calcular total requerido para este insumo
         required_total = Decimal("0")
         for size, pairs in breakdown.items():

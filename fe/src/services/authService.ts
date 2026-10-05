@@ -53,8 +53,8 @@ export async function logoutAllDevices(): Promise<MessageResponse> {
 
 export async function registerUser(
   data: RegisterRequest
-): Promise<UserResponse> {
-  const response = await api.post<UserResponse>(
+): Promise<MessageResponse> {
+  const response = await api.post<MessageResponse>(
     `${AUTH_PREFIX}/register`,
     data
   );

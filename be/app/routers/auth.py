@@ -26,7 +26,7 @@ Descripción: Router FastAPI con endpoints de autenticación y gestión de contr
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -46,9 +46,10 @@ from app.schemas.auth import (
     TokenResponse,
     UserCreate,
     UserLogin,
-    UserResponse,
 )
 from app.controllers import auth as auth_service
+from app.logging_config import audit_logger
+from app.services.auth import _redact_email
 
 router = APIRouter(
     prefix="/api/v1/auth",
@@ -58,33 +59,26 @@ router = APIRouter(
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=MessageResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo cliente",
 )
 async def register(
     user_data: UserCreate,
     db: Session = Depends(get_db),
-) -> UserResponse:
-    """Registra un nuevo cliente. La cuenta queda activa inmediatamente y recibe un email de confirmación."""
-    user = await auth_service.register_user(db=db, user_data=user_data)
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name_user,
-        last_name=user.last_name,
-        phone=user.phone,
-        identity_document=user.identity_document,
-        identity_document_type_id=user.identity_document_type_id,
-        identity_document_type_name=user.identity_document_type.name_type_document if user.identity_document_type else None,
-        is_active=user.is_active,
-        is_validated=user.is_validated,
-        must_change_password=user.must_change_password,
-        role_name=user.role.name_role if user.role else None,
-        business_name=user.business_name,
-        occupation=user.occupation,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
+) -> MessageResponse:
+    """Registra un nuevo cliente con respuesta idéntica exista o no el email (anti-enumeración).
+
+    Si el email ya está registrado no se crea nada ni se revela la existencia:
+    se responde el mismo mensaje genérico 201 que en el caso exitoso.
+    """
+    await auth_service.register_user(db=db, user_data=user_data)
+    return MessageResponse(
+        message=(
+            "Si el email estaba disponible, tu cuenta ha sido creada y recibirás "
+            "un correo de verificación para activarla. Si ya tenías una cuenta, "
+            "no se ha realizado ningún cambio."
+        )
     )
 
 
@@ -95,17 +89,29 @@ async def register(
 )
 def login(
     login_data: UserLogin,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
     """Autentica un usuario y retorna tokens JWT y los establece en HttpOnly cookies."""
-    token_response = auth_service.login_user(db=db, login_data=login_data)
+    client_ip = request.client.host if request.client else "unknown"
+    token_response = auth_service.login_user(
+        db=db, login_data=login_data, client_ip=client_ip
+    )
     response.set_cookie(
         key="access_token",
         value=token_response.access_token,
         httponly=True,
         samesite="lax",
         secure=settings.ENVIRONMENT == "production",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=token_response.refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.ENVIRONMENT == "production",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60,
     )
     return token_response
 
@@ -116,14 +122,27 @@ def login(
     summary="Renovar access token",
 )
 def refresh_token(
-    token_data: RefreshTokenRequest,
+    request: Request,
     response: Response,
+    token_data: RefreshTokenRequest | None = None,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    """Genera nuevos tokens usando un refresh token válido y establece la cookie."""
+    """Genera nuevos tokens usando un refresh token válido y establece las cookies.
+
+    Acepta el refresh token en el body (app móvil) o en la cookie HttpOnly
+    `refresh_token` (frontend web, inaccesible para JavaScript).
+    """
+    body_refresh = token_data.refresh_token if token_data is not None else None
+    cookie_refresh = request.cookies.get("refresh_token")
+    refresh = body_refresh or cookie_refresh
+    if not refresh:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token no proporcionado",
+        )
     token_response = auth_service.refresh_access_token(
         db=db,
-        refresh_token=token_data.refresh_token,
+        refresh_token=refresh,
     )
     response.set_cookie(
         key="access_token",
@@ -132,6 +151,14 @@ def refresh_token(
         samesite="lax",
         secure=settings.ENVIRONMENT == "production",
     )
+    response.set_cookie(
+        key="refresh_token",
+        value=token_response.refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.ENVIRONMENT == "production",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60,
+    )
     return token_response
 
 @router.post(
@@ -139,8 +166,9 @@ def refresh_token(
     summary="Cerrar sesión",
 )
 def logout(response: Response):
-    """Cierra la sesión eliminando la cookie HttpOnly."""
+    """Cierra la sesión eliminando las cookies HttpOnly."""
     response.delete_cookie(key="access_token", samesite="lax", httponly=True)
+    response.delete_cookie(key="refresh_token", samesite="lax", httponly=True)
     return {"message": "Sesión cerrada exitosamente"}
 
 
@@ -217,59 +245,58 @@ async def request_reactivation(
     """
     Solicita la reactivación de una cuenta inactiva/suspendida.
 
-    El usuario debe tener una cuenta existente en estado inactivo.
-    Se genera un ticket que el admin revisará en el panel de gestión.
+    Respuesta idéntica en todos los casos (anti-enumeración de usuarios):
+    no revela si el email existe, si la cuenta está activa/eliminada o si ya
+    hay un ticket pendiente. El ticket solo se crea cuando el caso es elegible.
     """
     user = db.query(User).filter(User.email == data.email).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No se encontró una cuenta con ese email",
+    if user is None:
+        audit_logger.info(
+            f"Reactivación solicitada para email inexistente: {_redact_email(data.email)}"
         )
-
-    if user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Esta cuenta ya está activa. Si necesitas ayuda, inicia sesión o recupera tu contraseña.",
+    elif user.is_active:
+        audit_logger.info(
+            f"Reactivación solicitada para cuenta ya activa: {_redact_email(data.email)}"
         )
-
-    if user.deleted_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Esta cuenta ha sido eliminada y no puede ser reactivada.",
+    elif user.deleted_at is not None:
+        audit_logger.info(
+            f"Reactivación solicitada para cuenta eliminada: {_redact_email(data.email)}"
         )
-
-    # Verificar que no haya un ticket pendiente para este usuario
-    existing = (
-        db.query(ReactivationTicket)
-        .filter(
-            ReactivationTicket.user_id == user.id,
-            ReactivationTicket.status == "pending",
+    else:
+        existing = (
+            db.query(ReactivationTicket)
+            .filter(
+                ReactivationTicket.user_id == user.id,
+                ReactivationTicket.status == "pending",
+            )
+            .first()
         )
-        .first()
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ya tienes una solicitud de reactivación pendiente. Espera a que sea revisada.",
-        )
-
-    ticket = ReactivationTicket(
-        user_id=user.id,
-        email=data.email,
-        reason=data.reason,
-        phone=data.phone,
-        identity_document=data.identity_document,
-        evidence_url=data.evidence_url,
-        status="pending",
-    )
-
-    db.add(ticket)
-    db.commit()
+        if existing:
+            audit_logger.info(
+                f"Reactivación solicitada con ticket ya pendiente: {_redact_email(data.email)}"
+            )
+        else:
+            ticket = ReactivationTicket(
+                user_id=user.id,
+                email=data.email,
+                reason=data.reason,
+                phone=data.phone,
+                identity_document=data.identity_document,
+                evidence_url=data.evidence_url,
+                status="pending",
+            )
+            db.add(ticket)
+            db.commit()
+            audit_logger.info(
+                f"Solicitud de reactivación registrada: {_redact_email(data.email)}"
+            )
 
     return MessageResponse(
-        message="Tu solicitud de reactivación ha sido registrada. Recibirás una respuesta por correo electrónico."
+        message=(
+            "Si existe una cuenta inactiva con ese email, recibirás una "
+            "respuesta por correo electrónico."
+        )
     )
 
 

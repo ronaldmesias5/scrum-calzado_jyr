@@ -28,6 +28,46 @@ from app.schemas.orders import (
     OrderResponse,
 )
 
+# ────────────────────────────────────────────────
+# Máquina de estados de un pedido (OrderStatus)
+# ────────────────────────────────────────────────
+# Transiciones permitidas desde cada estado. Cualquier otra combinación
+# (p.ej. cancelado → completado, que sumaría reservas inexistentes) se
+# rechaza con 409 en el endpoint PATCH /orders/{id}/status.
+ALLOWED_ORDER_TRANSITIONS: dict[OrderStatus, frozenset[OrderStatus]] = {
+    OrderStatus.pendiente: frozenset(
+        {OrderStatus.en_progreso, OrderStatus.completado, OrderStatus.cancelado}
+    ),
+    OrderStatus.en_progreso: frozenset(
+        {OrderStatus.pendiente, OrderStatus.completado, OrderStatus.cancelado}
+    ),
+    OrderStatus.completado: frozenset(
+        {
+            OrderStatus.entregado,
+            OrderStatus.en_progreso,
+            OrderStatus.pendiente,
+            OrderStatus.cancelado,
+        }
+    ),
+    OrderStatus.entregado: frozenset(),
+    OrderStatus.cancelado: frozenset({OrderStatus.pendiente}),
+}
+
+
+def validate_order_transition(current_state: OrderStatus, new_state: OrderStatus) -> None:
+    """Valida que `new_state` sea una transición permitida desde `current_state`.
+
+    Raises:
+        ValueError: si la transición no está permitida en la máquina de estados.
+    """
+    if current_state == new_state:
+        return
+    allowed = ALLOWED_ORDER_TRANSITIONS.get(current_state, frozenset())
+    if new_state not in allowed:
+        raise ValueError(
+            f"Transición de estado no permitida: {current_state.value} → {new_state.value}"
+        )
+
 
 def _order_to_response(order: Order, db=None) -> OrderResponse:
     """Serializa una Order incluyendo datos del cliente y prioridad desde delivery_date."""
@@ -202,6 +242,7 @@ def apply_order_state_inventory(
                     & (Inventory.size == detail.size)
                     & (Inventory.deleted_at == None)
                 )
+                .with_for_update()
                 .limit(1)
             )
             inventory_item = db.execute(stmt).scalar_one_or_none()
@@ -254,6 +295,7 @@ def apply_order_state_inventory(
                     & (Inventory.size == detail.size)
                     & (Inventory.deleted_at == None)
                 )
+                .with_for_update()
                 .limit(1)
             )
             inventory_item = db.execute(stmt).scalar_one_or_none()

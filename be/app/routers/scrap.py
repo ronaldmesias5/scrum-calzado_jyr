@@ -141,7 +141,8 @@ def register_incident_endpoint(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> IncidentResponse:
-    """Registra una incidencia (pérdida, en reparación, devolución). Cualquier usuario autenticado puede crear."""
+    """Registra una incidencia (pérdida, en reparación, devolución). Solo admin o jefe."""
+    _ensure_admin_or_jefe(current_user)
     try:
         incident = register_incident(
             db=db,

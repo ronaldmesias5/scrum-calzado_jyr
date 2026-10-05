@@ -16,10 +16,9 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
-from jose import jwt, JWTError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.dependencies import get_db, get_current_user
 from app.models.user import User
 from app.schemas.notifications import (
@@ -34,6 +33,7 @@ from app.controllers.notifications import (
     mark_all_as_read,
     dismiss_notification,
 )
+from app.utils.security import decode_token
 from app.utils.ws_manager import ws_manager
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["notifications"])
@@ -100,27 +100,39 @@ def delete_notification(
 @router.websocket("/ws")
 async def websocket_notifications(
     ws: WebSocket,
+    db: Annotated[Session, Depends(get_db)],
     token: str = Query(...),
 ) -> None:
     """
     WebSocket para recibir notificaciones en tiempo real.
 
     Autenticación vía token JWT en query param (token=...).
+    Valida tipo 'access', que la cuenta esté activa y la versión de sesión
+    (mismas reglas que `get_current_user`). Conecta usando el UUID del usuario
+    como clave para casar con los `broadcast_to_user(str(user.id))`.
     El cliente puede enviar "ping" para mantener la conexión viva.
     """
-    # Validar token JWT
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id: str | None = payload.get("sub")
-        if not user_id:
-            await ws.close(code=4001, reason="Token inválido")
-            return
-    except JWTError:
+    payload = decode_token(token)
+    if not payload or payload.get("type") != "access":
         await ws.close(code=4001, reason="Token inválido")
         return
 
+    email: str | None = payload.get("sub")
+    if not email:
+        await ws.close(code=4001, reason="Token inválido")
+        return
+
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if user is None or not user.is_active:
+        await ws.close(code=4001, reason="Token inválido")
+        return
+
+    token_version = payload.get("version")
+    if token_version is not None and token_version != user.session_version:
+        await ws.close(code=4001, reason="Token inválido")
+        return
+
+    user_id = str(user.id)
     await ws_manager.connect(user_id, ws)
     try:
         while True:

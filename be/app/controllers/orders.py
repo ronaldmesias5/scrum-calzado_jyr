@@ -55,6 +55,16 @@ def resolve_order_state_from_details(details):
     return orders_service.resolve_order_state_from_details(details)
 
 
+def validate_order_transition(current_state, new_state):
+    """Wrapper de la máquina de estados de pedidos (routers/orders.py)."""
+    return orders_service.validate_order_transition(current_state, new_state)
+
+
+def allowed_order_transitions():
+    """Wrapper del mapa de transiciones permitidas (routers/orders.py)."""
+    return orders_service.ALLOWED_ORDER_TRANSITIONS
+
+
 def complete_emplantillado(db: Annotated[Session, ...], current_user_id: uuid.UUID, task):
     """Wrapper for service complete_emplantillado used by `routers/orders_tasks.py`."""
     return orders_service.complete_emplantillado(db=db, current_user_id=current_user_id, task=task)

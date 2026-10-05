@@ -600,10 +600,9 @@ def unlock_user_account(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
-    # Reset lockout in memory
-    from app.services.auth import _login_attempts
-    email_lower = user.email.lower().strip()
-    _login_attempts[email_lower] = {"count": 0, "locked_until": 0.0}
+    # Reset lockout in memory (todas las IPs para este email)
+    from app.services.auth import reset_login_attempts
+    reset_login_attempts(user.email)
 
     audit_logger.info(f"Cuenta desbloqueada por admin: {_redact_email(user.email)} por {_redact_email(current_user.email)}")
     return MessageResponse(message=f"Cuenta de {user.email} desbloqueada exitosamente")
