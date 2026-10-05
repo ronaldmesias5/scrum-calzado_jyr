@@ -24,6 +24,7 @@ Descripción: Router FastAPI con endpoints de autenticación y gestión de contr
                dependencies.py (get_db, get_current_user)
 """
 
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
@@ -63,7 +64,7 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo cliente",
 )
-async def register(
+def register(
     user_data: UserCreate,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -72,7 +73,7 @@ async def register(
     Si el email ya está registrado no se crea nada ni se revela la existencia:
     se responde el mismo mensaje genérico 201 que en el caso exitoso.
     """
-    await auth_service.register_user(db=db, user_data=user_data)
+    asyncio.run(auth_service.register_user(db=db, user_data=user_data))
     return MessageResponse(
         message=(
             "Si el email estaba disponible, tu cuenta ha sido creada y recibirás "
@@ -207,12 +208,12 @@ def change_password(
     response_model=MessageResponse,
     summary="Solicitar recuperación de contraseña",
 )
-async def forgot_password(
+def forgot_password(
     request_data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     """Solicita un email de recuperación de contraseña."""
-    await auth_service.request_password_reset(db=db, email=request_data.email)
+    asyncio.run(auth_service.request_password_reset(db=db, email=request_data.email))
     return MessageResponse(
         message="Si el email está registrado, recibirás un enlace de recuperación"
     )
@@ -238,7 +239,7 @@ def reset_password(
     status_code=status.HTTP_201_CREATED,
     summary="Solicitar reactivación de cuenta (público)",
 )
-async def request_reactivation(
+def request_reactivation(
     data: ReactivationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -305,7 +306,7 @@ async def request_reactivation(
     response_model=MessageResponse,
     summary="Solicitar nueva invitación (contraseña temporal expirada)",
 )
-async def request_new_invitation(
+def request_new_invitation(
     data: RequestNewInvitationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -316,7 +317,7 @@ async def request_new_invitation(
     Por seguridad, siempre responde con el mismo mensaje sin revelar si el
     email existe o si la invitación estaba realmente expirada.
     """
-    await auth_service.request_new_invitation(db=db, email=data.email)
+    asyncio.run(auth_service.request_new_invitation(db=db, email=data.email))
     return MessageResponse(
         message="Si tu invitación había expirado, recibirás un nuevo email con tus credenciales."
     )
@@ -332,7 +333,7 @@ async def request_new_invitation(
     response_model=MessageResponse,
     summary="Verificar correo electrónico con token",
 )
-async def verify_email(
+def verify_email(
     token: str,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -387,7 +388,7 @@ class ResendVerificationRequest(BaseModel):
     response_model=MessageResponse,
     summary="Reenviar email de verificación",
 )
-async def resend_verification(
+def resend_verification(
     data: ResendVerificationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -434,11 +435,11 @@ async def resend_verification(
 
     # Enviar email (no bloquea)
     try:
-        await send_verification_email(
+        asyncio.run(send_verification_email(
             email=user.email,
             name=f"{user.name_user} {user.last_name}",
             token=verification_token,
-        )
+        ))
     except Exception:
         # No revelar errores al usuario, pero dejar traza para diagnóstico
         audit_logger.exception("Fallo al enviar email de verificación a %s", user.email)

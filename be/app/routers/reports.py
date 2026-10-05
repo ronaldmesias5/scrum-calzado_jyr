@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -1008,21 +1010,21 @@ def get_global_sales(
 
 
 @router.post("/send-email")
-async def send_report_email_endpoint(
+def send_report_email_endpoint(
     body: SendReportEmailRequest,
     current_user: User = Depends(get_current_user),
 ):
     """Envía un reporte PDF por correo electrónico."""
     _require_admin_or_jefe(current_user)
 
-    await send_report_email(
+    asyncio.run(send_report_email(
         to_email=body.to_email,
         to_name=body.to_name,
         subject=body.subject,
         body_html=body.body_html,
         pdf_base64=body.pdf_base64,
         pdf_filename=body.pdf_filename,
-    )
+    ))
 
     return {"success": True, "message": "Reporte enviado exitosamente"}
 

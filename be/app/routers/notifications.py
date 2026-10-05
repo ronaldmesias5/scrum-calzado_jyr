@@ -18,6 +18,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import get_db, get_current_user
 from app.models.user import User
@@ -122,7 +123,10 @@ async def websocket_notifications(
         await ws.close(code=4001, reason="Token inválido")
         return
 
-    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    # Consulta fuera del event loop (SQL síncrono no debe bloquear el loop)
+    user = await run_in_threadpool(
+        lambda: db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    )
     if user is None or not user.is_active:
         await ws.close(code=4001, reason="Token inválido")
         return

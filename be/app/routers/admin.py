@@ -27,6 +27,7 @@ Descripción: Router FastAPI con endpoints administrativos para gestión de usua
                app/utils/security.py (hash_password)
 """
 
+import asyncio
 import secrets
 import string
 import uuid
@@ -144,7 +145,7 @@ def get_pending_users(
     response_model=UserResponse,
     summary="Validar usuario",
 )
-async def validate_user(
+def validate_user(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -164,10 +165,10 @@ async def validate_user(
     db.commit()
     db.refresh(user_to_validate)
 
-    await send_account_approved_email(
+    asyncio.run(send_account_approved_email(
         email=user_to_validate.email,
         name=f"{user_to_validate.name_user} {user_to_validate.last_name}",
-    )
+    ))
 
     return _build_user_response(user_to_validate)
 
@@ -177,7 +178,7 @@ async def validate_user(
     response_model=UserResponse,
     summary="Rechazar usuario",
 )
-async def reject_user(
+def reject_user(
     user_id: uuid.UUID,
     data: RejectUserRequest,
     current_user: User = Depends(get_current_user),
@@ -205,11 +206,11 @@ async def reject_user(
     db.commit()
     db.refresh(user_to_reject)
 
-    await send_account_rejected_email(
+    asyncio.run(send_account_rejected_email(
         email=user_to_reject.email,
         name=f"{user_to_reject.name_user} {user_to_reject.last_name}",
         reason=data.reason,
-    )
+    ))
 
     return _build_user_response(user_to_reject)
 
@@ -367,7 +368,7 @@ def delete_user(
     status_code=status.HTTP_201_CREATED,
     summary="Crear cuenta de empleado",
 )
-async def create_employee(
+def create_employee(
     data: AdminCreateEmployeeRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -410,11 +411,11 @@ async def create_employee(
     db.commit()
     db.refresh(new_user)
 
-    await send_welcome_email(
+    asyncio.run(send_welcome_email(
         email=data.email,
         temp_password=temp_password,
         name=f"{data.name} {data.last_name}",
-    )
+    ))
 
     return _build_user_response(new_user, temporary_password=temp_password)
 
@@ -425,7 +426,7 @@ async def create_employee(
     status_code=status.HTTP_201_CREATED,
     summary="Crear cuenta de cliente (por admin o jefe)",
 )
-async def create_client(
+def create_client(
     data: AdminCreateClientRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -468,11 +469,11 @@ async def create_client(
     db.commit()
     db.refresh(new_user)
 
-    await send_welcome_email(
+    asyncio.run(send_welcome_email(
         email=data.email,
         temp_password=temp_password,
         name=f"{data.name} {data.last_name}",
-    )
+    ))
 
     return _build_user_response(new_user, temporary_password=temp_password)
 
@@ -483,7 +484,7 @@ async def create_client(
     status_code=status.HTTP_201_CREATED,
     summary="Crear cuenta de jefe de fábrica",
 )
-async def create_jefe(
+def create_jefe(
     data: AdminCreateJefeRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -532,11 +533,11 @@ async def create_jefe(
     db.commit()
     db.refresh(new_user)
 
-    await send_welcome_email(
+    asyncio.run(send_welcome_email(
         email=data.email,
         temp_password=temp_password,
         name=f"{data.name} {data.last_name}",
-    )
+    ))
 
     return _build_user_response(new_user, temporary_password=temp_password)
 
@@ -550,7 +551,7 @@ async def create_jefe(
     response_model=UserResponse,
     summary="Renovar invitación de usuario (genera nueva contraseña temporal)",
 )
-async def renew_invitation(
+def renew_invitation(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -574,11 +575,11 @@ async def renew_invitation(
     db.commit()
     db.refresh(user)
 
-    await send_welcome_email(
+    asyncio.run(send_welcome_email(
         email=user.email,
         temp_password=temp_password,
         name=f"{user.name_user} {user.last_name}",
-    )
+    ))
 
     return _build_user_response(user, temporary_password=temp_password)
 
@@ -655,7 +656,7 @@ def get_reactivation_tickets(
     response_model=ReactivationTicketResponse,
     summary="Aprobar solicitud de reactivación",
 )
-async def approve_reactivation(
+def approve_reactivation(
     ticket_id: uuid.UUID,
     data: ProcessReactivationRequest,
     current_user: User = Depends(get_current_user),
@@ -691,10 +692,10 @@ async def approve_reactivation(
     db.flush()
 
     try:
-        await send_reactivation_approved_email(
+        asyncio.run(send_reactivation_approved_email(
             email=ticket.email,
             name=f"{user.name_user} {user.last_name}",
-        )
+        ))
     except Exception:
         db.rollback()
         raise HTTPException(
@@ -712,7 +713,7 @@ async def approve_reactivation(
     response_model=ReactivationTicketResponse,
     summary="Rechazar solicitud de reactivación",
 )
-async def reject_reactivation(
+def reject_reactivation(
     ticket_id: uuid.UUID,
     data: ProcessReactivationRequest,
     current_user: User = Depends(get_current_user),
@@ -739,11 +740,11 @@ async def reject_reactivation(
 
     if user:
         try:
-            await send_reactivation_rejected_email(
+            asyncio.run(send_reactivation_rejected_email(
                 email=ticket.email,
                 name=f"{user.name_user} {user.last_name}",
                 reason=data.comment,
-            )
+            ))
         except Exception:
             db.rollback()
             raise HTTPException(

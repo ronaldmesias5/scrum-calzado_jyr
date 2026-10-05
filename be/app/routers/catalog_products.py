@@ -149,7 +149,7 @@ def list_products(
 
 
 @router.post("/products/{product_id}/image", summary="Subir imagen del producto", response_model=dict)
-async def upload_product_image(
+def upload_product_image(
     product_id: str,
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -190,7 +190,7 @@ async def upload_product_image(
         )
 
     # Validar tamaño (máximo 5 MB)
-    content = await image.read()
+    content = image.file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="La imagen no puede superar 5 MB")
 

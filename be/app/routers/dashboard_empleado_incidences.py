@@ -218,7 +218,7 @@ def get_general_incidences(
     response_model=ProductIncidenceResponse,
     summary="Crear incidencia de producto vinculada a tarea",
 )
-async def create_product_incidence(
+def create_product_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     task_id: str = Form(...),
@@ -239,7 +239,7 @@ async def create_product_incidence(
         ext = MIME_EXT.get((evidence.content_type or "").lower())
         if not ext:
             raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
-        content = await evidence.read()
+        content = evidence.file.read()
         if len(content) > 5 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
         UPLOADS_DIR.mkdir(parents=True, exist_ok=True)

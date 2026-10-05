@@ -334,7 +334,7 @@ def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidence
 @router.post(
     "/incidences", response_model=ClientIncidenceResponse, status_code=status.HTTP_201_CREATED
 )
-async def create_my_incidence(
+def create_my_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     order_id: str = Form(...),
@@ -359,7 +359,7 @@ async def create_my_incidence(
         ext = MIME_EXT.get((evidence.content_type or "").lower())
         if not ext:
             raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
-        content = await evidence.read()
+        content = evidence.file.read()
         if len(content) > 5 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
         UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
