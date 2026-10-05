@@ -37,6 +37,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom", "axios"],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     host: "0.0.0.0",

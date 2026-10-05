@@ -34,7 +34,7 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { AuthProvider } from '@/store/AuthContext';
 import { ThemeProvider } from '@/store/ThemeContext';
 import '@/app/i18n'; // i18n initialization
@@ -44,71 +44,112 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { CookieBanner } from '@/components/atoms/CookieBanner';
 import { CookiePolicyModal } from '@/components/atoms/CookiePolicyModal';
 import { ToastProvider } from '@/store/ToastContext';
+import PageLoader from '@/components/atoms/PageLoader';
+import AdminLayout from '@/features/admin/components/organisms/AdminLayout';
+import EmployeeLayout from '@/features/employee/components/organisms/EmployeeLayout';
+import ClientLayout from '@/features/client/components/organisms/ClientLayout';
 
-import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage';
-import { DashboardPage } from '@/pages/auth/DashboardPage';
-import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
-import { ReactivationPage } from '@/pages/auth/ReactivationPage';
-import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
+// ══════════════════════════════════════════════════════
+// Code splitting: las páginas se cargan bajo demanda (React.lazy)
+// Los layouts/guards quedan estáticos (son el shell de la app).
+// ══════════════════════════════════════════════════════
+
+// Auth (legacy) — páginas con named export
+const ChangePasswordPage = lazy(() =>
+  import('@/pages/auth/ChangePasswordPage').then((m) => ({
+    default: m.ChangePasswordPage,
+  }))
+);
+const DashboardPage = lazy(() =>
+  import('@/pages/auth/DashboardPage').then((m) => ({
+    default: m.DashboardPage,
+  }))
+);
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/auth/ResetPasswordPage').then((m) => ({
+    default: m.ResetPasswordPage,
+  }))
+);
+const ReactivationPage = lazy(() =>
+  import('@/pages/auth/ReactivationPage').then((m) => ({
+    default: m.ReactivationPage,
+  }))
+);
+const VerifyEmailPage = lazy(() => import('@/pages/auth/VerifyEmailPage'));
 
 // Sprint 3 - Landing Page
-import LandingPage from '@/pages/public/LandingPage';
-import PublicCatalogPage from '@/pages/public/CatalogPage';
+const LandingPage = lazy(() => import('@/pages/public/LandingPage'));
+const PublicCatalogPage = lazy(() => import('@/pages/public/CatalogPage'));
 
-// Sprint 3 - Dashboard Jefe
-import AdminLayout from '@/features/admin/components/organisms/AdminLayout';
-import AdminDashboardPage from '@/pages/admin/DashboardPage';
-import UsersManagementPage from '@/pages/admin/UsersManagementPage';
+// Sprint 3 - Dashboard Jefe (AdminLayout se mantiene estático)
+const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
+const UsersManagementPage = lazy(
+  () => import('@/pages/admin/UsersManagementPage')
+);
 
-// Sprint 8 - Dashboard Empleado
-import EmployeeLayout from '@/features/employee/components/organisms/EmployeeLayout';
-import EmployeeDashboardPage from '@/pages/employee/DashboardPage';
-import EmployeeTasksPage from '@/pages/employee/TasksPage';
-import AvailableTasksPage from '@/pages/employee/AvailableTasksPage';
-import EmployeeIncidencesPage from '@/pages/employee/IncidencesPage';
-import EmployeeReportsPage from '@/pages/employee/EmployeeReportsPage';
-import EmployeeSettingsPage from '@/pages/employee/EmployeeSettingsPage';
+// Sprint 8 - Dashboard Empleado (EmployeeLayout se mantiene estático)
+const EmployeeDashboardPage = lazy(
+  () => import('@/pages/employee/DashboardPage')
+);
+const EmployeeTasksPage = lazy(() => import('@/pages/employee/TasksPage'));
+const AvailableTasksPage = lazy(
+  () => import('@/pages/employee/AvailableTasksPage')
+);
+const EmployeeIncidencesPage = lazy(
+  () => import('@/pages/employee/IncidencesPage')
+);
+const EmployeeReportsPage = lazy(
+  () => import('@/pages/employee/EmployeeReportsPage')
+);
+const EmployeeSettingsPage = lazy(
+  () => import('@/pages/employee/EmployeeSettingsPage')
+);
 
 // Sprint 4 - Orders Management
-import OrdersPage from '@/pages/admin/OrdersPage';
+const OrdersPage = lazy(() => import('@/pages/admin/OrdersPage'));
 
 // Sprint 5 - Catalog Management
-import CatalogPage from '@/pages/admin/CatalogPage';
-import InventoryPage from '@/pages/admin/InventoryPage';
+const CatalogPage = lazy(() => import('@/pages/admin/CatalogPage'));
+const InventoryPage = lazy(() => import('@/pages/admin/InventoryPage'));
 
 // Sprint 6 - Employees and Clients Management
-import EmployeesPage from '@/pages/admin/EmployeesPage';
-import ClientsPage from '@/pages/admin/ClientsPage';
+const EmployeesPage = lazy(() => import('@/pages/admin/EmployeesPage'));
+const ClientsPage = lazy(() => import('@/pages/admin/ClientsPage'));
 
 // Sprint 7 - Supplies module
-import InsumosPage from '@/pages/admin/InsumosPage';
+const InsumosPage = lazy(() => import('@/pages/admin/InsumosPage'));
 
 // HU-007 - Categories management
-import CategoriesPage from '@/pages/admin/CategoriesPage';
+const CategoriesPage = lazy(() => import('@/pages/admin/CategoriesPage'));
 
 // Per-Client Pricing
-import ClientPricesPage from '@/pages/admin/ClientPricesPage';
+const ClientPricesPage = lazy(() => import('@/pages/admin/ClientPricesPage'));
 
 // Calendario de entregas de pedidos
-import CalendarPage from '@/pages/admin/CalendarPage';
+const CalendarPage = lazy(() => import('@/pages/admin/CalendarPage'));
 
 // RF-019 - Losses module
-import LossesPage from '@/pages/admin/LossesPage';
+const LossesPage = lazy(() => import('@/pages/admin/LossesPage'));
 
-// Sprint - Dashboard Cliente
-import ClientLayout from '@/features/client/components/organisms/ClientLayout';
-import ClientDashboardPage from '@/pages/client/DashboardPage';
-import ClientOrdersPage from '@/pages/client/OrdersPage';
-import WholesaleCatalogPage from '@/pages/client/WholesaleCatalogPage';
-import MisIncidenciasPage from '@/pages/client/MisIncidenciasPage';
-import ClientReportsPage from '@/pages/client/ReportsPage';
-import ClientSettingsPage from '@/pages/client/SettingsPage';
+// Sprint - Dashboard Cliente (ClientLayout se mantiene estático)
+const ClientDashboardPage = lazy(() => import('@/pages/client/DashboardPage'));
+const ClientOrdersPage = lazy(() => import('@/pages/client/OrdersPage'));
+const WholesaleCatalogPage = lazy(
+  () => import('@/pages/client/WholesaleCatalogPage')
+);
+const MisIncidenciasPage = lazy(
+  () => import('@/pages/client/MisIncidenciasPage')
+);
+const ClientReportsPage = lazy(() => import('@/pages/client/ReportsPage'));
+const ClientSettingsPage = lazy(() => import('@/pages/client/SettingsPage'));
 
 // Additional Dashboard sections
-import ProductionTaskDashboard from '@/pages/admin/TasksPage';
-import AlertsPage from '@/pages/admin/AlertsPage';
-import ReportsPage from '@/pages/admin/ReportsPage';
-import SettingsPage from '@/pages/admin/SettingsPage';
+const ProductionTaskDashboard = lazy(
+  () => import('@/pages/admin/TasksPage')
+);
+const AlertsPage = lazy(() => import('@/pages/admin/AlertsPage'));
+const ReportsPage = lazy(() => import('@/pages/admin/ReportsPage'));
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 
 function App() {
   const [showCookiePolicy, setShowCookiePolicy] = useState(false);
@@ -129,7 +170,8 @@ function App() {
             Saltar al contenido principal
           </a>
           <ToastProvider>
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* ════════════════════════════════════════ */}
               {/* 🌐 Landing Page pública */}
               {/* ════════════════════════════════════════ */}
@@ -273,6 +315,7 @@ function App() {
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </Suspense>
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>

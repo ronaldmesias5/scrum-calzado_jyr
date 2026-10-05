@@ -33,7 +33,6 @@ import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerM
 import StatCard from '@/features/admin/components/atoms/StatCard';
 import Pagination from '@/components/atoms/Pagination';
 import { useToast } from '@/store/ToastContext';
-import { exportCatalogPDF } from '@/features/admin/utils/catalogPdfUtils';
 
 export default function CatalogPage() {
   const { showToast } = useToast();
@@ -462,6 +461,9 @@ export default function CatalogPage() {
               }
               setExportingPdf(true);
               try {
+                const { exportCatalogPDF } = await import(
+                  '@/features/admin/utils/catalogPdfUtils'
+                );
                 await exportCatalogPDF(filteredProducts);
                 showToast('PDF del catálogo generado', 'success');
               } catch {
