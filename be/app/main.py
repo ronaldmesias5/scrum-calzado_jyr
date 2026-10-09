@@ -15,6 +15,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import settings
 from app.database import SessionLocal
@@ -159,6 +160,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
 )
+
+# GzipMiddleware va después de CORS (más externo) para comprimir las respuestas JSON
+# finales. minimum_size=1000: solo respuestas ≥ 1 kB (evita overhead en payloads pequeños).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # ────────────────────────────
