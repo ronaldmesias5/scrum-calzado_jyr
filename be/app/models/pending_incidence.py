@@ -127,6 +127,7 @@ class PendingProductIncidence(Base):
         SQLEnum(PendingIncidenceStatus, name="pending_incidence_status", create_type=False),
         nullable=False,
         default=PendingIncidenceStatus.pending,
+        index=True,
     )
 
     # Tipo elegido por el jefe al aprobar (perdida/en_reparacion/devuelto)

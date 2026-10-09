@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, DateTime, ForeignKey, Boolean, Enum as SQLEnum, func
+from sqlalchemy import String, Text, DateTime, ForeignKey, Boolean, Enum as SQLEnum, Index, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,6 +30,10 @@ class Notification(Base):
     """Modelo ORM para la tabla `notifications` (notificaciones del sistema)."""
 
     __tablename__ = "notifications"
+    __table_args__ = (
+        # Badge de no leídas: WHERE user_id = ? AND is_read = false
+        Index("ix_notifications_user_unread", "user_id", "is_read"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
