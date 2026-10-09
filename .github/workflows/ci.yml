@@ -12,7 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        # mirror.gcr.io es un mirror público de Docker Hub (sin rate limit
+        # anónimo como docker.io, que agota el pool de IPs de GitHub Actions)
+        image: mirror.gcr.io/pgvector/pgvector:pg16
         env:
           POSTGRES_USER: jyr_user
           POSTGRES_PASSWORD: JyrPassword123!

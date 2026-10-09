@@ -26,7 +26,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """Rate limiter simple en memoria (para producción usar Redis).
     
     Comportamiento por entorno:
-      - development: rate limiting DESHABILITADO
+      - development/test: rate limiting DESHABILITADO (los tests CI hacen
+        cientos de requests en segundos y recibirían 429)
       - staging: rate limiting ACTIVO con límites altos (para pruebas)
       - production: rate limiting ESTRICTO
     """
@@ -35,7 +36,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.requests = defaultdict(list)  # {client_ip: [timestamp, timestamp, ...]}
         env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
-        self.is_development = env in ("dev", "development")
+        self.is_disabled = env in ("dev", "development", "test", "testing")
         self.is_staging = env in ("staging", "qa")
         self.is_production = env in ("prod", "production")
         
@@ -51,8 +52,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         }
     
     async def dispatch(self, request: Request, call_next) -> JSONResponse:
-        # Solo deshabilitar en desarrollo local
-        if self.is_development:
+        # Solo deshabilitar en desarrollo local y tests
+        if self.is_disabled:
             response = await call_next(request)
             return response
         
