@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend (ruff + pytest)
+    name: Backend (ruff + pytest + coverage)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -54,6 +54,10 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          # Caché de descargas de uv claveada por uv.lock
+          enable-cache: true
+          cache-dependency-glob: "be/uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,13 +68,22 @@ jobs:
         run: uv sync --frozen --extra dev
 
       - name: Ruff check
-        run: uv run ruff check app/
+        run: uv run ruff check app/ tests/
 
-      - name: Run tests
-        run: uv run pytest -v
+      - name: Tests + cobertura (pytest-cov)
+        run: uv run pytest --cov=app --cov-report=term-missing --cov-report=xml -v
+
+      - name: Subir reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: be/coverage.xml
+          retention-days: 7
+          if-no-files-found: ignore
 
   frontend:
-    name: Frontend (typecheck + tests)
+    name: Frontend (eslint + typecheck + tests + build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -87,14 +100,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          # Caché del store de pnpm claveada por el lockfile
           cache: pnpm
           cache-dependency-path: fe/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
+      - name: Lint (ESLint)
+        run: pnpm lint
+
+      - name: Typecheck (tsc -b)
         run: npx tsc -b
 
-      - name: Tests
+      - name: Tests (vitest)
         run: pnpm test
+
+      - name: Build de producción (tsc + vite build)
+        run: pnpm build

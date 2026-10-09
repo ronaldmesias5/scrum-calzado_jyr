@@ -244,11 +244,11 @@ export default function CatalogPage() {
     try {
       // 1. Obtener la marca primeroencias
       const brands = await listBrands();
-      let styles = await listStyles();
+      const styles = await listStyles();
       const categories = await listCategories();
 
       // Buscar los IDs por nombre
-      let brand = brands.find((b) => b.name === productData.brand_name);
+      const brand = brands.find((b) => b.name === productData.brand_name);
       let style = styles.find((s) => s.name === productData.style_name);
       const category = categories.find(
         (c) => c.name === productData.category_name
