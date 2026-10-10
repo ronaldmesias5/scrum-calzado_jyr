@@ -61,7 +61,14 @@ caducan en 24 horas.
 
 ## 4. JEFE / ADMINISTRADOR (`admin` + ocupación `jefe`)
 
-Acceso total. Panel `/dashboard/admin` con estas secciones:
+**Perfil y alcance:** acceso total al sistema — pedidos, tareas de producción, catálogo,
+inventario, reportes de scrap, gestión de usuarios, reindexación de IA y generador de
+descripciones. Es el único rol que valida cuentas, asigna tareas y aprueba incidencias.
+**Restricción crítica:** no ejecutar acciones destructivas (eliminar, rechazar, cancelar,
+pagar) sin confirmación explícita del usuario. La IA informa y guía; no ejecuta por sí sola.
+Ver secciones 11–17 para reglas de precios, herramientas exclusivas y flujos detallados.
+
+Panel `/dashboard/admin` con estas secciones:
 
 ### 4.1 Inicio (Dashboard)
 - Ver KPIs: total de pedidos, ventas, productos con stock bajo.
@@ -333,3 +340,123 @@ Reglas generales para la IA:
 - Mis incidencias: `/dashboard/client/incidences`
 - Reportes: `/dashboard/client/reports`
 - Configuración: `/dashboard/client/settings`
+
+## 11. JEFE — Perfil, alcance y control
+
+### Qué ve y qué controla
+El jefe/admin tiene acceso total y exclusivo a: pedidos (crear, editar, estados, entrega),
+tareas de producción (asignar, reasignar, priorizar, liquidar), catálogo completo (CRUD de
+productos, marcas, estilos, categorías, fotos), inventario de bodega (stock, ajustes,
+historial de movimientos), insumos (materiales y sus existencias), reportes de scrap/pérdidas
+y sus aprobaciones, gestión de usuarios (empleados, clientes, otros jefes, validación de
+cuentas y reactivaciones), reindexación de embeddings de la IA y generador de descripciones
+con IA.
+
+### Acciones permitidas y restricciones
+Puede realizar gestión global del negocio: crear y eliminar registros, aprobar o rechazar
+incidencias, cancelar pedidos y pagar tareas. **Restricción crítica:** la IA nunca debe
+ejecutar acciones destructivas (eliminar, rechazar, cancelar, pagar) sin confirmación
+explícita del jefe; primero resume qué hará y pide confirmación. El jefe es el único rol
+que valida cuentas nuevas y el único que puede asignar tareas a empleados.
+
+## 12. JEFE — Reglas críticas de precios
+
+### task_prices NO es precio de venta
+`task_prices` es el **pago a empleados en COP por docena trabajada** según la etapa de
+producción: corte, guarnición, soladura y emplantillado. Se define por producto en
+Dashboard Jefe > Catálogo. Sirve para liquidar y marcar tareas como pagadas
+(`por_liquidar → pagado`). **Nunca es el precio al que se vende el calzado** al cliente;
+no confundirlos al responder.
+
+### Precios de venta reales
+Los precios de venta se gestionan en `client_prices.unit_price` (precio por par
+personalizado por cliente). El CRUD está en `/api/v1/admin/client-prices` (con endpoint
+masivo `POST /api/v1/admin/client-prices/bulk`). El catálogo mayorista del cliente
+(`GET /api/v1/client/catalog/products`) muestra el precio efectivo: el personalizado si
+existe, o el general del catálogo.
+
+### Congelamiento de precios y cotizaciones
+Al crear un pedido, el precio unitario vigente se congela en `order_details.unit_price`;
+cambiar después `client_prices` **no altera pedidos ya creados**. Para negociaciones
+especiales, cotizaciones cerradas o descuentos, el asistente deriva al canal corporativo
+de WhatsApp **3137061602**.
+
+## 13. JEFE — Herramientas y endpoints exclusivos
+
+### Reindexación de embeddings del chatbot
+`POST /api/v1/ai/embeddings/reindex` (solo jefe/admin). Vuelve a trocear knowledge.md, las
+FAQs y el catálogo, y regenera los embeddings en la base de datos. Se debe ejecutar después
+de modificar el catálogo o el conocimiento para que el asistente responda con datos
+frescos. Devuelve el número de fragmentos indexados.
+
+### Generador de descripciones con IA
+`POST /api/v1/ai/generate-description` (solo jefe/admin). Recibe `product_id`, un `tone`
+(por defecto "profesional") y `max_length` (por defecto 200 caracteres); devuelve la
+descripción redactada por el modelo LLM para ese producto del catálogo.
+
+### Máquina de estados de pedidos
+Estados: `pendiente → en_progreso → completado → entregado`, más `cancelado`. El servidor
+rechaza transiciones inválidas. El pedido para stock (sin cliente) termina en `completado`
+y **nunca** pasa a `entregado`.
+
+### Bloqueos de concurrencia (FOR UPDATE)
+Inventario, insumos, pedidos y operaciones críticas de scrap usan bloqueos `FOR UPDATE`:
+dos acciones simultáneas sobre el mismo registro no provocan stock negativo ni doble
+descuento. Si aparece un error de bloqueo o concurrencia, reintentar la operación.
+
+### Scrap y aprobación de incidencias
+El jefe registra pérdidas (producto, maquinaria o insumo), las mueve a reparación y las
+marca reparadas o devueltas, y aprueba o rechaza con motivo las incidencias reportadas por
+empleados y clientes. Al aprobar una incidencia de producto se crea un registro de pérdida
+real que alimenta el acumulado de scrap de los reportes.
+
+## 14. JEFE — Flujo: crear un producto y asignarle insumos
+
+1. Ir a Dashboard Jefe > Catálogo y hacer clic en "Nuevo Producto".
+2. Completar nombre, categoría, marca, estilo, descripción, tallas y colores; subir fotos.
+3. Guardar; el producto queda activo en el catálogo (activarlo si nace inactivo).
+4. Ir a Dashboard Jefe > Insumos y crear los insumos necesarios (cuero, suela, hilo,
+   pegante) si no existen todavía.
+5. Vincular cada insumo al producto recién creado y definir las cantidades requeridas.
+6. Verificar que haya stock suficiente de insumos antes de iniciar producción; al arrancar
+   la producción el sistema descuenta insumos con bloqueo FOR UPDATE.
+7. Definir los precios por etapa (task_prices) en COP por docena para liquidación de
+   empleados, y el precio de venta por cliente en Precios por Cliente si aplica.
+8. Si el catálogo cambió y el asistente IA debe conocerlo, reindexar embeddings
+   (POST /api/v1/ai/embeddings/reindex).
+
+## 15. JEFE — Flujo: revisar tareas pendientes y pagos por docena
+
+1. Ir a Dashboard Jefe > Tareas (tablero global de todas las tareas).
+2. Filtrar por cargo, empleado o estado (pendiente, por_liquidar, en_progreso, completado,
+   pagado) para localizar lo pendiente.
+3. Asignar o reasignar tareas sin asignar a empleados según su cargo; subir la prioridad
+   si es urgente (baja/alta).
+4. Revisar el pago por docena de cada etapa desde task_prices del producto (Catálogo >
+   precios por etapa): son COP por docena trabajada, no precios de venta.
+5. En Dashboard Jefe > Reportes, revisar la producción acumulada por empleado y los
+   valores en COP por etapa.
+6. Marcar como pagadas las tareas liquidadas (estado pagado) para cerrar la liquidación.
+
+## 16. JEFE — Flujo: precios personalizados por cliente
+
+1. Ir a Dashboard Jefe > Precios por Cliente.
+2. Buscar el cliente y el producto; crear o editar la entrada con el precio unitario en COP
+   (client_prices.unit_price). Existe carga masiva vía POST /api/v1/admin/client-prices/bulk.
+3. Guardar; el catálogo mayorista de ese cliente mostrará el nuevo precio al instante
+   (GET /api/v1/client/catalog/products lo resuelve por cliente).
+4. Recordar: los pedidos ya creados conservan el precio congelado en order_details.unit_price
+   y no cambian aunque se edite la tabla de precios.
+5. Para cotizaciones cerradas o negociaciones especiales, deriva a WhatsApp 3137061602.
+
+## 17. JEFE — Flujo: reindexar el conocimiento de la IA
+
+1. Confirmar que knowledge.md, las FAQs o el catálogo ya fueron actualizados.
+2. Ejecutar POST /api/v1/ai/embeddings/reindex con sesión de jefe/admin (solo este rol
+   tiene permiso; otros roles reciben 403).
+3. Esperar la confirmación con el número de fragmentos reindexados (catálogo + FAQs +
+   conocimiento).
+4. Probar el chat con una pregunta del tema nuevo para verificar que la respuesta use los
+   datos frescos.
+5. Si no se reindexa, el asistente seguirá respondiendo con la información anterior; la
+   reindexación es obligatoria tras cambios de catálogo o de conocimiento.
