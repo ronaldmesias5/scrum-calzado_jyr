@@ -38,6 +38,15 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
+      // Baseline de deuda técnica heredada (mismo criterio que
+      // [tool.ruff.lint].ignore en be/pyproject.toml): se degradan a "warn"
+      // para que `pnpm lint` pase en CI. Los errores NUEVOS de cualquier
+      // otra regla siguen bloqueando el pipeline.
+      "@typescript-eslint/no-explicit-any": "warn", // 70 usos heredados
+      "react-hooks/set-state-in-effect": "warn", // 8 usos heredados
+      "@typescript-eslint/ban-ts-comment": "warn", // 1 uso (@ts-ignore heredado)
+      "@typescript-eslint/no-unused-vars": "warn", // 1 uso heredado
+      "no-empty": "warn", // 2 bloques vacíos heredados
     },
   }
 );

@@ -19,7 +19,6 @@ import {
   type ClientOrderSummaryResponse,
   type ClientAllOrdersReport
 } from '@/services/clientApi';
-import { exportMyOrdersPDF } from '@/features/client/utils/reportsUtils';
 import { useAuth } from '@/hooks/useAuth';
 import CategoryFilter from '@/components/atoms/CategoryFilter';
 import StatCard from '@/features/admin/components/atoms/StatCard';
@@ -196,6 +195,9 @@ export default function ReportsPage() {
               total_orders: filteredOrders.length,
               total_pairs: filteredTotalPairs
             };
+      const { exportMyOrdersPDF } = await import(
+        '@/features/client/utils/reportsUtils'
+      );
       await exportMyOrdersPDF(filtered, range.start, range.end);
     } catch {
       setReportError('Error al generar el PDF.');

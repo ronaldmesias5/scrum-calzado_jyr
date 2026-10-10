@@ -32,6 +32,7 @@ class Vale(Base):
         UUID(as_uuid=True),
         ForeignKey("orders.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     size: Mapped[str | None] = mapped_column(

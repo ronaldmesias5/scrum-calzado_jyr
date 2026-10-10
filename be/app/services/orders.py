@@ -10,22 +10,63 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.orm import Session
 
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement, InventoryMovementType
 from app.models.order import Order, OrderDetail, OrderStatus
-from app.models.tasks import Task
+from app.models.tasks import Task, TaskStatus
 from app.models.user import User
 from app.utils.task_priority import calculate_task_priority
 from app.schemas.orders import (
+    CalendarOrderItem,
     OrderDetailItemCreateRequest,
     OrderDetailItemResponse,
     OrderDetailResponse,
     OrderResponse,
 )
+
+# ────────────────────────────────────────────────
+# Máquina de estados de un pedido (OrderStatus)
+# ────────────────────────────────────────────────
+# Transiciones permitidas desde cada estado. Cualquier otra combinación
+# (p.ej. cancelado → completado, que sumaría reservas inexistentes) se
+# rechaza con 409 en el endpoint PATCH /orders/{id}/status.
+ALLOWED_ORDER_TRANSITIONS: dict[OrderStatus, frozenset[OrderStatus]] = {
+    OrderStatus.pendiente: frozenset(
+        {OrderStatus.en_progreso, OrderStatus.completado, OrderStatus.cancelado}
+    ),
+    OrderStatus.en_progreso: frozenset(
+        {OrderStatus.pendiente, OrderStatus.completado, OrderStatus.cancelado}
+    ),
+    OrderStatus.completado: frozenset(
+        {
+            OrderStatus.entregado,
+            OrderStatus.en_progreso,
+            OrderStatus.pendiente,
+            OrderStatus.cancelado,
+        }
+    ),
+    OrderStatus.entregado: frozenset(),
+    OrderStatus.cancelado: frozenset({OrderStatus.pendiente}),
+}
+
+
+def validate_order_transition(current_state: OrderStatus, new_state: OrderStatus) -> None:
+    """Valida que `new_state` sea una transición permitida desde `current_state`.
+
+    Raises:
+        ValueError: si la transición no está permitida en la máquina de estados.
+    """
+    if current_state == new_state:
+        return
+    allowed = ALLOWED_ORDER_TRANSITIONS.get(current_state, frozenset())
+    if new_state not in allowed:
+        raise ValueError(
+            f"Transición de estado no permitida: {current_state.value} → {new_state.value}"
+        )
 
 
 def _order_to_response(order: Order, db=None) -> OrderResponse:
@@ -96,6 +137,83 @@ def _order_to_detail_response(order: Order) -> OrderDetailResponse:
     )
 
 
+def get_orders_for_calendar(
+    db: Session,
+    start: datetime,
+    end: datetime,
+) -> list[CalendarOrderItem]:
+    """Pedidos con entrega en [start, end) más los que no tienen fecha de entrega.
+
+    La agregación de producción (tareas/vales) se hace en una segunda query
+    agrupada por order_id, evitando N+1 al renderizar el calendario.
+    """
+    range_cond = and_(
+        Order.delivery_date.is_not(None),
+        Order.delivery_date >= start,
+        Order.delivery_date < end,
+    )
+    orders = (
+        db.execute(
+            select(Order)
+            .where(
+                Order.deleted_at.is_(None),
+                or_(range_cond, Order.delivery_date.is_(None)),
+            )
+            .order_by(Order.delivery_date.is_(None), Order.delivery_date.asc())
+        )
+        .scalars()
+        .all()
+    )
+    if not orders:
+        return []
+
+    order_ids = [o.id for o in orders]
+    task_rows = db.execute(
+        select(Task.order_id, Task.vale_number, Task.status).where(
+            Task.order_id.in_(order_ids),
+            Task.deleted_at.is_(None),
+        )
+    ).all()
+
+    active_statuses = {
+        TaskStatus.pendiente.value,
+        TaskStatus.por_liquidar.value,
+        TaskStatus.en_progreso.value,
+    }
+    agg: dict[uuid.UUID, dict] = {}
+    for order_id, vale_number, task_status in task_rows:
+        entry = agg.setdefault(order_id, {"count": 0, "vales": set(), "pending": 0})
+        entry["count"] += 1
+        if vale_number is not None:
+            entry["vales"].add(int(vale_number))
+        status_value = task_status.value if isinstance(task_status, TaskStatus) else task_status
+        if status_value in active_statuses:
+            entry["pending"] += 1
+
+    items: list[CalendarOrderItem] = []
+    for order in orders:
+        customer = order.customer
+        entry = agg.get(order.id, {"count": 0, "vales": set(), "pending": 0})
+        items.append(
+            CalendarOrderItem(
+                id=order.id,
+                customer_id=order.customer_id,
+                customer_name=customer.name_user if customer else None,
+                customer_last_name=customer.last_name if customer else None,
+                total_pairs=order.total_pairs,
+                state=order.state,
+                priority=calculate_task_priority(order.delivery_date),
+                delivery_date=order.delivery_date,
+                creation_date=order.creation_date,
+                has_production=entry["count"] > 0,
+                vale_numbers=sorted(entry["vales"]),
+                task_count=entry["count"],
+                pending_tasks=entry["pending"],
+            )
+        )
+    return items
+
+
 def apply_order_state_inventory(
     db: Session,
     current_user_id: uuid.UUID,
@@ -124,6 +242,7 @@ def apply_order_state_inventory(
                     & (Inventory.size == detail.size)
                     & (Inventory.deleted_at == None)
                 )
+                .with_for_update()
                 .limit(1)
             )
             inventory_item = db.execute(stmt).scalar_one_or_none()
@@ -176,6 +295,7 @@ def apply_order_state_inventory(
                     & (Inventory.size == detail.size)
                     & (Inventory.deleted_at == None)
                 )
+                .with_for_update()
                 .limit(1)
             )
             inventory_item = db.execute(stmt).scalar_one_or_none()
@@ -559,6 +679,20 @@ def create_order(
     # Recalcular total de pares desde los detalles (seguridad server-side)
     total_pairs = sum(d.amount for d in details)
 
+    # Precios por cliente en UNA sola consulta (evita N+1 por detalle)
+    from app.models.client_price import ClientPrice
+
+    client_prices: dict[uuid.UUID, float] = {}
+    if customer_id is not None:
+        price_rows = db.execute(
+            select(ClientPrice.product_id, ClientPrice.unit_price).where(
+                ClientPrice.client_id == customer_id,
+                ClientPrice.product_id.in_([d.product_id for d in details]),
+                ClientPrice.deleted_at.is_(None),
+            )
+        ).all()
+        client_prices = {row[0]: float(row[1]) for row in price_rows}
+
     new_order = Order(
         customer_id=customer_id,
         total_pairs=total_pairs,
@@ -570,18 +704,7 @@ def create_order(
 
     for detail_data in details:
         # Auto-fill unit_price from client_prices if available
-        unit_price = None
-        if customer_id is not None:
-            from app.models.client_price import ClientPrice
-            cp = db.execute(
-                select(ClientPrice).where(
-                    ClientPrice.client_id == customer_id,
-                    ClientPrice.product_id == detail_data.product_id,
-                    ClientPrice.deleted_at.is_(None),
-                )
-            ).scalar_one_or_none()
-            if cp:
-                unit_price = float(cp.unit_price)
+        unit_price = client_prices.get(detail_data.product_id)
 
         detail = OrderDetail(
             product_id=detail_data.product_id,

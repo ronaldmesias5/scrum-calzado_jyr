@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Text, DateTime, ForeignKey, Enum as SQLEnum, func, Integer
+from sqlalchemy import Index, Text, DateTime, ForeignKey, Enum as SQLEnum, func, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -46,6 +46,10 @@ class Task(Base):
     """Modelo ORM para la tabla `tasks` (tareas de producción)."""
 
     __tablename__ = "tasks"
+    __table_args__ = (
+        # Combo más filtrado: dashboards de empleado y reportes de rendimiento
+        Index("ix_tasks_assigned_status", "assigned_to", "status"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -76,12 +80,14 @@ class Task(Base):
         UUID(as_uuid=True),
         ForeignKey("orders.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=True,
+        index=True,
     )
 
     product_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("products.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=True,
+        index=True,
     )
 
     line_group: Mapped[int] = mapped_column(
@@ -116,6 +122,7 @@ class Task(Base):
         SQLEnum(TaskStatus, name="task_status", create_type=False),
         nullable=False,
         default=TaskStatus.pendiente,
+        index=True,
     )
 
     deadline: Mapped[datetime | None] = mapped_column(
@@ -159,6 +166,7 @@ class Task(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+        index=True,
     )
 
     updated_at: Mapped[datetime] = mapped_column(

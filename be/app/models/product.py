@@ -28,7 +28,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, DateTime, ForeignKey, Boolean, Integer, func
+from sqlalchemy import String, Text, DateTime, ForeignKey, Boolean, Integer, Index, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -41,6 +41,15 @@ if TYPE_CHECKING:
 class Product(Base):
     """Modelo para productos del catálogo"""
     __tablename__ = "products"
+    __table_args__ = (
+        # Búsqueda con ILIKE '%patrón%' (catálogo y chatbot) — pg_trgm ya instalado en init.sql
+        Index(
+            "ix_products_name_trgm",
+            "name_product",
+            postgresql_using="gin",
+            postgresql_ops={"name_product": "gin_trgm_ops"},
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -52,18 +61,21 @@ class Product(Base):
         UUID(as_uuid=True),
         ForeignKey("styles.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     brand_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("brands.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("categories.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     name_product: Mapped[str] = mapped_column(

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Tag, Plus, Edit2, Trash2, Package } from 'lucide-react';
 import Modal from '@/components/atoms/Modal';
 import { useToast } from '@/store/ToastContext';
+import api from '@/services/axios';
 
 interface Category {
   id: string;
@@ -10,8 +11,6 @@ interface Category {
   product_count: number;
   created_at: string | null;
 }
-
-const API = import.meta.env.VITE_API_URL || '';
 
 function CategoryFormModal({
   isOpen,
@@ -115,44 +114,25 @@ export default function CategoriesPage() {
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access_token');
-      const res = await fetch(`${API}/api/v1/admin/catalog/categories`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data.categories || []);
-      }
+      const res = await api.get('/api/v1/admin/catalog/categories');
+      setCategories(res.data.categories || []);
     } catch (e) {
       console.error(e);
+      showToast('Error al cargar las categorías', 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
   const handleSave = async (data: { name: string; description: string }) => {
-    const token = localStorage.getItem('access_token');
-    const url = editTarget
-      ? `${API}/api/v1/admin/catalog/categories/${editTarget.id}`
-      : `${API}/api/v1/admin/catalog/categories`;
-    const method = editTarget ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (!res.ok) {
-      const json = await res.json().catch(() => ({}));
-      throw new Error(json.detail || 'Error al guardar');
+    if (editTarget) {
+      await api.put(`/api/v1/admin/catalog/categories/${editTarget.id}`, data);
+    } else {
+      await api.post('/api/v1/admin/catalog/categories', data);
     }
 
     showToast(editTarget ? 'Categoría actualizada' : 'Categoría creada', 'success');
@@ -161,18 +141,12 @@ export default function CategoriesPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(
-      `${API}/api/v1/admin/catalog/categories/${deleteTarget.id}`,
-      {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
-
-    if (!res.ok) {
-      const json = await res.json().catch(() => ({}));
-      showToast(json.detail || 'Error al eliminar', 'error');
+    try {
+      await api.delete(`/api/v1/admin/catalog/categories/${deleteTarget.id}`);
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error && e.message ? e.message : 'Error al eliminar';
+      showToast(message, 'error');
       setDeleteTarget(null);
       return;
     }

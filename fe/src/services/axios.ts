@@ -120,26 +120,27 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const storedRefreshToken =
+    // El refresh token vive en una cookie HttpOnly del backend (inaccesible
+    // para JS). Solo se manda en el body si queda un token legacy en storage
+    // (sesiones antiguas); tras renovar, la cookie se actualiza y se limpia
+    // cualquier resto para no persistir el secreto en localStorage/sessionStorage.
+    const legacyRefreshToken =
       sessionStorage.getItem('refresh_token') ||
       localStorage.getItem('refresh_token');
-    if (!storedRefreshToken) {
-      isRefreshing = false;
-      return handleHttpError(error);
-    }
-
-    const isPersisted = !!localStorage.getItem('refresh_token');
+    const isPersisted = !!localStorage.getItem('access_token');
 
     try {
       const response = await axios.post(
         `${API_CONFIG.baseURL}/api/v1/auth/refresh`,
-        { refresh_token: storedRefreshToken }
+        legacyRefreshToken ? { refresh_token: legacyRefreshToken } : {},
+        { withCredentials: true }
       );
 
-      const { access_token, refresh_token } = response.data;
+      const { access_token } = response.data;
       const storage = isPersisted ? localStorage : sessionStorage;
       storage.setItem('access_token', access_token);
-      storage.setItem('refresh_token', refresh_token);
+      sessionStorage.removeItem('refresh_token');
+      localStorage.removeItem('refresh_token');
       window.dispatchEvent(new CustomEvent('auth:token-refreshed'));
 
       processQueue(null, access_token);

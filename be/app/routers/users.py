@@ -78,7 +78,7 @@ def get_me(
     summary="Subir o actualizar foto de perfil",
     response_model=dict,
 )
-async def upload_avatar(
+def upload_avatar(
     image: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -105,7 +105,7 @@ async def upload_avatar(
         )
 
     # Validar tamaño (máximo 5 MB)
-    content = await image.read()
+    content = image.file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="La imagen no puede superar 5 MB")
 
@@ -187,7 +187,7 @@ def get_email_credentials_status(
     "/me/email-credentials",
     summary="Guardar correo remitente + clave de aplicación (valida por SMTP)",
 )
-async def save_email_credentials(
+def save_email_credentials(
     payload: dict,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

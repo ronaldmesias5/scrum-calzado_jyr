@@ -33,7 +33,6 @@ import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerM
 import StatCard from '@/features/admin/components/atoms/StatCard';
 import Pagination from '@/components/atoms/Pagination';
 import { useToast } from '@/store/ToastContext';
-import { exportCatalogPDF } from '@/features/admin/utils/catalogPdfUtils';
 
 export default function CatalogPage() {
   const { showToast } = useToast();
@@ -245,11 +244,11 @@ export default function CatalogPage() {
     try {
       // 1. Obtener la marca primeroencias
       const brands = await listBrands();
-      let styles = await listStyles();
+      const styles = await listStyles();
       const categories = await listCategories();
 
       // Buscar los IDs por nombre
-      let brand = brands.find((b) => b.name === productData.brand_name);
+      const brand = brands.find((b) => b.name === productData.brand_name);
       let style = styles.find((s) => s.name === productData.style_name);
       const category = categories.find(
         (c) => c.name === productData.category_name
@@ -462,6 +461,9 @@ export default function CatalogPage() {
               }
               setExportingPdf(true);
               try {
+                const { exportCatalogPDF } = await import(
+                  '@/features/admin/utils/catalogPdfUtils'
+                );
                 await exportCatalogPDF(filteredProducts);
                 showToast('PDF del catálogo generado', 'success');
               } catch {

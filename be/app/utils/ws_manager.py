@@ -11,6 +11,8 @@ Arquitectura:
   - Conexiones muertas se limpian automáticamente
 """
 
+import asyncio
+
 from fastapi import WebSocket
 
 
@@ -23,9 +25,12 @@ class ConnectionManager:
     def __init__(self) -> None:
         # Dict user_id -> set of WebSocket connections
         self._connections: dict[str, set[WebSocket]] = {}
+        # Loop principal (capturado al conectar) para emits desde hilos sync
+        self._main_loop: asyncio.AbstractEventLoop | None = None
 
     async def connect(self, user_id: str, ws: WebSocket) -> None:
         """Acepta una nueva conexión WebSocket y la registra para el usuario."""
+        self._main_loop = asyncio.get_running_loop()
         await ws.accept()
         self._connections.setdefault(user_id, set()).add(ws)
 
@@ -56,6 +61,20 @@ class ConnectionManager:
         """Envía un mensaje JSON a múltiples usuarios."""
         for uid in user_ids:
             await self.broadcast_to_user(uid, message)
+
+    def broadcast_from_thread(self, user_id: str, message: dict) -> None:
+        """Programa un broadcast en el event loop principal desde un hilo sync.
+
+        Usa run_coroutine_threadsafe para no cruzar loops (los WebSocket viven
+        en el loop principal). Si no hay loop activo, no hace nada.
+        """
+        loop = self._main_loop
+        if loop is None or loop.is_closed() or not self._connections.get(user_id):
+            return
+        try:
+            asyncio.run_coroutine_threadsafe(self.broadcast_to_user(user_id, message), loop)
+        except RuntimeError:
+            pass
 
 
 # Singleton a nivel módulo

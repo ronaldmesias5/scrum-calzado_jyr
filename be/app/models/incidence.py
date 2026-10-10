@@ -41,6 +41,7 @@ class Incidence(Base):
         UUID(as_uuid=True),
         ForeignKey("tasks.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     type_incidence: Mapped[str] = mapped_column(
@@ -57,6 +58,7 @@ class Incidence(Base):
         SQLEnum(IncidenceStatus, name="incidence_status", create_type=False),
         nullable=False,
         default=IncidenceStatus.abierta,
+        index=True,
     )
 
     report_date: Mapped[datetime] = mapped_column(

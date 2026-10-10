@@ -20,7 +20,8 @@ fe/src/
 │   ├── atoms/            # Átomos globales (Button, Modal, Toast, PageTransition, Pagination…)
 │   └── layout/           # Layouts globales (AppLayout, AuthLayout…)
 ├── features/             # Features de negocio (Atomic Design por feature)
-│   ├── admin/            # Panel admin (14 páginas)
+│   ├── admin/            # Panel admin (16 páginas) — includes utils/catalogPdfUtils.ts (export PDF catálogo)
+│   ├── ai/               # Chatbot IA Águila J&R con embeddings
 │   ├── auth/             # Login, Register, Password Reset
 │   ├── client/           # Panel cliente (6 páginas)
 │   ├── employee/         # Panel empleado (6 páginas)

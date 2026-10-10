@@ -96,7 +96,7 @@ Acceso total. Panel `/dashboard/admin` con estas secciones:
 - Gestionar marcas, estilos y categorías.
 - Definir `task_prices` (pago a empleados en COP por docena por etapa: corte, guarnición, soladura, emplantillado — **NO es precio de venta**) y umbral
   de alerta de stock bajo. Importación masiva por CSV.
-- **El sistema NO tiene precio de venta de productos.** La cotización se hace por WhatsApp 3137061602.
+- **Precios de venta:** el sistema SÍ tiene precios de venta por cliente (`client_prices.unit_price`, CRUD en Precios por Cliente); el catálogo mayorista muestra precio por docena/par y al crear el pedido se congela en `order_details.unit_price`. Para cotizar o negociar, deriva a WhatsApp 3137061602.
 - **Ruta exacta:** Dashboard Jefe > Catálogo
 
 ### 4.5 Inventario / Bodega
@@ -251,7 +251,7 @@ Solo ve **sus** pedidos e incidencias. Panel `/dashboard/client`.
    vendibles; flujo `perdida → en_reparacion → reparado / devuelto`.
 8. **Precios por etapa (`task_prices`):** pago a empleados en COP por docena por etapa (corte, guarnición, soladura, emplantillado), definido por
    producto; es la base para liquidar y pagar a los empleados
-   (`por_liquidar → pagado`). **NO es precio de venta.** El sistema no tiene precio de venta; se cotiza por WhatsApp 3137061602.
+   (`por_liquidar → pagado`). **NO es precio de venta.** Los precios de venta sí existen: `client_prices.unit_price` por cliente y `order_details.unit_price` congelado al crear el pedido; para cotizaciones se deriva a WhatsApp 3137061602.
 9. **Mínimo 12 pares por estilo/talla** al crear pedidos (tanto jefe como cliente).
 10. **`line_group`:** agrupa filas de una misma adición de producto al pedido. Los productos duplicados en un pedido se diferencian por `line_group`.
 11. **`reserved` vs `amount`:** `reserved` = pares fabricados para pedidos con cliente (pendientes de entrega). `amount` = stock físico disponible en bodega.
@@ -273,7 +273,7 @@ Reglas generales para la IA:
 - Las acciones (crear pedido, completar tarea, aprobar, etc.) las ejecuta el usuario en la
   plataforma; la IA **informa y guía, no ejecuta** sin confirmación.
 - **Si el usuario está autenticado, NUNCA le digas que inicie sesión.** Usa su rol para dar instrucciones precisas.
-- **NUNCA menciones precio de venta.** El sistema NO tiene campo de precio de venta. Si preguntan por precio, deriva a WhatsApp 3137061602.
+- **Precios de venta:** existen precios por cliente (`client_prices.unit_price`) y precio por docena/par en el catálogo mayorista (congelado en `order_details.unit_price` al crear el pedido). Para cotizaciones o negociar, deriva a WhatsApp 3137061602.
 
 ## 9. Glosario del negocio
 

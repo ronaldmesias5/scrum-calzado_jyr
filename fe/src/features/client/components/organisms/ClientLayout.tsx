@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import ClientSidebar from './ClientSidebar';
 import AdminHeader from '@/features/admin/components/organisms/AdminHeader';
@@ -6,6 +6,7 @@ import { BadgeCountsProvider } from '@/store/BadgeCountsContext';
 import { CartProvider } from '@/store/CartContext';
 import { Breadcrumbs } from '@/components/atoms/Breadcrumbs';
 import PageTransition from '@/components/atoms/PageTransition';
+import PageLoader from '@/components/atoms/PageLoader';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import ChatWidget from '@/features/ai/components/organisms/ChatWidget';
 
@@ -93,9 +94,11 @@ export default function ClientLayout() {
             <main id="main-content" className="flex min-h-0 min-w-0 flex-1 flex-col bg-gray-50 dark:bg-slate-950">
               <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 sm:px-8 pb-6">
                 <Breadcrumbs />
-                <PageTransition>
-                  <Outlet />
-                </PageTransition>
+          <PageTransition>
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          </PageTransition>
               </div>
               <DashboardFooter className="shrink-0 border-t border-gray-100 dark:border-slate-800/50" />
             </main>

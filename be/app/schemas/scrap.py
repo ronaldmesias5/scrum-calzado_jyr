@@ -84,15 +84,15 @@ class IncidentCreateRequest(BaseModel):
     product_id: uuid.UUID | None = None
     size: str | None = None
     colour: str | None = None
-    quantity: Decimal = Decimal("1")
+    quantity: Decimal = Field(Decimal("1"), gt=0)
     machinery_name: str | None = None
     supply_id: uuid.UUID | None = None
     custom_supply_name: str | None = None
     incident_type: str = "perdida"  # perdida, en_reparacion, devuelto
     defect_code_id: uuid.UUID | None = None
-    description: str | None = None  # Descripción libre del defecto (reemplaza defect_code_id)
-    reason: str | None = None
-    observations: str | None = None
+    description: str | None = Field(None, max_length=2000)
+    reason: str | None = Field(None, max_length=2000)
+    observations: str | None = Field(None, max_length=2000)
     order_id: uuid.UUID | None = None
     order_detail_id: uuid.UUID | None = None
     line_group: int | None = None

@@ -11,6 +11,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.order import OrderStatus
+from app.models.tasks import TaskStatus
 
 # ────────────────────────────────────────────────
 # Esquemas para OrderDetail (línea de pedido)
@@ -103,6 +104,26 @@ class OrderListResponse(BaseModel):
     items: list[OrderResponse] = Field(..., description="Órdenes en esta página")
 
 
+class CalendarOrderItem(BaseModel):
+    """Pedido para el calendario de entregas, con estado de producción y vales."""
+
+    id: UUID
+    customer_id: UUID | None = None
+    customer_name: str | None = None
+    customer_last_name: str | None = None
+    total_pairs: int
+    state: OrderStatus
+    priority: str = "baja"
+    delivery_date: datetime | None = None
+    creation_date: datetime | None = None
+    has_production: bool = Field(False, description="True si el pedido tiene tareas de producción")
+    vale_numbers: list[int] = Field(default_factory=list, description="Vales distintos del pedido")
+    task_count: int = Field(0, description="Total de tareas de producción")
+    pending_tasks: int = Field(0, description="Tareas aún no completadas")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OrderCreateRequest(BaseModel):
     """Esquema para crear una nueva orden."""
     customer_id: UUID | None = Field(None, description="ID del cliente (None = producción para stock)")
@@ -133,7 +154,22 @@ class OrderUpdateDetailsRequest(BaseModel):
 # ────────────────────────────────────────────────
 
 class TaskStatusUpdateRequest(BaseModel):
-    status: str = Field(..., description="Nuevo estado (por_liquidar, en_progreso, completado, pagado, cancelado)")
+    status: str = Field(
+        ...,
+        description=(
+            "Nuevo estado (pendiente, por_liquidar, en_progreso, completado, pagado, cancelado)"
+        ),
+    )
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        allowed = {s.value for s in TaskStatus}
+        if v not in allowed:
+            raise ValueError(
+                f"Estado inválido: {v}. Permitidos: {', '.join(sorted(allowed))}"
+            )
+        return v
 
 class TaskPriorityUpdateRequest(BaseModel):
     priority: str = Field(..., description="Nueva prioridad (alta, baja)")

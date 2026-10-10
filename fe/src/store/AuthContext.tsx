@@ -57,9 +57,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     (access: string, refresh: string, persist = false) => {
       setAccessToken(access);
       setRefreshToken(refresh);
+      // El refresh token NO se persiste en storage: vive en la cookie
+      // HttpOnly que setea el backend en /login (inaccesible para JS/XSS).
       const storage = persist ? localStorage : sessionStorage;
       storage.setItem(STORAGE_KEY_ACCESS, access);
-      storage.setItem(STORAGE_KEY_REFRESH, refresh);
     },
     []
   );

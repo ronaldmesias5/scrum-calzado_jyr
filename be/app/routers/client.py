@@ -1,3 +1,4 @@
+import logging
 import time
 import uuid
 from datetime import datetime
@@ -7,6 +8,8 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select, desc, func
 from sqlalchemy.orm import Session, selectinload
+
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 from app.dependencies import get_db, get_current_user
@@ -34,6 +37,15 @@ router = APIRouter(
 
 UPLOADS_DIR = (Path(settings.UPLOAD_DIR) / "evidence") if settings.UPLOAD_DIR else (Path(__file__).resolve().parent.parent.parent / "uploads" / "evidence")
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
+# Extensión segura derivada del MIME validado (nunca del nombre del archivo,
+# que podría traer .html/.svg y producir XSS stored al servirse desde /uploads)
+MIME_EXT = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/avif": "avif",
+}
 
 
 def _order_to_client_response(order: Order) -> ClientOrderResponse:
@@ -240,12 +252,17 @@ def create_my_order(
             created_by=current_user.id,
         )
 
-        _trigger_notifications(
-            db=db,
-            new_order=new_order,
-            customer_check=current_user,
-            settings=settings,
-        )
+        # Best-effort: un fallo aquí NO debe abortar la respuesta (el pedido ya
+        # está guardado) porque el cliente podría reintentar y duplicarlo.
+        try:
+            _trigger_notifications(
+                db=db,
+                new_order=new_order,
+                customer_check=current_user,
+                settings=settings,
+            )
+        except Exception:
+            logger.exception("Notificaciones fallidas para el pedido %s", new_order.id)
 
         return _order_to_client_response(new_order)
 
@@ -254,9 +271,10 @@ def create_my_order(
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al crear el pedido: {e!s}")
+        logger.exception("Error al crear el pedido")
+        raise HTTPException(status_code=500, detail="Error al crear el pedido")
 
 
 @router.get("/orders/{order_id}", response_model=ClientOrderResponse)
@@ -316,7 +334,7 @@ def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidence
 @router.post(
     "/incidences", response_model=ClientIncidenceResponse, status_code=status.HTTP_201_CREATED
 )
-async def create_my_incidence(
+def create_my_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     order_id: str = Form(...),
@@ -338,12 +356,12 @@ async def create_my_incidence(
     # Handle evidence image upload
     evidence_image_url = None
     if evidence and evidence.filename:
-        if evidence.content_type not in ALLOWED_MIME:
+        ext = MIME_EXT.get((evidence.content_type or "").lower())
+        if not ext:
             raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
-        content = await evidence.read()
+        content = evidence.file.read()
         if len(content) > 5 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
-        ext = evidence.filename.rsplit(".", 1)[-1].lower() if "." in evidence.filename else "jpg"
         UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         filename = f"evidence_{uuid.uuid4().hex}_{int(time.time())}.{ext}"
         (UPLOADS_DIR / filename).write_bytes(content)
@@ -367,9 +385,10 @@ async def create_my_incidence(
     except ValueError as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al reportar la incidencia: {e!s}")
+        logger.exception("Error al reportar la incidencia")
+        raise HTTPException(status_code=500, detail="Error al reportar la incidencia")
 
 
 @router.get("/incidences", response_model=ClientIncidenceListResponse)

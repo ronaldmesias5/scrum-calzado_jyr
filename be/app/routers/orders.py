@@ -23,6 +23,7 @@ from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.product import Product
 from app.models.user import User
 from app.schemas.orders import (
+    CalendarOrderItem,
     OrderCreateRequest,
     OrderDetailResponse,
     OrderListResponse,
@@ -34,7 +35,9 @@ from app.controllers.orders import (
     _order_to_response,
     apply_detail_state_inventory,
     apply_order_state_inventory,
+    get_orders_for_calendar,
     resolve_order_state_from_details,
+    validate_order_transition,
 )
 
 router = APIRouter(
@@ -220,6 +223,28 @@ def list_orders(
         return OrderListResponse(total=0, page=page, page_size=page_size, total_pages=0, items=[])
 
 
+@router.get("/calendar", response_model=list[CalendarOrderItem])
+def list_orders_calendar(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    start: Annotated[datetime, Query(description="Inicio del rango (ISO 8601)")],
+    end: Annotated[datetime, Query(description="Fin del rango, exclusivo (ISO 8601)")],
+) -> list[CalendarOrderItem]:
+    """
+    Calendario de entregas: pedidos con `delivery_date` en el rango [start, end)
+    más los pedidos sin fecha de entrega (`delivery_date = NULL`).
+
+    Incluye agregación de producción por pedido: `has_production`, `vale_numbers`,
+    `task_count` y `pending_tasks` (sin N+1).
+    """
+    _require_jefe(current_user)
+    try:
+        return get_orders_for_calendar(db=db, start=start, end=end)
+    except Exception:
+        logger.exception("Error al construir el calendario de pedidos")
+        raise HTTPException(status_code=500, detail="Error al obtener el calendario de pedidos")
+
+
 @router.get("/{order_id}", response_model=OrderDetailResponse)
 def get_order_detail(
     order_id: uuid.UUID,
@@ -285,13 +310,18 @@ def create_order(
             ).scalar_one_or_none()
 
         # ─── NOTIFICACIONES: notificar al jefe + email (fire-and-forget vía thread) ───
-        _trigger_notifications(
-            db=db,
-            new_order=new_order,
-            customer_check=customer_check,
-            settings=settings,
-            actor_id=current_user.id,
-        )
+        # Best-effort: un fallo aquí NO debe abortar la respuesta (la orden ya está
+        # guardada) porque el cliente podría reintentar y duplicar el pedido.
+        try:
+            _trigger_notifications(
+                db=db,
+                new_order=new_order,
+                customer_check=customer_check,
+                settings=settings,
+                actor_id=current_user.id,
+            )
+        except Exception:
+            logger.exception("Notificaciones fallidas para el pedido %s", new_order.id)
 
         return _order_to_detail_response(new_order)
 
@@ -300,9 +330,10 @@ def create_order(
         raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al crear la orden: {e!s}")
+        logger.exception("Error al crear la orden")
+        raise HTTPException(status_code=500, detail="Error al crear la orden")
 
 
 @router.patch("/{order_id}/status", response_model=OrderDetailResponse)
@@ -331,6 +362,10 @@ def update_order_status(
                 detail="Los pedidos para stock no se entregan: terminan en 'completado'",
             )
 
+        # Máquina de estados: solo transiciones permitidas (p.ej. bloquea
+        # cancelado → completado, que sumaría reservas que nunca existieron)
+        validate_order_transition(order.state, order_update.state)
+
         # --- Lógica de Inventario Segura con Reservas ---
         # FLUJO:
         # - Pedido 'completado' -> SUMAR a reserved (entrada de pares fabricados)
@@ -354,6 +389,9 @@ def update_order_status(
         return _order_to_detail_response(order)
     except HTTPException:
         raise
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error al actualizar el estado")
@@ -460,9 +498,10 @@ def update_order_details(
         return _order_to_detail_response(order)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al actualizar la orden: {e!s}")
+        logger.exception("Error al actualizar la orden")
+        raise HTTPException(status_code=500, detail="Error al actualizar la orden")
 
 
 @router.delete("/{order_id}", status_code=status.HTTP_204_NO_CONTENT)

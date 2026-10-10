@@ -114,21 +114,21 @@ Para ofertar calzado a clientes y empleados.
 
 ## HU-007: CLASIFICACIÓN POR CATEGORÍAS
 **Prioridad:** Alta
-**Estado:** No implementado
+**Estado:** Implementado
 
 Como jefe,
 Quiero organizar los productos en categorías,
 Para facilitar la navegación y búsqueda de clientes.
 
-**Criterios de Aceptación (pendientes de implementar):**
-- Puedo crear nuevas categorías con nombres únicos
-- Puedo editar categorías existentes
-- No puedo eliminar categorías vinculadas a productos activos
-- Si intento eliminar una categoría con productos, veo una ventana emergente listando los dependientes
-- Si una categoría está inactiva, sus productos no aparecen en el catálogo público
+**Criterios de Aceptación:**
+- Puedo crear nuevas categorías con nombres únicos (POST /admin/categories, validación 409 en duplicado)
+- Puedo editar categorías existentes (PUT /admin/categories/{id})
+- Puedo eliminar categorías; el endpoint valida dependencias (DELETE /admin/categories/{id})
+- Página admin "Categorías" con listado, formulario modal y confirmación de borrado (CategoriesPage.tsx)
+- El frontend filtra nombres de etapas de producción con `isRealCategory()` para excluir categorías falsas
 - Los filtros por categoría responden en menos de 2 segundos
 
-**Nota:** hoy solo existe el listado público de categorías (GET /categories); no hay CRUD de administración.
+**Nota:** el CRUD completo existe en `be/app/routers/catalog_categories.py`, registrado en `main.py`.
 
 ---
 
@@ -459,18 +459,18 @@ Para recibir en tiempo real el reporte de cierre con resumen de desempeño, y ap
 
 ## HU-027: MODIFICACIÓN Y ELIMINACIÓN DE TAREAS
 **Prioridad:** Alta
-**Estado:** No implementado según lo descrito
+**Estado:** Parcial (PUT implementado; DELETE no aplica por diseño)
 
 Como jefe,
 Quiero editar o eliminar tareas previamente registradas que no estén completadas ni canceladas,
 Para corregir errores de planificación, reasignar responsabilidades y ajustar fechas límite.
 
 **Criterios de Aceptación:**
-- Solo existen PATCH de asignación, estado y prioridad; no existen PUT ni DELETE de tareas
-- Puedo reasignar y cambiar prioridad/estado, incluso en tareas completadas (el completado es reversible a en_progreso)
-- No hay cancelación con motivo obligatorio ni bloqueo por tiempo registrado mayor a cero
-- No hay registro de auditoría con valores anteriores/nuevos
+- **PUT /orders/tasks/{task_id}** permite editar fase, prioridad, notas, fechas y asignación (implementado en `orders_tasks.py`)
+- No existe DELETE: las tareas no se eliminan porque tienen relaciones FK con pedidos, vales e incidencias; solo se editan
+- Puedo reasignar y cambiar prioridad/estado; el completado es reversible a en_progreso
 - Recibo confirmación visual de cada modificación exitosa
+- Sin registro de auditoría con valores anteriores/nuevos
 
 ---
 
@@ -592,14 +592,16 @@ Para disponer de análisis periódico de producción y planificación de capacid
 
 ## HU-035: CONTABILIDAD DE PARES TOTALES PEDIDOS POR CLIENTE MENSUALMENTE
 **Prioridad:** Media
-**Estado:** No implementado según lo descrito (solo reporte por cliente bajo demanda; sin corte automático, sin métricas de cumplimiento/puntualidad)
+**Estado:** Parcial (endpoint mensual + gráfico implementados; sin corte automático por scheduler)
 
 Como jefe,
 Quiero que el sistema consolide automáticamente los totales mensuales de pares pedidos por cliente,
 Para analizar el comportamiento comercial, planificar la demanda y diseñar estrategias de fidelización.
 
 **Criterios de Aceptación:**
-- Solo existe reporte por cliente bajo demanda con filtros (sin consolidación automática el último día del mes 23:59, no hay scheduler)
+- **GET /admin/reports/customer/{id}/monthly** devuelve órdenes agrupadas por mes calendario (migración 047 + `reports.py`)
+- Gráfico mensual en `fe/src/pages/admin/ReportsPage.tsx` con selector de período
+- Sin corte automático el último día del mes 23:59 (no hay scheduler)
 - Sin exclusión automática de cancelados/borrador (filtro de estado opcional), sin porcentaje de cumplimiento ni de entregas a tiempo
 - Puedo filtrar el reporte por cliente, mes, estado y referencia
 - Exportación a PDF; sin Excel en este módulo

@@ -41,7 +41,6 @@ import AdjustInventoryModal from '@/features/admin/components/molecules/AdjustIn
 import ViewManufacturedModal from '@/features/admin/components/molecules/ViewManufacturedModal';
 import ImageViewerModal from '@/features/admin/components/molecules/ImageViewerModal';
 import StatCard from '@/features/admin/components/atoms/StatCard';
-import { exportInventoryPDF } from '@/features/admin/utils/reportsUtils';
 import { useToast } from '@/store/ToastContext';
 
 export default function InventoryPage() {
@@ -262,6 +261,9 @@ export default function InventoryPage() {
     }
 
     try {
+      const { exportInventoryPDF } = await import(
+        '@/features/admin/utils/reportsUtils'
+      );
       await exportInventoryPDF(filteredProducts);
       showToast('PDF de inventario descargado', 'success');
     } catch (error) {

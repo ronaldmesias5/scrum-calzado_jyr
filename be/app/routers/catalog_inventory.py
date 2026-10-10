@@ -360,13 +360,15 @@ def create_inventory_movement(
     except ValueError:
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
-    # 1. Buscar inventario para ese producto y talla
+    # 1. Buscar inventario para ese producto y talla (FOR UPDATE: evita doble descuento)
     inventory_items = db.execute(
-        select(Inventory).where(
+        select(Inventory)
+        .where(
             (Inventory.product_id == product_uuid) &
             (Inventory.size == request.size) &
             (Inventory.deleted_at == None)
         )
+        .with_for_update()
     ).scalars().all()
     
     if not inventory_items:

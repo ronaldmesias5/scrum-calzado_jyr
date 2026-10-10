@@ -15,6 +15,7 @@ Endpoints:
   GET    /api/v1/scrap/stock                        — listar stock de scrap
 """
 
+import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -141,7 +142,8 @@ def register_incident_endpoint(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> IncidentResponse:
-    """Registra una incidencia (pérdida, en reparación, devolución). Cualquier usuario autenticado puede crear."""
+    """Registra una incidencia (pérdida, en reparación, devolución). Solo admin o jefe."""
+    _ensure_admin_or_jefe(current_user)
     try:
         incident = register_incident(
             db=db,
@@ -257,7 +259,7 @@ def reject_loss_endpoint(
 
 
 @router.post("/losses/{loss_id}/share", response_model=ShareIncidenceResponse)
-async def share_incidence(
+def share_incidence(
     loss_id: uuid.UUID,
     data: ShareIncidenceRequest,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -348,7 +350,7 @@ async def share_incidence(
         try:
             from app.utils.ws_manager import ws_manager
 
-            await ws_manager.broadcast_to_user(
+            ws_manager.broadcast_from_thread(
                 str(client.id),
                 {
                     "type": "incidence_shared",
@@ -368,13 +370,13 @@ async def share_incidence(
             else to_email.split("@")[0]
         )
         try:
-            await send_incidence_shared_email(
+            asyncio.run(send_incidence_shared_email(
                 client_email=to_email,
                 client_name=to_name,
                 rows=rows,
                 jefe_message=(data.message or None),
                 reply_to=current_user.email,
-            )
+            ))
             email_sent = True
             detail_parts.append(f"correo enviado a {to_email} · responde a {current_user.email}")
         except Exception as exc:

@@ -80,15 +80,16 @@
 
 1. ✅ Listar todos los pedidos de un cliente específico
 2. ✅ Ver ventas semanales agregadas
-3.  Agregación mensual de pedidos por cliente
-4.  Gráfico mensual en ReportsPage.tsx
+3. ✅ Agregación mensual de pedidos por cliente (`GET /admin/reports/customer/{id}/monthly`)
+4. ✅ Gráfico mensual en ReportsPage.tsx con selector de período
 
 ### Endpoints Implementados
 
 | Método | Ruta | Líneas | Descripción |
 |--------|------|--------|-------------|
-| GET | `/api/v1/admin/reports/customer/{user_id}` | `reports_router.py:656-703` | Lista pedidos de un cliente (sin agregación mensual) |
-| GET | `/api/v1/admin/reports/global/sales` | `reports_router.py:816-859` | Ventas semanales (no mensuales) |
+| GET | `/api/v1/admin/reports/customer/{user_id}` | `reports_router.py:656-703` | Lista pedidos de un cliente |
+| GET | `/api/v1/admin/reports/customer/{user_id}/monthly` | `reports.py` + migración 047 | Órdenes agrupadas por mes calendario |
+| GET | `/api/v1/admin/reports/global/sales` | `reports_router.py:816-859` | Ventas semanales |
 
 ### Implementación Actual (Parcial)
 
@@ -118,8 +119,10 @@
 ### Tareas Completadas
 
 - [x] Implementar `GET /customer/{user_id}` con lista de pedidos por cliente
+- [x] Implementar `GET /customer/{user_id}/monthly` con órdenes agrupadas por mes (migración 047)
 - [x] Implementar `GET /global/sales` con ventas semanales
 - [x] Agregar sección de cliente en ReportsPage.tsx
+- [x] Agregar gráfico mensual con selector de período en ReportsPage.tsx
 
 ## Cambios Técnicos
 
@@ -141,4 +144,4 @@
 
 ## Resumen
 
-El Sprint 15 completó la HU-034 con un reporte de producción semanal robusto que agrupa pares fabricados, tareas completadas, pedidos creados y pares ordenados por semana ISO. La HU-035 quedó parcial: aunque se implementaron los endpoints para listar pedidos por cliente y ventas semanales, falta la agregación mensual (agrupación por mes calendario) tanto en backend como en frontend. Se requiere un nuevo endpoint y schema para `SalesMonthlyMetric`, y la correspondiente visualización en ReportsPage.tsx.
+El Sprint 15 completó la HU-034 con un reporte de producción semanal robusto que agrupa pares fabricados, tareas completadas, pedidos creados y pares ordenados por semana ISO. La HU-035 quedó completa: además de los endpoints para listar pedidos por cliente y ventas semanales, se implementó la agregación mensual (`GET /admin/reports/customer/{id}/monthly`, migración 047) con su gráfico en ReportsPage.tsx. Solo falta el corte automático mensual (no hay scheduler).

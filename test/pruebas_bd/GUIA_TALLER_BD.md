@@ -204,9 +204,9 @@ SELECT email, is_active, CASE WHEN invitation_expires_at < NOW() THEN 'BLOQUEADO
 
 ## Test #19 — Crear incidencia
 
-**Postman:** POST http://localhost:8000/api/v1/scrap
-- Body: {"task_id":"{id}","defect_code":"DEF-FAB","quantity":2,"description":"Defecto prueba"}
-- Esperado: 201 Created
+**Postman:** POST http://localhost:8000/api/v1/scrap/losses
+- Body: {"incidence_category":"producto","product_id":"{uuid_producto}","quantity":2,"description":"Defecto prueba","incident_type":"perdida"}
+- Esperado: 201 Created (cualquier usuario autenticado; `defect_code_id` es uuid opcional, no existe `task_id`)
 
 **DBeaver — 19_crear_incidencia_producto.sql:** SELECT status=pending
 
@@ -214,8 +214,8 @@ SELECT email, is_active, CASE WHEN invitation_expires_at < NOW() THEN 'BLOQUEADO
 
 ## Test #20 — Aprobar incidencia
 
-**Postman:** PATCH http://localhost:8000/api/v1/scrap/{id}/approve
-- Body: {"observation":"Aprobada"}
+**Postman:** PATCH http://localhost:8000/api/v1/scrap/losses/{id}/approve
+- Sin body (requiere rol jefe/admin)
 - Esperado: 200 OK
 
 **DBeaver — 20_aprobar_incidencia_loss_record.sql:** SELECT status=approved + loss_record creado
@@ -253,5 +253,7 @@ SELECT email, is_active, CASE WHEN invitation_expires_at < NOW() THEN 'BLOQUEADO
 ## Verificacion final
 
 Ejecutar: 99_verificacion_final.sql
+
+Nota: ejecutar primero `00_preparacion_escenario.sql` para preparar el escenario (datos base de los tests).
 
 Total: 28 archivos SQL (cumple los 20+ requeridos)

@@ -5,7 +5,7 @@
 ## 🏗️ Resumen General
 
 - **Motor:** PostgreSQL 17
-- **Total de Tablas:** 22
+- **Total de Tablas:** 30
 - **MER:** https://drive.google.com/file/d/1fWGxdwjIHfuCTPplSWGAwSNAE5vKLGD4/view?usp=sharing
 
 ---
@@ -19,10 +19,11 @@
 | **inventory_movement_type** | entrada, salida, ajuste | Tipo de flujo de producto terminado. |
 | **order_status** | pendiente, en_progreso, completado, entregado, cancelado | Estado de un pedido mayorista. |
 | **task_status** | pendiente, por_liquidar, en_progreso, completado, pagado, cancelado | Estado de una tarea de producción. |
-| **task_priority** | baja, media, alta | Prioridad de las tareas asignadas. |
+| **task_priority** | baja, alta | Prioridad de las tareas asignadas (`media` eliminada en mig. 043). |
 | **task_type** | corte, guarnicion, soladura, emplantillado | Etapa de producción de calzado. |
 | **incidence_status** | abierta, en_progreso, resuelta, cerrada | Estado de un reporte de problema. |
 | **notification_type** | info, advertencia, error, exito | Nivel visual de la notificación. |
+| **pending_incidence_status** | pending, approved, rejected | Estado de aprobación de incidencias de producto pendientes. |
 
 ---
 
@@ -86,6 +87,12 @@
 | **updated_by** | UUID | FK → `users(id)` | Usuario que editó el registro. |
 | **deleted_by** | UUID | FK → `users(id)` | Usuario que eliminó el registro. |
 | **avatar_url** | VARCHAR(500) | | URL de la foto de perfil del usuario. |
+| **invitation_expires_at** | TIMESTAMPTZ | | Expiración de la contraseña temporal (24h, mig. 038). |
+| **email_app_password** | VARCHAR(255) | | App password SMTP para envío de correos (mig. 041). |
+| **email_sender** | VARCHAR(255) | | Remitente SMTP (mig. 042). |
+| **rejected_by** | UUID | FK → `users(id)` | Usuario que rechazó el registro. |
+| **rejected_at** | TIMESTAMPTZ | | Fecha del rechazo. |
+| **rejection_reason** | TEXT | | Motivo del rechazo. |
 | **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
 | **updated_at** | TIMESTAMPTZ | DEFAULT NOW(), ON UPDATE NOW() | Última actualización. |
 | **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
@@ -264,6 +271,8 @@
 | **updated_at** | TIMESTAMPTZ | DEFAULT NOW() | Última actualización. |
 | **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
 
+*Restricción adicional: UNIQUE `uq_inventory_product_size_colour` (product_id, size, colour) — mig. 039*
+
 ---
 
 ### 14. INVENTORY_MOVEMENT
@@ -301,6 +310,7 @@
 | **product_id** | UUID | FK → `products(id)` ON DELETE CASCADE | Producto a fabricar. |
 | **line_group** | INTEGER | NOT NULL, DEFAULT 0 | Grupo de numeración dentro del producto en el pedido. |
 | **description_task** | TEXT | NOT NULL | Instrucciones detalladas. |
+| **observation** | TEXT | | Observaciones de avance (mig. 025, `PATCH /tasks/{id}/observation`). |
 | **priority** | ENUM | task_priority | Nivel de urgencia. |
 | **type** | ENUM | task_type | Etapa (Corte, Guarnición, Soladura, Emplantillado). |
 | **status** | ENUM | task_status, DEFAULT 'pendiente' | Estado actual. |
@@ -323,7 +333,7 @@
 | Campo | Tipo | Restricciones / FK | Descripción |
 | :--- | :--- | :--- | :--- |
 | **id** | UUID | PK | ID pedido. |
-| **customer_id** | UUID | FK → `users(id)`, NOT NULL | Cliente propietario. |
+| **customer_id** | UUID | FK → `users(id)`, NULLABLE | Cliente propietario (nullable desde mig. 047 — pedidos sin cliente asignado). |
 | **total_pairs** | INTEGER | NOT NULL | Suma total de pares del pedido. |
 | **state** | ENUM | order_status, DEFAULT 'pendiente' | Estado del pedido. |
 | **delivery_date** | TIMESTAMPTZ | | Fecha compromiso de entrega. |
@@ -350,6 +360,7 @@
 | **amount** | INTEGER | NOT NULL | Cantidad de pares. |
 | **observations** | TEXT | | Observaciones específicas del producto. |
 | **line_group** | INTEGER | NOT NULL, DEFAULT 0 | Agrupa filas de una misma adición al pedido. |
+| **unit_price** | NUMERIC(12,2) | | Precio unitario congelado al crear el pedido (mig. 049, precios por cliente). |
 | **state** | ENUM | order_status, DEFAULT 'pendiente' | Estado de la línea. |
 | **order_date** | TIMESTAMPTZ | NOT NULL | Fecha del pedido. |
 | **created_by** | UUID | FK → `users(id)` | Usuario que creó la línea. |
@@ -364,6 +375,7 @@
 ### 18. VALE
 
 **Propósito:** Documento de liquidación para la entrega de trabajo terminado.
+> ⚠️ **LEGACY**: la aplicación no escribe en esta tabla (ni en `detail_vale`). El vale real se maneja con `tasks.vale_number`.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
 | :--- | :--- | :--- | :--- |
@@ -384,6 +396,7 @@
 ### 19. DETAIL_VALE
 
 **Propósito:** Vínculo granular entre una tarea específica, el operario y el vale de liquidación.
+> ⚠️ **LEGACY**: la aplicación no escribe en esta tabla. El vale real se maneja con `tasks.vale_number`.
 
 | Campo | Tipo | Restricciones / FK | Descripción |
 | :--- | :--- | :--- | :--- |
@@ -432,6 +445,11 @@
 | **message_notification** | TEXT | NOT NULL | Contenido. |
 | **type_notification** | ENUM | notification_type | Nivel de importancia. |
 | **is_read** | BOOLEAN | DEFAULT FALSE | Estado de lectura. |
+| **order_id** | UUID | FK → `orders(id)` ON DELETE SET NULL | Pedido relacionado (si aplica). |
+| **link_url** | VARCHAR(500) | | Ruta interna a la que navega al hacer clic. |
+| **created_by** | UUID | FK → `users(id)` | Usuario que generó la notificación. |
+| **updated_by** | UUID | FK → `users(id)` | Último editor. |
+| **deleted_by** | UUID | FK → `users(id)` | Usuario que eliminó la notificación. |
 | **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
 | **updated_at** | TIMESTAMPTZ | DEFAULT NOW() | Última actualización. |
 | **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
@@ -445,11 +463,182 @@
 | Campo | Tipo | Restricciones / FK | Descripción |
 | :--- | :--- | :--- | :--- |
 | **id** | UUID | PK | ID único. |
-| **shared_by** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Jefe/admin que comparte. |
-| **shared_with** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Empleado destinatario. |
+| **shared_by_id** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Jefe/admin que comparte. |
+| **target_user_id** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Usuario destinatario. |
 | **report_type** | VARCHAR(50) | NOT NULL | Tipo de reporte (performance, produccion, etc.). |
-| **report_data** | JSONB | NOT NULL | Datos del reporte en formato JSON. |
+| **report_title** | VARCHAR(255) | | Título visible del reporte. |
+| **parameters** | JSONB | | Parámetros con los que se generó. |
+| **message** | TEXT | | Nota opcional del remitente. |
+| **is_read** | BOOLEAN | DEFAULT FALSE | Estado de lectura por el destinatario. |
 | **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+| **read_at** | TIMESTAMPTZ | | Fecha de lectura. |
+| **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
+
+---
+
+### 23. CLIENT_PRICES (Precios por cliente)
+
+**Propósito:** Precio de venta por par de un producto para un cliente específico (mig. 049).
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **client_id** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Cliente. |
+| **product_id** | UUID | FK → `products(id)` ON DELETE CASCADE, NOT NULL | Producto. |
+| **unit_price** | NUMERIC(12,2) | NOT NULL | Precio por par (COP). |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+| **updated_at** | TIMESTAMPTZ | DEFAULT NOW() | Última actualización. |
+| **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
+
+*Restricción adicional: UNIQUE `uq_client_product_price` (client_id, product_id)*
+
+---
+
+### 24. AI_EMBEDDINGS (Chatbot IA)
+
+**Propósito:** Fragmentos vectorizados (Dim 768, pgvector) para búsqueda semántica del chatbot "Águila J&R" (mig. 048).
+
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **content** | TEXT | NOT NULL | Texto del fragmento. |
+| **embedding** | VECTOR(768) | | Vector pgvector del contenido. |
+| **metadata** | JSONB | | Origen/rol/categoría del fragmento. |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+
+---
+
+### 25. EMAIL_VERIFICATION_TOKENS
+
+**Propósito:** Tokens de verificación de correo (mig. 043).
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **user_id** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Usuario. |
+| **token** | VARCHAR(255) | NOT NULL | Token de verificación. |
+| **expires_at** | TIMESTAMPTZ | NOT NULL | Expiración. |
+| **used** | BOOLEAN | DEFAULT FALSE | Si ya fue canjeado. |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+
+---
+
+### 26. REACTIVATION_TICKETS
+
+**Propósito:** Solicitudes de reactivación de cuentas suspendidas.
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **user_id** | UUID | FK → `users(id)` ON DELETE CASCADE, NOT NULL | Usuario solicitante. |
+| **email** | VARCHAR(255) | NOT NULL | Correo del solicitante. |
+| **reason** | TEXT | NOT NULL | Motivo de la solicitud. |
+| **phone** | VARCHAR(20) | | Teléfono de contacto. |
+| **identity_document** | VARCHAR(20) | | Documento de identidad. |
+| **evidence_url** | VARCHAR(500) | | Evidencia adjunta (URL). |
+| **status** | VARCHAR(20) | DEFAULT 'pendiente' | Estado de la solicitud. |
+| **admin_comment** | TEXT | | Comentario del jefe al revisar. |
+| **reviewed_by** | UUID | FK → `users(id)` | Quien revisó. |
+| **reviewed_at** | TIMESTAMPTZ | | Fecha de revisión. |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+
+---
+
+### 27. PENDING_PRODUCT_INCIDENCES
+
+**Propósito:** Incidencias de producto con flujo de aprobación (enum `pending_incidence_status`).
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **employee_id** | UUID | FK → `users(id)` | Empleado que reporta. |
+| **task_id** | UUID | FK → `tasks(id)` | Tarea relacionada. |
+| **customer_id** | UUID | FK → `users(id)` | Cliente relacionado. |
+| **order_id** | UUID | FK → `orders(id)` | Pedido relacionado. |
+| **order_detail_id** | UUID | FK → `order_details(id)` | Línea de pedido relacionada. |
+| **product_id** | UUID | FK → `products(id)`, NOT NULL | Producto afectado. |
+| **size** | VARCHAR(50) | NOT NULL | Talla afectada. |
+| **colour** | VARCHAR(100) | | Color afectado. |
+| **defect_code_id** | UUID | FK → `defect_codes(id)` | Código de defecto asociado. |
+| **description** | TEXT | | Detalle de la incidencia. |
+| **quantity** | NUMERIC(10,2) | NOT NULL | Cantidad afectada. |
+| **observations** | TEXT | | Observaciones. |
+| **status** | ENUM | pending_incidence_status, DEFAULT 'pending' | Estado de aprobación. |
+| **approved_type** | VARCHAR(50) | | Tipo de aprobación aplicada. |
+| **reviewed_by_id** | UUID | FK → `users(id)` | Quien revisó. |
+| **reviewed_at** | TIMESTAMPTZ | | Fecha de revisión. |
+| **rejection_reason** | TEXT | | Motivo de rechazo. |
+| **evidence_image_url** | VARCHAR(500) | | Imagen de evidencia. |
+| **loss_record_id** | UUID | FK → `loss_records(id)` | Pérdida generada (si se aprueba). |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+| **updated_at** | TIMESTAMPTZ | DEFAULT NOW() | Última actualización. |
+| **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
+
+---
+
+### 28. DEFECT_CODES
+
+**Propósito:** Catálogo de códigos de defecto de fabricación.
+
+| Campo | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **code** | VARCHAR(50) | UNIQUE, NOT NULL | Código corto (ej. DEF-FAB). |
+| **name** | VARCHAR(255) | NOT NULL | Nombre del defecto. |
+| **description** | TEXT | | Descripción. |
+| **is_active** | BOOLEAN | DEFAULT TRUE | Si está habilitado. |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+| **updated_at** | TIMESTAMPTZ | DEFAULT NOW() | Última actualización. |
+| **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
+
+---
+
+### 29. LOSS_RECORDS
+
+**Propósito:** Registro de pérdidas/aprobaciones de scrap (categorías: producto, maquinaria, insumo).
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **incidence_category** | VARCHAR(50) | NOT NULL | producto / maquinaria / insumo. |
+| **product_id** | UUID | FK → `products(id)` | Producto afectado. |
+| **size** | VARCHAR(50) | | Talla. |
+| **machinery_name** | VARCHAR(255) | | Maquinaria (si aplica). |
+| **supply_id** | UUID | FK → `supplies(id)` | Insumo afectado (si aplica). |
+| **custom_supply_name** | VARCHAR(255) | | Insumo libre (si no está en catálogo). |
+| **colour** | VARCHAR(100) | | Color. |
+| **quantity** | NUMERIC(10,2) | NOT NULL | Cantidad perdida. |
+| **defect_code_id** | UUID | FK → `defect_codes(id)` | Código de defecto. |
+| **description** | TEXT | | Descripción. |
+| **reason** | TEXT | | Motivo. |
+| **observations** | TEXT | | Observaciones. |
+| **incident_type** | VARCHAR(50) | NOT NULL | Tipo de incidente. |
+| **registered_by_id** | UUID | FK → `users(id)`, NOT NULL | Quien registró. |
+| **approved_by_id** | UUID | FK → `users(id)` | Quien aprobó. |
+| **approved_at** | TIMESTAMPTZ | | Fecha de aprobación. |
+| **order_id** | UUID | FK → `orders(id)` | Pedido relacionado. |
+| **order_detail_id** | UUID | FK → `order_details(id)` | Línea de pedido. |
+| **line_group** | INTEGER | | Grupo de línea. |
+| **repaired_at** | TIMESTAMPTZ | | Fecha de reparación. |
+| **repaired_by_id** | UUID | FK → `users(id)` | Quien reparó. |
+| **created_at** | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación. |
+| **updated_at** | TIMESTAMPTZ | DEFAULT NOW() | Última actualización. |
+| **deleted_at** | TIMESTAMPTZ | | Fecha de eliminación lógica. |
+
+---
+
+### 30. SCRAP_STOCK
+
+**Propósito:** Stock de material en recuperación / scrap por variante.
+
+| Campo | Tipo | Restricciones / FK | Descripción |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | PK | ID único. |
+| **product_id** | UUID | FK → `products(id)`, NOT NULL | Producto afectado. |
+| **size** | VARCHAR(50) | NOT NULL | Talla. |
+| **colour** | VARCHAR(100) | | Color. |
+| **quantity** | NUMERIC(10,2) | NOT NULL | Cantidad en scrap. |
+| **defect_code_id** | UUID | FK → `defect_codes(id)`, NOT NULL | Código de defecto. |
 
 ---
 
@@ -498,8 +687,25 @@
 | **FK39** | `detail_vale.vale_id` | `vale(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
 | **FK40** | `incidence.task_id` | `tasks(id)` | ON DELETE RESTRICT, ON UPDATE CASCADE |
 | **FK41** | `notifications.user_id` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
-| **FK42** | `report_shares.shared_by` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
-| **FK43** | `report_shares.shared_with` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
+| **FK42** | `report_shares.shared_by_id` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
+| **FK43** | `report_shares.target_user_id` | `users(id)` | ON DELETE CASCADE, ON UPDATE CASCADE |
+| **FK44** | `notifications.order_id` | `orders(id)` | ON DELETE SET NULL |
+| **FK45** | `client_prices.client_id` | `users(id)` | ON DELETE CASCADE |
+| **FK46** | `client_prices.product_id` | `products(id)` | ON DELETE CASCADE |
+| **FK47** | `email_verification_tokens.user_id` | `users(id)` | ON DELETE CASCADE |
+| **FK48** | `reactivation_tickets.user_id` | `users(id)` | ON DELETE CASCADE |
+| **FK49** | `reactivation_tickets.reviewed_by` | `users(id)` | ON DELETE SET NULL |
+| **FK50** | `pending_product_incidences.product_id` | `products(id)` | — |
+| **FK51** | `pending_product_incidences.order_id` | `orders(id)` | — |
+| **FK52** | `pending_product_incidences.task_id` | `tasks(id)` | — |
+| **FK53** | `pending_product_incidences.employee_id` | `users(id)` | — |
+| **FK54** | `pending_product_incidences.defect_code_id` | `defect_codes(id)` | — |
+| **FK55** | `pending_product_incidences.loss_record_id` | `loss_records(id)` | — |
+| **FK56** | `loss_records.product_id` | `products(id)` | — |
+| **FK57** | `loss_records.supply_id` | `supplies(id)` | — |
+| **FK58** | `loss_records.registered_by_id` | `users(id)` | — |
+| **FK59** | `scrap_stock.product_id` | `products(id)` | — |
+| **FK60** | `scrap_stock.defect_code_id` | `defect_codes(id)` | — |
 
 ---
 
@@ -511,12 +717,13 @@ CREATE TYPE supplies_movement_type AS ENUM ('entrada', 'salida');
 CREATE TYPE inventory_movement_type AS ENUM ('entrada', 'salida', 'ajuste');
 CREATE TYPE order_status AS ENUM ('pendiente', 'en_progreso', 'completado', 'entregado', 'cancelado');
 CREATE TYPE task_status AS ENUM ('pendiente', 'por_liquidar', 'en_progreso', 'completado', 'pagado', 'cancelado');
-CREATE TYPE task_priority AS ENUM ('baja', 'media', 'alta');
+CREATE TYPE task_priority AS ENUM ('baja', 'alta');
 CREATE TYPE task_type AS ENUM ('corte', 'guarnicion', 'soladura', 'emplantillado');
 CREATE TYPE incidence_status AS ENUM ('abierta', 'en_progreso', 'resuelta', 'cerrada');
 CREATE TYPE notification_type AS ENUM ('info', 'advertencia', 'error', 'exito');
+CREATE TYPE pending_incidence_status AS ENUM ('pending', 'approved', 'rejected');
 ```
 
 ---
 
-*Documento generado a partir de los modelos ORM SQLAlchemy — Junio 2026*
+*Documento generado a partir de los modelos ORM SQLAlchemy — Octubre 2026 (30 tablas)*

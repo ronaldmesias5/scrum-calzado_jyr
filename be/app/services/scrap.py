@@ -119,10 +119,14 @@ def _deduct_inventory(
     quantity: Decimal,
 ) -> None:
     """Deduce del inventario. Lanza ValueError si no hay suficiente stock."""
-    inventory_stmt = select(Inventory).where(
-        Inventory.product_id == product_id,
-        Inventory.size == size,
-        Inventory.deleted_at.is_(None),
+    inventory_stmt = (
+        select(Inventory)
+        .where(
+            Inventory.product_id == product_id,
+            Inventory.size == size,
+            Inventory.deleted_at.is_(None),
+        )
+        .with_for_update()
     )
     inventory_items = list(db.execute(inventory_stmt).scalars().all())
 
@@ -459,10 +463,14 @@ def repair_incident(
                             order.total_pairs = (order.total_pairs or 0) + incident.quantity
 
                     # Agregar a inventory.reserved
-                    inventory_stmt = select(Inventory).where(
-                        Inventory.product_id == incident.product_id,
-                        Inventory.size == incident.size,
-                        Inventory.deleted_at.is_(None),
+                    inventory_stmt = (
+                        select(Inventory)
+                        .where(
+                            Inventory.product_id == incident.product_id,
+                            Inventory.size == incident.size,
+                            Inventory.deleted_at.is_(None),
+                        )
+                        .with_for_update()
                     )
                     inventory_items = list(db.execute(inventory_stmt).scalars().all())
                     if inventory_items:

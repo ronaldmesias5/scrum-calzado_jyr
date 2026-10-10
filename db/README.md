@@ -18,7 +18,7 @@ be/alembic/versions/          ← Esquema y datos de NEGOCIO (versionado en git)
   ├── 002_seed_initial_data.py             (datos iniciales: roles, tipos de documento)
   ├── 003_seed_catalog_data.py             (catálogo: marcas, categorías, productos)
   ├── 004_seed_test_users.py               (usuarios de prueba: admin, cortador, cliente)
-   └── ... hasta 042_email_sender (última migración)
+   └── ... hasta 049_client_prices (última migración)
 ```
 
 ## ✅ ¿Qué va en `db/init/init.sql`?
@@ -74,7 +74,7 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
    └─> be/app/main.py inicia
    └─> lifespan() ejecuta: run_migrations()
    └─> Ejecuta: alembic upgrade head
-   └─> Crea tablas desde migraciones (001 → 042)
+   └─> Crea tablas desde migraciones (001 → 049)
    └─> Inserta datos iniciales (roles, tipos de doc, usuarios, 65 productos)
    └─> Backend listo ✅
    
@@ -82,7 +82,7 @@ No se necesita un Dockerfile personalizado porque la imagen oficial cubre todas 
    └─> FE listo ✅
 
 6. Sistema completo operacional ✅
-   ├─ BD con 24 tablas versionadas
+   ├─ BD con 30 tablas versionadas
    ├─ 65 productos en catálogo
    ├─ 3 roles (admin, employee, client)
    ├─ Usuarios de prueba (jefe, cortador, cliente)
@@ -169,4 +169,4 @@ docker compose logs db -f
 
 ---
 
-**Última actualización:** 2026-06-13
+**Última actualización:** 2026-10-03

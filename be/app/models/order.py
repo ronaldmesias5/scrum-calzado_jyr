@@ -74,6 +74,7 @@ class Order(Base):
         SQLEnum(OrderStatus, name='order_status', create_type=False),
         nullable=False,
         default=OrderStatus.pendiente,
+        index=True,
         comment="Estado actual del pedido",
     )
 
@@ -81,6 +82,7 @@ class Order(Base):
     delivery_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+        index=True,
         comment="Fecha estimada de entrega",
     )
 
@@ -88,6 +90,7 @@ class Order(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+        index=True,
         comment="Fecha de creación del pedido",
     )
 

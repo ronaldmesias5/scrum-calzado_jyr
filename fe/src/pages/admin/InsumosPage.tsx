@@ -21,6 +21,7 @@ import {
   SupplyCreatePayload
 } from '@/services/suppliesService';
 import { getProducts } from '@/services/ordersApi';
+import api from '@/services/axios';
 import Modal from '@/components/atoms/Modal';
 import Pagination from '@/components/atoms/Pagination';
 import { useToast } from '@/store/ToastContext';
@@ -142,21 +143,10 @@ function SupplyFormModal({
     setLoading(true);
     try {
       if (categoryMode === 'new') {
-        const token = localStorage.getItem('access_token');
-        await fetch(
-          `${import.meta.env.VITE_API_URL || ''}/api/v1/supplies/categories`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: form.category,
-              global_stage: selectedStage
-            })
-          }
-        );
+        await api.post('/api/v1/supplies/categories', {
+          name: form.category,
+          global_stage: selectedStage
+        });
       }
       await onSave(form);
       onClose();
@@ -507,23 +497,10 @@ function CreateCategoryModal({
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/v1/supplies/categories`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`
-          },
-          body: JSON.stringify({ name: name.trim().toLowerCase() })
-        }
-      );
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.detail || 'Error al crear la categoría');
-      }
-      const cat = await res.json();
-      onCreated(cat.name);
+      const res = await api.post('/api/v1/supplies/categories', {
+        name: name.trim().toLowerCase()
+      });
+      onCreated(res.data.name);
       onClose();
     } catch (e: any) {
       showToast(e?.message || 'Error al crear la categoría', 'error');
@@ -808,22 +785,14 @@ export default function InsumosPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/v1/supplies/categories`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      if (res.ok) {
-        const data: {
-          id: string;
-          name: string;
-          color: string;
-          global_stage: string;
-        }[] = await res.json();
-        setCategories(data);
-      }
+      const res = await api.get('/api/v1/supplies/categories');
+      const data: {
+        id: string;
+        name: string;
+        color: string;
+        global_stage: string;
+      }[] = res.data;
+      setCategories(data);
     } catch (e) {
       console.error(e);
     }

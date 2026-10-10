@@ -26,7 +26,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.order import Order
 from app.models.product import Product
@@ -244,14 +244,24 @@ def consultar_inventario(
                     | (Product.color.ilike(pattern))
                 )
             )
+            .options(selectinload(Product.brand))
             .limit(limit)
         )
         products = db.execute(stmt).scalars().all()
 
+        # Inventario de todos los resultados en UNA sola consulta (evita N+1)
+        product_ids = [p.id for p in products]
+        inventory_map: dict[UUID, list[Inventory]] = {}
+        if product_ids:
+            inv_rows = db.execute(
+                select(Inventory).where(Inventory.product_id.in_(product_ids))
+            ).scalars().all()
+            for inv in inv_rows:
+                inventory_map.setdefault(inv.product_id, []).append(inv)
+
         results: list[dict[str, Any]] = []
         for p in products:
-            inv_stmt = select(Inventory).where(Inventory.product_id == p.id)
-            inventories = db.execute(inv_stmt).scalars().all()
+            inventories = inventory_map.get(p.id, [])
             stock_by_size = [
                 {
                     "size": inv.size,

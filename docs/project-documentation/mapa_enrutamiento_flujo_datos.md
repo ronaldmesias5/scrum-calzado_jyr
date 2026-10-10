@@ -4,7 +4,7 @@
 
 > **Versión del documento:** 1.0
 > **Última actualización:** Julio 2026
-> **Stack verificado contra:** `be/app/main.py`, `be/app/modules/*/router.py`, `fe/src/app/App.tsx`, `fe/src/services/axios.ts`, `fe/src/services/config.ts`, `vite.config.ts`
+> **Stack verificado contra:** `be/app/main.py`, `be/app/routers/*.py`, `fe/src/app/App.tsx`, `fe/src/services/axios.ts`, `fe/src/services/config.ts`, `vite.config.ts`
 
 ---
 
@@ -517,4 +517,4 @@ Request entrante
 
 ---
 
-*Documento generado a partir de la verificación directa de los archivos de enrutamiento del proyecto (`be/app/main.py`, `be/app/modules/*/router.py`, `fe/src/app/App.tsx`, `fe/src/services/axios.ts`, `fe/src/services/config.ts`, `vite.config.ts`).*
+*Documento generado a partir de la verificación directa de los archivos de enrutamiento del proyecto (`be/app/main.py`, `be/app/routers/*.py`, `fe/src/app/App.tsx`, `fe/src/services/axios.ts`, `fe/src/services/config.ts`, `vite.config.ts`).*

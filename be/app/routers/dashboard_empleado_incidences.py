@@ -31,6 +31,15 @@ from app.schemas.dashboard_empleado import (
 
 UPLOADS_DIR = (Path(settings.UPLOAD_DIR) / "evidence") if settings.UPLOAD_DIR else (Path(__file__).resolve().parent.parent.parent / "uploads" / "evidence")
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
+# Extensión segura derivada del MIME validado (nunca del nombre del archivo,
+# que podría traer .html/.svg y producir XSS stored al servirse desde /uploads)
+MIME_EXT = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/avif": "avif",
+}
 
 router = APIRouter(
     prefix="/api/v1/dashboard/employee",
@@ -209,7 +218,7 @@ def get_general_incidences(
     response_model=ProductIncidenceResponse,
     summary="Crear incidencia de producto vinculada a tarea",
 )
-async def create_product_incidence(
+def create_product_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     task_id: str = Form(...),
@@ -227,12 +236,12 @@ async def create_product_incidence(
     # Handle evidence image upload
     evidence_image_url = None
     if evidence and evidence.filename:
-        if evidence.content_type not in ALLOWED_MIME:
+        ext = MIME_EXT.get((evidence.content_type or "").lower())
+        if not ext:
             raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
-        content = await evidence.read()
+        content = evidence.file.read()
         if len(content) > 5 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
-        ext = evidence.filename.rsplit(".", 1)[-1].lower() if "." in evidence.filename else "jpg"
         UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         filename = f"evidence_{uuid.uuid4().hex}_{int(time.time())}.{ext}"
         (UPLOADS_DIR / filename).write_bytes(content)

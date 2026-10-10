@@ -184,8 +184,12 @@ class ResetPasswordRequest(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """Schema para renovar el access token usando el refresh token."""
-    refresh_token: str
+    """Schema para renovar el access token usando el refresh token.
+
+    Opcional: el token también puede llegar en la cookie HttpOnly `refresh_token`
+    (frontend web). El body sigue soportado para la app móvil.
+    """
+    refresh_token: str | None = None
 
 
 # ════════════════════════════════════════

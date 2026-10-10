@@ -38,9 +38,18 @@ from app.schemas.dashboard_empleado import (
 )
 from app.controllers.dashboard_empleado import get_task_type_for_occupation
 
+
+def _employee_role_guard(current_user: Annotated[User, Depends(get_current_user)]) -> None:
+    """Restringe el panel del empleado a roles employee/admin (los clientes no acceden)."""
+    role_name = current_user.role.name_role if current_user.role else None
+    if role_name not in ("employee", "admin"):
+        raise HTTPException(status_code=403, detail="Acceso restringido a empleados")
+
+
 router = APIRouter(
     prefix="/api/v1/dashboard/employee",
     tags=["dashboard-empleado"],
+    dependencies=[Depends(_employee_role_guard)],
 )
 
 
@@ -335,6 +344,12 @@ def get_task_vale(
 
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    # IDOR: solo el dueño de la tarea (o admin/jefe) puede leer su vale.
+    if task.assigned_to != current_user.id:
+        role_name = current_user.role.name_role if current_user.role else None
+        if role_name != "admin" and current_user.occupation != "jefe":
+            raise HTTPException(status_code=403, detail="No autorizado para ver este vale")
 
     if not task.order_id:
         raise HTTPException(status_code=400, detail="Esta tarea no tiene una orden asociada")

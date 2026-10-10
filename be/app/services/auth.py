@@ -60,12 +60,53 @@ from app.utils.security import (
 )
 
 # In-memory login attempt tracker
-# Structure: {email: {"count": int, "locked_until": float}}
-_login_attempts: dict[str, dict] = defaultdict(lambda: {"count": 0, "locked_until": 0.0})
+# Structure: {"{client_ip}|{email}": {"count": int, "locked_until": float, "last_fail": float}}
+# La clave incluye la IP de origen: el bloqueo por email arbitrario ya no puede usarse
+# como DoS contra una cuenta concreta desde otra IP.
+_login_attempts: dict[str, dict] = defaultdict(
+    lambda: {"count": 0, "locked_until": 0.0, "last_fail": 0.0}
+)
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_DURATION_SECONDS = 900  # 15 minutes
+_LOGIN_ATTEMPTS_MAX_KEYS = 10_000
 
 logger = logging.getLogger(__name__)
+
+_dummy_password_hash: str | None = None
+
+
+def _get_dummy_password_hash() -> str:
+    """Hash bcrypt ficticio para equalizar el tiempo de login cuando el email no existe.
+
+    Evita la enumeración de usuarios por timing: sin este hash, un login con email
+    inexistente omite el costo de bcrypt y responde más rápido que uno con email real.
+    """
+    global _dummy_password_hash
+    if _dummy_password_hash is None:
+        _dummy_password_hash = hash_password(uuid.uuid4().hex)
+    return _dummy_password_hash
+
+
+def reset_login_attempts(email: str) -> None:
+    """Elimina todos los registros de intentos fallidos de un email (en todas las IPs)."""
+    email_lower = email.lower().strip()
+    suffix = f"|{email_lower}"
+    for key in [k for k in _login_attempts if k.endswith(suffix)]:
+        del _login_attempts[key]
+
+
+def _prune_login_attempts(now: float) -> None:
+    """Purga claves expiradas cuando el tracker supera el límite (fuga de memoria C4)."""
+    if len(_login_attempts) <= _LOGIN_ATTEMPTS_MAX_KEYS:
+        return
+    expired = [
+        key
+        for key, info in _login_attempts.items()
+        if info["locked_until"] <= now
+        and now - info["last_fail"] > LOCKOUT_DURATION_SECONDS
+    ]
+    for key in expired:
+        del _login_attempts[key]
 
 
 def _redact_email(email: str) -> str:
@@ -79,8 +120,12 @@ def _redact_email(email: str) -> str:
         return "redacted-error"
 
 
-async def register_user(db: Session, user_data: UserCreate) -> User:
-    """Registra un nuevo cliente. La cuenta queda inactiva hasta verificar el email."""
+async def register_user(db: Session, user_data: UserCreate) -> User | None:
+    """Registra un nuevo cliente. La cuenta queda inactiva hasta verificar el email.
+
+    Anti-enumeración: si el email ya existe NO lanza error; devuelve `None` para que
+    el endpoint responda con el mismo mensaje genérico que en el caso exitoso.
+    """
     import uuid
     from datetime import timedelta
     from app.models.email_verification_token import EmailVerificationToken
@@ -90,10 +135,10 @@ async def register_user(db: Session, user_data: UserCreate) -> User:
     existing_user = db.execute(stmt).scalar_one_or_none()
 
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El email ya está registrado",
+        audit_logger.info(
+            f"Registro con email ya existente (respuesta genérica): {_redact_email(user_data.email)}"
         )
+        return None
 
     stmt = select(Role).where(Role.name_role == "client")
     client_role = db.execute(stmt).scalar_one_or_none()
@@ -149,11 +194,16 @@ async def register_user(db: Session, user_data: UserCreate) -> User:
     return new_user
 
 
-def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
-    """Autentica un usuario y retorna tokens JWT."""
+def login_user(db: Session, login_data: UserLogin, client_ip: str = "unknown") -> TokenResponse:
+    """Autentica un usuario y retorna tokens JWT.
+
+    `client_ip` delimita el lockout por origen: 5 fallos desde una IP solo bloquean
+    ese par (IP, email), no la cuenta ante cualquier atacante.
+    """
     try:
         email_lower = login_data.email.lower().strip()
-        attempt_info = _login_attempts[email_lower]
+        attempt_key = f"{client_ip}|{email_lower}"
+        attempt_info = _login_attempts[attempt_key]
         now = time.time()
 
         if attempt_info["locked_until"] > now:
@@ -166,12 +216,24 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
                 detail=f"Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en {minutes}m {seconds}s.",
             )
 
+        # Ventana de fallos caducada: reinicia el contador para no arrastrar intentos viejos
+        if attempt_info["count"] > 0 and now - attempt_info["last_fail"] > LOCKOUT_DURATION_SECONDS:
+            attempt_info["count"] = 0
+            attempt_info["locked_until"] = 0.0
+
         stmt = select(User).where(User.email == login_data.email)
         user = db.execute(stmt).scalar_one_or_none()
-        if not user or not verify_password(login_data.password, user.hashed_password):
+
+        # Ejecuta bcrypt siempre (hash ficticio si el email no existe) → timing uniforme
+        stored_hash = user.hashed_password if user is not None else _get_dummy_password_hash()
+        password_matches = verify_password(login_data.password, stored_hash)
+
+        if user is None or not password_matches:
+            _prune_login_attempts(now)
             attempt_info["count"] += 1
+            attempt_info["last_fail"] = now
             if attempt_info["count"] >= MAX_LOGIN_ATTEMPTS:
-                attempt_info["locked_until"] = time.time() + LOCKOUT_DURATION_SECONDS
+                attempt_info["locked_until"] = now + LOCKOUT_DURATION_SECONDS
                 audit_logger.warning(f"Cuenta bloqueada: {_redact_email(login_data.email)} ({attempt_info['count']} intentos fallidos)")
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -210,8 +272,10 @@ def login_user(db: Session, login_data: UserLogin) -> TokenResponse:
 
         audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
 
-        # Resetear contador de intentos fallidos tras login exitoso
-        _login_attempts[email_lower] = {"count": 0, "locked_until": 0.0}
+        # Resetear contador de intentos fallidos tras login exitoso (esta IP + email)
+        attempt_info["count"] = 0
+        attempt_info["locked_until"] = 0.0
+        attempt_info["last_fail"] = 0.0
 
         return TokenResponse(
             access_token=access_token,

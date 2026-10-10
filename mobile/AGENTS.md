@@ -96,8 +96,8 @@ components/
 └── ui/                           # átomos NativeWind (Button, Card, Input, Badge, Loading, ErrorState, EmptyState, UnderConstruction, SectionTile, AppHeader, StatCard)
 constants/
 ├── api.ts                # API_URL por entorno (ver abajo)
-├── theme.ts              # tokens de color de GUIA_DISENO
-└── adminSections.ts      # las 13 secciones del sidebar web (label, icono, href, color, fase)
+├── theme.ts              # tokens de color del tema web
+└── adminSections.ts      # las 13 secciones del hub del jefe (espejo del sidebar web, hoy con 16)
 services/
 ├── apiClient.ts          # axios + interceptor de refresh JWT (cola de peticiones)
 ├── tokenStorage.ts       # SecureStore (access + refresh)
@@ -168,9 +168,9 @@ Jefe:   ronald.jefe@gmail.com / Test123456!
 5. **`app.json`** usa `newArchEnabled: true`, `typedRoutes: true`, `reactCompiler: true`. Si tocas
    Babel, no rompas el preset de `babel-preset-expo`.
 6. **Dark mode**: NativeWind sigue el color scheme del dispositivo (`dark:` variant). Toda pantalla
-   debe tener variantes `dark:` (regla de GUIA_DISENO del web). El fondo base es
+   debe tener variantes `dark:` (regla del tema web). El fondo base es
    `bg-gray-50 dark:bg-slate-950`.
-7. **Paleta (GUIA_DISENO)**: primary `#1e40af`, primary-light `#3b82f6`, primary-dark `#1e3a8a`,
+7. **Paleta (tema web)**: primary `#1e40af`, primary-light `#3b82f6`, primary-dark `#1e3a8a`,
    secondary `#d97706`. Estados: pendiente=yellow, en progreso=blue, completado=green,
    entregado=purple, cancelado=red. Énfasis con `font-bold`.
 8. **expo-env.d.ts** está en `.gitignore` (lo genera Expo). `dist/` también está ignorado.
@@ -183,7 +183,7 @@ Jefe:   ronald.jefe@gmail.com / Test123456!
 
 ## Plan por fases (estado) — v2: ESPEJO del dashboard web
 
-El objetivo es que cada dashboard móvil tenga **las mismas secciones que el web** (`fe/src/features/*/sidebars`).
+El objetivo es que cada dashboard móvil tenga **las mismas secciones que el web** (`fe/src/features/*/components/organisms/*Sidebar.tsx`).
 
 - [x] F0 Fundación del repo (Expo SDK 54 + NativeWind + alias `@/`)
 - [x] F1 Auth + cliente API (login, refresh, rutas protegidas)
@@ -201,7 +201,7 @@ El objetivo es que cada dashboard móvil tenga **las mismas secciones que el web
 - [ ] F13 Build EAS (APK)
 
 ### Secciones del web por rol (fuente: `fe/src/features/*/components/organisms/*Sidebar.tsx`)
-- **Jefe (13)**: Inicio, Pedidos, Catálogo, Inventario, Incidencias, Insumos, Tareas, Empleados, Clientes, Usuarios, Alertas, Reportes, Configuración.
+- **Jefe (16)**: Inicio, Pedidos, Calendario, Catálogo, Categorías, Inventario, Incidencias, Insumos, Tareas, Empleados, Clientes, Precios por Cliente, Usuarios, Alertas, Reportes, Configuración.
 - **Empleado (6)**: Inicio, Mis Tareas, Tareas Disponibles, Incidencias, Reportes, Configuración.
 - **Cliente (6)**: Inicio, Catálogo Mayorista, Mis Pedidos, Reportes, Mis Incidencias, Configuración.
 

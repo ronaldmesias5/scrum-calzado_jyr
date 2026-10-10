@@ -21,10 +21,6 @@ import {
   type MyTasksReportResponse
 } from '@/services/employeeApi';
 import { formatReportCOP } from '@/utils/format';
-import {
-  exportMyTasksPDF,
-  exportPerformancePDF
-} from '@/features/employee/utils/reportsUtils';
 import Modal from '@/components/atoms/Modal';
 import { Button } from '@/components/atoms/Button';
 import CategoryFilter from '@/components/atoms/CategoryFilter';
@@ -235,6 +231,9 @@ export default function EmployeeReportsPage() {
     setPdfGenerating(true);
     try {
       const { start, end } = getDateRange();
+      const { exportMyTasksPDF } = await import(
+        '@/features/employee/utils/reportsUtils'
+      );
       await exportMyTasksPDF(
         tasksReport,
         tasksReport.tasks_list,
@@ -285,6 +284,9 @@ export default function EmployeeReportsPage() {
     }
 
     try {
+      const { exportMyTasksPDF } = await import(
+        '@/features/employee/utils/reportsUtils'
+      );
       await exportMyTasksPDF(
         report,
         report.tasks_list,
@@ -340,7 +342,12 @@ export default function EmployeeReportsPage() {
                 {performance.name}
               </span>
               <Button
-                onClick={() => exportPerformancePDF(performance)}
+                onClick={async () => {
+                  const { exportPerformancePDF } = await import(
+                    '@/features/employee/utils/reportsUtils'
+                  );
+                  await exportPerformancePDF(performance);
+                }}
                 className="text-sm font-bold py-2"
               >
                 <Download className="w-4 h-4 mr-2" /> Exportar PDF

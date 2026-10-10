@@ -9,6 +9,8 @@ Funciones:
   - reject_pending_incidence(db, pending_id, jefe_id)
 """
 
+import asyncio
+import threading
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -22,6 +24,42 @@ from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.notifications import Notification, NotificationType
 from app.models.user import User
 from app.services.scrap import register_incident
+
+# Referencias a tareas de broadcast en background (evita su recolección por GC)
+_BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
+
+def _best_effort_broadcast(user_id: str, payload: dict[str, str]) -> None:
+    """Emite un mensaje WebSocket sin bloquear y sin fallar la operación.
+
+    Si ya hay un event loop corriendo (el caller es async), programa la
+    coroutine con `create_task`; si no lo hay (hilo del threadpool), la
+    ejecuta con `asyncio.run` en un hilo daemon. Nunca propaga errores.
+    """
+    try:
+        from app.utils.ws_manager import ws_manager
+
+        coro = ws_manager.broadcast_to_user(user_id, payload)
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop is not None:
+            task = loop.create_task(coro)
+            _BACKGROUND_TASKS.add(task)
+            task.add_done_callback(_BACKGROUND_TASKS.discard)
+        else:
+
+            def _run() -> None:
+                try:
+                    asyncio.run(coro)
+                except Exception:
+                    pass
+
+            threading.Thread(target=_run, daemon=True).start()
+    except Exception:
+        pass
 
 
 def create_pending_incidence(
@@ -195,25 +233,18 @@ def create_customer_pending_incidence(
             )
             db.add(notif)
         db.commit()
-        # WS push best-effort
-        try:
-            from app.utils.ws_manager import ws_manager
-            import asyncio
-
-            for jefe in jefes:
-                if jefe.id == customer_id:
-                    continue
-                try:
-                    asyncio.run(
-                        ws_manager.broadcast_to_user(
-                            str(jefe.id),
-                            {"type": "new_incidence", "title": "Reclamo de cliente", "order_id": str(order.id)},
-                        )
-                    )
-                except Exception:
-                    pass
-        except Exception:
-            pass
+        # WS push best-effort (sin asyncio.run: el caller puede ser async)
+        for jefe in jefes:
+            if jefe.id == customer_id:
+                continue
+            _best_effort_broadcast(
+                str(jefe.id),
+                {
+                    "type": "new_incidence",
+                    "title": "Reclamo de cliente",
+                    "order_id": str(order.id),
+                },
+            )
     except Exception:
         pass
 
@@ -381,17 +412,9 @@ def reject_pending_incidence(
         )
         db.add(notif)
         db.commit()
-        try:
-            from app.utils.ws_manager import ws_manager
-            import asyncio
-
-            asyncio.run(
-                ws_manager.broadcast_to_user(
-                    str(reporter_id),
-                    {"type": "incidence_rejected", "title": "Incidencia rechazada"},
-                )
-            )
-        except Exception:
-            pass
+        _best_effort_broadcast(
+            str(reporter_id),
+            {"type": "incidence_rejected", "title": "Incidencia rechazada"},
+        )
 
     return pending

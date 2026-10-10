@@ -40,14 +40,6 @@ import {
   ProductionGlobalReport,
   TaskDetail
 } from '@/services/reportsApi';
-import {
-  exportEmployeePDF,
-  exportCustomerPDF,
-  exportOrdersPDF,
-  exportTasksPDF,
-  exportDashboardPDF,
-  exportProductionPDF
-} from '@/features/admin/utils/reportsUtils';
 import { TaskCard } from '@/features/admin/components/molecules/TaskCard';
 import CategoryFilter from '@/components/atoms/CategoryFilter';
 import axios from '@/services/axios';
@@ -153,8 +145,13 @@ function DashboardTab() {
           <option value={90}>Últimos 90 días</option>
         </select>
         <Button
-          onClick={() => {
-            if (data) exportDashboardPDF(data, days);
+          onClick={async () => {
+            if (data) {
+              const { exportDashboardPDF } = await import(
+                '@/features/admin/utils/reportsUtils'
+              );
+              await exportDashboardPDF(data, days);
+            }
           }}
           className="text-sm font-bold py-2"
         >
@@ -601,6 +598,12 @@ function ReportGeneratorTab() {
     let pdfBase64 = '';
     let pdfFilename = '';
     try {
+      const {
+        exportEmployeePDF,
+        exportCustomerPDF,
+        exportOrdersPDF,
+        exportTasksPDF,
+      } = await import('@/features/admin/utils/reportsUtils');
       if (shareModal.type === 'employee' && employeeReport) {
         const pdf = await exportEmployeePDF(
           employeeReport,
@@ -1016,7 +1019,7 @@ function ReportGeneratorTab() {
                 Cambiar Empleado
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   const { startDate, endDate } = getDateRange();
                   if (employeeReport) {
                     const tasksToExport =
@@ -1029,7 +1032,10 @@ function ReportGeneratorTab() {
                       ...employeeReport,
                       tasks_list: tasksToExport
                     };
-                    exportEmployeePDF(
+                    const { exportEmployeePDF } = await import(
+                      '@/features/admin/utils/reportsUtils'
+                    );
+                    await exportEmployeePDF(
                       filteredData,
                       isRoleReport
                         ? `Reporte de Cargo: ${selectedRole?.toUpperCase()}`
@@ -1343,10 +1349,13 @@ function ReportGeneratorTab() {
                 Cambiar Cliente
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   const { startDate, endDate } = getDateRange();
-                  customerReport &&
-                    exportCustomerPDF(
+                  if (customerReport) {
+                    const { exportCustomerPDF } = await import(
+                      '@/features/admin/utils/reportsUtils'
+                    );
+                    await exportCustomerPDF(
                       customerReport,
                       isAllCustomers
                         ? 'Reporte General de Cartera'
@@ -1354,6 +1363,7 @@ function ReportGeneratorTab() {
                       startDate,
                       endDate
                     );
+                  }
                 }}
                 className="text-sm font-bold py-2"
               >
@@ -1707,9 +1717,12 @@ function ReportGeneratorTab() {
             <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
             <div className="flex flex-wrap gap-2">
               <Button
-                onClick={() => {
+                onClick={async () => {
                   const { startDate, endDate } = getDateRange();
-                  exportProductionPDF(
+                  const { exportProductionPDF } = await import(
+                    '@/features/admin/utils/reportsUtils'
+                  );
+                  await exportProductionPDF(
                     productionReport.orders,
                     productionTasks,
                     startDate,
@@ -1721,8 +1734,11 @@ function ReportGeneratorTab() {
                 <Download className="w-4 h-4 mr-2" /> Exportar PDF Completo
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   const { startDate, endDate } = getDateRange();
+                  const { exportOrdersPDF, exportTasksPDF } = await import(
+                    '@/features/admin/utils/reportsUtils'
+                  );
                   if (productionTab === 'orders') {
                     const filtered = productionReport.orders;
                     const totalOrders = filtered.length;
@@ -1730,7 +1746,7 @@ function ReportGeneratorTab() {
                       (sum, o) => sum + (o.total_pairs || 0),
                       0
                     );
-                    exportOrdersPDF(
+                    await exportOrdersPDF(
                       filtered,
                       totalOrders,
                       totalPairs,
@@ -1743,7 +1759,7 @@ function ReportGeneratorTab() {
                       (sum, t) => sum + (t.amount || 0),
                       0
                     );
-                    exportTasksPDF(
+                    await exportTasksPDF(
                       productionTasks,
                       totalTasks,
                       totalPairs,

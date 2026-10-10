@@ -68,6 +68,22 @@ export interface OrderListResponse {
   items: Order[];
 }
 
+export interface CalendarOrderItem {
+  id: string;
+  customer_id: string | null;
+  customer_name?: string | null;
+  customer_last_name?: string | null;
+  total_pairs: number;
+  state: OrderStatus;
+  priority?: string;
+  delivery_date: string | null;
+  creation_date?: string | null;
+  has_production: boolean;
+  vale_numbers: number[];
+  task_count: number;
+  pending_tasks: number;
+}
+
 export interface OrderDetailItemCreateRequest {
   product_id: string;
   size: string;
@@ -114,6 +130,26 @@ export async function getOrders(
   const response = await axios.get<OrderListResponse>('/api/v1/admin/orders', {
     params
   });
+  return response.data;
+}
+
+/**
+ * Obtiene el calendario de entregas: pedidos con fecha en [start, end)
+ * más los pedidos sin fecha de entrega, con estado de producción y vales.
+ * @param start - Inicio del rango (fecha local, se envía en ISO)
+ * @param end - Fin del rango, exclusivo
+ * @returns Promise<CalendarOrderItem[]>
+ */
+export async function getCalendarOrders(
+  start: Date,
+  end: Date
+): Promise<CalendarOrderItem[]> {
+  const response = await axios.get<CalendarOrderItem[]>(
+    '/api/v1/admin/orders/calendar',
+    {
+      params: { start: start.toISOString(), end: end.toISOString() }
+    }
+  );
   return response.data;
 }
 

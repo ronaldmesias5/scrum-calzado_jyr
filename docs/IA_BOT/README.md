@@ -53,7 +53,7 @@ Usuario (web/mobile)
 | **2** | Contexto por rol + tools JWT + layouts + mobile | ✅ |
 | **3** | Búsqueda semántica `GET /search/semantic`, recomendador `GET /recommend`, generador `POST /generate-description` (solo jefe), clasificador `POST /classify-incidence` | ✅ |
 | **4** | Prod hardening + ollama + logging `ai.log` + CI | ✅ |
-| **Conocimiento total** | 110 fragmentos (30 catálogo + 8 base + 36 por rol + 36 knowledge) | ✅ |
+| **Conocimiento total** | 83 fragmentos (3 catálogo + 8 base + 36 por rol + 36 knowledge) | ✅ |
 
 ### Flujo de conocimiento
 
@@ -71,7 +71,7 @@ Usuario (web/mobile)
 | **Empleado** (`employee` + `cortador|guarnecedor|solador|emplantillador`) | + Sus tareas (`assigned_to == id`, filtradas por cargo), vales, incidencias | Tareas de otros, gestión usuarios, catálogo |
 | **Jefe** (`admin`+`jefe`) | Todo (pedidos, tareas, catálogo, inventario, reportes, reindex, generador) | Nada, pero no ejecuta acciones destructivas sin confirmación |
 
-**Regla crítica:** El sistema NO tiene precio de venta. Solo `task_prices` (pago a empleados COP por docena por etapa). Si preguntan precio, deriva a WhatsApp `3137061602`.
+**Regla crítica:** `task_prices` NO es precio de venta (es pago a empleados COP por docena por etapa). El sistema SÍ tiene precios de venta: precios por cliente en `client_prices.unit_price` (CRUD admin `/api/v1/admin/client-prices`) y el catálogo mayorista (`GET /api/v1/client/catalog/products`) muestra precio por docena/par; al crear el pedido se congela en `order_details.unit_price`. Para cotizaciones cerradas o negociar, deriva a WhatsApp `3137061602`.
 
 ### Endpoints
 
@@ -100,7 +100,7 @@ AI_EMBEDDING_DIM=768
 
 ```bash
 # Indexar conocimiento
-docker compose exec be uv run python scripts/seed_ai_embeddings.py # 110 fragmentos
+docker compose exec be uv run python scripts/seed_ai_embeddings.py # 83 fragmentos
 
 # Probar
 curl -X POST http://localhost:8000/api/v1/ai/chat -H "Content-Type: application/json" -d '{"message":"¿Qué marcas manejan?"}'

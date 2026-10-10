@@ -17,6 +17,11 @@ def _order_to_response(order: Order, db=None):
     return orders_service._order_to_response(order, db)
 
 
+def get_orders_for_calendar(db: Annotated[Session, ...], start, end):
+    """Wrapper del servicio de calendario de entregas (routers/orders.py)."""
+    return orders_service.get_orders_for_calendar(db=db, start=start, end=end)
+
+
 def _order_to_detail_response(order: Order):
     return orders_service._order_to_detail_response(order)
 
@@ -48,6 +53,16 @@ def apply_detail_state_inventory(
 
 def resolve_order_state_from_details(details):
     return orders_service.resolve_order_state_from_details(details)
+
+
+def validate_order_transition(current_state, new_state):
+    """Wrapper de la máquina de estados de pedidos (routers/orders.py)."""
+    return orders_service.validate_order_transition(current_state, new_state)
+
+
+def allowed_order_transitions():
+    """Wrapper del mapa de transiciones permitidas (routers/orders.py)."""
+    return orders_service.ALLOWED_ORDER_TRANSITIONS
 
 
 def complete_emplantillado(db: Annotated[Session, ...], current_user_id: uuid.UUID, task):

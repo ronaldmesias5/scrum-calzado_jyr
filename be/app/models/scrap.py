@@ -111,6 +111,7 @@ class LossRecord(Base):
         UUID(as_uuid=True),
         ForeignKey("products.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=True,
+        index=True,
     )
 
     size: Mapped[str | None] = mapped_column(
@@ -174,6 +175,7 @@ class LossRecord(Base):
         String(20),
         nullable=False,
         default="perdida",
+        index=True,
     )
 
     registered_by_id: Mapped[uuid.UUID] = mapped_column(
@@ -278,6 +280,7 @@ class ScrapStock(Base):
         UUID(as_uuid=True),
         ForeignKey("products.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     size: Mapped[str] = mapped_column(

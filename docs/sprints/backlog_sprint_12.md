@@ -33,30 +33,28 @@ El empleado puede registrar observaciones en sus tareas y consultar las incidenc
 4. Crear frontend `IncidencesPage.tsx` en dashboard-empleado con tabla de incidencias y filtro
 5. Integrar actualización de observación en la vista de tareas del empleado
 
-## HU-027: Modificación y Eliminación de Tareas ⚠️ PARCIAL
+## HU-027: Modificación y Eliminación de Tareas ⚠️ PARCIAL (PUT sí; DELETE no aplica)
 
-El jefe/admin puede modificar el estado y la asignación de las tareas, pero faltan endpoints para editar detalles y eliminar tareas.
+El jefe/admin puede modificar el estado, la asignación y los detalles de las tareas. No existe DELETE: las tareas no se eliminan (FK a pedidos, vales, incidencias), solo se editan.
 
 **Criterios de Aceptación (implementados):**
 - El jefe/admin puede cambiar el estado de una tarea a `pendiente`, `en_progreso`, `completado`, `cancelado`
 - El jefe/admin puede cambiar la asignación de una tarea a otro empleado
+- **PUT `/orders/tasks/{task_id}`** (`orders_tasks.py:579`) permite editar fase, prioridad, notas, fechas y asignación
 - El empleado puede auto-asignarse tareas disponibles (HU-022)
 
-**Criterios de Aceptación (NO implementados — ⚠️ PARCIAL):**
-- ❌ **No existe endpoint DELETE** para eliminar tareas
-- ❌ **No existe endpoint PUT/PATCH** para modificar detalles de la tarea (tipo, cantidad, descripción, fecha límite)
-- ❌ **El frontend `TasksPage.tsx`** no tiene UI para editar detalles ni eliminar tareas
+**Criterios de Aceptación (NO implementados — por decisión de diseño):**
+- ❌ **No existe endpoint DELETE** — las tareas no se eliminan porque tienen FK a pedidos, vales e incidencias; solo se editan
 
 **Tareas implementadas:**
-1. `PATCH /admin/orders/tasks/{task_id}/status` (líneas 1121-1289) — cambiar estado de tarea
-2. `PATCH /admin/orders/tasks/{id}/assign` (líneas 1017-1063) — cambiar asignación
-3. Frontend `TasksPage.tsx` con acciones de cambio de estado y asignación
+1. `PATCH /admin/orders/tasks/{task_id}/status` — cambiar estado de tarea
+2. `PATCH /admin/orders/tasks/{id}/assign` — cambiar asignación
+3. `PUT /orders/tasks/{task_id}` — editar fase, prioridad, notas, fechas y asignación
+4. Frontend `TasksPage.tsx` con acciones de cambio de estado y asignación
 
-**Tareas pendientes (no implementadas):**
-1. ❌ Endpoint `DELETE /admin/orders/tasks/{task_id}` — eliminar tarea lógica o físicamente
-2. ❌ Endpoint `PUT /admin/orders/tasks/{task_id}` o `PATCH /admin/orders/tasks/{task_id}` — modificar `type`, `amount`, `description`, `deadline`, `line_group`
-3. ❌ Frontend: botón de eliminar tarea con confirmación en `TasksPage.tsx`
-4. ❌ Frontend: modal de edición de detalles de tarea en `TasksPage.tsx`
+**Tareas pendientes (no implementadas por diseño):**
+1. ❌ Endpoint `DELETE` — no aplica: las tareas no se eliminan
+2. ❌ Frontend: modal de edición de detalles de tarea en `TasksPage.tsx`
 
 ## Cambios Técnicos
 
@@ -73,9 +71,8 @@ El jefe/admin puede modificar el estado y la asignación de las tareas, pero fal
 
 | Endpoint | Método | Propósito | Estado |
 |----------|--------|-----------|--------|
-| `/api/v1/admin/orders/tasks/{task_id}` | DELETE | Eliminar tarea | ❌ NO IMPLEMENTADO |
-| `/api/v1/admin/orders/tasks/{task_id}` | PUT | Modificar detalles completos de tarea | ❌ NO IMPLEMENTADO |
-| `/api/v1/admin/orders/tasks/{task_id}` | PATCH | Modificar campos específicos de tarea | ❌ NO IMPLEMENTADO |
+| `/api/v1/orders/tasks/{task_id}` | PUT | Modificar detalles completos de tarea | ✅ IMPLEMENTADO (`orders_tasks.py:579`) |
+| `/api/v1/admin/orders/tasks/{task_id}` | DELETE | Eliminar tarea | ❌ NO APLICA (decisión de diseño: no se eliminan) |
 
 ### Archivos clave modificados/creados
 
@@ -108,10 +105,10 @@ El jefe/admin puede modificar el estado y la asignación de las tareas, pero fal
 
 ## Pendientes (HU-027)
 
-- **DELETE de tareas**: No hay forma de eliminar una tarea mal creada. El workaround actual es cancelarla (cambiar estado a `cancelado`), pero el registro persiste.
-- **Edición de detalles**: No se puede cambiar el tipo (`corte` → `guarnicion`), cantidad, descripción ni fecha límite de una tarea ya creada. Para corregir errores, la tarea debe cancelarse y crearse una nueva.
-- **Frontend**: La `TasksPage.tsx` del dashboard-jefe permite cambiar estado y asignación, pero no tiene botones de eliminar ni modal de edición.
+- **DELETE de tareas**: No aplica por diseño — las tareas no se eliminan porque tienen FK con pedidos, vales e incidencias. El workaround es cancelar (estado `cancelado`).
+- **Edición de detalles**: ✅ Resuelto con `PUT /orders/tasks/{task_id}` (fase, prioridad, notas, fechas, asignación).
+- **Frontend**: Falta modal de edición de detalles en `TasksPage.tsx` (solo tiene cambio de estado y asignación).
 
 ## Resumen
 
-El Sprint 12 implementa funcionalidades de seguimiento y control de producción. El empleado puede registrar observaciones en sus tareas y consultar las incidencias asociadas, con filtro por estado. Para el jefe, existe la capacidad de cambiar el estado y la asignación de las tareas. Sin embargo, la HU-027 queda parcialmente implementada: **faltan los endpoints DELETE y PUT/PATCH para modificar y eliminar tareas**, así como la interfaz de usuario correspondiente. El workaround actual es cancelar tareas en lugar de eliminarlas, y crear nuevas tareas para corregir errores en los detalles.
+El Sprint 12 implementa funcionalidades de seguimiento y control de producción. El empleado puede registrar observaciones en sus tareas y consultar las incidencias asociadas, con filtro por estado. Para el jefe, existe la capacidad de cambiar el estado, la asignación y (vía PUT) los detalles de las tareas. La HU-027 queda parcial: el PUT de edición existe, pero no hay DELETE (decisión de diseño: las tareas no se eliminan) ni modal de edición en el frontend.
