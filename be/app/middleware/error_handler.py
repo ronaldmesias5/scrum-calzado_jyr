@@ -10,7 +10,7 @@ Capa de error manejo que:
   - Previene information leakage
 """
 
-import traceback
+import logging
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
@@ -33,19 +33,23 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             # Todas las demás excepciones no esperadas
             client_ip = request.client.host if request.client else "unknown"
             
-            # Registrar detalles COMPLETOS en servidor (NUNCA en response)
-            full_traceback = traceback.format_exc()
-            
-            # Print de EMERGENCIA para Docker logs
-            print(f"!!! CRITICAL ERROR !!! {request.method} {request.url.path} from {client_ip}")
-            print(full_traceback)
-
+            # Registrar detalles COMPLETOS en servidor (NUNCA en response).
+            # exc_info=exc adjunta el traceback completo (logs/error.log + consola).
             try:
                 error_logger.error(
-                    f"Unhandled exception on {request.url.path} from {client_ip}\n{full_traceback}"
+                    "Unhandled exception on %s from %s",
+                    request.url.path,
+                    client_ip,
+                    exc_info=exc,
                 )
-            except Exception as log_err:
-                print(f"!!! LOGGER FAILED !!! {str(log_err)}")
+            except Exception:
+                # Último recurso si el logger de archivos falla (disco lleno, etc.)
+                logging.getLogger(__name__).critical(
+                    "error_logger failed while logging unhandled exception on %s from %s",
+                    request.url.path,
+                    client_ip,
+                    exc_info=True,
+                )
             
             # Determinar código HTTP basado en tipo de excepción
             status_code = self._get_status_code(exc)

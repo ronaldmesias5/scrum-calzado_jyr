@@ -15,10 +15,12 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import settings
 from app.database import SessionLocal
+from app.logging_config import app_logger
 
 # Importar middlewares de seguridad (OWASP Top 10)
 from app.middleware.error_handler import ErrorHandlerMiddleware
@@ -68,7 +70,7 @@ from app.routers.ai_chat import router as ai_chat_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Gestiona el ciclo de vida de la aplicación FastAPI."""
-    print("🚀 CALZADO J&R — Backend iniciando...")
+    app_logger.info("🚀 CALZADO J&R — Backend iniciando...")
 
     # ══════════════════════════════════════════════════════════
     # PASO 1: Ejecutar migraciones Alembic
@@ -87,7 +89,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.init_db import run_migrations
 
     run_migrations(settings.DATABASE_URL)
-    print("✅ Migraciones Alembic aplicadas correctamente.")
+    app_logger.info("✅ Migraciones Alembic aplicadas correctamente.")
 
     # ══════════════════════════════════════════════════════════
     # PASO 2: Verificar datos iniciales (fallback)
@@ -100,16 +102,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
         seed_all(db)
     except Exception as e:
-        print(f"⚠️  Error en verificación de datos iniciales: {e!s}")
+        app_logger.error(
+            "⚠️  Error en verificación de datos iniciales: %s", e, exc_info=e
+        )
     finally:
         db.close()
 
-    print(f"📡 CORS habilitado para: {settings.FRONTEND_URL}")
-    print("✨ Sistema listo.")
+    app_logger.info("📡 CORS habilitado para: %s", settings.FRONTEND_URL)
+    app_logger.info("✨ Sistema listo.")
 
     yield
 
-    print("🛑 CALZADO J&R — Backend cerrando...")
+    app_logger.info("🛑 CALZADO J&R — Backend cerrando...")
 
 
 app = FastAPI(
@@ -235,15 +239,40 @@ async def root():
 @app.get(
     "/api/v1/health",
     tags=["health"],
-    summary="Verificar estado del servidor",
+    summary="Verificar estado del servidor y la base de datos",
 )
-async def health_check() -> dict[str, str]:
-    """Endpoint de verificación de salud del servidor."""
-    return {
-        "status": "healthy",
-        "project": "CALZADO J&R",
-        "version": "0.1.0",
-    }
+def health_check() -> JSONResponse:
+    """Health check con verificación real de PostgreSQL (SELECT 1).
+
+    Es `def` (no `async`) para que FastAPI lo ejecute en el threadpool y no
+    bloquee el event loop con SQLAlchemy síncrono. Devuelve 503 si la BD falla.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+        finally:
+            db.close()
+    except Exception as exc:
+        app_logger.error("Health check falló: PostgreSQL no responde", exc_info=exc)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "project": "CALZADO J&R",
+                "version": "0.1.0",
+                "database": "down",
+            },
+        )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "healthy",
+            "project": "CALZADO J&R",
+            "version": "0.1.0",
+            "database": "ok",
+        },
+    )
 
 
 # ────────────────────────────

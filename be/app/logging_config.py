@@ -77,6 +77,13 @@ def configure_logging():
     )
     app_logger.addHandler(app_handler)
 
+    # También enviar a consola (stdout/stderr) para visibilidad en
+    # `docker compose logs be` y en producción (12-factor: logs a stdout).
+    app_console_handler = logging.StreamHandler()
+    app_console_handler.setLevel(logging.INFO)
+    app_console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    app_logger.addHandler(app_console_handler)
+
     # ────────────────────────────
     # 4. Logger IA (Fase 4, asistente)
     # ────────────────────────────

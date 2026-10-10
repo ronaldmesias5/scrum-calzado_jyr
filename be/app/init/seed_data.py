@@ -45,10 +45,10 @@ def seed_roles(db: Session) -> bool:
     try:
         # Verificar si ya existen los roles
         if db.query(Role).count() > 0:
-            print(f"✅ Roles ya existen ({db.query(Role).count()} encontrados)")
+            logger.info(f"✅ Roles ya existen ({db.query(Role).count()} encontrados)")
             return True
         
-        print("🔄 Insertando roles iniciales...")
+        logger.info("🔄 Insertando roles iniciales...")
         
         roles = [
             Role(
@@ -72,11 +72,11 @@ def seed_roles(db: Session) -> bool:
             db.merge(role)  # USE MERGE para evitar duplicados
         
         db.commit()
-        print("✅ Roles insertados exitosamente")
+        logger.info("✅ Roles insertados exitosamente")
         return True
         
     except Exception as e:
-        print(f"❌ Error insertando roles: {str(e)}")
+        logger.error("❌ Error insertando roles", exc_info=e)
         db.rollback()
         return False
 
@@ -91,10 +91,10 @@ def seed_type_documents(db: Session) -> bool:
     try:
         # Verificar si ya existen
         if db.query(TypeDocument).count() > 0:
-            print(f"✅ Tipos de documentos ya existen ({db.query(TypeDocument).count()} encontrados)")
+            logger.info(f"✅ Tipos de documentos ya existen ({db.query(TypeDocument).count()} encontrados)")
             return True
         
-        print("🔄 Insertando tipos de documentos...")
+        logger.info("🔄 Insertando tipos de documentos...")
         
         type_docs = [
             TypeDocument(
@@ -127,11 +127,11 @@ def seed_type_documents(db: Session) -> bool:
             db.merge(doc_type)  # USE MERGE para evitar duplicados
         
         db.commit()
-        print("✅ Tipos de documentos insertados exitosamente")
+        logger.info("✅ Tipos de documentos insertados exitosamente")
         return True
         
     except Exception as e:
-        print(f"❌ Error insertando tipos de documentos: {str(e)}")
+        logger.error("❌ Error insertando tipos de documentos", exc_info=e)
         db.rollback()
         return False
 
@@ -149,10 +149,10 @@ def seed_orders(db: Session) -> bool:
     try:
         # Verificar si ya existen
         if db.query(Order).count() > 0:
-            print(f"✅ Órdenes ya existen ({db.query(Order).count()} encontradas)")
+            logger.info(f"✅ Órdenes ya existen ({db.query(Order).count()} encontradas)")
             return True
         
-        print("🔄 Insertando órdenes mayoristas de prueba...")
+        logger.info("🔄 Insertando órdenes mayoristas de prueba...")
         
         from app.models.order import OrderDetail
         
@@ -265,11 +265,11 @@ def seed_orders(db: Session) -> bool:
             db.merge(order)
         
         db.commit()
-        print("✅ Órdenes mayoristas insertadas exitosamente")
+        logger.info("✅ Órdenes mayoristas insertadas exitosamente")
         return True
         
     except Exception as e:
-        print(f"❌ Error insertando órdenes: {str(e)}")
+        logger.error("❌ Error insertando órdenes", exc_info=e)
         db.rollback()
         return False
 
@@ -282,12 +282,12 @@ def seed_jefe(db: Session) -> bool:
     try:
         existing = db.query(User).filter(User.email == "ronald.jefe@gmail.com").first()
         if existing:
-            print(f"✅ Usuario jefe ya existe ({existing.email})")
+            logger.info(f"✅ Usuario jefe ya existe ({existing.email})")
             return True
 
         employee_role = db.query(Role).filter(Role.name_role == "employee").first()
         if not employee_role:
-            print("❌ Rol employee no existe")
+            logger.error("❌ Rol employee no existe")
             return False
 
         from app.models.type_document import TypeDocument
@@ -315,11 +315,11 @@ def seed_jefe(db: Session) -> bool:
         )
         db.add(jefe)
         db.commit()
-        print("✅ Usuario jefe insertado: ronald.jefe@gmail.com / Test123456!")
+        logger.info("✅ Usuario jefe insertado: ronald.jefe@gmail.com / Test123456!")
         return True
 
     except Exception as e:
-        print(f"❌ Error insertando jefe: {str(e)}")
+        logger.error("❌ Error insertando jefe", exc_info=e)
         db.rollback()
         return False
 
@@ -347,10 +347,10 @@ def seed_catalog(db: Session) -> bool:
         
         # ── 1. Verificar si ya está el catálogo poblado ────────────
         if db.query(Brand).count() > 0:
-            print(f"✅ Catálogo ya existe ({db.query(Brand).count()} brands, {db.query(Category).count()} categorías, {db.query(Style).count()} estilos, {db.query(Product).count()} productos)")
+            logger.info(f"✅ Catálogo ya existe ({db.query(Brand).count()} brands, {db.query(Category).count()} categorías, {db.query(Style).count()} estilos, {db.query(Product).count()} productos)")
             return True
         
-        print("🔄 Insertando catálogo (brands, categorías, estilos, productos)...")
+        logger.info("🔄 Insertando catálogo (brands, categorías, estilos, productos)...")
         
         # ── 2. Insertar 5 BRANDS ─────────────────────────────────────
         brands_data = [
@@ -470,15 +470,15 @@ def seed_catalog(db: Session) -> bool:
         ]
         
         db.commit()
-        print("✅ Catálogo insertado exitosamente:")
-        print(f"   • {len(brands)} brands ({', '.join([b['name'] for b in brands_data])})")
-        print(f"   • {len(categories)} categorías ({', '.join([c['name'] for c in categories_data])})")
-        print(f"   • {len(styles_data)} estilos")
-        print("   ℹ️  Productos: se crean desde la aplicación")
+        logger.info("✅ Catálogo insertado exitosamente:")
+        logger.info(f"   • {len(brands)} brands ({', '.join([b['name'] for b in brands_data])})")
+        logger.info(f"   • {len(categories)} categorías ({', '.join([c['name'] for c in categories_data])})")
+        logger.info(f"   • {len(styles_data)} estilos")
+        logger.info("   ℹ️  Productos: se crean desde la aplicación")
         return True
         
     except Exception as e:
-        print(f"❌ Error en seed_catalog: {str(e)}")
+        logger.error("❌ Error en seed_catalog", exc_info=e)
         db.rollback()
         return False
 
@@ -494,10 +494,10 @@ def seed_defect_codes(db: Session) -> bool:
         from app.models.scrap import DefectCode
         
         if db.query(DefectCode).count() > 0:
-            print(f"✅ Códigos de defecto ya existen ({db.query(DefectCode).count()} encontrados)")
+            logger.info(f"✅ Códigos de defecto ya existen ({db.query(DefectCode).count()} encontrados)")
             return True
         
-        print("🔄 Insertando códigos de defecto...")
+        logger.info("🔄 Insertando códigos de defecto...")
         
         defect_codes = [
             DefectCode(
@@ -536,11 +536,11 @@ def seed_defect_codes(db: Session) -> bool:
             db.merge(dc)
         
         db.commit()
-        print("✅ Códigos de defecto insertados exitosamente")
+        logger.info("✅ Códigos de defecto insertados exitosamente")
         return True
         
     except Exception as e:
-        print(f"❌ Error insertando códigos de defecto: {str(e)}")
+        logger.error("❌ Error insertando códigos de defecto", exc_info=e)
         db.rollback()
         return False
 
@@ -551,7 +551,7 @@ def seed_all(db: Session) -> None:
     Se ejecuta automáticamente en el startup del backend.
     """
     try:
-        print("📦 Iniciando proceso de seed de datos...")
+        logger.info("📦 Iniciando proceso de seed de datos...")
 
         success = True
         success = seed_roles(db) and success
@@ -562,9 +562,9 @@ def seed_all(db: Session) -> None:
         # seed_orders NO se ejecuta — no se insertan pedidos de prueba automáticamente
 
         if success:
-            print("🎉 Todos los seeds completados exitosamente")
+            logger.info("🎉 Todos los seeds completados exitosamente")
         else:
-            print("⚠️  Algunos seeds no se completaron correctamente")
+            logger.warning("⚠️  Algunos seeds no se completaron correctamente")
 
     except Exception as e:
-        print(f"💥 Error fatal en seed: {str(e)}")
+        logger.error("💥 Error fatal en seed", exc_info=e)
