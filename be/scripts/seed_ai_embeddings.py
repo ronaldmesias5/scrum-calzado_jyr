@@ -43,7 +43,6 @@ BASE_FAQS: list[dict] = [
         "metadata": {
             "source": "faq",
             "topic": "registro_mayorista",
-            "rf": "RF-001",
             "roles": ["visitante"],
         },
     },
@@ -217,6 +216,10 @@ ROLE_FAQS: list[dict] = [
     {
         "content": "Empleado: ¿Cómo reclamar una tarea disponible? Dashboard Empleado > Tareas Disponibles: ve la lista de tareas sin asignar filtradas por tu cargo (cortador→corte, guarnecedor→guarnición, solador→soladura, emplantillador→emplantillado). Haz clic en Reclamar. La tarea pasa a estado en_progreso y se registra la fecha de asignación. Una tarea ya asignada no puede ser reclamada por otro empleado.",
         "metadata": {"source": "faq", "topic": "empleado_reclamar_tarea", "roles": ["empleado"]},
+    },
+    {
+        "content": "Empleado: ¿Cómo cambio el estado de una tarea? Dashboard Empleado > Mis Tareas: selecciona la tarea, añade observación si hay novedad y haz clic en 'Marcar como completada'. La tarea pasa de en_progreso a completado. Al completar una etapa se crea automáticamente la siguiente en orden (corte → guarnición → soladura → emplantillado) y al completar emplantillado se actualiza el inventario. Estados de tarea: pendiente → en_progreso → completado; el empleado reclama (pendiente→en_progreso) y completa (en_progreso→completado); el jefe asigna, reasigna y gestiona prioridad.",
+        "metadata": {"source": "faq", "topic": "empleado_cambiar_estado", "roles": ["empleado"]},
     },
     {
         "content": "Empleado: ¿Cómo ver mis reportes? Dashboard Empleado > Reportes: Mi Rendimiento (KPIs: tareas completadas, pares producidos, ganancias en COP), Desglose por proceso (corte, guarnición, soladura, emplantillado), Reporte Detallado de Tareas (filtro por hoy/semana/mes/personalizado, tabla con vale, proceso, producto, color, cantidad, estado, fecha, valor), Compartidos por el Jefe (lista de reportes compartidos con polling cada 30s). Exportar PDF.",

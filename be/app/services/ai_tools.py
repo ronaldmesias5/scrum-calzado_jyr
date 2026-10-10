@@ -41,10 +41,12 @@ def get_user_context(user: User | None) -> str:
     if not user:
         return (
             "Usuario: visitante no autenticado (sin acceso a pedidos/tareas privadas). "
-            "Para hacer pedidos debe registrarse en la landing (RF-001). "
+            "Para hacer pedidos debe registrarse en la landing page (nombre, apellido, email, "
+            "teléfono, tipo y número de documento, nombre del negocio y contraseña). "
+            "El jefe valida la cuenta y le da acceso al catálogo mayorista. "
             "Puede ver catálogo público en /catalog sin registrarse. "
-            "INSTRUCCIÓN: Si pregunta cómo hacer un pedido, dile que se registre en la landing como mayorista. "
-            "El jefe validará su cuenta y tendrá acceso al catálogo mayorista para pedidos."
+            "INSTRUCCIÓN: Si pregunta cómo hacer un pedido o cómo ser cliente, dile que se "
+            "registre en la landing page y que el jefe validará su cuenta."
         )
 
     role_name = user.role.name_role if hasattr(user, "role") and user.role else "sin rol"
@@ -80,7 +82,11 @@ def get_user_context(user: User | None) -> str:
             f"Usuario: empleado autenticado, nombre {name}, email {user.email}, ocupación {occupation}, rol employee. "
             f"INSTRUCCIÓN: Este usuario es empleado ({occupation}), NO crea pedidos. NO le digas que inicie sesión. "
             f"Si pregunta cómo hacer un pedido, explícale que los pedidos los crean el jefe o los clientes. "
-            f"Él solo ejecuta tareas en Dashboard Empleado > Mis Tareas. "
+            f"Para TOMAR una tarea: Dashboard Empleado > Tareas Disponibles > clic en 'Reclamar' "
+            f"(solo ve tareas sin asignar de su etapa; al reclamarla pasa a en_progreso). "
+            f"Para CAMBIAR EL ESTADO de una tarea: Dashboard Empleado > Mis Tareas > seleccionar la tarea > "
+            f"añadir observación si hay novedad > 'Marcar como completada' "
+            f"(al completar una etapa se crea la siguiente: corte → guarnición → soladura → emplantillado). "
             f"Como {occupation}, solo puede ver y reclamar tareas de {
                 'corte' if occupation == 'cortador'
                 else 'guarnición (costura)' if occupation == 'guarnecedor'
@@ -88,7 +94,6 @@ def get_user_context(user: User | None) -> str:
                 else 'emplantillado (acabado)' if occupation == 'emplantillador'
                 else 'su etapa'
             }. "
-            f"Tareas disponibles en Dashboard Empleado > Tareas Disponibles. "
             f"Incidencias en Dashboard Empleado > Incidencias. "
             f"Reportes de rendimiento en Dashboard Empleado > Reportes."
         )

@@ -43,7 +43,7 @@ caducan en 24 horas.
 - **Iniciar sesión** (si ya tiene cuenta), **recuperar contraseña** por email,
   **verificar su email** y **solicitar reactivación** si su cuenta fue desactivada.
 
-### Flujo exacto de registro (RF-001)
+### Flujo exacto de registro
 1. El visitante entra a la landing page (`/`).
 2. Hace clic en "Registrarse" o "Crear cuenta".
 3. Aparece un modal de registro con campos: nombre, apellido, email, teléfono, tipo de documento,
