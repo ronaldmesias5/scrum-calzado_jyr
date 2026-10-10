@@ -37,9 +37,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
 
     ports:
-      # Formato host:contenedor — solo expone al desarrollador local.
-      # En producción, no exponer este puerto (acceso solo desde la red interna).
-      - "${DB_PORT:-5432}:5432"
+      # Solo loopback: accesible desde el desarrollador local, nunca desde la red
+      # (en producción no se expone este puerto — docker-compose.prod.yml)
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
 
     volumes:
       # Volumen nombrado: los datos sobreviven `docker compose down`.
@@ -121,7 +121,7 @@ services:
       AI_EMBEDDING_DIM: ${AI_EMBEDDING_DIM:-768}
 
     ports:
-      - "${BE_PORT:-8000}:8000"
+      - "127.0.0.1:${BE_PORT:-8000}:8000"
 
     volumes:
       # Montar el código fuente para hot-reload (solo en dev).
@@ -144,8 +144,8 @@ services:
     container_name: calzado_jyr_mailpit
     restart: unless-stopped
     ports:
-      - "8025:8025" # Interfaz Web
-      - "1025:1025" # SMTP
+      - "127.0.0.1:8025:8025" # Interfaz Web (solo loopback)
+      - "127.0.0.1:1025:1025" # SMTP (solo loopback)
     networks:
       - calzado_jyr_net
 
@@ -180,7 +180,7 @@ services:
       VITE_USE_PROXY: "true"
 
     ports:
-      - "${FE_PORT:-5173}:5173"
+      - "127.0.0.1:${FE_PORT:-5173}:5173"
 
     volumes:
       - ./fe:/app
@@ -209,7 +209,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     networks:
       - calzado_jyr_net
 

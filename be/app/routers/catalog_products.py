@@ -189,10 +189,17 @@ def upload_product_image(
             detail="Formato de imagen no permitido. Usa JPG, PNG, WEBP, GIF, AVIF, BMP, HEIC o TIFF",
         )
 
-    # Validar tamaño (máximo 5 MB)
-    content = image.file.read()
-    if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="La imagen no puede superar 5 MB")
+    # Validar tamaño por chunks ANTES de acumular en memoria
+    # (evita DoS por payload gigante: read() completo agotaría RAM)
+    max_bytes = 5 * 1024 * 1024
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := image.file.read(1024 * 1024):
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(status_code=400, detail="La imagen no puede superar 5 MB")
+        chunks.append(chunk)
+    content = b"".join(chunks)
 
     # Crear directorio si no existe
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)

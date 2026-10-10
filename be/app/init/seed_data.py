@@ -279,6 +279,14 @@ def seed_jefe(db: Session) -> bool:
     Inserta el único usuario inicial: Ronald Guerrero (jefe).
     Si ya existe, no hace nada.
     """
+    # ⛔ Seguridad: en producción el usuario de prueba NO se siembra.
+    # Su contraseña es pública (docs/README) y daría acceso de jefe a cualquiera.
+    # Crear el admin inicial manualmente o con be/scripts/create_admin.py.
+    from app.config import settings
+
+    if settings.ENVIRONMENT == "production":
+        logger.warning("⛔ Producción: seed del usuario jefe de prueba OMITIDO")
+        return True
     try:
         existing = db.query(User).filter(User.email == "ronald.jefe@gmail.com").first()
         if existing:

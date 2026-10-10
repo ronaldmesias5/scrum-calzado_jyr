@@ -241,11 +241,13 @@ def reindex_embeddings(
     description="Público. Busca en ai_embeddings por similitud. Query 2-200 chars.",
 )
 def semantic_search(
+    request: Request,
     q: str,
     db: Annotated[Session, Depends(get_db)],
     k: int = 10,
 ) -> dict:
     """Búsqueda semántica: query → top-k fragmentos similares."""
+    _check_rate_limit(request)
     from app.schemas.ai import SemanticSearchResponse, SourceItem as AISourceItem
 
     if not q or len(q.strip()) < 2:
@@ -269,11 +271,13 @@ def semantic_search(
     description="Público. Recomienda productos similares a product_id (solo productos activos).",
 )
 def recommend(
+    request: Request,
     product_id: str,
     db: Annotated[Session, Depends(get_db)],
     k: int = 5,
 ) -> dict:
     """Recomienda productos similares a product_id."""
+    _check_rate_limit(request)
     from app.schemas.ai import RecommendResponse, SourceItem as AISourceItem
 
     if k < 1 or k > 10:

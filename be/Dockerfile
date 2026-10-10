@@ -41,6 +41,14 @@ FROM base AS prod
 
 COPY . .
 
+# Usuario no-root: mínimo privilegio (una RCE no escala a root en el contenedor)
+RUN groupadd --system app \
+    && useradd --system --gid app --home-dir /app app \
+    && mkdir -p logs uploads \
+    && chown -R app:app /app
+
+USER app
+
 EXPOSE 8000
 
 ENTRYPOINT ["sh", "-c", "\

@@ -28,6 +28,13 @@ def get_password_hash(password: str) -> str:
 
 def upgrade() -> None:
     """Inserta el usuario jefe inicial usando JOINs dinámicos (portable)."""
+    import os
+
+    # ⛔ Seguridad: en producción NUNCA sembrar usuarios de prueba.
+    # Las credenciales de este seed (publicadas en docs/README) permitirían
+    # login como jefe en cualquier despliegue con BD nueva.
+    if os.getenv("ENVIRONMENT", "development").lower() in ("prod", "production"):
+        return
 
     op.get_bind().execute(
         text("""
