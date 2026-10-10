@@ -171,7 +171,7 @@ function SupplyFormModal({
           </p>
         </div>
 
-        <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors">
+        <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors modal-scrollbar">
           {/* Row 1: Etapa Global y Tipo */}
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">

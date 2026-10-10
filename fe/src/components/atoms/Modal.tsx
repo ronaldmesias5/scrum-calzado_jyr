@@ -1,4 +1,10 @@
-import { useEffect, useRef, useCallback, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  type ReactNode
+} from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -26,10 +32,14 @@ const SIZE_CLASSES: Record<string, string> = {
 };
 
 const OVERLAY_CLASSES: Record<string, string> = {
-  blur: 'bg-black/40',
-  dark: 'bg-black/80',
-  light: 'bg-black/40'
+  blur: 'bg-black/40 backdrop-blur-sm',
+  dark: 'bg-black/80 backdrop-blur-[2px]',
+  light: 'bg-black/40 backdrop-blur-sm'
 };
+
+const CLOSE_DURATION_MS = 200;
+
+type ModalPhase = 'entering' | 'entered' | 'exiting';
 
 export default function Modal({
   isOpen,
@@ -47,14 +57,50 @@ export default function Modal({
   const containerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const closingTimerRef = useRef<number | null>(null);
+  const [phase, setPhase] = useState<ModalPhase>('entering');
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  const handleClose = useCallback(() => {
+    if (closingTimerRef.current !== null) return;
+    setPhase('exiting');
+    closingTimerRef.current = window.setTimeout(() => {
+      closingTimerRef.current = null;
+      onCloseRef.current();
+      previousActiveElement.current?.focus();
+    }, CLOSE_DURATION_MS);
+  }, []);
+
+  const handleCloseRef = useRef(handleClose);
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  }, [handleClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPhase('entering');
+      const raf = requestAnimationFrame(() => setPhase('entered'));
+      return () => cancelAnimationFrame(raf);
+    }
+    setPhase('entering');
+  }, [isOpen]);
+
+  useEffect(
+    () => () => {
+      if (closingTimerRef.current !== null) {
+        clearTimeout(closingTimerRef.current);
+        closingTimerRef.current = null;
+      }
+    },
+    []
+  );
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
-      onCloseRef.current();
+      handleCloseRef.current();
       return;
     }
     if (e.key === 'Tab' && containerRef.current) {
@@ -102,22 +148,20 @@ export default function Modal({
     };
   }, [handleKeyDown, initialFocus, isOpen]);
 
-  const handleClose = useCallback(() => {
-    onCloseRef.current();
-    requestAnimationFrame(() => previousActiveElement.current?.focus());
-  }, []);
-
   if (!isOpen) return null;
 
   const overlay = OVERLAY_CLASSES[variant] || OVERLAY_CLASSES.blur;
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
+  const isHidden = phase === 'entering' || phase === 'exiting';
+  const panelState = isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100';
+  const overlayState = isHidden ? 'opacity-0' : 'opacity-100';
 
   return createPortal(
     <div
       className={`fixed inset-0 z-[100] flex justify-center overflow-y-auto p-4 ${centered ? 'items-center' : 'items-start'}`}
     >
       <div
-        className={`absolute inset-0 ${overlay} transition-all duration-300`}
+        className={`absolute inset-0 ${overlay} ${overlayState} transition-all duration-200 ease-out`}
         onClick={handleClose}
         aria-hidden="true"
       />
@@ -127,7 +171,7 @@ export default function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full border border-gray-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200 my-8 flex flex-col overflow-hidden ${className}`}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${sizeClass} w-full border border-gray-200 dark:border-slate-800 ${panelState} transition-all duration-200 ease-out will-change-transform my-8 flex flex-col overflow-hidden ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || showClose) && (
@@ -153,7 +197,9 @@ export default function Modal({
             )}
           </div>
         )}
-        <div className="flex-1 overflow-y-auto min-h-0 p-0">{children}</div>
+        <div className="flex-1 overflow-y-auto min-h-0 p-0 modal-scrollbar">
+          {children}
+        </div>
       </div>
     </div>,
     document.body
