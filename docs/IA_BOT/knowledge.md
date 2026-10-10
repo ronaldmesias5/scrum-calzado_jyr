@@ -460,3 +460,119 @@ real que alimenta el acumulado de scrap de los reportes.
    datos frescos.
 5. Si no se reindexa, el asistente seguirá respondiendo con la información anterior; la
    reindexación es obligatoria tras cambios de catálogo o de conocimiento.
+
+## 18. EMPLEADO DE PRODUCCIÓN — Perfil general y permisos
+
+Los empleados de producción tienen el rol `employee` y una de estas ocupaciones:
+`cortador`, `guarnecedor`, `solador` o `emplantillador`. Cada cargo opera una única etapa
+de la cadena productiva.
+
+### Qué ve el empleado
+Acceso restringido exclusivamente a **sus** tareas asignadas (assigned_to == su usuario),
+filtradas estrictamente por su cargo/etapa. Ve sus métricas del dashboard, el vale de
+producción de cada tarea, sus incidencias y sus reportes de rendimiento (pares, tareas y
+valores en COP calculados con los precios por etapa task_prices).
+
+### Qué NO ve
+No puede ver tareas de otros empleados, gestión de usuarios, catálogo general, precios de
+venta a clientes ni reportes financieros de la empresa (ventas globales, ingresos totales).
+NO crea ni edita pedidos: los pedidos los crean el jefe o los clientes.
+
+### Rutas del panel
+- Dashboard: `/dashboard/employee`
+- Mis tareas: `/dashboard/employee/tasks`
+- Tareas disponibles: `/dashboard/employee/available-tasks`
+- Incidencias: `/dashboard/employee/incidences`
+- Reportes: `/dashboard/employee/reports`
+- Configuración: `/dashboard/employee/settings`
+
+## 19. EMPLEADO — Desglose operativo por cargo y etapa
+
+### Cortador (etapa: corte)
+Primera etapa de producción: corte de materiales (cuero o sintético) según la orden.
+Responsabilidades: reclamar o recibir tareas de corte, revisar el vale antes de trabajar
+(n.º de vale, pedido, producto, talla/color, pres), ejecutar el corte y marcar la tarea
+como completada. Al completarla se crea automáticamente la etapa de guarnición. Reporta
+incidencias de material defectuoso o desperdicio anormal desde Incidencias. Solo ve y
+reclama tareas de **corte**.
+
+### Guarnecedor (etapa: guarnición)
+Segunda etapa: costura, unión de piezas y ensamblaje inicial del corte de calzado.
+Responsabilidades: reclamar tareas de guarnición, verificar su vale, coser y unir las
+piezas cortadas, y completar la tarea para que se cree la etapa de soladura. Reporta
+incidencias de forros, hilos o máquinas de costura. El consumo de insumos de guarnición
+no se reporta manualmente por tarea: el sistema descuenta los insumos vinculados al
+producto al iniciar la producción; los faltantes se reportan como incidencia general.
+
+### Solador (etapa: soladura)
+Tercera etapa: solado y pegado de suelas (unión suela-cuerpo con pegamento y prensa).
+Responsabilidades: reclamar tareas de soladura, verificar el vale asignado (las tareas ya
+asignadas a otro empleado no pueden reclamarse), pegar y prensar según producto y tallas,
+y completar la tarea para crear la etapa de emplantillado. Reporta incidencias de suela
+defectuosa, pegamento agotado o fallas de prensa. La cantidad de pares es fija (la define
+el pedido) y el vale controla esa partida por las 4 etapas.
+
+### Emplantillador (etapa: emplantillado)
+Última etapa: plantilla, acabado final y empaque antes de la entrega a bodega o pedido.
+Responsabilidades: reclamar tareas de emplantillado, verificar el vale, colocar plantillas,
+acabar y embalar. Al completar esta etapa el sistema **actualiza el inventario
+automáticamente**: suma a pares fabricados (reserved) si el pedido tiene cliente, o a stock
+en bodega (amount) si es pedido para stock. Reporta incidencias de acabado o empaque.
+
+## 20. EMPLEADO — Vales, tareas y precios por etapa (task_prices)
+
+### Vales de producción
+Cada tarea tiene un **vale** con número único (por ejemplo, Vale #6) que acompaña el
+producto por las 4 etapas (corte → guarnición → soladura → emplantillado). El empleado ve
+el vale en su tarea: número de vale, pedido, producto, talla/color y pares. Ruta: Mis
+Tareas > seleccionar tarea > Vale.
+
+### Estados de la tarea
+`pendiente → en_progreso → completado`. El empleado **reclama** la tarea en Tareas
+Disponibles (pendiente → en_progreso, registrada a su nombre) y la **marca como
+completada** en Mis Tareas (añadiendo observación si hay novedad). El jefe asigna,
+reasigna y gestiona la prioridad.
+
+### task_prices: pago, NO precio de venta
+Lo que el asistente informe sobre `task_prices` corresponde **estrictamente al pago en COP
+que recibe el operario por docena trabajada** en su etapa (corte, guarnición, soladura o
+emplantillado), definido por producto. **Nunca es el precio de venta del calzado al
+cliente.** El empleado puede ver sus valores acumulados en Reportes; los precios de venta
+los gestiona el jefe en Precios por Cliente.
+
+## 21. EMPLEADO — Incidencias y errores operativos
+
+### Cómo reportar
+1. Ir a Dashboard Empleado > Incidencias.
+2. **Incidencia general** (máquina o insumo): crearla directamente describiendo el
+   impedimento técnico con observaciones.
+3. **Incidencia de producto**: vincularla a una de sus tareas; indicar talla, cantidad,
+   descripción del error de material o desperdicio de scrap y adjuntar foto de evidencia.
+4. Queda **pendiente de aprobación del jefe**; el empleado no puede aprobar sus propias
+   incidencias.
+5. Si el jefe la aprueba, se crea un registro de pérdida real (scrap) y puede compartirle
+   el resultado.
+
+### Cuándo reportar
+- Material defectuoso recibido en su etapa (corte, costura, suela, acabado).
+- Desperdicio de scrap mayor a lo normal o piezas dañadas.
+- Máquina descompuesta o impedimento técnico que detenga su etapa.
+- Faltante de insumos necesarios para su trabajo.
+
+## 22. EMPLEADO — Guía de respuestas del asistente
+
+Cuando un empleado pregunte al asistente, responde así:
+
+- **"¿Cuánto me pagan por la tarea o la docena?"**: task_prices es su pago por docena en
+  COP según su etapa (corte, guarnición, soladura, emplantillado); invita a ver Reportes
+  para su rendimiento acumulado; nunca lo confundas con precio de venta.
+- **"¿Qué tareas tengo pendientes?"**: guía a Dashboard Empleado > Mis Tareas con filtros
+  por estado y tipo.
+- **"¿Cómo cambio el estado de una tarea?"**: Mis Tareas > seleccionar > observación
+  opcional > Marcar como completada; la siguiente etapa se crea sola.
+- **"¿Cómo subo evidencia de un problema?"**: Incidencias > nueva incidencia de producto >
+  vincular tarea > talla, cantidad, descripción y foto.
+- **"¿Cómo reclamo una tarea?"**: Tareas Disponibles > filtrar por cargo > Reclamar (solo
+  tareas de su etapa sin asignar).
+- Siempre con rutas exactas del panel del empleado y sin revelar datos de otros empleados
+  ni precios de venta.
