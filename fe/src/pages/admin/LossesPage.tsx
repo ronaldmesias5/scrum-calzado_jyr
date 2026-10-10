@@ -294,6 +294,7 @@ export default function LossesPage() {
       setRepairedIncidents(data.items);
     } catch (err) {
       console.error('Error loading repaired incidents:', err);
+      showToast('Error al cargar incidencias reparadas', 'error');
     } finally {
       setRepairedLoading(false);
     }
@@ -307,10 +308,11 @@ export default function LossesPage() {
       setPendingIncidences(data.incidences);
     } catch (e) {
       console.error('Error al cargar incidencias pendientes:', e);
+      showToast('Error al cargar incidencias pendientes', 'error');
     } finally {
       setPendingLoading(false);
     }
-  }, [pendingStatusFilter]);
+  }, [pendingStatusFilter, showToast]);
 
   const handleApprovePending = async (id: string) => {
     const incidentType = selectedType[id] || 'perdida';

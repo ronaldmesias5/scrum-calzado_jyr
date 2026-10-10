@@ -44,7 +44,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { CookieBanner } from '@/components/atoms/CookieBanner';
 import { CookiePolicyModal } from '@/components/atoms/CookiePolicyModal';
 import { ToastProvider } from '@/store/ToastContext';
-import PageLoader from '@/components/atoms/PageLoader';
+import SkeletonLoader from '@/components/atoms/SkeletonLoader';
 import AdminLayout from '@/features/admin/components/organisms/AdminLayout';
 import EmployeeLayout from '@/features/employee/components/organisms/EmployeeLayout';
 import ClientLayout from '@/features/client/components/organisms/ClientLayout';
@@ -170,7 +170,7 @@ function App() {
             Saltar al contenido principal
           </a>
           <ToastProvider>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<SkeletonLoader variant="page" />}>
               <Routes>
               {/* ════════════════════════════════════════ */}
               {/* 🌐 Landing Page pública */}

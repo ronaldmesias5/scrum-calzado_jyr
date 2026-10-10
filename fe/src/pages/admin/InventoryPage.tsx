@@ -72,6 +72,10 @@ export default function InventoryPage() {
       setProducts(data.products);
     } catch (error) {
       console.error('Error loading products:', error);
+      showToast(
+        'No se pudo cargar el inventario. Revisa tu conexión e inténtalo de nuevo.',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
