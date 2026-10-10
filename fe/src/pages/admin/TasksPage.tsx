@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 // TasksPage - production task dashboard for jefe
 import { CheckSquare, Search, X, RefreshCw } from 'lucide-react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   getAllProductionTasks,
   ProductionTask,
@@ -215,7 +216,9 @@ export default function ProductionTaskDashboard() {
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <CheckSquare className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <ADMIN_SECTIONS.tasks.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.tasks.color}`}
+            />
             Gestión de Tareas de Producción
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">

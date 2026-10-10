@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   Package2,
   Plus,
@@ -927,7 +928,9 @@ export default function InsumosPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <Package2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <ADMIN_SECTIONS.insumos.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.insumos.color}`}
+            />
             Gestión de Insumos
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">

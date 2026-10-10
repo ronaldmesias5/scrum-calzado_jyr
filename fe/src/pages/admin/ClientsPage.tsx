@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   Search,
   Phone,
@@ -141,7 +142,9 @@ export default function ClientsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <UserPlus className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <ADMIN_SECTIONS.clients.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.clients.color}`}
+            />
             Gestión de Clientes
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 transition-colors">

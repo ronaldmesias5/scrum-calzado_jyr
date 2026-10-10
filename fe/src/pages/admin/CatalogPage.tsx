@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   Plus,
   Edit2,
@@ -8,7 +9,6 @@ import {
   Package,
   Filter,
   Search,
-  Layers,
   Maximize2,
   FileDown
 } from 'lucide-react';
@@ -445,7 +445,9 @@ export default function CatalogPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <Layers className="w-8 h-8 text-orange-600" />
+            <ADMIN_SECTIONS.catalog.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.catalog.color}`}
+            />
             Gestión de Catálogo
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">

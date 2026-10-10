@@ -8,9 +8,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   AlertTriangle,
-  Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -247,7 +247,9 @@ export default function CalendarPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <CalendarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <ADMIN_SECTIONS.calendar.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.calendar.color}`}
+            />
             Calendario de Pedidos
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   UserCheck,
   UserPlus,
@@ -13,7 +14,6 @@ import {
   XCircle,
   Loader2,
   Users,
-  ShieldCheck,
   Trash2,
   RefreshCw,
   RotateCcw
@@ -923,7 +923,9 @@ export default function UsersManagementPage() {
       {/* Header */}
       <div className="stagger-reveal">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-          <ShieldCheck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          <ADMIN_SECTIONS.users.icon
+            className={`w-8 h-8 ${ADMIN_SECTIONS.users.color}`}
+          />
           Gestión de Usuarios
         </h1>
       </div>

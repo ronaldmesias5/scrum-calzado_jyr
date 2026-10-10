@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   Search,
   Edit2,
@@ -239,7 +240,10 @@ export default function ClientPricesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <ADMIN_SECTIONS.clientPrices.icon
+            className={`w-8 h-8 ${ADMIN_SECTIONS.clientPrices.color}`}
+          />
           Precios por Cliente
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">

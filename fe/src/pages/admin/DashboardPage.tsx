@@ -23,8 +23,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import { useNavigate } from 'react-router-dom';
-import { Home } from 'lucide-react';
 import MetricsCards from '@/features/admin/components/organisms/MetricsCards';
 import RecentOrdersTable from '@/features/admin/components/organisms/RecentOrdersTable';
 import AlertsPanel from '@/features/admin/components/organisms/AlertsPanel';
@@ -50,7 +50,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="stagger-reveal">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <Home className="w-8 h-8 text-primary" />
+          <ADMIN_SECTIONS.home.icon
+            className={`w-8 h-8 ${ADMIN_SECTIONS.home.color}`}
+          />
           Inicio
         </h1>
         <p className="text-gray-600 text-sm mt-1">
