@@ -116,6 +116,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app_logger.info("🛑 CALZADO J&R — Backend cerrando...")
 
 
+# 🔒 En producción la documentación interactiva y el esquema OpenAPI se
+# deshabilitan (FastAPI responde 404 en /docs, /redoc y /openapi.json).
+_IS_PROD = settings.ENVIRONMENT == "production"
+
 app = FastAPI(
     title="CALZADO J&R API",
     description=(
@@ -124,8 +128,9 @@ app = FastAPI(
         "Proyecto educativo — SENA."
     ),
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if _IS_PROD else "/docs",
+    redoc_url=None if _IS_PROD else "/redoc",
+    openapi_url=None if _IS_PROD else "/openapi.json",
     lifespan=lifespan,
 )
 
