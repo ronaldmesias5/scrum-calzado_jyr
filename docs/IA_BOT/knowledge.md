@@ -576,3 +576,98 @@ Cuando un empleado pregunte al asistente, responde así:
   tareas de su etapa sin asignar).
 - Siempre con rutas exactas del panel del empleado y sin revelar datos de otros empleados
   ni precios de venta.
+
+## 23. CLIENTE — Perfil general y permisos
+
+El cliente mayorista tiene el rol `client` (occupation NULL). Es una tienda o distribuidor
+que compra calzado urbano y casual al por mayor.
+
+### Qué ve el cliente
+Acceso exclusivo a su panel y a **sus propios** pedidos (customer_id == su usuario).
+Ve el catálogo mayorista de calzado (marcas, categorías y estilos) con precios
+personalizados, el estado y detalle de sus pedidos (líneas, fotos, estados), sus
+incidencias reportadas y las que el jefe le compartió, y reportes propios con exportación
+PDF.
+
+### Qué NO ve
+Acceso totalmente restringido a: pedidos de otros clientes, inventarios internos de
+bodega, tareas o pagos por docena (task_prices) de los empleados, producción interna,
+usuarios y herramientas administrativas de gestión.
+
+### Rutas del panel
+- Dashboard: `/dashboard/client`
+- Catálogo mayorista: `/dashboard/client/catalog`
+- Mis pedidos: `/dashboard/client/orders`
+- Mis incidencias: `/dashboard/client/incidences`
+- Reportes: `/dashboard/client/reports`
+- Configuración: `/dashboard/client/settings`
+
+## 24. CLIENTE — Catálogo mayorista y precios de venta
+
+### Catálogo de calzado
+El cliente explora los productos disponibles (marcas, categorías y estilos de calzado
+urbano/casual) desde Dashboard Cliente > Catálogo Mayorista. El catálogo se sirve vía
+GET /api/v1/client/catalog/products con filtros por categoría, marca, estilo o color y
+búsqueda por nombre. Cada ficha muestra tallas y colores disponibles.
+
+### Precios de venta personalizados
+Los precios de venta reales se asignan por cliente en `client_prices.unit_price` (los
+gestiona el jefe en Precios por Cliente). El catálogo mayorista muestra el precio efectivo
+del cliente: su precio personalizado si existe, o el general del catálogo. El sistema no
+muestra task_prices al cliente (son pagos internos a empleados).
+
+### Congelamiento de precios
+Al confirmar un pedido, el precio unitario vigente se congela automáticamente en
+`order_details.unit_price`. Cambios posteriores en la tabla de precios del cliente no
+alteran pedidos ya creados.
+
+### Negociaciones y canal de apoyo
+Para cotizaciones cerradas, pedidos al por mayor especiales, descuentos o negociaciones,
+el asistente deriva directamente al cliente al canal corporativo de WhatsApp
+**3137061602**. El pedido mínimo es **12 pares por estilo/talla**.
+
+## 25. CLIENTE — Flujo: consultar estado e historial de pedidos
+
+1. Iniciar sesión e ir a Dashboard Cliente > Mis Pedidos.
+2. Ver el historial con búsqueda y paginación: cada pedido muestra su estado
+   (pendiente, en_progreso, completado, entregado o cancelado) y fecha.
+3. Seleccionar un pedido para abrir el detalle: líneas (producto, talla, color, cantidad),
+   fotos del producto y estado actual.
+4. Seguir el avance: pendiente → en_progreso (en producción) → completado → entregado.
+5. Los pedidos son de solo lectura: el cliente no puede editar ni cancelarlos desde la
+   pantalla; para cambios contactar al jefe o WhatsApp 3137061602.
+6. Exportar el resumen a PDF desde Reportes si necesita el comprobante.
+
+## 26. CLIENTE — Flujo: catálogo mayorista y precios
+
+1. Ir a Dashboard Cliente > Catálogo Mayorista.
+2. Filtrar por categoría, marca, estilo o color, o buscar por nombre.
+3. Seleccionar un producto → ver ficha con tallas y colores disponibles y su precio
+   (personalizado si lo tiene, o general del catálogo).
+4. Añadir al carrito: talla, color y cantidad (**mínimo 12 pares por estilo/talla**).
+5. Continuar agregando productos hasta completar el pedido.
+6. Confirmar; los precios se congelan en el pedido y el jefe recibe notificación.
+7. Para negociar precios o cotizaciones cerradas: WhatsApp 3137061602.
+
+## 27. CLIENTE — Flujo: reportar incidencia y solicitar soporte
+
+1. Ir a Dashboard Cliente > Mis Incidencias y hacer clic en "Reportar incidencia".
+2. Seleccionar el pedido entregado, el producto, la talla y la cantidad afectada.
+3. Escribir la descripción del problema y adjuntar foto de evidencia.
+4. La incidencia queda **pendiente de aprobación del jefe**; el cliente no puede
+   aprobarla ni editarla después de enviarla.
+5. Si el jefe la aprueba, se crea un registro de pérdida real y se la comparte al cliente;
+   si la rechaza, recibe el motivo.
+6. Para soporte general, cotizaciones o estado de una incidencia: WhatsApp 3137061602.
+
+## 28. CLIENTE — Flujo: registro e inicio de sesión
+
+1. Entrar a la landing page (`/`) y hacer clic en "Registrarse" o "Crear cuenta".
+2. Completar el formulario: nombre, apellido, email, teléfono, tipo y número de documento,
+   nombre del negocio y contraseña.
+3. Aceptar términos y enviar; la cuenta nace inactiva y pendiente de validación.
+4. Recibir correo de validación de email y verificarlo.
+5. El jefe revisa y aprueba la cuenta; al aprobar llega email de bienvenida.
+6. Iniciar sesión con email y contraseña desde la landing.
+7. Si la cuenta fue desactivada, solicitar reactivación en `/auth/reactivation`.
+8. Si olvidó la contraseña: recuperar por email en `/auth/forgot-password`.
