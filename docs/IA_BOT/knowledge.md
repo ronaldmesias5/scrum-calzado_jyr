@@ -671,3 +671,71 @@ el asistente deriva directamente al cliente al canal corporativo de WhatsApp
 6. Iniciar sesión con email y contraseña desde la landing.
 7. Si la cuenta fue desactivada, solicitar reactivación en `/auth/reactivation`.
 8. Si olvidó la contraseña: recuperar por email en `/auth/forgot-password`.
+
+## 29. VISITANTE — Perfil general y permisos
+
+El visitante es cualquier persona que entra a la página pública **sin cuenta ni inicio de
+sesión**. El chat funciona con JWT opcional: sin token, el asistente actúa como guía
+pública y no consulta datos privados.
+
+### Qué ve el visitante
+Acceso público a: landing page (propuesta de valor, categorías, asesoría), catálogo
+general de calzado urbano y casual (`/catalog`) con fotos y disponibilidad por talla,
+información corporativa, preguntas frecuentes y métodos de contacto (botón flotante de
+WhatsApp). También ve las rutas y modales de registro e inicio de sesión.
+
+### Qué NO ve
+Acceso totalmente bloqueado a: paneles de clientes, pedidos personalizados, precios
+mayoristas específicos, inventarios internos, módulos de producción, tareas de empleados,
+reportes y herramientas administrativas. No puede crear pedidos sin cuenta validada.
+
+## 30. VISITANTE — Flujo: registrarse como nuevo cliente
+
+1. Entrar a la landing page (`/`) y hacer clic en "Registrarse" o "Crear cuenta".
+2. Completar el formulario: nombre, apellido, email, teléfono, tipo y número de documento,
+   nombre del negocio y contraseña.
+3. Aceptar términos y enviar; la cuenta nace inactiva (`is_active=False`) y pendiente de
+   validación (`is_validated=False`).
+4. Recibir correo de validación de email y verificarlo en `/auth/verify-email`.
+5. El jefe revisa la cuenta pendiente y la aprueba o rechaza con motivo.
+6. Al aprobar, el usuario recibe email de bienvenida y ya puede iniciar sesión.
+7. Al rechazar, recibe email con el motivo del rechazo.
+8. Si su cuenta fue desactivada después, solicitar reactivación en `/auth/reactivation`.
+
+## 31. VISITANTE — Flujo: inicio de sesión
+
+1. Desde la landing page, hacer clic en "Iniciar sesión" (abre el modal de login).
+2. Ingresar email y contraseña.
+3. Si la cuenta es válida y activa, se inicia sesión y se redirige según el rol:
+   cliente a `/dashboard/client`, empleado a `/dashboard/employee`, jefe a
+   `/dashboard/admin`.
+4. Si olvidó la contraseña: usar "¿Olvidaste tu contraseña?" → `/auth/forgot-password`;
+   llega un correo con el enlace de recuperación.
+5. Si el email aún no está verificado, reenviar la verificación desde
+   `/auth/verify-email`.
+6. Si la cuenta está desactivada, solicitar reactivación en `/auth/reactivation`.
+
+## 32. VISITANTE — Catálogo público de calzado
+
+El visitante puede explorar sin registrarse en `/catalog`: productos activos con foto,
+nombre, marca, categoría (caballero, dama, infantil), estilo y rango de tallas. Filtros
+por categoría, marca, estilo y color, más búsqueda por nombre. Al abrir un producto ve el
+detalle y la disponibilidad por talla. Los precios mayoristas y el pedido solo aparecen
+tras iniciar sesión como cliente validado; para cotizar sin cuenta, WhatsApp 3137061602.
+
+## 33. VISITANTE — Contacto, consultas y pedidos al por mayor
+
+Para consultas comerciales, cotizaciones, pedidos al por mayor especiales o negociación,
+el asistente deriva al canal corporativo de WhatsApp **3137061602** (botón flotante en la
+landing y el catálogo). Quiere hacer un pedido: explicar que necesita registrarse como
+cliente mayorista, el jefe valida la cuenta y luego puede pedir desde su panel. El pedido
+mínimo es 12 pares por estilo/talla.
+
+## 34. VISITANTE — Límites de interacción y seguridad del chat
+
+El chat funciona con JWT opcional: sin iniciar sesión el asistente **no consulta pedidos,
+tareas ni datos personales**; solo informa con el catálogo público y las FAQs. No revelar
+precios internos, datos de usuarios ni información de otros roles. Si el visitante pide
+funciones restringidas (ver pedidos, tareas, precios mayoristas), motivar amablemente a
+registrarse: "Para eso necesitas una cuenta de cliente mayorista; regístrate en la landing
+y el jefe validará tu acceso". Máximo 500 caracteres por mensaje y límite de uso por IP.
