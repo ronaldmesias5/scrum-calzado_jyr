@@ -28,16 +28,31 @@ router = APIRouter(
     response_model=CategoriesListResponse,
     summary="Obtener todas las categorías",
 )
-def get_categories(db: Session = Depends(get_db)) -> CategoriesListResponse:
+def get_categories(
+    only_with_products: bool = Query(
+        False, description="Solo categorías con al menos un producto activo"
+    ),
+    db: Session = Depends(get_db),
+) -> CategoriesListResponse:
     """
     Retorna todas las categorías de productos disponibles en el catálogo.
-    
+
     Endpoint público sin autenticación requerida.
     """
-    categories = db.execute(
-        select(Category).where(Category.deleted_at == None)
-    ).scalars().all()
-    
+    stmt = select(Category).where(Category.deleted_at == None)
+    if only_with_products:
+        has_product = (
+            select(Product.id)
+            .where(
+                (Product.category_id == Category.id)
+                & (Product.deleted_at == None)
+                & (Product.state == True)
+            )
+            .exists()
+        )
+        stmt = stmt.where(has_product)
+    categories = db.execute(stmt).scalars().all()
+
     return CategoriesListResponse(
         categories=[
             {
@@ -55,15 +70,34 @@ def get_categories(db: Session = Depends(get_db)) -> CategoriesListResponse:
     response_model=StylesListResponse,
     summary="Obtener todos los estilos disponibles",
 )
-def get_styles(db: Session = Depends(get_db)) -> StylesListResponse:
+def get_styles(
+    only_with_products: bool = Query(
+        False, description="Solo estilos con al menos un producto activo"
+    ),
+    brand_id: str | None = Query(None, description="Filtrar por marca"),
+    category_id: str | None = Query(None, description="Filtrar por categoría"),
+    db: Session = Depends(get_db),
+) -> StylesListResponse:
     """
     Retorna todos los estilos disponibles con sus marcas asociadas.
     Usado para seleccionar estilos en formulario de pedidos.
     """
-    styles = db.execute(
-        select(Style).where(Style.deleted_at == None)
-    ).scalars().all()
-    
+    stmt = select(Style).where(Style.deleted_at == None)
+    if brand_id:
+        stmt = stmt.where(Style.brand_id == brand_id)
+    if only_with_products or category_id:
+        conditions = [
+            (Product.style_id == Style.id)
+            & (Product.deleted_at == None)
+            & (Product.state == True)
+        ]
+        if category_id:
+            conditions.append(Product.category_id == category_id)
+        stmt = stmt.where(
+            select(Product.id).where(*conditions).exists()
+        )
+    styles = db.execute(stmt).scalars().all()
+
     return StylesListResponse(
         styles=[
             {
@@ -132,15 +166,31 @@ def get_style_inventory(style_id: str, db: Session = Depends(get_db)) -> StyleIn
     response_model=BrandsListResponse,
     summary="Obtener todas las marcas",
 )
-def get_brands(db: Session = Depends(get_db)) -> BrandsListResponse:
+def get_brands(
+    only_with_products: bool = Query(
+        False, description="Solo marcas con al menos un producto activo"
+    ),
+    category_id: str | None = Query(None, description="Filtrar por categoría"),
+    db: Session = Depends(get_db),
+) -> BrandsListResponse:
     """
     Retorna todas las marcas disponibles en el catálogo.
     Endpoint público sin autenticación requerida.
     """
-    brands = db.execute(
-        select(Brand).where(Brand.deleted_at == None)
-    ).scalars().all()
-    
+    stmt = select(Brand).where(Brand.deleted_at == None)
+    if only_with_products or category_id:
+        conditions = [
+            (Product.brand_id == Brand.id)
+            & (Product.deleted_at == None)
+            & (Product.state == True)
+        ]
+        if category_id:
+            conditions.append(Product.category_id == category_id)
+        stmt = stmt.where(
+            select(Product.id).where(*conditions).exists()
+        )
+    brands = db.execute(stmt).scalars().all()
+
     return BrandsListResponse(
         brands=[
             {

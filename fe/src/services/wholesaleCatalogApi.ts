@@ -103,21 +103,39 @@ export const getWholesaleProducts = async (
   return { ...res.data, products };
 };
 
-/** Obtener categorías */
-export const getWholesaleCategories = async (): Promise<Category[]> => {
-  const res = await api.get('/api/v1/catalog/categories');
+/** Obtener categorías (solo con productos activos si onlyWithProducts) */
+export const getWholesaleCategories = async (
+  onlyWithProducts = false
+): Promise<Category[]> => {
+  const params = new URLSearchParams();
+  if (onlyWithProducts) params.append('only_with_products', 'true');
+  const res = await api.get('/api/v1/catalog/categories', { params });
   return res.data.categories || [];
 };
 
-/** Obtener marcas */
-export const getWholesaleBrands = async (): Promise<Brand[]> => {
-  const res = await api.get('/api/v1/catalog/brands');
+/** Obtener marcas (opcional: solo con productos, filtradas por categoría) */
+export const getWholesaleBrands = async (
+  onlyWithProducts = false,
+  categoryId?: string
+): Promise<Brand[]> => {
+  const params = new URLSearchParams();
+  if (onlyWithProducts) params.append('only_with_products', 'true');
+  if (categoryId) params.append('category_id', categoryId);
+  const res = await api.get('/api/v1/catalog/brands', { params });
   return res.data.brands || [];
 };
 
-/** Obtener estilos */
-export const getWholesaleStyles = async (): Promise<Style[]> => {
-  const res = await api.get('/api/v1/catalog/styles');
+/** Obtener estilos (opcional: solo con productos, filtrados por marca/categoría) */
+export const getWholesaleStyles = async (
+  onlyWithProducts = false,
+  brandId?: string,
+  categoryId?: string
+): Promise<Style[]> => {
+  const params = new URLSearchParams();
+  if (onlyWithProducts) params.append('only_with_products', 'true');
+  if (brandId) params.append('brand_id', brandId);
+  if (categoryId) params.append('category_id', categoryId);
+  const res = await api.get('/api/v1/catalog/styles', { params });
   return res.data.styles || [];
 };
 

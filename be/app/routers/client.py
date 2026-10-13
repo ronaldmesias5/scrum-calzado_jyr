@@ -1,12 +1,12 @@
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, distinct, delete as sa_delete
 from sqlalchemy.orm import Session, selectinload
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.user import User
 from app.models.product import Product
 from app.models.pending_incidence import PendingProductIncidence
+from app.models.tasks import Task
 from app.schemas.client import (
     ClientOrderResponse,
     ClientOrderListResponse,
@@ -27,7 +28,7 @@ from app.schemas.client import (
     ClientSharedIncidenceResponse,
     ClientSharedIncidenceListResponse,
 )
-from app.schemas.orders import OrderCreateRequest
+from app.schemas.orders import OrderCreateRequest, OrderUpdateDetailsRequest
 from app.schemas.reports import OrderSummary, OrderItemSummary, CustomerReportResponse
 
 router = APIRouter(
@@ -48,7 +49,7 @@ MIME_EXT = {
 }
 
 
-def _order_to_client_response(order: Order) -> ClientOrderResponse:
+def _order_to_client_response(order: Order, has_production: bool = False) -> ClientOrderResponse:
     return ClientOrderResponse(
         id=order.id,
         customer_id=order.customer_id,
@@ -58,6 +59,7 @@ def _order_to_client_response(order: Order) -> ClientOrderResponse:
         delivery_date=order.delivery_date,
         created_at=order.created_at,
         updated_at=order.updated_at,
+        has_production=has_production,
         details=[
             ClientOrderDetailItem(
                 id=d.id,
@@ -75,6 +77,7 @@ def _order_to_client_response(order: Order) -> ClientOrderResponse:
                 state=d.state,
                 observations=d.observations,
                 unit_price=float(d.unit_price) if d.unit_price else None,
+                line_group=d.line_group or 0,
             )
             for d in order.details
         ],
@@ -110,12 +113,22 @@ def list_my_orders(
     result = db.execute(query)
     orders = result.scalars().all()
 
+    order_ids = [o.id for o in orders]
+    prod_ids: set[uuid.UUID] = set()
+    if order_ids:
+        prod_rows = db.execute(
+            select(distinct(Task.order_id)).where(
+                Task.order_id.in_(order_ids), Task.deleted_at.is_(None)
+            )
+        ).all()
+        prod_ids = {row[0] for row in prod_rows}
+
     return ClientOrderListResponse(
         total=total,
         page=page,
         page_size=page_size,
         total_pages=total_pages,
-        items=[_order_to_client_response(o) for o in orders],
+        items=[_order_to_client_response(o, has_production=o.id in prod_ids) for o in orders],
     )
 
 
@@ -299,7 +312,177 @@ def get_my_order(
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
-    return _order_to_client_response(order)
+    has_production = (
+        db.execute(
+            select(func.count(Task.id)).where(
+                Task.order_id == order.id, Task.deleted_at.is_(None)
+            )
+        ).scalar()
+        or 0
+    ) > 0
+
+    return _order_to_client_response(order, has_production=has_production)
+
+
+def _get_owned_order_or_404(db: Session, order_id: uuid.UUID, user_id: uuid.UUID) -> Order:
+    query = (
+        select(Order)
+        .options(
+            selectinload(Order.details)
+            .selectinload(OrderDetail.product)
+            .selectinload(Product.inventory)
+        )
+        .where(Order.id == order_id, Order.customer_id == user_id)
+    )
+    order = db.execute(query).scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    return order
+
+
+def _assert_order_editable_by_client(db: Session, order: Order) -> None:
+    """Guard compartido: el cliente solo puede tocar pedidos pendientes sin producción iniciada."""
+    if order.state != OrderStatus.pendiente:
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se pueden modificar pedidos en estado pendiente",
+        )
+    has_production = (
+        db.execute(
+            select(func.count(Task.id)).where(
+                Task.order_id == order.id, Task.deleted_at.is_(None)
+            )
+        ).scalar()
+        or 0
+    )
+    if has_production > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="La producción ya fue iniciada; el pedido ya no puede modificarse",
+        )
+
+
+@router.put("/orders/{order_id}", response_model=ClientOrderResponse)
+def update_my_order(
+    order_id: uuid.UUID,
+    order_data: OrderUpdateDetailsRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientOrderResponse:
+    """
+    Reemplaza las líneas de un pedido propio del cliente.
+
+    Solo permitido si el pedido está pendiente y la producción no ha iniciado.
+    Los precios congelados de las líneas existentes se conservan; los productos
+    nuevos toman el precio personalizado del cliente si existe.
+    """
+    from app.models.client_price import ClientPrice
+
+    order = _get_owned_order_or_404(db, order_id, current_user.id)
+    _assert_order_editable_by_client(db, order)
+
+    if not order_data.details:
+        raise HTTPException(
+            status_code=400,
+            detail="El pedido debe tener al menos una línea de detalle",
+        )
+
+    try:
+        old_details = (
+            db.execute(select(OrderDetail).where(OrderDetail.order_id == order.id))
+            .scalars()
+            .all()
+        )
+        # Precio congelado por producto: se conserva el que ya tenía el pedido
+        frozen_prices: dict[uuid.UUID, float] = {
+            d.product_id: float(d.unit_price) for d in old_details if d.unit_price is not None
+        }
+        # Productos nuevos: precio personalizado del cliente si existe
+        new_product_ids = {d.product_id for d in order_data.details} - set(frozen_prices)
+        if new_product_ids:
+            price_rows = db.execute(
+                select(ClientPrice.product_id, ClientPrice.unit_price).where(
+                    ClientPrice.client_id == current_user.id,
+                    ClientPrice.product_id.in_(new_product_ids),
+                    ClientPrice.deleted_at.is_(None),
+                )
+            ).all()
+            frozen_prices.update({row[0]: float(row[1]) for row in price_rows})
+
+        db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
+
+        total_pairs = 0
+        for detail_data in order_data.details:
+            db.add(
+                OrderDetail(
+                    order_id=order.id,
+                    product_id=detail_data.product_id,
+                    size=detail_data.size,
+                    colour=detail_data.colour,
+                    amount=detail_data.amount,
+                    state=OrderStatus.pendiente,
+                    observations=detail_data.observations,
+                    line_group=detail_data.line_group,
+                    order_date=datetime.now(UTC),
+                    created_by=current_user.id,
+                    unit_price=frozen_prices.get(detail_data.product_id),
+                )
+            )
+            total_pairs += detail_data.amount
+
+        order.total_pairs = total_pairs
+        if order_data.delivery_date is not None:
+            order.delivery_date = order_data.delivery_date
+        order.updated_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(order)
+        return _order_to_client_response(order)
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        logger.exception("Error al actualizar el pedido del cliente")
+        raise HTTPException(status_code=500, detail="Error al actualizar el pedido")
+
+
+@router.delete("/orders/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_order(
+    order_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    """
+    Elimina un pedido propio del cliente.
+
+    Solo permitido si el pedido está pendiente, la producción no ha iniciado
+    y no tiene incidencias asociadas (FK RESTRICT).
+    """
+    order = _get_owned_order_or_404(db, order_id, current_user.id)
+    _assert_order_editable_by_client(db, order)
+
+    has_incidence = (
+        db.execute(
+            select(func.count(PendingProductIncidence.id)).where(
+                PendingProductIncidence.order_id == order.id,
+                PendingProductIncidence.deleted_at.is_(None),
+            )
+        ).scalar()
+        or 0
+    )
+    if has_incidence > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="El pedido tiene incidencias asociadas y no puede eliminarse",
+        )
+
+    try:
+        db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
+        db.delete(order)
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Error al eliminar el pedido del cliente")
+        raise HTTPException(status_code=500, detail="Error al eliminar el pedido")
 
 
 def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidenceResponse:
