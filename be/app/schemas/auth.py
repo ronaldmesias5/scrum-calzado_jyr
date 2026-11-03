@@ -2,12 +2,23 @@
 # 📄 Schemas Pydantic para validación en endpoints de autenticación
 # ════════════════════════════════════════
 
-import re
 import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr
+
+from app.schemas.validators import (
+    AcceptedTerms,
+    BusinessNameStr,
+    IdentityDocLooseStr,
+    IdentityDocStr,
+    LastNameStr,
+    NameStr,
+    PasswordStr,
+    PhoneStr,
+    ReasonLongStr,
+)
 
 
 # ════════════════════════════════════════
@@ -30,86 +41,15 @@ class OccupationType(str, Enum):
 class UserCreate(BaseModel):
     """Schema para el registro de un nuevo cliente."""
     email: EmailStr
-    name: str
-    last_name: str
-    phone: str | None = None
-    identity_document: str | None = None
+    name: NameStr
+    last_name: LastNameStr
+    phone: PhoneStr | None = None
+    identity_document: IdentityDocStr | None = None
     identity_document_type_id: uuid.UUID | None = None
-    business_name: str | None = None
+    business_name: BusinessNameStr | None = None
     occupation: OccupationType | None = None
-    accepted_terms: bool = False
-    password: str
-
-    @field_validator("accepted_terms")
-    @classmethod
-    def validate_terms(cls, v: bool) -> bool:
-        if not v:
-            raise ValueError("Debes aceptar los términos y condiciones")
-        return v
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v: str | None) -> str | None:
-        if v is not None:
-            v = v.strip()
-            if len(v) < 7 or len(v) > 20:
-                raise ValueError("El teléfono debe tener entre 7 y 20 caracteres")
-        return v
-
-    @field_validator("identity_document")
-    @classmethod
-    def validate_identity_document(cls, v: str | None) -> str | None:
-        if v is not None:
-            v = v.strip()
-            if len(v) < 8 or len(v) > 10:
-                raise ValueError("El documento de identidad debe tener entre 8 y 10 dígitos")
-            if not v.isdigit():
-                raise ValueError("El documento de identidad debe contener solo dígitos")
-        return v
-
-    @field_validator("password")
-    @classmethod
-    def validate_password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("La contraseña debe tener al menos 8 caracteres")
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("La contraseña debe contener al menos una letra minúscula")
-        if not re.search(r"\d", v):
-            raise ValueError("La contraseña debe contener al menos un número")
-        return v
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 2:
-            raise ValueError("El nombre debe tener al menos 2 caracteres")
-        if len(v) > 255:
-            raise ValueError("El nombre no puede exceder 255 caracteres")
-        return v.upper()
-
-    @field_validator("last_name")
-    @classmethod
-    def validate_last_name(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 2:
-            raise ValueError("El apellido debe tener al menos 2 caracteres")
-        if len(v) > 255:
-            raise ValueError("El apellido no puede exceder 255 caracteres")
-        return v.upper()
-
-    @field_validator("business_name")
-    @classmethod
-    def validate_business_name(cls, v: str | None) -> str | None:
-        if v is not None:
-            v = v.strip()
-            if len(v) < 2:
-                raise ValueError("El nombre comercial debe tener al menos 2 caracteres")
-            if len(v) > 255:
-                raise ValueError("El nombre comercial no puede exceder 255 caracteres")
-        return v
+    accepted_terms: AcceptedTerms = False
+    password: PasswordStr
 
 
 class UserLogin(BaseModel):
@@ -122,20 +62,7 @@ class UserLogin(BaseModel):
 class ChangePasswordRequest(BaseModel):
     """Schema para cambiar la contraseña (usuario autenticado)."""
     current_password: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("La contraseña debe tener al menos 8 caracteres")
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("La contraseña debe contener al menos una letra minúscula")
-        if not re.search(r"\d", v):
-            raise ValueError("La contraseña debe contener al menos un número")
-        return v
+    new_password: PasswordStr
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -146,20 +73,7 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     """Schema para restablecer la contraseña con un token de recuperación."""
     token: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("La contraseña debe tener al menos 8 caracteres")
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("La contraseña debe contener al menos una letra minúscula")
-        if not re.search(r"\d", v):
-            raise ValueError("La contraseña debe contener al menos un número")
-        return v
+    new_password: PasswordStr
 
 
 class RefreshTokenRequest(BaseModel):
@@ -215,36 +129,10 @@ class TokenResponse(BaseModel):
 class ReactivationRequest(BaseModel):
     """Schema para solicitar reactivación de cuenta (público, sin auth)."""
     email: EmailStr
-    reason: str
-    phone: str
-    identity_document: str
+    reason: ReasonLongStr
+    phone: PhoneStr
+    identity_document: IdentityDocLooseStr
     evidence_url: str | None = None
-
-    @field_validator("reason")
-    @classmethod
-    def validate_reason(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 10:
-            raise ValueError("El motivo debe tener al menos 10 caracteres")
-        if len(v) > 1000:
-            raise ValueError("El motivo no puede exceder 1000 caracteres")
-        return v
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 7 or len(v) > 20:
-            raise ValueError("El teléfono debe tener entre 7 y 20 caracteres")
-        return v
-
-    @field_validator("identity_document")
-    @classmethod
-    def validate_identity_document(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 8 or len(v) > 20:
-            raise ValueError("El documento de identidad debe tener entre 8 y 20 caracteres")
-        return v
 
 
 class RequestNewInvitationRequest(BaseModel):

@@ -3,7 +3,9 @@
 # ════════════════════════════════════════
 
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from typing import Literal
+
+from pydantic import BaseModel
 
 
 class EmployeeMetricSchema(BaseModel):
@@ -101,17 +103,9 @@ class TaskObservationUpdate(BaseModel):
 class EmployeeTaskStatusUpdate(BaseModel):
     """Actualizar estado y observación de una tarea desde el dashboard del empleado."""
 
-    status: str
+    # El empleado solo puede mover su tarea entre pendiente/en_progreso/completado
+    status: Literal["pendiente", "en_progreso", "completado"]
     observation: str | None = None
-
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, v: str) -> str:
-        """El empleado solo puede mover su tarea entre pendiente/en_progreso/completado."""
-        allowed = {"pendiente", "en_progreso", "completado"}
-        if v not in allowed:
-            raise ValueError("Estado no permitido para el empleado")
-        return v
 
 
 class ValeTaskInfo(BaseModel):

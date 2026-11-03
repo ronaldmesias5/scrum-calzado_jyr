@@ -3,9 +3,10 @@
 # ════════════════════════════════════════
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.order import OrderStatus
 from app.models.tasks import TaskStatus
@@ -151,33 +152,15 @@ class OrderUpdateDetailsRequest(BaseModel):
 # ────────────────────────────────────────────────
 
 class TaskStatusUpdateRequest(BaseModel):
-    status: str = Field(
+    status: TaskStatus = Field(
         ...,
         description=(
             "Nuevo estado (pendiente, por_liquidar, en_progreso, completado, pagado, cancelado)"
         ),
     )
 
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, v: str) -> str:
-        allowed = {s.value for s in TaskStatus}
-        if v not in allowed:
-            raise ValueError(
-                f"Estado inválido: {v}. Permitidos: {', '.join(sorted(allowed))}"
-            )
-        return v
-
 class TaskPriorityUpdateRequest(BaseModel):
-    priority: str = Field(..., description="Nueva prioridad (alta, baja)")
-
-    @field_validator("priority")
-    @classmethod
-    def validate_priority(cls, v: str) -> str:
-        allowed = {"alta", "baja"}
-        if v not in allowed:
-            raise ValueError(f"Prioridad inválida: {v}. Permitidas: {', '.join(sorted(allowed))}")
-        return v
+    priority: Literal["alta", "baja"] = Field(..., description="Nueva prioridad (alta, baja)")
 
 class TaskDetailUpdateRequest(BaseModel):
     """Esquema para editar detalles de una tarea (solo jefe)."""
