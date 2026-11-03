@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/supplies.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `supplies` (insumos de fabricación).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `supplies` (insumos de fabricación)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

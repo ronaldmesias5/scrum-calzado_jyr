@@ -1,17 +1,6 @@
-"""
-Módulo: middleware/rate_limit.py
-Descripción: Middleware para rate limiting (OWASP #2 - Autenticación Rota).
-
-Previene:
-  - Brute force attacks en login
-  - DoS attacks (Denial of Service)
-  - Abuso de endpoints
-
-Limites por endpoint:
-  - /auth/login: 5 requests por 15 minutos
-  - /auth/register: 3 requests por hora
-  - Otros endpoints: 100 requests por minuto
-"""
+# ════════════════════════════════════════
+# 📄 Rate limiting en memoria por cliente
+# ════════════════════════════════════════
 
 import os
 import time
@@ -23,14 +12,7 @@ from starlette.responses import JSONResponse
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Rate limiter simple en memoria (para producción usar Redis).
-    
-    Comportamiento por entorno:
-      - development/test: rate limiting DESHABILITADO (los tests CI hacen
-        cientos de requests en segundos y recibirían 429)
-      - staging: rate limiting ACTIVO con límites altos (para pruebas)
-      - production: rate limiting ESTRICTO
-    """
+    """Rate limiter simple en memoria (para producción usar Redis)."""
     
     def __init__(self, app):
         super().__init__(app)

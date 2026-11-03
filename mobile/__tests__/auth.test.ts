@@ -1,9 +1,6 @@
-/**
- * Archivo: __tests__/auth.test.ts
- * Descripción: Tests básicos de autenticación para la app móvil.
- * 
- * Ejecutar: cd mobile && npx jest __tests__/auth.test.ts
- */
+// ════════════════════════════════════════
+// 📄 Tests básicos de autenticación para la app móvil
+// ════════════════════════════════════════
 
 import { isJefe } from '../utils/roles';
 

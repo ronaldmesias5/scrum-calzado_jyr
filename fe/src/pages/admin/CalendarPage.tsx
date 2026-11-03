@@ -1,10 +1,6 @@
-/**
- * Módulo: CalendarPage.tsx
- * Descripción: Calendario mensual de entregas de pedidos (dashboard jefe).
- * ¿Para qué? Ver los días con entregas programadas, el estado de producción
- * (vale / sin producción) y navegar al detalle del pedido con un clic.
- * ¿Impacto? Nueva página del dashboard jefe, consumida vía GET /admin/orders/calendar.
- */
+// ════════════════════════════════════════
+// 📄 Calendario mensual de entregas de pedidos para el dashboard jefe
+// ════════════════════════════════════════
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';

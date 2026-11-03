@@ -1,8 +1,6 @@
-/**
- * Archivo: components/RoleProtectedRoute.tsx
- * Descripción: Componente que protege rutas que requieren un rol específico y/u ocupación.
- * ¿Para qué? Permitir acceso solo a usuarios con ciertos roles/ocupaciones (ej: admin, jefe).
- */
+// ════════════════════════════════════════
+// 📄 Componente que protege rutas que requieren un rol específico y/u ocupación
+// ════════════════════════════════════════
 
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';

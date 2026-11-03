@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/modules/dashboard_empleado/service.py
-Descripción: Lógica compartida del panel del empleado.
-"""
+# ════════════════════════════════════════
+# 📄 Lógica compartida del panel del empleado
+# ════════════════════════════════════════
 
 # ────────────────────────────────────────────────
 # Mapa: ocupación del empleado → tipo de tarea

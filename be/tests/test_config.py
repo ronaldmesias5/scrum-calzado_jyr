@@ -1,7 +1,6 @@
-"""
-Archivo: be/tests/test_config.py
-Descripción: Tests para validación de configuración (Pydantic Settings).
-"""
+# ════════════════════════════════════════
+# 📄 Tests para validación de configuración (Pydantic Settings)
+# ════════════════════════════════════════
 
 import pytest
 

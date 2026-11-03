@@ -1,8 +1,6 @@
-/**
- * Archivo: hooks/useAuth.ts
- * Descripción: Hook personalizado para acceder al contexto de autenticación.
- * ¿Para qué? Simplificar el acceso al AuthContext desde cualquier componente.
- */
+// ════════════════════════════════════════
+// 📄 Hook personalizado para acceder al contexto de autenticación
+// ════════════════════════════════════════
 
 import { useContext } from 'react';
 import { AuthContext } from '@/store/authContextDef';

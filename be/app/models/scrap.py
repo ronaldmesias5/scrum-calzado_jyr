@@ -1,12 +1,6 @@
-"""
-Archivo: be/app/models/scrap.py
-Descripción: Modelos ORM para las tablas de registro de pérdidas por calzado defectuoso.
-
-Modelos:
-  - DefectCode: Códigos de defecto (DEF-FAB, DEF-ALM, etc.)
-  - LossRecord: Registro de pérdida (vincula producto, defecto, cantidad)
-  - ScrapStock: Stock de scrap generado por pérdidas aprobadas
-"""
+# ════════════════════════════════════════
+# 📄 Modelos ORM para las tablas de registro de pérdidas por calzado defectuoso
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

@@ -1,23 +1,6 @@
-/**
- * Archivo: mobile/services/aiApi.ts
- * Descripción: Cliente HTTP para asistente IA (Fase 2 mobile + Fase 3 avanzado).
- *
- * ¿Qué?
- *   - postChat(message): POST /api/v1/ai/chat (JWT opcional vía apiClient interceptor)
- *   - getHealth(): GET /api/v1/ai/health
- *   - semanticSearch(q, k): GET /api/v1/ai/search/semantic (Fase 3)
- *   - recommend(product_id, k): GET /api/v1/ai/recommend (Fase 3)
- *   - generateDescription(...): POST /api/v1/ai/generate-description (solo jefe, Fase 3)
- *   - classifyIncidence(text): POST /api/v1/ai/classify-incidence (Fase 3)
- *
- * ¿Para qué?
- *   - ChatWidget mobile (Fase 2) con SecureStore (tokenStorage) + Fase 3.
- *
- * ¿Impacto?
- *   Fase 2/3 — sin este servicio no hay chat mobile. Si falla:
- *   - ChatWidget mobile → error de red.
- *   Dependencias: services/apiClient.ts (inyecta Bearer), constants/api.ts
- */
+// ════════════════════════════════════════
+// 📄 Cliente HTTP para asistente IA (Fase 2 mobile + Fase 3 avanzado)
+// ════════════════════════════════════════
 
 import { apiClient } from '@/services/apiClient';
 

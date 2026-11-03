@@ -1,10 +1,7 @@
-"""add completed_at to tasks table
-
-Revision ID: 017_add_completed_at_to_tasks
-Revises: 016_add_pagado_task_status
-Create Date: 2026-04-26 21:35:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — add completed_at to tasks table
+# ════════════════════════════════════════
+# 017_add_completed_at_to_tasks | Revises: 016_add_pagado_task_status | Creada: 2026-04-26 21:35:00.000000
 from alembic import op
 import sqlalchemy as sa
 

@@ -1,7 +1,6 @@
-/**
- * Archivo: components/ui/PrivacyPolicyModal.tsx
- * Descripción: Modal con la Política de Privacidad de CALZADO J&R.
- */
+// ════════════════════════════════════════
+// 📄 Modal con la Política de Privacidad de CALZADO J&R
+// ════════════════════════════════════════
 
 import Modal from '@/components/atoms/Modal';
 

@@ -1,6 +1,6 @@
-# ¿QUE? Archivo de ignorados para el backend Python
-# ¿PARA? Evitar versionear archivos generados o temporales
-# ¿IMPACTO? Mantiene el repositorio limpio; solo pyproject.toml se versionea
+# ════════════════════════════════════════
+# 📄 Archivo de ignorados para el backend Python
+# ════════════════════════════════════════
 
 # ============= ENTORNO VIRTUAL Y CACHE =============
 venv/

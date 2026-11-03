@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/routers/dashboard_empleado_incidences.py
-Descripción: Endpoints de incidencias del panel del empleado.
-"""
+# ════════════════════════════════════════
+# 📄 Endpoints de incidencias del panel del empleado
+# ════════════════════════════════════════
 
 import logging
 import time

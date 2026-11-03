@@ -369,13 +369,7 @@ def update_my_order(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientOrderResponse:
-    """
-    Reemplaza las líneas de un pedido propio del cliente.
-
-    Solo permitido si el pedido está pendiente y la producción no ha iniciado.
-    Los precios congelados de las líneas existentes se conservan; los productos
-    nuevos toman el precio personalizado del cliente si existe.
-    """
+    """Reemplaza las líneas de un pedido propio del cliente."""
     from app.models.client_price import ClientPrice
 
     order = _get_owned_order_or_404(db, order_id, current_user.id)

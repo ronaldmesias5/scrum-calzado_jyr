@@ -1,13 +1,4 @@
-"""
-Script: heal_line_groups.py
-Descripción: Cura los line_group en order_details para datos existentes.
-Asigna line_group basado en patrones de amount usando DENSE_RANK().
-
-Ejecutar:
-    python scripts/heal_line_groups.py
-    # o desde Docker:
-    docker exec calzado_jyr_be python3 scripts/heal_line_groups.py
-"""
+"""Script: heal_line_groups.py"""
 
 import sys
 import os

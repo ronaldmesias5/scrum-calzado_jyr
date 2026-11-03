@@ -1,9 +1,4 @@
-"""Tests de concurrencia e inventario (with_for_update).
-
-Cubre: descuento de stock con _deduct_inventory (éxito, stock insuficiente,
-sin filas), generación SQL con FOR UPDATE, bloqueo real entre conexiones y
-guard anti-negativo al entregar un pedido.
-"""
+"""Tests de concurrencia e inventario (with_for_update)."""
 
 import uuid
 from datetime import UTC, datetime

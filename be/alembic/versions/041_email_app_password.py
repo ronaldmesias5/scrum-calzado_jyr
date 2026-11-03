@@ -1,12 +1,7 @@
-"""add email_app_password to users
-
-Per-user Gmail App Password (encrypted) so outgoing emails are sent
-from the logged-in user's own account instead of the global MAIL_FROM.
-
-Revision ID: 041_email_app_password
-Revises: 040_client_pending_incidence
-Create Date: 2026-08-24
-"""
+# ════════════════════════════════════════
+# 📄 Migración — add email_app_password to users
+# ════════════════════════════════════════
+# 041_email_app_password | Revises: 040_client_pending_incidence | Creada: 2026-08-24
 
 from alembic import op
 import sqlalchemy as sa

@@ -1,23 +1,6 @@
-"""
-Archivo: be/app/routers/dashboard_jefe.py
-Descripción: Router FastAPI con endpoints del panel de administración del jefe.
-
-¿Qué?
-  Define 3 endpoints (Sprint 3):
-  - GET /metrics: Retorna KPIs (pedidos pendientes, producción, stock, alertas)
-  - GET /recent-orders: Lista últimos 5 pedidos
-  - GET /alerts: Lista alertas activas
-
-¿Para qué?
-  - Proveer datos para dashboard AdminDashboardPage (frontend)
-  - La lógica de negocio vive en service.py (Sprint 4+)
-
-¿Impacto?
-  MEDIO — Dashboard AdminDashboardPage depende de estos endpoints.
-  Modificar schemas rompe: frontend dashboard-jefe/services/api.ts
-  Dependencias: dashboard_jefe/schemas.py, dashboard_jefe/service.py,
-               frontend modules/dashboard-jefe/services/api.ts
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI con endpoints del panel de administración del jefe
+# ════════════════════════════════════════
 
 import logging
 

@@ -1,27 +1,6 @@
-"""
-Archivo: be/app/modules/users/admin_schemas.py
-Descripción: Schemas Pydantic para validación en endpoints administrativos.
-
-¿Qué?
-  Define 3 schemas Pydantic para creación de usuarios:
-  - AdminCreateEmployeeRequest: Crear empleado con occupation (cortador, solador, etc.)
-  - AdminCreateJefeRequest: Crear jefe (employee con occupation=jefe)
-  - AdminCreateClientRequest: Crear cliente con business_name opcional
-  Incluye validaciones: password strength, name/last_name length, EmailStr
-  
-¿Para qué?
-  - Validar datos de entrada en admin/router.py endpoints
-  - Garantizar contraseñas seguras (8+ chars, mayúscula, minúscula, número)
-  - Separar schemas admin de schemas públicos (más campos obligatorios)
-  - Type safety con Pydantic (conversión automática de tipos)
-  
-¿Impacto?
-  ALTO — Endpoints de admin/router.py dependen de estos schemas.
-  Modificar validaciones rompe: formularios frontend (AdminCreateEmployeeForm),
-  lógica de creación de usuarios en admin/router.py.
-  Dependencias: auth/schemas.py (OccupationType enum),
-               admin/router.py (consume estos schemas)
-"""
+# ════════════════════════════════════════
+# 📄 Schemas Pydantic para validación en endpoints administrativos
+# ════════════════════════════════════════
 
 import re
 import uuid

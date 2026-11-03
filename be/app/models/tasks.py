@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/tasks.py
-Descripción: Modelo ORM para la tabla `tasks` (tareas de producción).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `tasks` (tareas de producción)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

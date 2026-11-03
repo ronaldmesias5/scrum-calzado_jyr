@@ -1,9 +1,6 @@
-"""
-Módulo: main.py
-Descripción: Punto de entrada de la aplicación FastAPI — configura y arranca el servidor.
-¿Para qué? Crear la instancia principal de FastAPI, configurar CORS, incluir routers.
-¿Impacto? Este es el archivo que Uvicorn ejecuta. Sin él, no hay servidor.
-"""
+# ════════════════════════════════════════
+# 📄 Punto de entrada de la aplicación FastAPI — configura y arranca el servidor
+# ════════════════════════════════════════
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager

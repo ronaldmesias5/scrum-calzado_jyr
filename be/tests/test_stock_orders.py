@@ -1,9 +1,4 @@
-"""Tests de pedidos para stock/bodega (customer_id NULL).
-
-Un pedido sin cliente representa producción para stock: al completarse
-suma a `amount` (bodega) en vez de `reserved`, nunca puede pasar a
-'entregado', y queda fuera de los reportes de clientes y de ventas.
-"""
+"""Tests de pedidos para stock/bodega (customer_id NULL)."""
 
 import uuid
 from datetime import datetime

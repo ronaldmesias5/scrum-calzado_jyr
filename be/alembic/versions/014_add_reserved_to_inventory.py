@@ -1,15 +1,6 @@
-"""
-Migración: Agregar columna 'reserved' a tabla 'inventory'
-
-Objetivo:
-  - Agregar campo `reserved` para rastrear pares apartados/reservados para producción
-  - Permite distinguir entre stock disponible (amount - reserved) y stock total (amount)
-  - Necesario para manejar correctamente el flujo: reserva -> producción -> entrada -> salida
-
-Cambios:
-  - Agregar columna `reserved` (Numeric 10,2) con default 0 en tabla inventory
-  - Esto permite que la validación de stock sea: (amount - reserved) >= cantidad_pedida
-"""
+# ════════════════════════════════════════
+# 📄 Migración: Agregar columna 'reserved' a tabla 'inventory'
+# ════════════════════════════════════════
 
 from alembic import op
 import sqlalchemy as sa

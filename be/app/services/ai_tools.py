@@ -1,25 +1,6 @@
-"""
-Archivo: be/app/services/ai_tools.py
-Descripción: Tools con JWT para asistente IA (Fase 2, contexto por rol).
-
-¿Qué?
-  - buscar_productos(db, query, limit=5): búsqueda por texto en products + brands/styles.
-  - consultar_mis_pedidos(db, user_id, limit=5): pedidos del cliente autenticado.
-  - consultar_mis_tareas(db, user_id, limit=5): tareas asignadas al empleado.
-  - consultar_inventario(db, query, limit=5): consulta stock de productos (solo jefe).
-  - consultar_mis_incidencias(db, user_id, limit=5): incidencias del empleado/cliente.
-  - get_user_context(user): contexto de rol/ocupación para prompt.
-  - format_tool_context(user, db, query): orquesta tools según query y rol.
-
-¿Para qué?
-  - Fase 2: chat sabe quién eres (visitante/cliente/empleado/jefe) y consulta datos reales.
-  - Evita exponer datos privados sin JWT (tools solo con user_id).
-
-¿Impacto?
-  Fase 2 — sin estos tools, chat no puede responder "¿dónde va mi pedido?".
-  Modificar firmas rompe: ai_service.py, ai_chat.py.
-  Dependencias: models/product.py, models/order.py, models/tasks.py, models/user.py
-"""
+# ════════════════════════════════════════
+# 📄 Tools con JWT para asistente IA (Fase 2, contexto por rol)
+# ════════════════════════════════════════
 
 import logging
 from typing import Any
@@ -371,15 +352,7 @@ def consultar_mis_incidencias(
 
 
 def format_tool_context(user: User | None, db: Session, query: str) -> str:
-    """
-    Orquesta tools según query y rol. Retorna texto para añadir al prompt.
-    - Si query contiene "pedido" o "orden" y user es client/jefe → consulta pedidos.
-    - Si query contiene "tarea" y user es employee/jefe → consulta tareas.
-    - Si query contiene "inventario" o "stock" y user es jefe → consulta inventario.
-    - Si query contiene "incidencia" y user es employee/client → consulta incidencias.
-    - Si query parece búsqueda de producto → buscar_productos.
-    Siempre incluye get_user_context.
-    """
+    """Orquesta tools según query y rol. Retorna texto para añadir al prompt."""
     parts: list[str] = [get_user_context(user)]
 
     if not user:

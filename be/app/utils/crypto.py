@@ -1,10 +1,4 @@
-"""
-Cifrado simétrico para secretos en reposo (p. ej. claves de aplicación de correo).
-
-Usa Fernet con clave derivada de SECRET_KEY (SHA-256). El token resultante
-es seguro de almacenar en la base de datos y solo es descifrable con el
-mismo SECRET_KEY del entorno.
-"""
+"""Cifrado simétrico para secretos en reposo (p. ej. claves de aplicación de correo)."""
 
 import base64
 import hashlib

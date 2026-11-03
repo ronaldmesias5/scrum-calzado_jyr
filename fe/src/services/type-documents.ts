@@ -1,8 +1,6 @@
-/**
- * Archivo: api/type-documents.ts
- * Descripción: Servicio API para tipos de documentos.
- * ¿Para qué? Obtener la lista de tipos de documentos disponibles.
- */
+// ════════════════════════════════════════
+// 📄 Servicio API para tipos de documentos
+// ════════════════════════════════════════
 
 import api from '@/services/axios';
 import { TypeDocument } from '@/types/auth';

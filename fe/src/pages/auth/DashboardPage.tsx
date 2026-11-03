@@ -1,23 +1,6 @@
-/**
- * Archivo: fe/src/modules/auth/pages/DashboardPage.tsx
- * Descripción: Página de dashboard genérico (legacy, redirige automáticamente).
- *
- * ¿Qué?
- *   Página de bienvenida simple que:
- *   - Muestra nombre del usuario y email/rol
- *   - useEffect: Redirige automáticamente al dashboard correcto
- *   - getDashboardRoute(user): Calcula ruta según role_name + occupation
- *
- * ¿Para qué?
- *   - Fallback para ruta /dashboard (si usuario accede directamente)
- *   - Redirigir a /dashboard/admin (jefe) o dashboard específico
- *   - Evitar pantalla en blanco si ruta no existe
- *
- * ¿Impacto?
- *   BAJO — Raramente se ve (redirección inmediata).
- *   Si getDashboardRoute() falla, usuario queda en esta página genérica.
- *   Dependencias: hooks/useAuth.ts, utils/routing.ts, react-router-dom
- */
+// ════════════════════════════════════════
+// 📄 Página de dashboard genérico (legacy, redirige automáticamente)
+// ════════════════════════════════════════
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';

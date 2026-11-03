@@ -1,14 +1,6 @@
-"""
-Módulo: middleware/error_handler.py
-Descripción: Manejador de errores para OWASP #10 (Evitar divulgación de información).
-
-Capa de error manejo que:
-  - Captura excepciones no manejadas
-  - Devuelve mensajes genéricos al cliente
-  - Registra detalles completos en servidor (NO devuelve stack traces)
-  - Retorna códigos HTTP apropiados
-  - Previene information leakage
-"""
+# ════════════════════════════════════════
+# 📄 Manejador global de errores HTTP
+# ════════════════════════════════════════
 
 import logging
 

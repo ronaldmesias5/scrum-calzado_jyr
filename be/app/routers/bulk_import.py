@@ -34,15 +34,7 @@ def import_users_from_csv(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    """
-    Importa múltiples usuarios desde un archivo CSV.
-
-    Columnas requeridas: email, name_user, last_name, role_name
-    Columnas opcionales: phone, identity_document, occupation, business_name
-
-    El sistema genera contraseñas temporales que el admin/jefe comparte con
-    cada usuario (deberán cambiarla en el primer login).
-    """
+    """Importa múltiples usuarios desde un archivo CSV."""
     _require_admin_or_jefe(current_user)
 
     if not file.filename or not file.filename.endswith('.csv'):
@@ -143,14 +135,7 @@ def import_products_from_csv(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    """
-    Importa múltiples productos desde un archivo CSV.
-
-    Columnas requeridas: name_product, brand_name, category_name, style_name
-    Columnas opcionales: description, image_url
-
-    Si la marca, categoría o estilo no existen, se crean automáticamente.
-    """
+    """Importa múltiples productos desde un archivo CSV."""
     _require_admin_or_jefe(current_user)
 
     if not file.filename or not file.filename.endswith('.csv'):

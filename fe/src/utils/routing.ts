@@ -1,8 +1,6 @@
-/**
- * Archivo: utils/routing.ts
- * Descripción: Utilidades para redirección basada en rol y ocupación del usuario.
- * ¿Para qué? Centralizar la lógica de navegación para evitar duplicados.
- */
+// ════════════════════════════════════════
+// 📄 Utilidades para redirección basada en rol y ocupación del usuario
+// ════════════════════════════════════════
 
 import type { UserResponse } from '@/types/auth';
 

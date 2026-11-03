@@ -1,14 +1,6 @@
-# ============================================================
-# CALZADO J&R — .dockerignore del Frontend
-# ============================================================
-# ¿Qué?    Archivos excluidos del contexto de build Docker para el FE.
-# ¿Para?   Evitar que node_modules (cientos de MB) y archivos de
-#           configuración local entren en la imagen.
-# ¿Impacto? Sin este archivo, `docker build` enviaría node_modules
-#           completo al daemon → builds lentos o fallidos.
-#           Los node_modules del host (plataforma diferente) podrían
-#           sobreescribir los instalados en la imagen Alpine/Linux.
-# ============================================================
+# ════════════════════════════════════════
+# 📄 Archivos excluidos del contexto de build Docker para el FE
+# ════════════════════════════════════════
 
 # ────────────────────────────
 # Dependencias — NUNCA incluir del host

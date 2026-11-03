@@ -1,23 +1,6 @@
-/**
- * Archivo: fe/src/hooks/useChat.ts
- * Descripción: Hook para estado del chat IA (Fase 1).
- *
- * ¿Qué?
- *   - messages: historial {role, content, sources?}
- *   - isLoading, error
- *   - sendMessage(message): llama a postChat y actualiza historial
- *   - clearMessages(): limpia historial
- *
- * ¿Para qué?
- *   - ChatWidget.tsx consume este hook para UI reactiva.
- *   - Encapsula lógica de API y estado (separación de capas).
- *
- * ¿Impacto?
- *   Fase 1 — sin este hook no hay chat. Si falla:
- *   - ChatWidget no envía ni muestra respuestas.
- *   Modificar firma rompe: ChatWidget.tsx.
- *   Dependencias: services/aiApi.ts
- */
+// ════════════════════════════════════════
+// 📄 Hook para estado del chat IA (Fase 1)
+// ════════════════════════════════════════
 
 import { useCallback, useState } from 'react';
 import { postChat, type SourceItem } from '@/services/aiApi';

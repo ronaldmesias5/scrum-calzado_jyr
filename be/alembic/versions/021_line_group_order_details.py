@@ -1,10 +1,7 @@
-"""Add line_group column to order_details table.
-
-Revision ID: 021_line_group_order_details
-Revises: 020_add_tasks_order_product
-Create Date: 2026-05-12 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add line_group column to order_details table
+# ════════════════════════════════════════
+# 021_line_group_order_details | Revises: 020_add_tasks_order_product | Creada: 2026-05-12 00:00:00.000000
 from alembic import op
 
 revision = '021_line_group_order_details'

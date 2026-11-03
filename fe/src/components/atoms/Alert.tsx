@@ -1,7 +1,6 @@
-/**
- * Archivo: components/ui/Alert.tsx
- * Descripción: Componente de alerta para mensajes de éxito, error o información.
- */
+// ════════════════════════════════════════
+// 📄 Componente de alerta para mensajes de éxito, error o información
+// ════════════════════════════════════════
 
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 

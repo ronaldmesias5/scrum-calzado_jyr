@@ -6,12 +6,7 @@ from datetime import datetime
 
 
 def calculate_task_priority(deadline: datetime | None) -> str:
-    """Calcula la prioridad de una tarea según los días restantes hasta el deadline.
-
-    - Si no hay deadline → 'baja'
-    - Si quedan ≤ 10 días → 'alta'
-    - Si quedan > 10 días → 'baja'
-    """
+    """Calcula la prioridad de una tarea según los días restantes hasta el deadline."""
     if deadline is None:
         return "baja"
 

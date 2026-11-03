@@ -1,21 +1,7 @@
-"""Create initial database schema with all tables, enums, and indexes.
-
-¿Qué? Migración inicial que crea toda la estructura de la base de datos:
-      - Tipos ENUM para estados y categorías
-      - Todas las tablas del proyecto (roles, users, products, orders, etc.)
-      - Funciones y triggers para auditoría (set_updated_at)
-      - Índices para optimizar consultas
-
-¿Para qué? Establecer la estructura base del sistema de gestión de calzado.
-           Incluye usuarios, inventario, pedidos, tareas, incidencias y notificaciones.
-
-¿Impacto? Primera migración — todas las demás dependen de esta.
-          Sin esta migración, la base de datos no tiene ninguna tabla.
-
-Revision ID: 001_create_initial_schema
-Revises:
-Create Date: 2026-03-25 00:00:00.000000
-"""
+# ════════════════════════════════════════
+# 📄 Migración inicial que crea toda la estructura de la base de datos:
+# ════════════════════════════════════════
+# 001_create_initial_schema | Revises: Create Date: 2026-03-25 00:00:00.000000 | Creada: 2026-03-25 00:00:00.000000
 
 from typing import Sequence, Union
 
@@ -23,9 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 
-# ¿Qué? Identificadores que Alembic usa para construir el grafo de migraciones.
-# ¿Para qué? down_revision=None indica que esta es la primera migración (raíz).
-# ¿Impacto? Alterar estos valores rompe el historial y puede causar errores al migrar.
+# Identificadores que Alembic usa para construir el grafo de migraciones
 revision: str = "001_create_initial_schema"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
@@ -33,13 +17,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Aplica la migración: crea toda la estructura inicial de la BD.
-
-    ¿Qué? Crea tipos ENUM, tablas, funciones y triggers necesarios para el sistema.
-    ¿Para qué? Establecer la base de datos con todas las tablas interconectadas.
-    ¿Impacto? Es seguro ejecutar en una BD vacía. En una BD existente fallará si
-              las tablas ya existen.
-    """
+    """Aplica la migración: crea toda la estructura inicial de la BD."""
 
     # ══════════════════════════════════════════════════════════
     # NOTA: Las extensiones PostgreSQL (uuid-ossp, pg_trgm) se crean en db/init/init.sql
@@ -614,14 +592,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Revierte la migración: elimina todas las tablas, tipos y funciones.
-
-    ¿Qué? Descrea toda la estructura creada en upgrade().
-    ¿Para qué? Permitir deshacer la migración si algo sale mal.
-    ¿Impacto? ¡DESTRUCTIVO! Se pierden TODOS los datos. Solo usar en desarrollo.
-              Orden importa: hay que eliminar las tablas en orden inverso al que se crearon,
-              respetando las dependencias de foreign keys.
-    """
+    """Revierte la migración: elimina todas las tablas, tipos y funciones."""
 
     # Eliminar triggers
     tables_with_triggers = [

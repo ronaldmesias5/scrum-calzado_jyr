@@ -1,13 +1,6 @@
-"""
-Módulo: logging_config.py
-Descripción: Configuración centralizada de logging para la aplicación.
-
-Proporciona:
-  - Logger para auditoría (events de seguridad)
-  - Logger para errores (stack traces del servidor)
-  - Logger general de aplicación
-  - Rotación de archivos para no llenar disco
-"""
+# ════════════════════════════════════════
+# 📄 Configuración del sistema de logs (4 loggers rotativos)
+# ════════════════════════════════════════
 
 import logging
 import logging.handlers

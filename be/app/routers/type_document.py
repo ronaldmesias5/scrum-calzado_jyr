@@ -1,26 +1,6 @@
-"""
-Archivo: be/app/routers/type_document.py
-Descripción: Router FastAPI para gestión de tipos de documentos de identidad.
-
-¿Qué?
-  Define 3 endpoints públicos:
-  - GET /type-documents: Lista todos los tipos (DNI, Pasaporte, etc.)
-  - GET /type-documents/{id}: Obtener tipo específico
-  - POST /type-documents: Crear nuevo tipo (futuro, admin only)
-  
-¿Para qué?
-  - Proveer lista de tipos de documento para formulario de registro
-  - Permitir validación de identity_document_type_id en frontend
-  - Centralizar tipos disponibles (seeded en db/init/99_seed_type_documents.sql)
-  
-¿Impacto?
-  MEDIO — RegisterPage depende de GET /type-documents para SELECT dropdown.
-  Modificar TypeDocumentResponse rompe: frontend types/auth.ts (TypeDocument),
-  RegisterPage select, AdminCreateEmployeeForm.
-  Dependencias: type_document/schemas.py, models/type_document.py,
-               db/init/99_seed_type_documents.sql,
-               frontend modules/auth/pages/RegisterPage.tsx
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI para gestión de tipos de documentos de identidad
+# ════════════════════════════════════════
 
 import uuid
 

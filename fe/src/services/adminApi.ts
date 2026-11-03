@@ -1,8 +1,6 @@
-/**
- * Archivo: modules/dashboard-jefe/services/adminApi.ts
- * Descripción: Servicio API para endpoints de administración de usuarios.
- * ¿Para qué? Aprobar cuentas pendientes y crear empleados/clientes desde el dashboard.
- */
+// ════════════════════════════════════════
+// 📄 Servicio API para endpoints de administración de usuarios
+// ════════════════════════════════════════
 
 import api from '@/services/axios';
 import type { UserResponse } from '@/types/auth';

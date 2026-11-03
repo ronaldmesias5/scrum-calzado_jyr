@@ -1,11 +1,6 @@
-/**
- * Archivo: components/ui/Button.tsx
- * Descripción: Botón reutilizable con estado de carga y alineación estandarizada.
- *
- * ¿Qué? Componente de botón con variantes primary/secondary y spinner de carga.
- * ¿Para qué? Estandarizar la UI y cumplir con la restricción RD-003 (alineación) y WCAG.
- * ¿Impacto? Centraliza el diseño de acciones y previene el uso de degradados prohibidos (RD-001).
- */
+// ════════════════════════════════════════
+// 📄 Botón reutilizable con estado de carga y alineación estandarizada
+// ════════════════════════════════════════
 
 interface ButtonProps {
   children: React.ReactNode;

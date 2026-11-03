@@ -1,23 +1,6 @@
-"""
-Archivo: be/app/models/type_document.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `type_document` en PostgreSQL.
-
-¿Qué?
-  Define tipos de documentos de identidad válidos en el sistema
-  (DNI, Pasaporte, Carnet de Extranjería, RUC, etc.).
-  Campo principal: name (único, indexado).
-  
-¿Para qué?
-  - Normalizar tipos de documentos en el registro
-  - Evitar datos arbitrarios (solo valores predefinidos)
-  - Permitir validación en frontend con lista SELECT
-  
-¿Impacto?
-  MEDIO — Usuarios necesitan seleccionar tipo de documento al registrarse.
-  Modificar name de tipos existentes rompe: registros de usuarios,
-  validaciones en auth/router.py, seed en db/init/99_seed_type_documents.sql
-  Dependencias: User (one-to-many desde User.identity_document_type_id)
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `type_document` en PostgreSQL
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

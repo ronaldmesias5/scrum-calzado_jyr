@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/incidence.py
-Descripción: Modelo ORM para la tabla `incidence` (incidencias de tareas).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `incidence` (incidencias de tareas)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

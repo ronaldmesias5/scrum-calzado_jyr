@@ -1,11 +1,6 @@
-/**
- * Archivo: components/ui/CookieBanner.tsx
- * Descripción: Banner de cookies premium para consentimiento global.
- *
- * ¿Qué? Banner persistente para gestionar el consentimiento de cookies (GDPR/Privacidad).
- * ¿Para qué? Cumplir con normativas de privacidad y centralizar el aviso global de la app.
- * ¿Impacto? Evita intrusión repetitiva y garantiza que el usuario acepte las políticas antes de navegar.
- */
+// ════════════════════════════════════════
+// 📄 Banner de cookies premium para consentimiento global
+// ════════════════════════════════════════
 
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';

@@ -1,11 +1,6 @@
-"""
-Archivo: be/app/models/product_supplies.py
-Descripción: Modelo ORM para la tabla product_supplies (vinculación de productos con insumos).
-
-¿Para qué?
-  - Ligar un producto de calzado con los insumos que necesita para fabricarse
-  - Permite verificar si hay stock de insumos suficiente antes de iniciar producción
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla product_supplies (vinculación de productos con insumos)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

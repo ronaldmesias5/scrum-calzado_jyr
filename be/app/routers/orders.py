@@ -1,11 +1,6 @@
-"""
-Módulo: router.py (Orders)
-Descripción: Rutas CRUD de órdenes en el dashboard del jefe.
-¿Para qué? Endpoints GET/POST/PATCH/PUT/DELETE para órdenes: listar, obtener detalle,
-crear, actualizar estado/detalles, eliminar.
-¿Nota? La serialización y la lógica de reservas de inventario viven en service.py.
-Las tareas de producción viven en tasks.py (mismo prefix y tag).
-"""
+# ════════════════════════════════════════
+# 📄 Rutas CRUD de órdenes en el dashboard del jefe
+# ════════════════════════════════════════
 
 import logging
 import uuid
@@ -49,14 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 def _trigger_notifications(*, db: Session, new_order, customer_check, settings, actor_id=None) -> None:
-    """
-    Fire-and-forget vía thread para no bloquear la respuesta HTTP.
-    Crea notificaciones en BD (síncrono, hecho en esta misma transacción),
-    y lanza WebSocket + emails en un thread separado con su propio event loop.
-
-    Si `customer_check` es None, la orden es producción para stock/bodega:
-    se notifica a los jefes y se omite el email de confirmación al cliente.
-    """
+    """Fire-and-forget vía thread para no bloquear la respuesta HTTP."""
     import asyncio
     import threading
 
@@ -230,13 +218,7 @@ def list_orders_calendar(
     start: Annotated[datetime, Query(description="Inicio del rango (ISO 8601)")],
     end: Annotated[datetime, Query(description="Fin del rango, exclusivo (ISO 8601)")],
 ) -> list[CalendarOrderItem]:
-    """
-    Calendario de entregas: pedidos con `delivery_date` en el rango [start, end)
-    más los pedidos sin fecha de entrega (`delivery_date = NULL`).
-
-    Incluye agregación de producción por pedido: `has_production`, `vale_numbers`,
-    `task_count` y `pending_tasks` (sin N+1).
-    """
+    """Calendario de entregas: pedidos con `delivery_date` en el rango [start, end)"""
     _require_jefe(current_user)
     try:
         return get_orders_for_calendar(db=db, start=start, end=end)

@@ -1,8 +1,6 @@
-/**
- * Archivo: context/authContextDef.ts
- * Descripción: Definición del contexto de autenticación (separado del Provider).
- * ¿Para qué? Evitar imports circulares entre AuthContext y useAuth.
- */
+// ════════════════════════════════════════
+// 📄 Definición del contexto de autenticación (separado del Provider)
+// ════════════════════════════════════════
 
 import { createContext } from 'react';
 import type { AuthContextType } from '@/types/auth';

@@ -1,12 +1,7 @@
-"""Add evidence_image_url to pending_product_incidences.
-
-Adds a nullable String(500) column to store the URL of an optional
-photographic evidence image uploaded by the reporter (employee or customer).
-
-Revision ID: 046_add_evidence_image
-Revises: 045_add_rejection_reason
-Create Date: 2026-09-03
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add evidence_image_url to pending_product_incidences
+# ════════════════════════════════════════
+# 046_add_evidence_image | Revises: 045_add_rejection_reason | Creada: 2026-09-03
 
 from alembic import op
 import sqlalchemy as sa

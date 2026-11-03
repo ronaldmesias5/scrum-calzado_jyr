@@ -1,20 +1,7 @@
-"""Add unique constraint on inventory (product_id, size, colour) with dedupe
-
-Revision ID: 039
-Revises: 038
-Create Date: 2026-08-14
-
-Contexto:
-  - La tabla `inventory` acumuló filas duplicadas para el mismo
-    (product_id, size, colour), lo que provocaba stock negativo e
-    inconsistencias al reservar/liberar pares.
-  - Antes de imponer la constraint se deduplican las filas existentes:
-    se suman amount/reserved de los duplicados activos en la fila
-    "maestra" y el resto se marca como soft-deleted (deleted_at).
-  - Además se normalizan colour NULL -> '' para que la constraint
-    (product_id, size, colour) sea efectiva también sobre el stock
-    creado desde el panel admin (que guardaba colour = NULL).
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add unique constraint on inventory (product_id, size, colour) with dedupe
+# ════════════════════════════════════════
+# 039 | Revises: 038 | Creada: 2026-08-14
 from alembic import op
 
 revision = '039_inventory_unique_constraint'

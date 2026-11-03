@@ -1,9 +1,7 @@
-"""Add incidence_category, machinery_name, supply_id to loss_records; make product_id and size nullable
-
-Revision ID: 033
-Revises: 032
-Create Date: 2026-06-16
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add incidence_category, machinery_name, supply_id to loss_records; make pro...
+# ════════════════════════════════════════
+# 033 | Revises: 032 | Creada: 2026-06-16
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql

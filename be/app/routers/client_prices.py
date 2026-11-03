@@ -1,9 +1,6 @@
-"""
-Módulo: client_prices.py
-Descripción: CRUD de precios personalizados por cliente.
-¿Para qué? El jefe asigna precios por producto a cada cliente.
-¿Endpoint? /api/v1/admin/client-prices
-"""
+# ════════════════════════════════════════
+# 📄 CRUD de precios personalizados por cliente
+# ════════════════════════════════════════
 
 import logging
 import uuid

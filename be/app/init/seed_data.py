@@ -1,26 +1,6 @@
-"""
-Archivo: be/app/seed_data.py
-Descripción: Script de seed para cargar datos iniciales (roles, tipos de documentos).
-
-¿Qué?
-  Exporta 2 funciones:
-  - seed_roles(): Inserta 3 roles (admin, employee, client) con UUIDs fijos
-  - seed_type_documents(): Inserta 6 tipos de documentos (CC, TI, Pasaporte, etc.)
-  Usa db.merge() para evitar duplicados (INSERT ... ON CONFLICT equivalente)
-  Verifica count() antes de insertar (skip si ya existen)
-  
-¿Para qué?
-  - Garantizar datos iniciales desde código Python (no solo SQL)
-  - Facilitar testing (crear BD desde cero con seed_roles())
-  - Alternativa a scripts SQL (seed_data.py puede llamarse desde main.py)
-  - Logs claros: ✅ OK, 🔄 Insertando, ❌ Error
-  
-¿Impacto?
-  MEDIO — Se ejecuta en startup del backend (main.py lifespan).
-  Si falla seed_roles(), usuarios no pueden crearse (FK constraint falla).
-  Modificar UUIDs rompe: scripts que hardcodean UUIDs (crear_usuario_ronald.py).
-  Dependencias: models/role.py, models/type_document.py, database.py (SessionLocal)
-"""
+# ════════════════════════════════════════
+# 📄 Script de seed para cargar datos iniciales (roles, tipos de documentos)
+# ════════════════════════════════════════
 
 import uuid
 import logging
@@ -137,15 +117,7 @@ def seed_type_documents(db: Session) -> bool:
 
 
 def seed_orders(db: Session) -> bool:
-    """
-    Inserta órdenes mayoristas de prueba si no existen.
-    
-    Cada orden puede tener múltiples estilos (items) con tallas y cantidades.
-    Mínimo 12 pares por estilo/talla.
-    
-    Return:
-        True si se insertaron o ya existían, False si hubo error.
-    """
+    """Inserta órdenes mayoristas de prueba si no existen."""
     try:
         # Verificar si ya existen
         if db.query(Order).count() > 0:
@@ -333,20 +305,7 @@ def seed_jefe(db: Session) -> bool:
 
 
 def seed_catalog(db: Session) -> bool:
-    """
-    Inserta brands, categories, styles y products si no existen.
-    
-    Datos exactos del ESTADO_ACTUAL_BD.md (15 marzo 2026):
-    - 5 brands (Nike, Adidas, Puma, New Balance, Reebok)
-    - 3 categories (Dama, Caballero, Infantil)
-    - 22 styles (con marcas asociadas)
-    - 65 products (con estilos y categorías asociadas)
-    
-    Regla especial: Reebok Princesa solo en Dama + Infantil (NO Caballero)
-    
-    Return:
-        True si se insertaron o ya existían, False si hubo error.
-    """
+    """Inserta brands, categories, styles y products si no existen."""
     try:
         from app.models.brand import Brand
         from app.models.category import Category

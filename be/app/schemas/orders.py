@@ -1,9 +1,6 @@
-"""
-Módulo: schemas.py (Orders)
-Descripción: Esquemas Pydantic para validación y serialización de órdenes.
-¿Para qué? Definir estructura de datos para solicitudes/respuestas de órdenes.
-¿Impacto? Valida datos de entrada y serializa respuestas API.
-"""
+# ════════════════════════════════════════
+# 📄 Esquemas Pydantic para validación y serialización de órdenes
+# ════════════════════════════════════════
 
 from datetime import datetime
 from uuid import UUID

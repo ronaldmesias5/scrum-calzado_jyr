@@ -503,13 +503,7 @@ def update_manufactured_pairs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Actualiza el número de pares fabricados (reserved) para un producto.
-    
-    **Parámetros:**
-    - product_id: ID del producto
-    - quantity: Cantidad de pares fabricados a establecer
-    """
+    """Actualiza el número de pares fabricados (reserved) para un producto."""
     _require_admin_or_jefe(current_user)
 
     try:
@@ -564,13 +558,7 @@ def get_inventory_by_size(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Obtiene el desglose de pares fabricados (reserved) por talla para un producto.
-    Suma los reserved de múltiples pedidos si existen para la misma talla.
-    
-    **Retorna:**
-    - inventory: Lista de objetos con {size, reserved} agrupado y sumado por talla
-    """
+    """Obtiene el desglose de pares fabricados (reserved) por talla para un producto."""
     _require_admin_or_jefe(current_user)
 
     try:

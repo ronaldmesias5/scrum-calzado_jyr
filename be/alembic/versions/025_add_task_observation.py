@@ -1,10 +1,6 @@
-"""
-Migration 025: Add observation column to tasks table
-
-Permite que los empleados dejen observaciones/notas en sus tareas
-(ej. "faltó un par de pieza X"), visibles para los siguientes
-operarios que vean el vale de producción.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Migration 025: Add observation column to tasks table
+# ════════════════════════════════════════
 
 from typing import Sequence, Union
 

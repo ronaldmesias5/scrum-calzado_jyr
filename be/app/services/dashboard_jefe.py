@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/modules/dashboard_jefe/service.py
-Descripción: Lógica de negocio del panel del jefe (métricas, pedidos recientes, alertas).
-"""
+# ════════════════════════════════════════
+# 📄 Lógica de negocio del panel del jefe (métricas, pedidos recientes, alertas)
+# ════════════════════════════════════════
 
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session, joinedload

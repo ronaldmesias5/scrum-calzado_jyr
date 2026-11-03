@@ -1,24 +1,6 @@
-"""
-Archivo: be/app/schemas/ai.py
-Descripción: Schemas Pydantic para el asistente IA (Fase 1, RAG).
-
-¿Qué?
-  Define ChatRequest (validación 500 chars, anti prompt-injection),
-  ChatResponse (answer + sources + suggested_products), HealthResponse,
-  ReindexResponse. Usados por routers/ai_chat.py.
-
-¿Para qué?
-  - Validar entrada del usuario antes de RAG/LLM (seguridad, costo).
-  - Tipar respuesta para frontend (ChatWidget) y OpenAPI docs.
-  - Documentar API en /docs.
-
-¿Impacto?
-  Fase 1 — sin estos schemas no hay validación. Si falla:
-  - Mensajes >500 chars llegarían al LLM → costo y DoS.
-  - Prompt injection no bloqueado → jailbreak.
-  Modificar ChatRequest rompe: ai_chat.py, aiApi.ts, useChat.ts.
-  Dependencias: routers/ai_chat.py, services/ai_service.py
-"""
+# ════════════════════════════════════════
+# 📄 Schemas Pydantic para el asistente IA (Fase 1, RAG)
+# ════════════════════════════════════════
 
 import re
 from pydantic import BaseModel, ConfigDict, Field, field_validator

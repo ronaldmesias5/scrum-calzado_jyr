@@ -1,15 +1,6 @@
-"""
-Módulo: middleware/security_headers.py
-Descripción: Middleware para agregar headers de seguridad OWASP.
-
-Headers implementados:
-  - X-Content-Type-Options: Previene MIME type sniffing (XSS)
-  - X-Frame-Options: Previene clickjacking
-  - X-XSS-Protection: XSS filter en navegadores antiguos
-  - Strict-Transport-Security: HTTPS only (HSTS)
-  - Content-Security-Policy: Controla recursos permitidos
-  - Referrer-Policy: Control de información de referencia
-"""
+# ════════════════════════════════════════
+# 📄 Headers de seguridad OWASP en cada respuesta
+# ════════════════════════════════════════
 
 import os
 from fastapi import Request

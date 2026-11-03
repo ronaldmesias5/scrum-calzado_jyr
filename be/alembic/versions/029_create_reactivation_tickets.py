@@ -1,9 +1,6 @@
-"""
-Migration 029: Create reactivation_tickets table
-
-Crea la tabla reactivation_tickets para RF-005 — Solicitud de Reactivación de Cuentas.
-Almacena tickets de reactivación enviados por usuarios con cuentas inactivas.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Migration 029: Create reactivation_tickets table
+# ════════════════════════════════════════
 
 from typing import Sequence, Union
 

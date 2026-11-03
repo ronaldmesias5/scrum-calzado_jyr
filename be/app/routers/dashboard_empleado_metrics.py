@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/routers/dashboard_empleado_metrics.py
-Descripción: Endpoints de métricas del panel del empleado.
-"""
+# ════════════════════════════════════════
+# 📄 Endpoints de métricas del panel del empleado
+# ════════════════════════════════════════
 
 from datetime import UTC, datetime
 from typing import Annotated

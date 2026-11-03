@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/modules/dashboard_empleado/schemas.py
-Descripción: Schemas Pydantic para el dashboard del empleado.
-"""
+# ════════════════════════════════════════
+# 📄 Schemas Pydantic para el dashboard del empleado
+# ════════════════════════════════════════
 
 from datetime import datetime
 from pydantic import BaseModel, field_validator

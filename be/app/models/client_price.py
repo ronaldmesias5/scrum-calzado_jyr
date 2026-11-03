@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/client_price.py
-Descripción: Modelo ORM para la tabla `client_prices` (precios personalizados por cliente).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `client_prices` (precios personalizados por cliente)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

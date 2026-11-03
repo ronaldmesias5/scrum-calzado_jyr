@@ -1,13 +1,4 @@
-"""
-Servicio para incidencias de producto pendientes de aprobación.
-
-Funciones:
-  - create_pending_incidence(db, employee_id, task_id, size, colour, defect_code_id, quantity, observations)
-  - get_employee_pending_incidences(db, employee_id)
-  - get_all_pending_incidences(db)
-  - approve_pending_incidence(db, pending_id, jefe_id, incident_type)
-  - reject_pending_incidence(db, pending_id, jefe_id)
-"""
+"""Servicio para incidencias de producto pendientes de aprobación."""
 
 import asyncio
 import threading
@@ -30,12 +21,7 @@ _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
 
 
 def _best_effort_broadcast(user_id: str, payload: dict[str, str]) -> None:
-    """Emite un mensaje WebSocket sin bloquear y sin fallar la operación.
-
-    Si ya hay un event loop corriendo (el caller es async), programa la
-    coroutine con `create_task`; si no lo hay (hilo del threadpool), la
-    ejecuta con `asyncio.run` en un hilo daemon. Nunca propaga errores.
-    """
+    """Emite un mensaje WebSocket sin bloquear y sin fallar la operación."""
     try:
         from app.utils.ws_manager import ws_manager
 

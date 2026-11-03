@@ -1,27 +1,12 @@
-# ============================================================
-# CALZADO J&R — Docker Compose (entorno de desarrollo)
-# ============================================================
-# ¿Qué?    Orquesta los 3 servicios del sistema: BD, BE y FE.
-# ¿Para?   Un único `docker compose up -d` levanta todo el stack
-#           con la configuración correcta y en el orden adecuado.
-# ¿Impacto? Elimina dependencias locales (Python, Node, PostgreSQL).
-#           Todo corre dentro de contenedores aislados en una red
-#           interna privada. Los puertos del host son solo para
-#           acceso del desarrollador (navegador, psql, etc.).
-#
-# REQUISITO: Copiar .env.example → .env y completar los valores.
-#   cp .env.example .env
-# ============================================================
+# ════════════════════════════════════════
+# 📄 Orquesta los 3 servicios del sistema: BD, BE y FE
+# ════════════════════════════════════════
 
 services:
   # ──────────────────────────────────────────────────────────
-  # 🐘 db — PostgreSQL 17
-  # ¿Qué?    Motor de base de datos relacional.
-  # ¿Para?   Almacenar usuarios, roles y tokens de forma persistente.
-  # ¿Impacto? Tag "alpine" = imagen mínima (~10 MB vs ~200 MB full).
-  #           El healthcheck bloquea al backend hasta que PostgreSQL
-  #           esté listo para aceptar conexiones (evita errores de
-  #           "connection refused" al arrancar).
+  # 🐘 db — PostgreSQL 17: motor de BD relacional persistente
+  #     Imagen alpine mínima; el healthcheck bloquea al backend
+  #     hasta que la BD esté lista (evita errores de conexión).
   # ──────────────────────────────────────────────────────────
   db:
     image: pgvector/pgvector:pg17
@@ -62,14 +47,9 @@ services:
       - calzado_jyr_net
 
   # ──────────────────────────────────────────────────────────
-  # 🚀 be — Backend FastAPI
-  # ¿Qué?    API REST construida con FastAPI + SQLAlchemy.
-  # ¿Para?   Procesar solicitudes HTTP del frontend y comunicarse
-  #           con PostgreSQL a través del ORM.
-  # ¿Impacto? `depends_on condition: service_healthy` garantiza que
-  #           el backend NO arranca hasta que la BD esté lista.
-  #           El volumen ./be:/app habilita --reload: cada cambio
-  #           en código Python reinicia el servidor automáticamente.
+  # 🚀 be — Backend FastAPI: API REST para el frontend + ORM a
+  #     PostgreSQL. Arranca tras el healthcheck de la BD y el
+  #     volumen ./be:/app habilita --reload automático.
   # ──────────────────────────────────────────────────────────
   be:
     build:
@@ -134,10 +114,7 @@ services:
       - calzado_jyr_net
 
   # ──────────────────────────────────────────────────────────
-  # 📧 mailpit — Servidor de correo de prueba
-  # ¿Qué?    Intercepa todos los correos enviados por el BE.
-  # ¿Para?   Ver y depurar correos en desarrollo sin enviar reales.
-  # ¿Impacto? Interfaz web en http://localhost:8025
+  # 📧 mailpit — Servidor de correo de prueba (web http://localhost:8025)
   # ──────────────────────────────────────────────────────────
   mailpit:
     image: axllent/mailpit:latest
@@ -150,15 +127,9 @@ services:
       - calzado_jyr_net
 
   # ──────────────────────────────────────────────────────────
-  # 🌐 fe — Frontend React + Vite
-  # ¿Qué?    Interfaz de usuario en React 19 + TypeScript + Tailwind.
-  # ¿Para?   Servir la aplicación web con hot-reload en desarrollo.
-  # ¿Impacto? Vite HMR (Hot Module Replacement) actualiza el navegador
-  #           en milisegundos al guardar cualquier componente.
-  #   - ./fe:/app → código del host dentro del contenedor.
-  #   - /app/node_modules → volumen anónimo que preserva los
-  #     node_modules instalados en la imagen (evita que el mount
-  #     del host los sobreescriba con un directorio vacío).
+  # 🌐 fe — Frontend React 19 + Vite: HMR al guardar; el mount
+  #     ./fe:/app usa /app/node_modules como volumen anónimo para
+  #     preservar los módulos instalados en la imagen.
   # ──────────────────────────────────────────────────────────
   fe:
     build:
@@ -195,11 +166,8 @@ services:
       - calzado_jyr_net
 
   # ──────────────────────────────────────────────────────────
-  # 🤖 ollama — LLM local opcional (Fase 4, dev, $0 sin internet)
-  # ¿Qué?    Llama 3.2 3B local para IA sin Groq/Gemini.
-  # ¿Para?   Probar IA offline en dev. Requiere 8GB RAM.
-  # ¿Cómo?   docker compose --profile ollama up -d
-  #          En .env: AI_PROVIDER=ollama
+  # 🤖 ollama — LLM local opcional (Llama 3.2 3B, dev offline):
+  #     `docker compose --profile ollama up -d` + AI_PROVIDER=ollama
   # ──────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
@@ -214,23 +182,16 @@ services:
       - calzado_jyr_net
 
 # ──────────────────────────────────────────────────────────
-# 🔗 Red interna privada
-# ¿Qué?    Red virtual bridge exclusiva para este proyecto.
-# ¿Para?   Aislar la comunicación entre servicios. Ningún
-#           contenedor externo puede acceder a esta red.
-# ¿Impacto? db NO es accesible desde internet, solo desde be.
-#           Principio de mínimo privilegio en redes de contenedores.
+# 🔗 Red interna privada: bridge aislada para este proyecto;
+#    db solo accesible desde be, sin exposición externa.
 # ──────────────────────────────────────────────────────────
 networks:
   calzado_jyr_net:
     driver: bridge
 
 # ──────────────────────────────────────────────────────────
-# 📦 Volúmenes nombrados
-# ¿Qué?    Almacenamiento persistente gestionado por Docker.
-# ¿Para?   Los datos de PostgreSQL sobreviven `docker compose down`.
-# ¿Impacto? `docker compose down -v` BORRA los datos (útil para reset).
-#           `docker compose down` sin -v los conserva.
+# 📦 Volúmenes nombrados: persistencia de datos de PostgreSQL;
+#    `down` conserva datos, `down -v` los borra (reset).
 # ──────────────────────────────────────────────────────────
 volumes:
   calzado_jyr_data:

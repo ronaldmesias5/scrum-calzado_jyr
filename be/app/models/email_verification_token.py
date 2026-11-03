@@ -1,20 +1,6 @@
-"""
-Archivo: be/app/models/email_verification_token.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `email_verification_tokens`.
-
-¿Qué?
-  Define tokens temporales para verificación de email después del registro.
-  Sigue el mismo patrón que PasswordResetToken pero para confirmar el email.
-
-¿Para qué?
-  - Enviar enlace de verificación al registrar una nueva cuenta
-  - Bloquear login hasta que el email sea verificado
-  - Permitir reenviar el enlace de verificación
-  
-¿Impacto?
-  MEDIO — Sin esta tabla, el flujo de verificación de email no funciona.
-  Dependencias: User (many-to-one)
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `email_verification_tokens`
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

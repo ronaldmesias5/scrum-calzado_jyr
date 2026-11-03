@@ -1,10 +1,7 @@
-"""Add order_id, product_id, vale_number, and amount columns to tasks table.
-
-Revision ID: 020_add_tasks_order_product
-Revises: 019_add_por_liquidar_enum
-Create Date: 2026-05-10 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add order_id, product_id, vale_number, and amount columns to tasks table
+# ════════════════════════════════════════
+# 020_add_tasks_order_product | Revises: 019_add_por_liquidar_enum | Creada: 2026-05-10 00:00:00.000000
 from alembic import op
 
 revision = '020_add_tasks_order_product'

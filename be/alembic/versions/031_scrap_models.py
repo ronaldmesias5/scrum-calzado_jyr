@@ -1,14 +1,7 @@
-"""scrap_models
-
-Revision ID: 031
-Revises: 030
-Create Date: 2026-06-15
-
-Crea tablas para registro de pérdidas por calzado defectuoso:
-  - defect_codes: códigos de defecto (DEF-FAB, DEF-ALM, etc.)
-  - loss_records: registros de pérdida
-  - scrap_stock: stock de scrap generado por pérdidas
-"""
+# ════════════════════════════════════════
+# 📄 Migración — scrap_models
+# ════════════════════════════════════════
+# 031 | Revises: 030 | Creada: 2026-06-15
 
 from typing import Sequence, Union
 

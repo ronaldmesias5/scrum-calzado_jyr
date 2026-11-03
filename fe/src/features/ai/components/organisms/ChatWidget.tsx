@@ -1,23 +1,6 @@
-/**
- * Archivo: fe/src/features/ai/components/organisms/ChatWidget.tsx
- * Descripción: Widget FAB flotante para chat IA (Fase 1, RAG).
- *
- * ¿Qué?
- *   - FAB colapsable (burbuja abajo-izquierda, opuesto a WhatsApp derecha).
- *   - Panel 380x500px: header, historial, typing indicator, input + enviar, footer.
- *   - Usa useChat hook, aiApi, lucide-react, Tailwind, a11y (role dialog, focus trap).
- *   - Basado en WhatsAppButton + Modal (createPortal, Escape, focus trap).
- *
- * ¿Para qué?
- *   - Chat público en LandingPage (Fase 1) para visitantes 24/7.
- *   - Base para Fase 2 (layouts autenticados).
- *
- * ¿Impacto?
- *   Fase 1 — sin este widget no hay UI de chat. Si falla:
- *   - Landing sin asistente.
- *   Modificar props rompe: LandingPage.tsx.
- *   Dependencias: hooks/useChat.ts, services/aiApi.ts, lucide-react
- */
+// ════════════════════════════════════════
+// 📄 Widget FAB flotante para chat IA (Fase 1, RAG)
+// ════════════════════════════════════════
 
 import { useEffect, useRef, useState } from 'react';
 import { X, Send, Trash2, Bot, User, Sparkles } from 'lucide-react';

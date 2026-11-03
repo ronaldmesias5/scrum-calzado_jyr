@@ -1,23 +1,6 @@
-"""
-Archivo: be/app/models/role.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `roles` en PostgreSQL.
-
-¿Qué?
-  Define el modelo Role con campos name (único), description y timestamps.
-  Representa los 3 roles principales: admin, employee, client.
-  La ocupación (jefe, cortador, etc.) se almacena en User.occupation, NO aquí.
-  
-¿Para qué?
-  - Categorizar usuarios por nivel de acceso
-  - Permitir control RBAC (Role-Based Access Control)
-  - Separar lógicamente permisos (admin puede TODO, employee limitado)
-  
-¿Impacto?
-  CRÍTICO — Sin roles, el sistema no puede distinguir admin de employee.
-  Modificar name rompe: dependencies.py (_require_admin, _require_jefe),
-  routers protegidos, lógica de autorización.
-  Dependencias: User (many-to-one desde User.role_id), seed_data.py
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `roles` en PostgreSQL
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

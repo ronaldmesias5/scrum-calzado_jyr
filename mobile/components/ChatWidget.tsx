@@ -1,20 +1,6 @@
-/**
- * Archivo: mobile/components/ChatWidget.tsx
- * Descripción: Widget FAB para chat IA en mobile (Fase 2, Expo + NativeWind).
- *
- * ¿Qué?
- *   - FAB abajo-izquierda (opuesto a acciones principales).
- *   - Modal con historial, input, typing indicator, fuentes.
- *   - Usa mobile/services/aiApi.ts (apiClient con SecureStore).
- *
- * ¿Para qué?
- *   - Chat con contexto por rol en app móvil (Fase 2).
- *
- * ¿Impacto?
- *   Fase 2 — sin este widget no hay chat mobile. Si falla:
- *   - App móvil sin asistente.
- *   Dependencias: services/aiApi.ts, react-native, expo
- */
+// ════════════════════════════════════════
+// 📄 Widget FAB para chat IA en mobile (Fase 2, Expo + NativeWind)
+// ════════════════════════════════════════
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {

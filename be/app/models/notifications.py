@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/notifications.py
-Descripción: Modelo ORM para la tabla `notifications` (notificaciones del sistema).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `notifications` (notificaciones del sistema)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

@@ -1,26 +1,6 @@
-"""
-Archivo: be/app/init_db.py
-Descripción: Inicialización automática de BD con migraciones Alembic.
-
-¿Qué?
-  Función run_migrations():
-  - Busca alembic.ini en 3 ubicaciones posibles (scrum/alembic, /app/alembic, be/alembic)
-  - Configura Alembic con Config(alembic_ini)
-  - Ejecuta alembic_upgrade(config, "head") → migra a última versión
-  - Logs claros: 📍 Ubicación, 🔄 Ejecutando, ✅ OK, ⚠️ No encontrado
-  
-¿Para qué?
-  - Automatizar migraciones en startup (no manual "alembic upgrade head")
-  - Garantizar BD siempre actualizada (dev, staging, prod)
-  - Soporte multi-entorno (local y Docker)
-  - Evitar errores "tabla no existe" (migra automáticamente)
-  
-¿Impacto?
-  CRÍTICO — Sin migraciones, cambios en modelos ORM NO se aplican a BD.
-  Si falla, backend arranca pero queries SQL fallan (tabla/columna no existe).
-  Modificar lógica de búsqueda de alembic.ini rompe: startup en Docker.
-  Dependencias: alembic/env.py, alembic/versions/*.py, config.py (DATABASE_URL)
-"""
+# ════════════════════════════════════════
+# 📄 Inicialización automática de BD con migraciones Alembic
+# ════════════════════════════════════════
 
 import logging
 import os
@@ -32,14 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_migrations(db_url: str, raise_on_error: bool = False) -> bool:
-    """
-    Ejecuta todas las migraciones pendientes de Alembic.
-    
-    Args:
-        db_url: URL de conexión a la base de datos (ej: postgresql://user:pass@host/db)
-        raise_on_error: si es True, re-lanza la excepción en lugar de devolver False.
-            Útil en tests/CI para que el error SQL real no quede oculto.
-    """
+    """Ejecuta todas las migraciones pendientes de Alembic."""
     try:
         logger.info("🔄 Ejecutando migraciones Alembic...")
         
@@ -89,13 +62,7 @@ def run_migrations(db_url: str, raise_on_error: bool = False) -> bool:
 
 
 def verify_initial_data(db: Session) -> None:
-    """
-    Verifica que los datos iniciales existan.
-    Este es un fallback en caso de que las migraciones no se ejecuten correctamente.
-    
-    Args:
-        db: Sesión de SQLAlchemy
-    """
+    """Verifica que los datos iniciales existan."""
     try:
         logger.info("🔍 Verificando datos iniciales...")
         
@@ -126,16 +93,7 @@ def verify_initial_data(db: Session) -> None:
 
 
 def initialize_database(db_url: str, db: Session) -> None:
-    """
-    Inicializa completamente la base de datos en el startup.
-    
-    1. Ejecuta todas las migraciones Alembic
-    2. Verifica que los datos iniciales existan
-    
-    Args:
-        db_url: URL de conexión a la base de datos
-        db: Sesión de SQLAlchemy para verificaciones
-    """
+    """Inicializa completamente la base de datos en el startup."""
     try:
         logger.info("📦 Inicializando base de datos...")
         

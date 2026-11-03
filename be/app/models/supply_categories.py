@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/supply_categories.py
-Descripción: Modelo ORM para la tabla `supply_categories`.
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `supply_categories`
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

@@ -1,10 +1,7 @@
-"""supplies float and sizes
-
-Revision ID: 007_supplies_float_sizes
-Revises: 006_supplies_color_category
-Create Date: 2026-04-12 20:10:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — supplies float and sizes
+# ════════════════════════════════════════
+# 007_supplies_float_sizes | Revises: 006_supplies_color_category | Creada: 2026-04-12 20:10:00.000000
 from typing import Sequence, Union
 
 from alembic import op

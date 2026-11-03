@@ -1,13 +1,7 @@
-"""Seed initial jefe user for development and demo purposes.
-
-¿Qué? Inserta el usuario inicial del sistema (jefe de producción).
-¿Para qué? Tener una cuenta lista para acceder al dashboard del jefe.
-¿Impacto? Solo usar en desarrollo. En producción usar usuarios reales.
-
-Revision ID: 004_seed_test_users
-Revises: 003_seed_catalog_data
-Create Date: 2026-03-25 00:00:03.000000
-"""
+# ════════════════════════════════════════
+# 📄 Migración 004_seed_test_users — Inserta el usuario inicial del sistema (jefe de producc...
+# ════════════════════════════════════════
+# 004_seed_test_users | Revises: 003_seed_catalog_data | Creada: 2026-03-25 00:00:03.000000
 
 from typing import Sequence, Union
 from alembic import op

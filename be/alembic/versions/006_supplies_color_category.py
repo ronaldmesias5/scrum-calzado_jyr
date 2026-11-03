@@ -1,10 +1,7 @@
-"""Add color and custom category to supplies
-
-Revision ID: 006_supplies_custom
-Revises: 005_supplies_module
-Create Date: 2026-04-12 19:30:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add color and custom category to supplies
+# ════════════════════════════════════════
+# 006_supplies_custom | Revises: 005_supplies_module | Creada: 2026-04-12 19:30:00.000000
 from typing import Sequence, Union
 
 import sqlalchemy as sa

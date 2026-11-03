@@ -1,27 +1,6 @@
-/**
- * Archivo: fe/src/modules/auth/pages/LoginPage.tsx
- * Descripción: Página de login para usuarios registrados de CALZADO J&R.
- *
- * ¿Qué?
- *   Formulario de autenticación con:
- *   - Inputs: email, password
- *   - Checkbox "Recordarme" (no implementado, UI only)
- *   - Manejo de errores (Alert component)
- *   - Redirección automática a dashboard según rol/ocupación
- *   - Redirección a /auth/change-password si must_change_password=true
- *
- * ¿Para qué?
- *   - Permitir login de usuarios existentes (admin, employee, client)
- *   - Validar credenciales con backend POST /api/v1/auth/login
- *   - Guardar tokens en sessionStorage (via AuthContext)
- *   - Redirigir automáticamente al dashboard correcto
- *
- * ¿Impacto?
- *   CRÍTICO — Sin login funcional, usuarios no pueden acceder al sistema.
- *   Modificar formData rompe: validación, envío a backend.
- *   Modificar getDashboardRoute() debe sincronizarse con utils/routing.ts
- *   Dependencias: hooks/useAuth.ts, components/ui/*, utils/routing.ts
- */
+// ════════════════════════════════════════
+// 📄 Página de login para usuarios registrados de CALZADO J&R
+// ════════════════════════════════════════
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';

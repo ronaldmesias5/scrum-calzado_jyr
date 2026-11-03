@@ -1,10 +1,6 @@
-"""
-Módulo: config.py
-Descripción: Configuración centralizada del backend usando Pydantic Settings.
-¿Para qué? Cargar y validar TODAS las variables de entorno necesarias al iniciar la app.
-¿Impacto? Sin este módulo, las variables de entorno se leerían sin validación,
-          lo que podría causar errores silenciosos en tiempo de ejecución.
-"""
+# ════════════════════════════════════════
+# 📄 Configuración centralizada del backend usando Pydantic Settings
+# ════════════════════════════════════════
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator

@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/inventory_movement.py
-Descripción: Modelo ORM para la tabla `inventory_movement` (movimientos de inventario).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `inventory_movement` (movimientos de inventario)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

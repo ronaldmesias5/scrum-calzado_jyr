@@ -1,23 +1,6 @@
-"""
-Archivo: be/scripts/seed_ai_embeddings.py
-Descripción: Indexa conocimiento completo del sistema en ai_embeddings (RAG total).
-
-¿Qué?
-  - Lee brands, categories, styles, products desde BD.
-  - Carga CONOCIMIENTO_SISTEMA_PARA_IA.md y lo trocea por secciones.
-  - Incluye FAQs por rol (visitante, jefe, cliente, empleado por cargo) con flujos completos.
-  - Genera embeddings hash 768 dims ($0) e inserta en ai_embeddings con metadata rica.
-  - Idempotente: borra antes de reindexar.
-
-¿Para qué?
-  - Que Águila J&R responda a cualquier pregunta según el rol autenticado (o visitante en landing).
-  - Usado por: `uv run python scripts/seed_ai_embeddings.py` y POST /api/v1/ai/embeddings/reindex.
-
-¿Impacto?
-  Sin este seed, RAG solo tiene 38 fragmentos básicos. Con este, ~150-200 fragmentos con flujos por rol.
-  Modificar dim rompe: ai_service.get_embedding, migración 048, config AI_EMBEDDING_DIM.
-  Dependencias: database.py, models/*, services/ai_service.py, docs/IA_BOT/CONOCIMIENTO_SISTEMA_PARA_IA.md
-"""
+# ════════════════════════════════════════
+# 📄 Indexa conocimiento completo del sistema en ai_embeddings (RAG total)
+# ════════════════════════════════════════
 
 import re
 import sys
