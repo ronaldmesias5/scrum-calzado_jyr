@@ -169,8 +169,11 @@ jobs:
         continue-on-error: true
 
       # Contenedores/IaC: escaneo de Dockerfiles, compose y secretos embebidos
+      # v0.36.0: las versiones viejas (v0.28.0) referencian internamente
+      # aquasecurity/setup-trivy@v0.2.1, un tag eliminado upstream → el job falla
+      # antes de ejecutar los steps.
       - name: Trivy (filesystem + IaC)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: "."
