@@ -8,15 +8,15 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete as sa_delete
-from sqlalchemy import desc, func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.dependencies import _require_jefe, get_current_user, get_db
-from app.models.order import Order, OrderDetail, OrderStatus
-from app.models.product import Product
+from app.models.order import OrderDetail, OrderStatus
 from app.models.user import User
+from app.repositories.order_detail_repository import OrderDetailRepository
+from app.repositories.order_repository import OrderRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.orders import (
     CalendarOrderItem,
     OrderCreateRequest,
@@ -166,35 +166,10 @@ def list_orders(
     """
     _require_jefe(current_user)
     try:
-        query = select(Order)
-
-        if state:
-            query = query.where(Order.state == state)
-
-        if customer_name:
-            name_filter = f"%{customer_name.strip()}%"
-            query = query.join(User, Order.customer_id == User.id).where(
-                (User.name_user.ilike(name_filter)) | (User.last_name.ilike(name_filter))
-            )
-
-        # Contar total
-        count_query = select(func.count(Order.id)).select_from(Order)
-        if state:
-            count_query = count_query.where(Order.state == state)
-        if customer_name:
-            name_filter = f"%{customer_name.strip()}%"
-            count_query = count_query.join(User, Order.customer_id == User.id).where(
-                (User.name_user.ilike(name_filter)) | (User.last_name.ilike(name_filter))
-            )
-
-        total = db.execute(count_query).scalar() or 0
-
-        # Aplicar paginación
         offset = (page - 1) * page_size
-        query = query.order_by(desc(Order.created_at)).offset(offset).limit(page_size)
-
-        result = db.execute(query)
-        orders = result.scalars().all()
+        total, orders = OrderRepository(db).list_paginated(
+            state=state, customer_name=customer_name, offset=offset, page_size=page_size
+        )
 
         total_pages = (total + page_size - 1) // page_size if total > 0 else 1
 
@@ -238,16 +213,7 @@ def get_order_detail(
     """
     _require_jefe(current_user)
     try:
-        result = db.execute(
-            select(Order)
-            .options(
-                selectinload(Order.details)
-                .selectinload(OrderDetail.product)
-                .selectinload(Product.inventory)
-            )
-            .where(Order.id == order_id)
-        )
-        order = result.scalar_one_or_none()
+        order = OrderRepository(db).get_with_details(order_id)
 
         if not order:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -287,9 +253,7 @@ def create_order(
         # None = producción para stock: se omite el email al cliente.
         customer_check = None
         if order_data.customer_id is not None:
-            customer_check = db.execute(
-                select(User).where(User.id == order_data.customer_id)
-            ).scalar_one_or_none()
+            customer_check = UserRepository(db).get_by_id(order_data.customer_id)
 
         # ─── NOTIFICACIONES: notificar al jefe + email (fire-and-forget vía thread) ───
         # Best-effort: un fallo aquí NO debe abortar la respuesta (la orden ya está
@@ -331,8 +295,7 @@ def update_order_status(
     try:
         _require_jefe(current_user)
 
-        result = db.execute(select(Order).where(Order.id == order_id))
-        order = result.scalar_one_or_none()
+        order = OrderRepository(db).get_by_id(order_id)
 
         if not order:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -392,8 +355,7 @@ def update_order_details(
     """
     _require_jefe(current_user)
 
-    result = db.execute(select(Order).where(Order.id == order_id))
-    order = result.scalar_one_or_none()
+    order = OrderRepository(db).get_by_id(order_id)
 
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -424,8 +386,9 @@ def update_order_details(
         )
 
     try:
+        detail_repo = OrderDetailRepository(db)
         # 0. Primero, obtener los detalles ANTIGUOS para comparar estados
-        old_details = db.query(OrderDetail).filter(OrderDetail.order_id == order.id).all()
+        old_details = detail_repo.list_by_order(order.id)
         # Índice compuesto por (product_id, size, colour) para emparejar correctamente
         # cada línea antigua con su nueva versión, incluso cuando hay múltiples tallas/colores.
         old_details_map = {
@@ -433,7 +396,7 @@ def update_order_details(
         }
 
         # 1. Eliminar detalles antiguos
-        db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
+        detail_repo.delete_by_order(order.id)
 
         # 2. Crear los NUEVOS detalles
         total_pairs = 0
@@ -450,7 +413,7 @@ def update_order_details(
                 order_date=datetime.now(UTC),
                 created_by=current_user.id
             )
-            db.add(detail)
+            detail_repo.add(detail)
             total_pairs += detail_data.amount
 
             # 2.1/2.2 LÓGICA DE INVENTARIO: según el cambio de estado de la línea
@@ -502,8 +465,7 @@ def delete_order(
             detail="Solo el jefe puede eliminar órdenes",
         )
 
-    result = db.execute(select(Order).where(Order.id == order_id))
-    order = result.scalar_one_or_none()
+    order = OrderRepository(db).get_by_id(order_id)
 
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -516,8 +478,8 @@ def delete_order(
 
     try:
         # Eliminar los detalles primero y luego la orden
-        db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
-        db.delete(order)
+        OrderDetailRepository(db).delete_by_order(order.id)
+        OrderRepository(db).delete(order)
         db.commit()
     except Exception:
         db.rollback()

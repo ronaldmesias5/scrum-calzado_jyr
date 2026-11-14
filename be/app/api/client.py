@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import select, desc, func, distinct, delete as sa_delete
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import select, desc, func
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,11 @@ from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.user import User
 from app.models.product import Product
 from app.models.pending_incidence import PendingProductIncidence
-from app.models.tasks import Task
+from app.repositories.client_price_repository import ClientPriceRepository
+from app.repositories.order_detail_repository import OrderDetailRepository
+from app.repositories.order_repository import OrderRepository
+from app.repositories.pending_incidence_repository import PendingProductIncidenceRepository
+from app.repositories.task_repository import TaskRepository
 from app.schemas.client import (
     ClientOrderResponse,
     ClientOrderListResponse,
@@ -92,36 +96,15 @@ def list_my_orders(
     page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
 ) -> ClientOrderListResponse:
     """Lista los pedidos del cliente autenticado con paginación."""
-    total_query = select(func.count(Order.id)).where(Order.customer_id == current_user.id)
-    total = db.execute(total_query).scalar() or 0
+    order_repo = OrderRepository(db)
+    total = order_repo.count_by_customer(current_user.id)
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
     offset = (page - 1) * page_size
 
-    query = (
-        select(Order)
-        .options(
-            selectinload(Order.details)
-            .selectinload(OrderDetail.product)
-            .selectinload(Product.inventory)
-        )
-        .where(Order.customer_id == current_user.id)
-        .order_by(desc(Order.created_at))
-        .offset(offset)
-        .limit(page_size)
-    )
-    result = db.execute(query)
-    orders = result.scalars().all()
+    orders = order_repo.list_by_customer_paginated(current_user.id, offset, page_size)
 
-    order_ids = [o.id for o in orders]
-    prod_ids: set[uuid.UUID] = set()
-    if order_ids:
-        prod_rows = db.execute(
-            select(distinct(Task.order_id)).where(
-                Task.order_id.in_(order_ids), Task.deleted_at.is_(None)
-            )
-        ).all()
-        prod_ids = {row[0] for row in prod_rows}
+    prod_ids = TaskRepository(db).order_ids_with_live_tasks([o.id for o in orders])
 
     return ClientOrderListResponse(
         total=total,
@@ -138,18 +121,10 @@ def get_my_orders_summary(
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientOrderSummaryResponse:
     """Resumen de pedidos del cliente agrupados por estado."""
-    total = (
-        db.execute(
-            select(func.count(Order.id)).where(Order.customer_id == current_user.id)
-        ).scalar()
-        or 0
-    )
+    order_repo = OrderRepository(db)
+    total = order_repo.count_by_customer(current_user.id)
 
-    rows = db.execute(
-        select(Order.state, func.count(Order.id))
-        .where(Order.customer_id == current_user.id)
-        .group_by(Order.state)
-    ).all()
+    rows = order_repo.count_by_state_by_customer(current_user.id)
     by_state: dict[str, int] = {state: count for state, count in rows}
 
     for estado in OrderStatus:
@@ -200,15 +175,9 @@ def get_all_my_orders(
     category: Optional[str] = Query(None),
 ) -> CustomerReportResponse:
     """Retorna todos los pedidos del cliente con detalles para generar reporte PDF."""
-    query = select(Order).where(Order.customer_id == current_user.id)
-
-    if start_date:
-        query = query.where(Order.created_at >= start_date)
-    if end_date:
-        query = query.where(Order.created_at <= end_date)
-
-    query = query.order_by(desc(Order.created_at))
-    orders = db.execute(query).scalars().all()
+    orders = OrderRepository(db).list_by_customer_dates(
+        current_user.id, start_date=start_date, end_date=end_date
+    )
 
     orders_list = []
     for o in orders:
@@ -297,44 +266,18 @@ def get_my_order(
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientOrderResponse:
     """Obtiene detalle de un pedido específico del cliente autenticado."""
-    query = (
-        select(Order)
-        .options(
-            selectinload(Order.details)
-            .selectinload(OrderDetail.product)
-            .selectinload(Product.inventory)
-        )
-        .where(Order.id == order_id, Order.customer_id == current_user.id)
-    )
-    result = db.execute(query)
-    order = result.scalar_one_or_none()
+    order = OrderRepository(db).get_owned_with_details(order_id, current_user.id)
 
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
-    has_production = (
-        db.execute(
-            select(func.count(Task.id)).where(
-                Task.order_id == order.id, Task.deleted_at.is_(None)
-            )
-        ).scalar()
-        or 0
-    ) > 0
+    has_production = TaskRepository(db).count_live_by_order(order.id) > 0
 
     return _order_to_client_response(order, has_production=has_production)
 
 
 def _get_owned_order_or_404(db: Session, order_id: uuid.UUID, user_id: uuid.UUID) -> Order:
-    query = (
-        select(Order)
-        .options(
-            selectinload(Order.details)
-            .selectinload(OrderDetail.product)
-            .selectinload(Product.inventory)
-        )
-        .where(Order.id == order_id, Order.customer_id == user_id)
-    )
-    order = db.execute(query).scalar_one_or_none()
+    order = OrderRepository(db).get_owned_with_details(order_id, user_id)
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     return order
@@ -347,14 +290,7 @@ def _assert_order_editable_by_client(db: Session, order: Order) -> None:
             status_code=409,
             detail="Solo se pueden modificar pedidos en estado pendiente",
         )
-    has_production = (
-        db.execute(
-            select(func.count(Task.id)).where(
-                Task.order_id == order.id, Task.deleted_at.is_(None)
-            )
-        ).scalar()
-        or 0
-    )
+    has_production = TaskRepository(db).count_live_by_order(order.id)
     if has_production > 0:
         raise HTTPException(
             status_code=409,
@@ -370,8 +306,6 @@ def update_my_order(
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientOrderResponse:
     """Reemplaza las líneas de un pedido propio del cliente."""
-    from app.models.client_price import ClientPrice
-
     order = _get_owned_order_or_404(db, order_id, current_user.id)
     _assert_order_editable_by_client(db, order)
 
@@ -382,32 +316,24 @@ def update_my_order(
         )
 
     try:
-        old_details = (
-            db.execute(select(OrderDetail).where(OrderDetail.order_id == order.id))
-            .scalars()
-            .all()
-        )
+        detail_repo = OrderDetailRepository(db)
+        old_details = detail_repo.list_by_order(order.id)
         # Precio congelado por producto: se conserva el que ya tenía el pedido
         frozen_prices: dict[uuid.UUID, float] = {
             d.product_id: float(d.unit_price) for d in old_details if d.unit_price is not None
         }
         # Productos nuevos: precio personalizado del cliente si existe
         new_product_ids = {d.product_id for d in order_data.details} - set(frozen_prices)
-        if new_product_ids:
-            price_rows = db.execute(
-                select(ClientPrice.product_id, ClientPrice.unit_price).where(
-                    ClientPrice.client_id == current_user.id,
-                    ClientPrice.product_id.in_(new_product_ids),
-                    ClientPrice.deleted_at.is_(None),
-                )
-            ).all()
-            frozen_prices.update({row[0]: float(row[1]) for row in price_rows})
+        price_rows = ClientPriceRepository(db).prices_by_products(
+            current_user.id, new_product_ids
+        )
+        frozen_prices.update({row[0]: float(row[1]) for row in price_rows})
 
-        db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
+        detail_repo.delete_by_order(order.id)
 
         total_pairs = 0
         for detail_data in order_data.details:
-            db.add(
+            detail_repo.add(
                 OrderDetail(
                     order_id=order.id,
                     product_id=detail_data.product_id,
@@ -454,15 +380,7 @@ def delete_my_order(
     order = _get_owned_order_or_404(db, order_id, current_user.id)
     _assert_order_editable_by_client(db, order)
 
-    has_incidence = (
-        db.execute(
-            select(func.count(PendingProductIncidence.id)).where(
-                PendingProductIncidence.order_id == order.id,
-                PendingProductIncidence.deleted_at.is_(None),
-            )
-        ).scalar()
-        or 0
-    )
+    has_incidence = PendingProductIncidenceRepository(db).count_live_by_order(order.id)
     if has_incidence > 0:
         raise HTTPException(
             status_code=409,
@@ -470,8 +388,8 @@ def delete_my_order(
         )
 
     try:
-        db.execute(sa_delete(OrderDetail).where(OrderDetail.order_id == order.id))
-        db.delete(order)
+        OrderDetailRepository(db).delete_by_order(order.id)
+        OrderRepository(db).delete(order)
         db.commit()
     except Exception:
         db.rollback()
