@@ -252,8 +252,8 @@ def create_my_order(
     El `customer_id` siempre es el del cliente actual (no se permite elegir otro).
     `total_pairs` se recalcula en el servidor como suma de los detalles.
     """
-    from app.controllers.orders import create_order as _create_order
-    from app.routers.orders import _trigger_notifications
+    from app.services.orders import create_order as _create_order
+    from app.api.orders import _trigger_notifications
 
     try:
         new_order = _create_order(
@@ -528,7 +528,7 @@ def create_my_incidence(
     Reporta un reclamo sobre un producto de un pedido entregado.
     Queda en estado pendiente hasta que el jefe lo apruebe o rechace.
     """
-    from app.controllers.dashboard_empleado import create_customer_pending_incidence
+    from app.services.dashboard_empleado_pending import create_customer_pending_incidence
 
     # Handle evidence image upload
     evidence_image_url = None
@@ -574,7 +574,7 @@ def list_my_incidences(
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientIncidenceListResponse:
     """Lista los reclamos reportados por el cliente autenticado."""
-    from app.controllers.dashboard_empleado import get_customer_pending_incidences
+    from app.services.dashboard_empleado_pending import get_customer_pending_incidences
 
     items = get_customer_pending_incidences(db, current_user.id)
     return ClientIncidenceListResponse(

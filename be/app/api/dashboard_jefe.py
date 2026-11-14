@@ -14,7 +14,7 @@ from app.schemas.dashboard_jefe import (
     DashboardMetricsResponse,
     RecentOrdersResponse,
 )
-from app.controllers.dashboard_jefe import (
+from app.services.dashboard_jefe import (
     get_alerts_data,
     get_metrics_data,
     get_recent_orders_data,

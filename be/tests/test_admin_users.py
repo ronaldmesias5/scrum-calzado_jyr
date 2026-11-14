@@ -15,8 +15,8 @@ from app.utils.security import hash_password
 @pytest.fixture()
 def no_email(monkeypatch):
     """Evita envíos SMTP reales en los endpoints de usuarios."""
-    monkeypatch.setattr("app.routers.admin.send_welcome_email", AsyncMock())
-    monkeypatch.setattr("app.routers.admin.send_account_approved_email", AsyncMock())
+    monkeypatch.setattr("app.api.admin.send_welcome_email", AsyncMock())
+    monkeypatch.setattr("app.api.admin.send_account_approved_email", AsyncMock())
 
 
 def _csrf(client, base: dict) -> dict:

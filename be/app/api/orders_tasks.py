@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.dependencies import _require_jefe, get_current_user, get_db
 from app.config import settings
 from app.models.notifications import NotificationType
-from app.controllers.notifications import create_notification, get_jefes
+from app.services.notifications import create_notification, get_jefes
 from app.models.order import Order, OrderDetail
 from app.models.tasks import Task
 from app.models.user import User
@@ -26,8 +26,8 @@ from app.schemas.orders import (
     TaskPriorityUpdateRequest,
     TaskStatusUpdateRequest,
 )
-from app.controllers.orders import complete_emplantillado
-from app.controllers.supplies import deduct_supplies_for_production
+from app.services.orders import complete_emplantillado
+from app.services.supplies import deduct_supplies_for_production
 from app.utils.task_priority import calculate_task_priority
 
 router = APIRouter(

@@ -4,9 +4,9 @@
 
 from fastapi import APIRouter
 
-from app.routers.dashboard_empleado_incidences import router as incidences_router
-from app.routers.dashboard_empleado_metrics import router as metrics_router
-from app.routers.dashboard_empleado_tasks import router as tasks_router
+from app.api.dashboard_empleado_incidences import router as incidences_router
+from app.api.dashboard_empleado_metrics import router as metrics_router
+from app.api.dashboard_empleado_tasks import router as tasks_router
 
 router = APIRouter()
 router.include_router(metrics_router)

@@ -40,28 +40,28 @@ from app.models import (  # noqa: F401
     type_document,
     user,
 )
-from app.routers.auth import router as auth_router
-from app.routers.bulk_import import router as bulk_import_router
-from app.routers.catalog_brands import router as catalog_brands_router
-from app.routers.catalog_categories import router as catalog_categories_router
-from app.routers.catalog_inventory import router as catalog_inventory_router
-from app.routers.catalog_products import router as catalog_products_router
-from app.routers.catalog import router as catalog_router
-from app.routers.catalog_styles import router as catalog_styles_router
-from app.routers.client import router as client_router
-from app.routers.dashboard_empleado import router as dashboard_empleado_router
-from app.routers.dashboard_jefe import router as dashboard_jefe_router
-from app.routers.notifications import router as notifications_router
-from app.routers.orders import router as orders_router
-from app.routers.orders_tasks import router as orders_tasks_router
-from app.routers.reports import router as reports_router
-from app.routers.scrap import router as scrap_router
-from app.routers.supplies import router as supplies_router
-from app.routers.type_document import router as type_document_router
-from app.routers.admin import router as admin_router
-from app.routers.client_prices import router as client_prices_router
-from app.routers.users import router as users_router
-from app.routers.ai_chat import router as ai_chat_router
+from app.api.auth import router as auth_router
+from app.api.bulk_import import router as bulk_import_router
+from app.api.catalog_brands import router as catalog_brands_router
+from app.api.catalog_categories import router as catalog_categories_router
+from app.api.catalog_inventory import router as catalog_inventory_router
+from app.api.catalog_products import router as catalog_products_router
+from app.api.catalog import router as catalog_router
+from app.api.catalog_styles import router as catalog_styles_router
+from app.api.client import router as client_router
+from app.api.dashboard_empleado import router as dashboard_empleado_router
+from app.api.dashboard_jefe import router as dashboard_jefe_router
+from app.api.notifications import router as notifications_router
+from app.api.orders import router as orders_router
+from app.api.orders_tasks import router as orders_tasks_router
+from app.api.reports import router as reports_router
+from app.api.scrap import router as scrap_router
+from app.api.supplies import router as supplies_router
+from app.api.type_document import router as type_document_router
+from app.api.admin import router as admin_router
+from app.api.client_prices import router as client_prices_router
+from app.api.users import router as users_router
+from app.api.ai_chat import router as ai_chat_router
 
 
 @asynccontextmanager

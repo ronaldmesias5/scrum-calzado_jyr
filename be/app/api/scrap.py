@@ -22,7 +22,7 @@ from app.schemas.scrap import (
     ShareIncidenceRequest,
     ShareIncidenceResponse,
 )
-from app.controllers.scrap import (
+from app.services.scrap import (
     get_defect_codes,
     create_defect_code,
     get_incidents,
@@ -451,7 +451,7 @@ def list_pending_product_incidences(
     status_filter: str | None = Query(default=None, description="pending, approved, rejected"),
 ) -> ProductIncidenceListResponse:
     """Lista incidencias de producto pendientes de aprobación (jefe/admin)."""
-    from app.controllers.dashboard_empleado import get_all_pending_incidences
+    from app.services.dashboard_empleado_pending import get_all_pending_incidences
 
     _ensure_admin_or_jefe(current_user)
     pendings = get_all_pending_incidences(db, status_filter=status_filter)
@@ -469,7 +469,7 @@ def approve_product_incidence(
     db: Annotated[Session, Depends(get_db)],
 ) -> ProductIncidenceResponse:
     """Aprueba una incidencia de producto y crea el LossRecord con el tipo elegido."""
-    from app.controllers.dashboard_empleado import approve_pending_incidence
+    from app.services.dashboard_empleado_pending import approve_pending_incidence
 
     _ensure_admin_or_jefe(current_user)
     try:
@@ -487,7 +487,7 @@ def reject_product_incidence(
     db: Annotated[Session, Depends(get_db)],
 ) -> ProductIncidenceResponse:
     """Rechaza una incidencia de producto con un motivo opcional."""
-    from app.controllers.dashboard_empleado import reject_pending_incidence
+    from app.services.dashboard_empleado_pending import reject_pending_incidence
 
     _ensure_admin_or_jefe(current_user)
     try:

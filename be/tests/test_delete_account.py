@@ -46,7 +46,7 @@ def _login_headers(client, email, password) -> dict:
 
 def test_delete_account_request_schema_validation():
     """El schema DeleteAccountRequest valida correctamente."""
-    from app.routers.users import DeleteAccountRequest
+    from app.api.users import DeleteAccountRequest
 
     req = DeleteAccountRequest(password="Test1234!")
     assert req.password == "Test1234!"

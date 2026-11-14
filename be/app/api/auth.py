@@ -26,7 +26,7 @@ from app.schemas.auth import (
     UserCreate,
     UserLogin,
 )
-from app.controllers import auth as auth_service
+from app.services import auth as auth_service
 from app.logging_config import audit_logger
 from app.services.auth import _redact_email
 

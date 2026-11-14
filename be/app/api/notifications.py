@@ -17,7 +17,7 @@ from app.schemas.notifications import (
     NotificationListResponse,
     NotificationsUnreadResponse,
 )
-from app.controllers.notifications import (
+from app.services.notifications import (
     get_notifications,
     get_unread_count,
     mark_as_read,

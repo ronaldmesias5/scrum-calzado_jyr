@@ -122,7 +122,7 @@ def create_general_incidence(
     """Crea una incidencia general (maquinaria o insumo) desde el dashboard del empleado."""
     from decimal import Decimal
 
-    from app.controllers.scrap import register_incident
+    from app.services.scrap import register_incident
 
     if data.incidence_category not in ("maquinaria", "insumo"):
         raise HTTPException(
@@ -230,7 +230,7 @@ def create_product_incidence(
     evidence: UploadFile | None = File(None),
 ) -> ProductIncidenceResponse:
     """Crea una incidencia de producto pendiente de aprobación del jefe."""
-    from app.controllers.dashboard_empleado import create_pending_incidence
+    from app.services.dashboard_empleado_pending import create_pending_incidence
 
     # Handle evidence image upload
     evidence_image_url = None
@@ -296,7 +296,7 @@ def get_my_product_incidences(
     db: Annotated[Session, Depends(get_db)],
 ) -> ProductIncidenceListResponse:
     """Lista las incidencias de producto creadas por el empleado."""
-    from app.controllers.dashboard_empleado import get_employee_pending_incidences
+    from app.services.dashboard_empleado_pending import get_employee_pending_incidences
 
     pendings = get_employee_pending_incidences(db, current_user.id)
 

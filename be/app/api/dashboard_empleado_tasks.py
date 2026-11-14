@@ -35,7 +35,7 @@ from app.schemas.dashboard_empleado import (
     ValeResponse,
     ValeTaskInfo,
 )
-from app.controllers.dashboard_empleado import get_task_type_for_occupation
+from app.services.dashboard_empleado import get_task_type_for_occupation
 
 
 def _employee_role_guard(current_user: Annotated[User, Depends(get_current_user)]) -> None:

@@ -25,7 +25,7 @@ from app.schemas.orders import (
     OrderUpdateDetailsRequest,
     OrderUpdateStatusRequest,
 )
-from app.controllers.orders import (
+from app.services.orders import (
     _order_to_detail_response,
     _order_to_response,
     apply_detail_state_inventory,
@@ -49,7 +49,7 @@ def _trigger_notifications(*, db: Session, new_order, customer_check, settings, 
     import threading
 
     from app.models.notifications import NotificationType
-    from app.controllers.notifications import create_notification, get_jefes
+    from app.services.notifications import create_notification, get_jefes
     from app.utils.ws_manager import ws_manager
     from app.utils.email import send_order_confirmation_email, send_order_notification_email
 
@@ -272,7 +272,7 @@ def create_order(
     try:
         _require_jefe(current_user)
 
-        from app.controllers.orders import create_order as _create_order
+        from app.services.orders import create_order as _create_order
 
         new_order = _create_order(
             db=db,
