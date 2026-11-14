@@ -9,7 +9,7 @@
 #   Docker invalidará la capa de pnpm install SOLO si estos
 #   archivos cambian, no si cambia el código fuente.
 # ────────────────────────────
-FROM node:22-alpine AS base
+FROM node:25-alpine AS base
 
 # Habilitar pnpm vía Corepack (incluido en Node 20+, sin instalación adicional).
 # ¿Qué es Corepack? Gestor de gestores de paquetes integrado en Node.js.
