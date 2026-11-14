@@ -5,7 +5,7 @@
 # UV es 10-100x más rápido que pip y compatible con pyproject.toml.
 # ============================================================
 
-FROM python:3.12-slim AS base
+FROM python:3.15-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
