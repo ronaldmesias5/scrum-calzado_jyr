@@ -8,16 +8,17 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, desc, func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.dependencies import _require_jefe, get_current_user, get_db
 from app.config import settings
 from app.models.notifications import NotificationType
 from app.services.notifications import create_notification, get_jefes
-from app.models.order import Order, OrderDetail
 from app.models.tasks import Task
 from app.models.user import User
+from app.repositories.order_repository import OrderRepository
+from app.repositories.task_repository import TaskRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.orders import (
     AssignTaskEmployeeRequest,
     ProductionBatchTasksRequest,
@@ -45,7 +46,7 @@ def get_next_vale_number(
 ):
     _require_jefe(current_user)
     try:
-        max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
+        max_vale = TaskRepository(db).max_vale_number()
         return {"next_number": int(max_vale) + 1}
     except Exception:
         logger.exception("Error al calcular número de vale")
@@ -65,29 +66,9 @@ def list_all_production_tasks(
     """
     _require_jefe(current_user)
     try:
-        # Subconsulta para obtener el total de pares por orden y producto
-        pairs_subquery = (
-            select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
-            .where(OrderDetail.deleted_at == None)
-            .group_by(OrderDetail.order_id, OrderDetail.product_id)
-            .subquery()
-        )
-
-        query = select(Task, pairs_subquery.c.total).outerjoin(
-            pairs_subquery,
-            and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
-        ).options(joinedload(Task.product)).where(Task.deleted_at == None)
-
-        if status:
-            query = query.where(Task.status == status)
-        if type:
-            query = query.where(Task.type == type)
-        if assigned_to:
-            query = query.where(Task.assigned_to == assigned_to)
-
-        query = query.order_by(desc(Task.created_at))
-        result = db.execute(query)
-        tasks_data = result.all()  # Retorna tuplas (Task, total)
+        tasks_data = TaskRepository(db).list_all_with_totals(
+            status=status, type_=type, assigned_to=assigned_to
+        )  # Retorna tuplas (Task, total)
 
         tasks_list = []
         for t, total in tasks_data:
@@ -140,8 +121,10 @@ def create_production_tasks(
         if current_user.occupation != "jefe":
             raise HTTPException(status_code=403, detail="Solo el jefe puede asignar tareas")
 
+        task_repo = TaskRepository(db)
+
         # Verificar orden
-        order = db.execute(select(Order).where(Order.id == order_id)).scalar_one_or_none()
+        order = OrderRepository(db).get_by_id(order_id)
         if not order:
             raise HTTPException(status_code=404, detail="Orden no encontrada")
 
@@ -149,29 +132,16 @@ def create_production_tasks(
         # Así evitamos contar los pares múltiples veces
 
         # Calcular siguiente vale_number global (solo si no existe ya para este order+product)
-        max_vale = db.execute(select(func.max(Task.vale_number))).scalar() or 0
+        max_vale = task_repo.max_vale_number()
         next_vale = int(max_vale) + 1
 
         new_tasks = []
         now = datetime.now(UTC)
 
         # Precargar en lote lo que el loop consulta por tarea (evita N+1)
-        active_rows = db.execute(
-            select(Task).where(
-                Task.order_id == order_id,
-                Task.status != 'cancelado',
-                Task.deleted_at == None,
-            )
-        ).scalars().all()
+        active_rows = task_repo.list_active_by_order(order_id)
         active_by_key = {(t.product_id, t.line_group, t.type): t for t in active_rows}
-        vale_rows = db.execute(
-            select(Task.product_id, Task.line_group, func.min(Task.vale_number))
-            .where(
-                Task.order_id == order_id,
-                Task.vale_number.isnot(None),
-            )
-            .group_by(Task.product_id, Task.line_group)
-        ).all()
+        vale_rows = task_repo.min_vale_map_by_order(order_id)
         vale_map = {(row[0], row[1]): row[2] for row in vale_rows}
 
         for t_data in request.tasks:
@@ -187,7 +157,7 @@ def create_production_tasks(
                 # pero NO creamos un duplicado (solo si ambos tienen valor)
                 if t_data.assigned_to is not None and str(existing_task.assigned_to or '') != str(t_data.assigned_to):
                     existing_task.assigned_to = t_data.assigned_to
-                    db.add(existing_task)
+                    task_repo.add(existing_task)
                 new_tasks.append(existing_task)
                 continue
 
@@ -210,7 +180,7 @@ def create_production_tasks(
                 assignment_date=now,
                 created_by=current_user.id,
             )
-            db.add(task)
+            task_repo.add(task)
             # Si se asignó empleado, la tarea arranca en progreso
             if t_data.assigned_to is not None:
                 task.status = 'en_progreso'
@@ -231,18 +201,7 @@ def create_production_tasks(
         # Recargar tareas con producto para devolver task_prices y total_pairs
         task_ids = [t.id for t in new_tasks]
 
-        pairs_subquery = (
-            select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
-            .group_by(OrderDetail.order_id, OrderDetail.product_id)
-            .subquery()
-        )
-
-        query = select(Task, pairs_subquery.c.total).outerjoin(
-            pairs_subquery,
-            and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
-        ).options(joinedload(Task.product), joinedload(Task.assigned_user)).where(Task.id.in_(task_ids))
-
-        reloaded_data = db.execute(query).unique().all()
+        reloaded_data = task_repo.list_with_totals_by_ids(task_ids)
 
         results = []
         for t, total in reloaded_data:
@@ -291,13 +250,12 @@ def assign_task_employee(
         raise HTTPException(status_code=403, detail="Solo el jefe puede asignar empleados a tareas")
 
     # Obtener tarea
-    query = select(Task).options(joinedload(Task.product)).where(Task.id == task_id)
-    task = db.execute(query).unique().scalar_one_or_none()
+    task = TaskRepository(db).get_by_id_with_product(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
 
     # Verificar que el empleado existe
-    employee = db.query(User).filter(User.id == request.assigned_to).first()
+    employee = UserRepository(db).get_by_id(request.assigned_to)
     if not employee:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
@@ -362,21 +320,7 @@ def get_order_tasks(
     """
     _require_jefe(current_user)
     try:
-        pairs_subquery = (
-            select(OrderDetail.order_id, OrderDetail.product_id, func.sum(OrderDetail.amount).label("total"))
-            .group_by(OrderDetail.order_id, OrderDetail.product_id)
-            .subquery()
-        )
-
-        query = select(Task, pairs_subquery.c.total).outerjoin(
-            pairs_subquery,
-            and_(Task.order_id == pairs_subquery.c.order_id, Task.product_id == pairs_subquery.c.product_id)
-        ).options(joinedload(Task.product)).where(Task.order_id == order_id, Task.deleted_at == None)
-
-        if product_id:
-            query = query.where(Task.product_id == product_id)
-
-        tasks_data = db.execute(query).all()
+        tasks_data = TaskRepository(db).list_by_order_with_totals(order_id, product_id)
 
         return [
             ProductionTaskResponse(
@@ -417,9 +361,9 @@ def update_task_status(
 ) -> ProductionTaskResponse:
     """Actualiza el estado de una tarea de producción.
     Permite: jefe (cualquier tarea) o el empleado asignado (su propia tarea)."""
+    task_repo = TaskRepository(db)
     # Obtener tarea con producto cargado
-    query = select(Task).options(joinedload(Task.product)).where(Task.id == task_id)
-    task = db.execute(query).unique().scalar_one_or_none()
+    task = task_repo.get_by_id_with_product(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
 
@@ -444,16 +388,9 @@ def update_task_status(
         if current_index >= 0 and current_index < len(STAGE_ORDER) - 1:
             next_type = STAGE_ORDER[current_index + 1]
             # Verificar si ya existe una tarea para la siguiente etapa
-            existing_next = db.execute(
-                select(Task).where(
-                    Task.order_id == task.order_id,
-                    Task.product_id == task.product_id,
-                    Task.line_group == task.line_group,
-                    Task.type == next_type,
-                    Task.status != 'cancelado',
-                    Task.deleted_at == None,
-                )
-            ).scalar_one_or_none()
+            existing_next = task_repo.find_active_next(
+                task.order_id, task.product_id, task.line_group, next_type
+            )
 
             if existing_next is None:
                 # Reutilizar el vale_number de la tarea actual
@@ -474,7 +411,7 @@ def update_task_status(
                     created_by=current_user.id,
                     status='pendiente',
                 )
-                db.add(next_task)
+                task_repo.add(next_task)
 
     # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
     if task.type == "emplantillado" and request.status == "completado":
@@ -510,7 +447,7 @@ def update_task_status(
     user_name = "Sin asignar"
     user_occupation = None
     if task.assigned_to:
-        user = db.query(User).filter(User.id == task.assigned_to).first()
+        user = UserRepository(db).get_by_id(task.assigned_to)
         if user:
             user_name = f"{user.name_user} {user.last_name}"
             user_occupation = user.occupation
@@ -544,8 +481,7 @@ def update_task_priority(
     """Actualiza la prioridad de una tarea de producción. Solo el jefe puede cambiarla."""
     _require_jefe(current_user)
 
-    query = select(Task).options(joinedload(Task.product), joinedload(Task.assigned_user)).where(Task.id == task_id)
-    task = db.execute(query).unique().scalar_one_or_none()
+    task = TaskRepository(db).get_by_id_with_product_and_user(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
 
@@ -588,10 +524,7 @@ def update_task_detail(
     Solo el jefe puede editar."""
     _require_jefe(current_user)
 
-    query = select(Task).options(
-        joinedload(Task.product), joinedload(Task.assigned_user)
-    ).where(Task.id == task_id)
-    task = db.execute(query).unique().scalar_one_or_none()
+    task = TaskRepository(db).get_by_id_with_product_and_user(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
 

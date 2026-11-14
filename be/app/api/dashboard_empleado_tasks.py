@@ -36,6 +36,7 @@ from app.schemas.dashboard_empleado import (
     ValeTaskInfo,
 )
 from app.services.dashboard_empleado import get_task_type_for_occupation
+from app.repositories.task_repository import TaskRepository
 
 
 def _employee_role_guard(current_user: Annotated[User, Depends(get_current_user)]) -> None:
@@ -64,26 +65,7 @@ def get_my_tasks(
     type: str | None = Query(None, description="Filtrar por tipo/cargo"),
 ) -> EmployeeTaskListResponse:
     """Retorna las tareas asignadas al empleado autenticado."""
-    query = (
-        select(Task)
-        .options(
-            joinedload(Task.product).joinedload(Product.category),
-            joinedload(Task.assigned_user),
-        )
-        .where(
-            Task.assigned_to == current_user.id,
-            Task.deleted_at == None,
-        )
-    )
-
-    if status:
-        query = query.where(Task.status == status)
-    if type:
-        query = query.where(Task.type == type)
-
-    query = query.order_by(desc(Task.created_at))
-    result = db.execute(query)
-    tasks = result.scalars().unique().all()
+    tasks = TaskRepository(db).list_assigned_to(current_user.id, status=status, type_=type)
 
     task_list = []
     for t in tasks:
@@ -137,19 +119,7 @@ def get_available_tasks(
     if not task_type:
         return AvailableTaskListResponse(tasks=[], total=0)
 
-    query = (
-        select(Task)
-        .options(joinedload(Task.product).joinedload(Product.category))
-        .where(
-            Task.assigned_to == None,
-            Task.type == task_type,
-            Task.status == 'pendiente',
-            Task.deleted_at == None,
-        )
-        .order_by(desc(Task.created_at))
-    )
-
-    tasks = db.execute(query).scalars().unique().all()
+    tasks = TaskRepository(db).list_available(task_type)
 
     return AvailableTaskListResponse(
         tasks=[
@@ -191,9 +161,7 @@ def claim_task(
     if not task_type:
         raise HTTPException(status_code=403, detail="Tu ocupación no puede reclamar tareas")
 
-    task = db.execute(
-        select(Task).where(Task.id == task_id, Task.deleted_at == None)
-    ).scalar_one_or_none()
+    task = TaskRepository(db).get_live_by_id(task_id)
 
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -261,9 +229,8 @@ def update_employee_task_status(
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Actualiza el estado y la observación de una tarea (solo el empleado asignado)."""
-    task = db.execute(
-        select(Task).where(Task.id == task_id, Task.deleted_at == None)
-    ).scalar_one_or_none()
+    task_repo = TaskRepository(db)
+    task = task_repo.get_live_by_id(task_id)
 
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -285,16 +252,9 @@ def update_employee_task_status(
         current_index = STAGE_ORDER.index(task.type)
         if current_index < len(STAGE_ORDER) - 1:
             next_type = STAGE_ORDER[current_index + 1]
-            existing_next = db.execute(
-                select(Task).where(
-                    Task.order_id == task.order_id,
-                    Task.product_id == task.product_id,
-                    Task.line_group == task.line_group,
-                    Task.type == next_type,
-                    Task.status != 'cancelado',
-                    Task.deleted_at == None,
-                )
-            ).scalar_one_or_none()
+            existing_next = task_repo.find_active_next(
+                task.order_id, task.product_id, task.line_group, next_type
+            )
 
             if existing_next is None:
                 now2 = datetime.now(UTC)
@@ -313,7 +273,7 @@ def update_employee_task_status(
                     created_by=current_user.id,
                     status='pendiente',
                 )
-                db.add(next_task)
+                task_repo.add(next_task)
 
     db.commit()
 
@@ -335,11 +295,7 @@ def get_task_vale(
     - Solo la tarea del empleado actual muestra precios y es editable.
     - Las demás tareas muestran solo el nombre del empleado asignado.
     """
-    task = db.execute(
-        select(Task)
-        .options(joinedload(Task.product).joinedload(Product.category))
-        .where(Task.id == task_id, Task.deleted_at == None)
-    ).scalar_one_or_none()
+    task = TaskRepository(db).get_vale_task(task_id)
 
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -367,17 +323,9 @@ def get_task_vale(
         raise HTTPException(status_code=404, detail="Orden no encontrada")
 
     # Obtener todas las tareas para esta orden + producto + line_group
-    all_tasks = db.execute(
-        select(Task)
-        .options(joinedload(Task.assigned_user))
-        .where(
-            Task.order_id == task.order_id,
-            Task.product_id == task.product_id,
-            Task.line_group == task.line_group,
-            Task.deleted_at == None,
-        )
-        .order_by(Task.created_at)
-    ).scalars().all()
+    all_tasks = TaskRepository(db).list_by_order_product_linegroup(
+        task.order_id, task.product_id, task.line_group
+    )
 
     # Construir la lista de tareas del vale
     vale_tasks = []
