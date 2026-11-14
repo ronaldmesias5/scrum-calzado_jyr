@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/supplies_movement.py
-Descripción: Modelo ORM para la tabla `supplies_movement` (movimientos de insumos).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para la tabla `supplies_movement` (movimientos de insumos)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

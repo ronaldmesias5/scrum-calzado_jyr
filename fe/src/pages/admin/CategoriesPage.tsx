@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import { Tag, Plus, Edit2, Trash2, Package } from 'lucide-react';
 import Modal from '@/components/atoms/Modal';
 import { useToast } from '@/store/ToastContext';
@@ -162,7 +163,9 @@ export default function CategoriesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Tag className="w-8 h-8 text-fuchsia-600 dark:text-fuchsia-400" />
+            <ADMIN_SECTIONS.categories.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.categories.color}`}
+            />
             Categorías
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

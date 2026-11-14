@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import { useBadgeCounts } from '@/store/BadgeCountsContext';
 import {
   AlertTriangle,
@@ -294,6 +295,7 @@ export default function LossesPage() {
       setRepairedIncidents(data.items);
     } catch (err) {
       console.error('Error loading repaired incidents:', err);
+      showToast('Error al cargar incidencias reparadas', 'error');
     } finally {
       setRepairedLoading(false);
     }
@@ -307,10 +309,11 @@ export default function LossesPage() {
       setPendingIncidences(data.incidences);
     } catch (e) {
       console.error('Error al cargar incidencias pendientes:', e);
+      showToast('Error al cargar incidencias pendientes', 'error');
     } finally {
       setPendingLoading(false);
     }
-  }, [pendingStatusFilter]);
+  }, [pendingStatusFilter, showToast]);
 
   const handleApprovePending = async (id: string) => {
     const incidentType = selectedType[id] || 'perdida';
@@ -457,7 +460,9 @@ export default function LossesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+            <ADMIN_SECTIONS.losses.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.losses.color}`}
+            />
             Incidencias de Calzado
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

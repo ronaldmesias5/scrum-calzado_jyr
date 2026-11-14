@@ -1,7 +1,6 @@
-/**
- * Archivo: fe/src/types/products.ts
- * Descripción: Tipos centralizados para productos, catálogo e inventario.
- */
+// ════════════════════════════════════════
+// 📄 Tipos centralizados para productos, catálogo e inventario
+// ════════════════════════════════════════
 
 export interface Product {
   id: string;

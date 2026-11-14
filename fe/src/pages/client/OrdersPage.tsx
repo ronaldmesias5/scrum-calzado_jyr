@@ -1,14 +1,25 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package2, ArrowRight, Search } from 'lucide-react';
+import {
+  ShoppingBag,
+  Package2,
+  ArrowRight,
+  Search,
+  Pencil,
+  Trash2,
+  Loader2
+} from 'lucide-react';
 import {
   getMyOrders,
   getMyOrderDetail,
+  deleteMyOrder,
   type ClientOrder
 } from '@/services/clientApi';
 import { resolveImageUrl } from '@/services/wholesaleCatalogApi';
 import { formatCOP } from '@/utils/format';
 import Modal from '@/components/atoms/Modal';
 import Pagination from '@/components/atoms/Pagination';
+import ClientOrderEditModal from '@/features/client/components/organisms/ClientOrderEditModal';
+import { useToast } from '@/store/ToastContext';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   pendiente: {
@@ -41,6 +52,7 @@ const DEFAULT_STATUS: { label: string; color: string } = {
 };
 
 export default function OrdersPage() {
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -48,6 +60,9 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<ClientOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
@@ -80,6 +95,35 @@ export default function OrdersPage() {
       setSelectedOrder(null);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const canManageOrder = selectedOrder?.state === 'pendiente' && !selectedOrder?.has_production;
+
+  const handleEditSaved = () => {
+    if (selectedOrder) void handleViewDetail(selectedOrder.id);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedOrder || deleting) return;
+    try {
+      setDeleting(true);
+      await deleteMyOrder(selectedOrder.id);
+      setShowDeleteConfirm(false);
+      setSelectedOrder(null);
+      window.dispatchEvent(new Event('orders-updated'));
+      showToast('Pedido eliminado correctamente', 'success');
+    } catch (error) {
+      const responseError = error as {
+        response?: { data?: { detail?: string } };
+      };
+      showToast(
+        responseError.response?.data?.detail ||
+          'No se pudo eliminar el pedido.',
+        'error'
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -396,8 +440,80 @@ export default function OrdersPage() {
                 ))}
               </div>
             </div>
+
+            {canManageOrder && (
+              <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar pedido
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(true)}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar pedido
+                </button>
+              </div>
+            )}
           </div>
         ) : null}
+      </Modal>
+
+      {/* Modal editar pedido */}
+      {selectedOrder && (
+        <ClientOrderEditModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          order={selectedOrder}
+          onSaved={handleEditSaved}
+        />
+      )}
+
+      {/* Modal confirmar eliminación */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Eliminar pedido"
+        size="sm"
+        centered
+      >
+        <div className="space-y-5 p-6">
+          <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/20">
+            <Trash2 className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+              ¿Seguro que deseas eliminar el pedido{' '}
+              <span className="font-mono">
+                #{selectedOrder?.id.slice(0, 8)}
+              </span>
+              ? Esta acción no se puede deshacer.
+            </p>
+          </div>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={deleting}
+              className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

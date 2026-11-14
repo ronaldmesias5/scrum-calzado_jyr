@@ -1,27 +1,6 @@
-/**
- * Archivo: fe/src/modules/auth/pages/RegisterPage.tsx
- * Descripción: Página de registro de nuevos clientes de CALZADO J&R.
- *
- * ¿Qué?
- *   Formulario extenso con:
- *   - Inputs: name, last_name, email, phone, identity_document, business_name, password
- *   - SELECT: identity_document_type_id (carga desde GET /api/v1/type-documents)
- *   - Checkbox: Aceptar términos y condiciones (TermsModal)
- *   - Validaciones: contraseñas coinciden, términos aceptados
- *
- * ¿Para qué?
- *   - Permitir auto-registro de clientes (role=client automático)
- *   - Validar datos con backend POST /api/v1/auth/register
- *   - Mostrar success message: "¡Registro exitoso! Tu cuenta está activa."
- *   - Cargar dinámicamente tipos de documento desde backend
- *
- * ¿Impacto?
- *   ALTO — Sin registro, clientes no pueden crear cuentas (solo admin los crearía).
- *   Cuenta creada queda is_active=True e is_validated=True (acceso inmediato).
- *   Modificar formData debe sincronizarse con backend UserCreate schema.
- *   Dependencias: hooks/useAuth.ts, api/type-documents.ts, types/auth.ts,
- *                components/ui/TermsModal.tsx
- */
+// ════════════════════════════════════════
+// 📄 Página de registro de nuevos clientes de CALZADO J&R
+// ════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';

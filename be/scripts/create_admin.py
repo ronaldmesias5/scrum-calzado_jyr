@@ -1,34 +1,6 @@
-"""
-Archivo: be/scripts/create_admin.py
-Descripción: Script para crear usuario administrador inicial manualmente.
-
-¿Qué?
-  Script standalone que:
-  - Verifica que role "admin" existe en BD
-  - Crea usuario admin@calzadojyr.com con contraseña aleatoria segura
-  - Salta si admin ya existe (evita duplicados)
-  - Marca is_active=True, is_validated=True, validated_at=now()
-  
-¿Para qué?
-  - Inicializar sistema con primer admin (no se registra via frontend)
-  - Permitir bootstrap de producción (ejecutar una vez en deploy)
-  - Debug: Recrear admin si se borró accidentalmente
-  
-¿Impacto?
-  MEDIO — Sin admin, sistema queda sin gestor (nadie valida cuentas).
-  Password aleatoria se muestra en consola después de crearla.
-  Modificar email/password requiere: editar script + reejecutar.
-  Dependencias: database.py (SessionLocal), models/user.py, models/role.py,
-               utils/security.py (hash_password)
-
-NOTA: En producción, considerar crear admin desde variables de entorno
-      (no hardcodear password en script versionado).
-      
-Uso: 
-  python scripts/create_admin.py
-  O desde contenedor Docker:
-  docker exec -it scrum-be-1 python scripts/create_admin.py
-"""
+# ════════════════════════════════════════
+# 📄 Script para crear usuario administrador inicial manualmente
+# ════════════════════════════════════════
 
 import sys
 import os

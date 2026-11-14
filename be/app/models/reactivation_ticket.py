@@ -1,20 +1,6 @@
-"""
-Archivo: be/app/models/reactivation_ticket.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `reactivation_tickets`.
-
-¿Qué?
-  Define la estructura del modelo ReactivationTicket con campos:
-  id, user_id, email, reason, phone, identity_document, evidence_url,
-  status (pending/approved/rejected), admin_comment, reviewed_by, reviewed_at, created_at
-
-¿Para qué?
-  RF-005 — Solicitud de Reactivación de Cuentas. Almacena tickets de reactivación
-  que usuarios con cuentas inactivas envían para solicitar reactivación de su cuenta.
-
-¿Impacto?
-  MEDIO — Nueva tabla independiente. No modifica tablas existentes.
-  Dependencias: admin/router.py (endpoints de gestión), auth/router.py (endpoint público)
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `reactivation_tickets`
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

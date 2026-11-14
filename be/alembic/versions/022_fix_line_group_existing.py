@@ -1,10 +1,7 @@
-"""Reparar line_group para pedidos existentes con mismo product_id repetido.
-
-Revision ID: 022_fix_line_group_existing
-Revises: 021_line_group_order_details
-Create Date: 2026-05-13 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Reparar line_group para pedidos existentes con mismo product_id repetido
+# ════════════════════════════════════════
+# 022_fix_line_group_existing | Revises: 021_line_group_order_details | Creada: 2026-05-13 00:00:00.000000
 from alembic import op
 
 revision = '022_fix_line_group_existing'
@@ -14,20 +11,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """
-    Para cada pedido, detecta grupos de tallas del mismo product_id que comparten
-    line_group=0 y les asigna valores únicos secuenciales (1, 2, 3...) dentro del
-    mismo pedido, preservando la agrupación original por product_id.
-    
-    La lógica: dentro de cada order_id + product_id, todas las filas con el mismo
-    line_group original pertenecen al mismo grupo. Si hay múltiples grupos del mismo
-    producto (diferente numeración), se les asigna un line_group distinto a cada uno.
-    
-    Como no podemos distinguir automáticamente si dos filas del mismo producto con
-    line_group=0 son del mismo grupo o de grupos distintos, asignamos un line_group
-    único por cada fila individual. Esto es conservador: garantiza que no se mezclen,
-    aunque puede separar más de lo necesario en pedidos antiguos.
-    """
+    """Para cada pedido, detecta grupos de tallas del mismo product_id que comparten"""
     op.execute("""
         WITH numbered AS (
             SELECT 

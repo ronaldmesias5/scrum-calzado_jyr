@@ -1,8 +1,6 @@
-/**
- * Archivo: components/ui/InputField.tsx
- * Descripción: Campo de entrada reutilizable con label, icono y toggle de contraseña.
- * ¿Para qué? Estandarizar todos los inputs del formulario con el diseño de CALZADO J&R.
- */
+// ════════════════════════════════════════
+// 📄 Campo de entrada reutilizable con label, icono y toggle de contraseña
+// ════════════════════════════════════════
 
 import { useState, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react';

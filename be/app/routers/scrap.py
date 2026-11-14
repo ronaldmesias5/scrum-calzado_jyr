@@ -1,19 +1,4 @@
-"""
-Rutas REST para el módulo de registro de incidencias (Scrap).
-
-Endpoints:
-  GET    /api/v1/scrap/defect-codes                 — listar códigos de defecto
-  POST   /api/v1/scrap/defect-codes                 — crear código de defecto
-  GET    /api/v1/scrap/losses                       — listar incidencias
-  POST   /api/v1/scrap/losses                       — registrar incidencia
-  GET    /api/v1/scrap/losses/{loss_id}             — detalle de incidencia
-  PATCH  /api/v1/scrap/losses/{loss_id}/repair      — marcar incidencia como reparada
-  PATCH  /api/v1/scrap/losses/{loss_id}/approve     — aprobar (backwards compat)
-  PATCH  /api/v1/scrap/losses/{loss_id}/reject      — rechazar (backwards compat)
-  PATCH  /api/v1/scrap/losses/{loss_id}/solve       — solucionar incidencia (falla/faltante)
-  POST   /api/v1/scrap/losses/{loss_id}/share       — compartir incidencia al cliente y/o correo
-  GET    /api/v1/scrap/stock                        — listar stock de scrap
-"""
+"""Rutas REST para el módulo de registro de incidencias (Scrap)."""
 
 import asyncio
 import logging
@@ -265,12 +250,7 @@ def share_incidence(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ShareIncidenceResponse:
-    """
-    Comparte una incidencia con el cliente:
-    - Interno: crea un ReportShare visible en el dashboard del cliente.
-    - Correo: envía email con el detalle (y mensaje del jefe si lo escribió).
-    Si no se especifica target_client_id y la incidencia tiene pedido, se usa el cliente del pedido.
-    """
+    """Comparte una incidencia con el cliente:"""
     from app.models.report_share import ReportShare
     from app.models.order import Order
     from app.utils.email import send_incidence_shared_email

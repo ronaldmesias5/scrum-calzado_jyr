@@ -1,17 +1,50 @@
-"""
-Módulo: logging_config.py
-Descripción: Configuración centralizada de logging para la aplicación.
-
-Proporciona:
-  - Logger para auditoría (events de seguridad)
-  - Logger para errores (stack traces del servidor)
-  - Logger general de aplicación
-  - Rotación de archivos para no llenar disco
-"""
+# ════════════════════════════════════════
+# 📄 Configuración del sistema de logs (4 loggers rotativos)
+# ════════════════════════════════════════
 
 import logging
 import logging.handlers
+import re
 from pathlib import Path
+
+
+class SecretScrubbingFilter(logging.Filter):
+    """Enmascara secretos potenciales (contraseñas, tokens, API keys) en los
+    mensajes de log antes de escribirlos. Red de seguridad si algún módulo
+    registra accidentalmente credenciales."""
+
+    # Claves comunes con valores entre comillas simples o dobles
+    _QUOTED = re.compile(
+        r"(password|passwd|pwd|secret|api_key|apikey|access_token|refresh_token|token|authorization)"
+        r"([\"']?\s*[:=]\s*[\"']?)([^\"'\s,}]{4,})([\"']?)",
+        re.IGNORECASE,
+    )
+
+    # Token Bearer (Authorization: Bearer eyJ...) — el valor va tras un espacio
+    _BEARER = re.compile(r"(?i)(bearer\s+)([A-Za-z0-9\-_.~+/=]{8,})")
+
+    def _scrub(self, message: str) -> str:
+        message = self._BEARER.sub(lambda m: f"{m.group(1)}***REDACTED***", message)
+        return self._QUOTED.sub(
+            lambda m: f"{m.group(1)}{m.group(2)}***REDACTED***{m.group(4)}", message
+        )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            record.msg = self._scrub(record.msg)
+        if record.args:
+            try:
+                record.args = tuple(
+                    self._scrub(str(a)) if isinstance(a, str) else a for a in record.args
+                )
+            except Exception:
+                pass
+        return True
+
+
+def _scrubbing_handler_filter():
+    """Retorna una nueva instancia del filtro (una por handler)."""
+    return SecretScrubbingFilter()
 
 
 def configure_logging():
@@ -35,6 +68,7 @@ def configure_logging():
     audit_handler.setFormatter(
         logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     )
+    audit_handler.addFilter(_scrubbing_handler_filter())
     audit_logger.addHandler(audit_handler)
 
     # ────────────────────────────
@@ -54,12 +88,14 @@ def configure_logging():
         )
     )
     error_logger.addHandler(error_handler)
+    error_handler.addFilter(_scrubbing_handler_filter())
 
     # También enviar a consola en desarrollo
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.ERROR)
     console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
     error_logger.addHandler(console_handler)
+    console_handler.addFilter(_scrubbing_handler_filter())
 
     # ────────────────────────────
     # 3. Logger general (info, debug)
@@ -76,6 +112,15 @@ def configure_logging():
         logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     )
     app_logger.addHandler(app_handler)
+    app_handler.addFilter(_scrubbing_handler_filter())
+
+    # También enviar a consola (stdout/stderr) para visibilidad en
+    # `docker compose logs be` y en producción (12-factor: logs a stdout).
+    app_console_handler = logging.StreamHandler()
+    app_console_handler.setLevel(logging.INFO)
+    app_console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    app_logger.addHandler(app_console_handler)
+    app_console_handler.addFilter(_scrubbing_handler_filter())
 
     # ────────────────────────────
     # 4. Logger IA (Fase 4, asistente)
@@ -92,6 +137,7 @@ def configure_logging():
         logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     )
     ai_logger.addHandler(ai_handler)
+    ai_handler.addFilter(_scrubbing_handler_filter())
 
     return {
         "audit": audit_logger,

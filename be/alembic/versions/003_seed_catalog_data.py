@@ -1,21 +1,7 @@
-"""Seed catalog data: brands, categories and styles.
-
-¿Qué? Migración que inserta datos base del catálogo:
-      - Marcas: Nike, Adidas, Puma, New Balance, Reebok (5 marcas)
-      - Categorías: Dama, Caballero, Infantil (3 categorías)
-      - Estilos: 22 estilos diferentes (Air Force, Superstar, etc.)
-
-¿Por qué sin productos? Los productos se crean desde la aplicación.
-
-¿Para qué? Poblar el catálogo inicial de calzado para que los clientes puedan ver
-           opciones de compra y los operadores tengán productos para gestionar.
-
-¿Impacto? No destructiva — solo agrega datos de catálogo.
-
-Revision ID: 003_seed_catalog_data
-Revises: 002_seed_initial_data
-Create Date: 2026-03-25 00:00:02.000000
-"""
+# ════════════════════════════════════════
+# 📄 Migración que inserta datos base del catálogo:
+# ════════════════════════════════════════
+# 003_seed_catalog_data | Revises: 002_seed_initial_data | Creada: 2026-03-25 00:00:02.000000
 
 from typing import Sequence, Union
 
@@ -28,12 +14,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Inserta marcas, categorías, estilos y productos.
-
-    ¿Qué? Pobla las tablas de catálogo con datos iniciales.
-    ¿Para qué? Tener un catálogo funcional desde el primer deploy.
-    ¿Impacto? Seguro — usa ON CONFLICT para evitar duplicados.
-    """
+    """Inserta marcas, categorías, estilos y productos."""
 
     # ═══════════════════════════════════════════════════════════
     # INSERTAR MARCAS (5)

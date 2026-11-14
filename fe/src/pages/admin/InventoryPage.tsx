@@ -1,24 +1,9 @@
-/**
- * Página: InventoryPage.tsx
- * Descripción: Página de gestión de inventario con alertas de bajo stock.
- *
- * ¿Qué?
- *   Muestra:
- *   - Grid de productos con stock actual, mínimo, estado
- *   - Alertas visuales (rojo si stock ≤ minimum)
- *   - Modal para ajustar stock manualmente
- *   - Búsqueda y filtrado por producto
- *
- * ¿Para qué?
- *   - Monitoreo en tiempo real de inventario
- *   - Alertar sobre bajo stock antes que se agote
- *   - Ajustes rápidos sin ir a catálogo
- *
- * ¿Impacto?
- *   ALTO — Crítico para operaciones (evita overselling).
- */
+// ════════════════════════════════════════
+// 📄 Página de gestión de inventario con alertas de bajo stock
+// ════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 // @ts-ignore
 const XLSX = window.XLSX;
 import {
@@ -72,6 +57,10 @@ export default function InventoryPage() {
       setProducts(data.products);
     } catch (error) {
       console.error('Error loading products:', error);
+      showToast(
+        'No se pudo cargar el inventario. Revisa tu conexión e inténtalo de nuevo.',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -278,7 +267,9 @@ export default function InventoryPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <Package className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <ADMIN_SECTIONS.inventory.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.inventory.color}`}
+            />
             Gestión de Inventario
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">

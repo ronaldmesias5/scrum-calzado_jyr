@@ -1,6 +1,6 @@
-# ¿QUE? Archivo de ignorados de git para el frontend
-# ¿PARA? Evitar que archivos generados o temporales se versionem
-# ¿IMPACTO? Mantiene el repositorio limpio y reproducible
+# ════════════════════════════════════════
+# 📄 Archivo de ignorados de git para el frontend
+# ════════════════════════════════════════
 
 # ============= DEPENDENCIAS =============
 # pnpm

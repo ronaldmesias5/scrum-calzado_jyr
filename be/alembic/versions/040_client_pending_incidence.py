@@ -1,16 +1,7 @@
-"""Add customer/order/order_detail columns and make task nullable on pending_product_incidences
-
-Revision ID: 040_client_pending_incidence
-Revises: 039_inventory_unique_constraint
-Create Date: 2026-08-16
-
-Contexto:
-  - Soporta el flujo de incidencias del cliente: un cliente reporta un
-    reclamo sobre un producto de un pedido ya entregado.
-  - Para eso `employee_id` y `task_id` pasan a nullable (el cliente no
-    tiene tarea), y se agregan `customer_id`, `order_id` y
-    `order_detail_id` para vincular el reclamo al pedido.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add customer/order/order_detail columns and make task nullable on pending_p...
+# ════════════════════════════════════════
+# 040_client_pending_incidence | Revises: 039_inventory_unique_constraint | Creada: 2026-08-16
 from alembic import op
 import sqlalchemy as sa
 

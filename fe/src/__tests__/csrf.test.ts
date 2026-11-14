@@ -1,7 +1,6 @@
-/**
- * Archivo: __tests__/csrf.test.ts
- * Descripción: Tests del interceptor CSRF en el frontend.
- */
+// ════════════════════════════════════════
+// 📄 Tests del interceptor CSRF en el frontend
+// ════════════════════════════════════════
 
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 

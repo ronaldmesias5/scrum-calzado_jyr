@@ -1,24 +1,6 @@
-/**
- * Archivo: fe/src/components/layout/AppLayout.tsx
- * Descripción: Layout genérico para páginas protegidas (legacy, poco usado).
- *
- * ¿Qué?
- *   Layout simple con:
- *   - Header: Logo, nombre usuario, botón Salir
- *   - Línea azul decorativa (#1e40af)
- *   - Main: Contenedor max-w-7xl con <Outlet /> (children de ruta)
- *   - Footer: Texto "Calidad y Estilo a tu Alcance"
- *
- * ¿Para qué?
- *   - Proveer layout genérico para rutas que no usan AdminLayout/AuthLayout
- *   - Fallback para páginas sin diseño específico
- *   - Mantener consistencia visual (logo, footer, estilos)
- *
- * ¿Impacto?
- *   BAJO — Raramente usado. Dashboards usan AdminLayout específico.
- *   Modificar header rompe: páginas genéricas no admin.
- *   Dependencias: hooks/useAuth.ts, react-router-dom (Outlet)
- */
+// ════════════════════════════════════════
+// 📄 Layout genérico para páginas protegidas (legacy, poco usado)
+// ════════════════════════════════════════
 
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';

@@ -259,7 +259,7 @@ export default function ProductCreateModal({
         </div>
 
         {/* Body */}
-        <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors">
+        <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors modal-scrollbar">
           {/* Categoría y Marca en fila */}
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -1,13 +1,7 @@
-"""Add client_prices table and unit_price on order_details.
-
-¿Qué? Tabla de precios personalizados por cliente y columna unit_price en order_details.
-¿Para qué? El jefe asigna precios por cliente; al crear pedido se autorellena el precio.
-¿Impacto? Sin esta migración no hay precios personalizados. unit_price default 0.
-
-Revision ID: 049_client_prices
-Revises: 048_add_pgvector_ai_embeddings
-Create Date: 2026-09-13
-"""
+# ════════════════════════════════════════
+# 📄 Migración 049_client_prices — Tabla de precios personalizados por cliente y columna uni...
+# ════════════════════════════════════════
+# 049_client_prices | Revises: 048_add_pgvector_ai_embeddings | Creada: 2026-09-13
 
 from typing import Sequence
 

@@ -1,8 +1,6 @@
-/**
- * Archivo: components/ui/TermsModal.tsx
- * Descripción: Modal con los Términos y Condiciones de CALZADO J&R.
- * ¿Para qué? Mostrar el texto legal al usuario antes de aceptar en el registro.
- */
+// ════════════════════════════════════════
+// 📄 Modal con los Términos y Condiciones de CALZADO J&R
+// ════════════════════════════════════════
 
 import Modal from '@/components/atoms/Modal';
 

@@ -1,9 +1,4 @@
-"""Tests de integración del flujo pedidos + inventario contra BD aislada.
-
-Incluye la regresión del bug de colour: los lookups de inventario NO deben
-filtrar por colour (el inventario guarda colour="" y los detalles de pedido
-guardan el colour completo, ej. "negro x blanco").
-"""
+"""Tests de integración del flujo pedidos + inventario contra BD aislada."""
 
 import uuid
 

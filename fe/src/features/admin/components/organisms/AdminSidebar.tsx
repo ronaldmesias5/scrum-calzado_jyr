@@ -1,27 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Home,
-  ShoppingCart,
-  Layers,
-  Package,
-  CheckSquare,
-  Users,
-  UserCheck,
-  Bell,
-  BarChart,
-  Settings,
-  UserCog,
-  Package2,
-  X,
-  LogOut,
-  AlertTriangle,
-  Tag,
-  DollarSign,
-  Calendar
-} from 'lucide-react';
+import { X, LogOut } from 'lucide-react';
 import { useBadgeCounts } from '@/store/BadgeCountsContext';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  ADMIN_SECTIONS,
+  ADMIN_SECTION_COLORS
+} from '@/features/admin/constants/adminSections';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -29,25 +14,6 @@ interface AdminSidebarProps {
   width: number;
   isCollapsed: boolean;
 }
-
-const ICON_COLORS: Record<string, string> = {
-  '/dashboard/admin': 'text-indigo-500 dark:text-indigo-400',
-  '/dashboard/admin/orders': 'text-blue-500 dark:text-blue-400',
-  '/dashboard/admin/catalog': 'text-purple-500 dark:text-purple-400',
-  '/dashboard/admin/categories': 'text-fuchsia-500 dark:text-fuchsia-400',
-  '/dashboard/admin/inventory': 'text-emerald-500 dark:text-emerald-400',
-  '/dashboard/admin/losses': 'text-red-500 dark:text-red-400',
-  '/dashboard/admin/insumos': 'text-teal-500 dark:text-teal-400',
-  '/dashboard/admin/tasks': 'text-sky-500 dark:text-sky-400',
-  '/dashboard/admin/employees': 'text-cyan-500 dark:text-cyan-400',
-  '/dashboard/admin/clients': 'text-amber-500 dark:text-amber-400',
-  '/dashboard/admin/usuarios': 'text-violet-500 dark:text-violet-400',
-  '/dashboard/admin/alerts': 'text-rose-500 dark:text-rose-400',
-  '/dashboard/admin/reports': 'text-orange-500 dark:text-orange-400',
-  '/dashboard/admin/settings': 'text-slate-500 dark:text-slate-400',
-  '/dashboard/admin/client-prices': 'text-emerald-500 dark:text-emerald-400',
-  '/dashboard/admin/calendar': 'text-lime-500 dark:text-lime-400'
-};
 
 export default function AdminSidebar({
   isOpen,
@@ -62,97 +28,97 @@ export default function AdminSidebar({
   const BASE_ITEMS = [
     {
       label: t('dashboard.sidebar.home'),
-      icon: Home,
+      icon: ADMIN_SECTIONS.home.icon,
       path: '/dashboard/admin',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.orders'),
-      icon: ShoppingCart,
+      icon: ADMIN_SECTIONS.orders.icon,
       path: '/dashboard/admin/orders',
       badgeKey: 'pedidos'
     },
     {
       label: 'Calendario',
-      icon: Calendar,
+      icon: ADMIN_SECTIONS.calendar.icon,
       path: '/dashboard/admin/calendar',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.catalog'),
-      icon: Layers,
+      icon: ADMIN_SECTIONS.catalog.icon,
       path: '/dashboard/admin/catalog',
       badgeKey: null
     },
     {
       label: 'Categorías',
-      icon: Tag,
+      icon: ADMIN_SECTIONS.categories.icon,
       path: '/dashboard/admin/categories',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.inventory'),
-      icon: Package,
+      icon: ADMIN_SECTIONS.inventory.icon,
       path: '/dashboard/admin/inventory',
       badgeKey: null
     },
     {
       label: 'Incidencias',
-      icon: AlertTriangle,
+      icon: ADMIN_SECTIONS.losses.icon,
       path: '/dashboard/admin/losses',
       badgeKey: 'incidencias'
     },
     {
       label: 'Insumos',
-      icon: Package2,
+      icon: ADMIN_SECTIONS.insumos.icon,
       path: '/dashboard/admin/insumos',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.tasks'),
-      icon: CheckSquare,
+      icon: ADMIN_SECTIONS.tasks.icon,
       path: '/dashboard/admin/tasks',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.employees'),
-      icon: Users,
+      icon: ADMIN_SECTIONS.employees.icon,
       path: '/dashboard/admin/employees',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.clients'),
-      icon: UserCheck,
+      icon: ADMIN_SECTIONS.clients.icon,
       path: '/dashboard/admin/clients',
       badgeKey: null
     },
     {
       label: 'Precios por Cliente',
-      icon: DollarSign,
+      icon: ADMIN_SECTIONS.clientPrices.icon,
       path: '/dashboard/admin/client-prices',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.users'),
-      icon: UserCog,
+      icon: ADMIN_SECTIONS.users.icon,
       path: '/dashboard/admin/usuarios',
       badgeKey: 'usuarios'
     },
     {
       label: t('dashboard.sidebar.alerts'),
-      icon: Bell,
+      icon: ADMIN_SECTIONS.alerts.icon,
       path: '/dashboard/admin/alerts',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.reports'),
-      icon: BarChart,
+      icon: ADMIN_SECTIONS.reports.icon,
       path: '/dashboard/admin/reports',
       badgeKey: null
     },
     {
       label: t('dashboard.sidebar.settings'),
-      icon: Settings,
+      icon: ADMIN_SECTIONS.settings.icon,
       path: '/dashboard/admin/settings',
       badgeKey: null
     }
@@ -228,7 +194,7 @@ export default function AdminSidebar({
                   >
                     <Icon
                       size={18}
-                      className={!isActive ? (ICON_COLORS[path] ?? '') : ''}
+                      className={!isActive ? (ADMIN_SECTION_COLORS[path] ?? '') : ''}
                     />
                     {!isCollapsed && <span>{label}</span>}
                   </div>

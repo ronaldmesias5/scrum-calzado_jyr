@@ -1,7 +1,6 @@
-"""
-Archivo: be/tests/test_security.py
-Descripción: Tests unitarios para el módulo de seguridad (hashing, JWT).
-"""
+# ════════════════════════════════════════
+# 📄 Tests unitarios para el módulo de seguridad (hashing, JWT)
+# ════════════════════════════════════════
 
 from datetime import datetime, timedelta, timezone
 

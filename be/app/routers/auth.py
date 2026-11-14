@@ -1,28 +1,6 @@
-"""
-Archivo: be/app/routers/auth.py
-Descripción: Router FastAPI con endpoints de autenticación y gestión de contraseñas.
-
-¿Qué?
-  Define 6 endpoints públicos/protegidos para autenticación:
-  - POST /register: Registro de nuevos clientes (público)
-  - POST /login: Login con email/password → retorna access/refresh tokens
-  - POST /refresh: Renovar access token usando refresh token
-  - POST /change-password: Cambiar contraseña (requiere auth)
-  - POST /forgot-password: Solicitar recuperación de contraseña (público)
-  - POST /reset-password: Restablecer contraseña con token (público)
-  
-¿Para qué?
-  - Permitir registro, login y gestión de sesiones
-  - Implementar flujo completo de recuperación de contraseña
-  - Delegar lógica de negocio a auth/service.py (separación de capas)
-  
-¿Impacto?
-  CRÍTICO — Sin estos endpoints, usuarios no pueden ingresar al sistema.
-  Modificar /login rompe: frontend LoginPage, todos los flujos de auth.
-  Modificar /register rompe: RegisterPage, onboarding de nuevos usuarios.
-  Dependencias: auth/service.py (lógica de negocio), auth/schemas.py,
-               dependencies.py (get_db, get_current_user)
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI con endpoints de autenticación y gestión de contraseñas
+# ════════════════════════════════════════
 
 import asyncio
 from datetime import datetime, timezone
@@ -243,13 +221,7 @@ def request_reactivation(
     data: ReactivationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
-    """
-    Solicita la reactivación de una cuenta inactiva/suspendida.
-
-    Respuesta idéntica en todos los casos (anti-enumeración de usuarios):
-    no revela si el email existe, si la cuenta está activa/eliminada o si ya
-    hay un ticket pendiente. El ticket solo se crea cuando el caso es elegible.
-    """
+    """Solicita la reactivación de una cuenta inactiva/suspendida."""
     user = db.query(User).filter(User.email == data.email).first()
 
     if user is None:
@@ -310,13 +282,7 @@ def request_new_invitation(
     data: RequestNewInvitationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
-    """
-    Permite a un usuario solicitar una nueva contraseña temporal cuando su
-    invitación anterior ha expirado. Endpoint público (sin auth).
-
-    Por seguridad, siempre responde con el mismo mensaje sin revelar si el
-    email existe o si la invitación estaba realmente expirada.
-    """
+    """Permite a un usuario solicitar una nueva contraseña temporal cuando su"""
     asyncio.run(auth_service.request_new_invitation(db=db, email=data.email))
     return MessageResponse(
         message="Si tu invitación había expirado, recibirás un nuevo email con tus credenciales."

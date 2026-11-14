@@ -1,17 +1,6 @@
-"""
-Archivo: be/app/utils/email.py
-Descripción: Utilidades para envío de emails (bienvenida y recuperación de contraseña).
-
-¿Qué?
-  - _send_email(): función genérica de envío SMTP con aiosmtplib
-  - send_password_reset_email(): email con enlace de reset
-  - send_welcome_email(): email con credenciales temporales
-  - Modo DEV (ENVIRONMENT=development): imprime en consola
-  - Modo PROD (ENVIRONMENT=production): envía por SMTP real
-
-Dependencias: config.py (MAIL_*, FRONTEND_URL, ENVIRONMENT),
-             aiosmtplib (pyproject.toml)
-"""
+# ════════════════════════════════════════
+# 📄 Utilidades para envío de emails (bienvenida y recuperación de contraseña)
+# ════════════════════════════════════════
 
 import logging
 from email.mime.multipart import MIMEMultipart
@@ -45,12 +34,7 @@ async def _send_email(
     smtp_overrides: dict | None = None,
     reply_to: str | None = None,
 ) -> bool:
-    """Envía un email vía SMTP. Retorna True si se envió, False si falló.
-
-    Buenas prácticas: un solo SMTP global autenticado (From del sistema);
-    las respuestas se enrutan al rol con el header estándar `Reply-To`.
-    `smtp_overrides` queda como opt-in para envío desde cuenta propia.
-    """
+    """Envía un email vía SMTP. Retorna True si se envió, False si falló."""
     overrides = smtp_overrides or {}
     username = overrides.get("username") or settings.MAIL_USERNAME
     password = overrides.get("password") or settings.MAIL_PASSWORD

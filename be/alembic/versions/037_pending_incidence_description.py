@@ -1,9 +1,7 @@
-"""Make defect_code_id nullable and add description column on pending_product_incidences + loss_records
-
-Revision ID: 037
-Revises: 036
-Create Date: 2026-06-17
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Make defect_code_id nullable and add description column on pending_product_...
+# ════════════════════════════════════════
+# 037 | Revises: 036 | Creada: 2026-06-17
 from alembic import op
 import sqlalchemy as sa
 

@@ -1,7 +1,6 @@
-/**
- * Archivo: fe/src/__tests__/auth.test.tsx
- * Descripción: Tests para el contexto de autenticación.
- */
+// ════════════════════════════════════════
+// 📄 Tests para el contexto de autenticación
+// ════════════════════════════════════════
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

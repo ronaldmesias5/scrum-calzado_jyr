@@ -1,7 +1,6 @@
-/**
- * Archivo: components/ui/CookiePolicyModal.tsx
- * Descripción: Modal con la Política de Cookies de CALZADO J&R.
- */
+// ════════════════════════════════════════
+// 📄 Modal con la Política de Cookies de CALZADO J&R
+// ════════════════════════════════════════
 
 import Modal from '@/components/atoms/Modal';
 

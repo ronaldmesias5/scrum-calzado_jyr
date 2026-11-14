@@ -1,12 +1,7 @@
-"""remove media from task_priority enum
-
-Migrates the Postgres enum task_priority from ('baja', 'media', 'alta')
-to ('baja', 'alta'). All existing 'media' rows are set to 'baja'.
-
-Revision ID: 043_task_priority_remove_media
-Revises: 042_email_sender
-Create Date: 2026-08-31
-"""
+# ════════════════════════════════════════
+# 📄 Migración — remove media from task_priority enum
+# ════════════════════════════════════════
+# 043_task_priority_remove_media | Revises: 042_email_sender | Creada: 2026-08-31
 
 from alembic import op
 

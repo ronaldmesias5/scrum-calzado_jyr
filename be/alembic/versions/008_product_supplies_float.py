@@ -1,10 +1,7 @@
-"""product_supplies float quantities
-
-Revision ID: 008_product_supplies_float
-Revises: 007_supplies_float_sizes
-Create Date: 2026-04-12 21:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — product_supplies float quantities
+# ════════════════════════════════════════
+# 008_product_supplies_float | Revises: 007_supplies_float_sizes | Creada: 2026-04-12 21:00:00.000000
 from typing import Sequence, Union
 
 from alembic import op

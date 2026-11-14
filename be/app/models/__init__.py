@@ -1,8 +1,6 @@
-"""
-Archivo: be/app/models/__init__.py
-Descripción: Importa todos los modelos ORM para registro con SQLAlchemy.
-             El orden de importación ES IMPORTANTE para las relaciones.
-"""
+# ════════════════════════════════════════
+# 📄 Importa todos los modelos ORM para registro con SQLAlchemy
+# ════════════════════════════════════════
 
 # Importar Base primero
 from app.database import Base

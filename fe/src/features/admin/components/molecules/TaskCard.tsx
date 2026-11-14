@@ -152,16 +152,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         className={`${compact ? 'p-3' : 'p-4'} border-b ${headerColor} bg-gradient-to-br from-white/10 to-transparent`}
       >
         <div
-          className={`flex items-center justify-between gap-3 ${compact ? 'mb-2' : 'mb-3'}`}
+          className={`flex flex-wrap items-center justify-between gap-2 ${compact ? 'mb-2' : 'mb-3'}`}
         >
           <div
-            className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider ${stageColor}`}
+            className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider shrink-0 ${stageColor}`}
           >
             <StageIcon size={14} />
             <span>{STAGE_LABELS[task.type]}</span>
           </div>
           {task.vale_number && (
-            <span className="text-[11px] font-black text-red-600 bg-white px-2.5 py-1 rounded-md border border-transparent whitespace-nowrap shadow-sm shadow-black/10">
+            <span className="text-[11px] font-black text-red-600 bg-white px-2.5 py-1 rounded-md border border-transparent whitespace-nowrap shrink-0 shadow-sm shadow-black/10">
               VALE #{task.vale_number}
             </span>
           )}
@@ -169,7 +169,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <select
               value={task.priority || 'baja'}
               onChange={(e) => onUpdatePriority(task.id, e.target.value)}
-              className={`text-[10px] font-black uppercase tracking-wider rounded-md px-2 py-1 border cursor-pointer outline-none whitespace-nowrap transition-colors ${
+              className={`text-[10px] font-black uppercase tracking-wider rounded-md px-2 py-1 border cursor-pointer outline-none whitespace-nowrap shrink-0 transition-colors ${
                 task.priority === 'alta'
                   ? 'text-red-700 bg-red-50 border-red-200 hover:border-red-400'
                   : 'text-gray-600 bg-gray-50 border-gray-200 hover:border-gray-400'
@@ -181,13 +181,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           ) : (
             <>
               {task.priority === 'alta' && (
-                <span className="text-[11px] font-black text-red-700 bg-red-50 px-2.5 py-1 rounded-md border border-red-200 whitespace-nowrap flex items-center gap-1 shadow-sm">
+                <span className="text-[11px] font-black text-red-700 bg-red-50 px-2.5 py-1 rounded-md border border-red-200 whitespace-nowrap shrink-0 flex items-center gap-1 shadow-sm">
                   <AlertTriangle size={12} />
                   ALTA
                 </span>
               )}
               {task.priority === 'baja' && (
-                <span className="text-[11px] font-black text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200 whitespace-nowrap flex items-center gap-1 shadow-sm">
+                <span className="text-[11px] font-black text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200 whitespace-nowrap shrink-0 flex items-center gap-1 shadow-sm">
                   BAJA
                 </span>
               )}
@@ -196,7 +196,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {onEdit && isEditable && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-              className="p-1 rounded-md text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              className="p-1 rounded-md text-white/70 hover:text-white hover:bg-white/20 transition-colors shrink-0"
               title="Editar tarea"
             >
               <Pencil size={13} />

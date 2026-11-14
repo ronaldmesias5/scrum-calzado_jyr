@@ -1,7 +1,6 @@
-/**
- * Archivo: fe/src/modules/dashboard-jefe/services/suppliesService.ts
- * Descripción: Servicio API para gestión de insumos de fabricación.
- */
+// ════════════════════════════════════════
+// 📄 Servicio API para gestión de insumos de fabricación
+// ════════════════════════════════════════
 
 import api from '@/services/axios';
 

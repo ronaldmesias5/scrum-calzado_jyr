@@ -1,9 +1,4 @@
-"""Tests de notificaciones de tareas (routers/orders_tasks.py).
-
-- Al asignar una tarea (PATCH /tasks/{id}/assign) se notifica al empleado.
-- Al completar una tarea (PATCH /tasks/{id}/status → completado) se notifica
-  a los jefes.
-"""
+"""Tests de notificaciones de tareas (routers/orders_tasks.py)."""
 
 import uuid
 

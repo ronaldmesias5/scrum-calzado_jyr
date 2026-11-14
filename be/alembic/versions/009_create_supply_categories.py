@@ -1,10 +1,7 @@
-"""Create supply_categories table.
-
-Revision ID: 009_create_supply_categories
-Revises: 008_product_supplies_float
-Create Date: 2026-04-13 01:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Create supply_categories table
+# ════════════════════════════════════════
+# 009_create_supply_categories | Revises: 008_product_supplies_float | Creada: 2026-04-13 01:00:00.000000
 from alembic import op
 
 # revision identifiers, used by Alembic.

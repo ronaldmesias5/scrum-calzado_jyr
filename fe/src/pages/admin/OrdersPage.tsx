@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { formatCOP } from '@/utils/format';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import Pagination from '@/components/atoms/Pagination';
 import {
   Scissors,
@@ -14,7 +15,6 @@ import {
   Sparkles,
   PenTool,
   Maximize2,
-  ShoppingCart,
   Package,
   Filter,
   Search,
@@ -3334,7 +3334,9 @@ export default function OrdersPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <ShoppingCart className="w-8 h-8 text-red-600 dark:text-red-500" />
+            <ADMIN_SECTIONS.orders.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.orders.color}`}
+            />
             Gestión de Pedidos
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">

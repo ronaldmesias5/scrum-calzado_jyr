@@ -1,16 +1,6 @@
-"""
-Archivo: be/app/routers/supplies.py
-Descripción: Router FastAPI para la gestión de insumos de fabricación.
-
-Endpoints:
-  GET    /api/v1/supplies               - Listar insumos (filtrar por categoría)
-  POST   /api/v1/supplies               - Crear insumo
-  PUT    /api/v1/supplies/{id}           - Editar insumo
-  DELETE /api/v1/supplies/{id}           - Soft delete insumo
-  POST   /api/v1/products/{id}/supplies  - Vincular insumo a producto
-  DELETE /api/v1/products/{id}/supplies/{supply_id} - Desvincular
-  GET    /api/v1/products/{id}/supplies/check - Verificar disponibilidad
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI para la gestión de insumos de fabricación
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

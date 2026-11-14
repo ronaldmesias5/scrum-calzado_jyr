@@ -1,15 +1,6 @@
-"""
-Módulo: middleware/security_headers.py
-Descripción: Middleware para agregar headers de seguridad OWASP.
-
-Headers implementados:
-  - X-Content-Type-Options: Previene MIME type sniffing (XSS)
-  - X-Frame-Options: Previene clickjacking
-  - X-XSS-Protection: XSS filter en navegadores antiguos
-  - Strict-Transport-Security: HTTPS only (HSTS)
-  - Content-Security-Policy: Controla recursos permitidos
-  - Referrer-Policy: Control de información de referencia
-"""
+# ════════════════════════════════════════
+# 📄 Headers de seguridad OWASP en cada respuesta
+# ════════════════════════════════════════
 
 import os
 from fastapi import Request
@@ -72,7 +63,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         # Referrer Policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        
+
+        # Aislamiento de origen cruzado (COOP/CORP/COEP)
+        # COOP: evita que otras pestañas manipulen window.opener
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        # CORP: evita que otros sitios embeban nuestros recursos
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        # X-Permitted-Cross-Domain-Policies: deshabilita políticas cross-domain legadas
+        response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
             "geolocation=(), "

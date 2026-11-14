@@ -1,9 +1,6 @@
-"""
-Migration 026: Create report_shares table
-
-Almacena los reportes compartidos por un jefe/admin a un empleado
-para que aparezcan en la sección "Reportes" del dashboard del empleado.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Migration 026: Create report_shares table
+# ════════════════════════════════════════
 
 from typing import Sequence, Union
 

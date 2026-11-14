@@ -1,19 +1,7 @@
-"""Add category and stock to supplies, create product_supplies linking table.
-
-¿Qué?
-  - Añade columna `category` (enum: corte, guarnicion, soladura, terminado, otros) a tabla supplies
-  - Añade columna `stock_quantity` (Integer, default 0) a supplies
-  - Crea tabla `product_supplies` para ligar productos con insumos requeridos
-  
-¿Para qué?
-  - Clasificar insumos por tipo de proceso de fabricación
-  - Controlar stock de insumos
-  - Verificar si hay insumos suficientes para fabricar un producto pedido
-
-Revision ID: 005_add_supplies_category_and_product_link
-Revises: 004_seed_test_users
-Create Date: 2026-04-12 00:00:00.000000
-"""
+# ════════════════════════════════════════
+# 📄 Migración 005_add_supplies_categor — - Añade columna `category` (enum: corte, guarnicio...
+# ════════════════════════════════════════
+# 005_add_supplies_category_and_product_link | Revises: 004_seed_test_users | Creada: 2026-04-12 00:00:00.000000
 
 from typing import Sequence, Union
 

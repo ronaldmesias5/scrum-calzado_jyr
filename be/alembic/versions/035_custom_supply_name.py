@@ -1,9 +1,7 @@
-"""Add custom_supply_name column to loss_records for free-text supply names
-
-Revision ID: 035
-Revises: 034
-Create Date: 2026-06-16
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add custom_supply_name column to loss_records for free-text supply names
+# ════════════════════════════════════════
+# 035 | Revises: 034 | Creada: 2026-06-16
 from alembic import op
 import sqlalchemy as sa
 

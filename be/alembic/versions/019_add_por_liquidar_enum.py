@@ -1,10 +1,7 @@
-"""Add por_liquidar status to task_status enum.
-
-Revision ID: 019_add_por_liquidar_enum
-Revises: 018_product_task_prices
-Create Date: 2024-01-01 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add por_liquidar status to task_status enum
+# ════════════════════════════════════════
+# 019_add_por_liquidar_enum | Revises: 018_product_task_prices | Creada: 2024-01-01 00:00:00.000000
 from alembic import op
 
 

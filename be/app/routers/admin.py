@@ -1,31 +1,6 @@
-"""
-Archivo: be/app/routers/admin.py
-Descripción: Router FastAPI con endpoints administrativos para gestión de usuarios.
-
-¿Qué?
-  Define endpoints protegidos (admin/jefe) para gestión de usuarios:
-  - POST /create-employee: Crear empleado con occupation (admin/jefe)
-  - POST /create-jefe: Crear jefe (admin/jefe)
-  - POST /create-client: Crear cliente (admin/jefe)
-  - GET /users: Listar todos los usuarios con filtros opcionales
-  - GET /users/{user_id}: Obtener detalles de un usuario
-  - PATCH /users/{user_id}: Actualizar datos de un usuario
-  - PATCH /users/{user_id}/validate: Validar cuenta de usuario
-  - PATCH /users/{user_id}/force-password-change: Forzar cambio de contraseña
-  
-¿Para qué?
-  - Permitir a admin/jefe crear y gestionar usuarios del sistema
-  - Validación de permisos delegada a app/dependencies.py (_require_admin_or_jefe)
-  - Separar endpoints administrativos de endpoints públicos (seguridad)
-  
-¿Impacto?
-  CRÍTICO — Sin este router, admin/jefe no pueden gestionar usuarios.
-  Modificar create-employee rompe: dashboard AdminCreateEmployeeForm.
-  Modificar /users lista rompe: AdminUserListPage en dashboard.
-  Dependencias: app/schemas/admin.py, app/schemas/auth.py (UserResponse),
-               app/dependencies.py, app/models/user.py, app/models/role.py,
-               app/utils/security.py (hash_password)
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI con endpoints administrativos para gestión de usuarios
+# ════════════════════════════════════════
 
 import asyncio
 import secrets
@@ -489,18 +464,7 @@ def create_jefe(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserResponse:
-    """
-    Crea una cuenta de jefe de fábrica (empleado con occupation='jefe') activa y validada.
-    
-    El jefe tendrá acceso al dashboard administrativo para:
-    - Validar cuentas de clientes
-    - Gestionar catálogo de productos
-    - Clasificar categorías, marcas y estilos
-    - Gestionar pedidos y empleados
-    
-    Si no se envía contraseña, el sistema genera una temporal y la envía por email.
-    ⚠️ El jefe deberá cambiar su contraseña en el primer login.
-    """
+    """Crea una cuenta de jefe de fábrica (empleado con occupation='jefe') activa y validada."""
     _require_admin_or_jefe(current_user)
 
     if db.query(User).filter(User.email == data.email).first():

@@ -189,10 +189,17 @@ def upload_product_image(
             detail="Formato de imagen no permitido. Usa JPG, PNG, WEBP, GIF, AVIF, BMP, HEIC o TIFF",
         )
 
-    # Validar tamaño (máximo 5 MB)
-    content = image.file.read()
-    if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="La imagen no puede superar 5 MB")
+    # Validar tamaño por chunks ANTES de acumular en memoria
+    # (evita DoS por payload gigante: read() completo agotaría RAM)
+    max_bytes = 5 * 1024 * 1024
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := image.file.read(1024 * 1024):
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(status_code=400, detail="La imagen no puede superar 5 MB")
+        chunks.append(chunk)
+    content = b"".join(chunks)
 
     # Crear directorio si no existe
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -496,13 +503,7 @@ def update_manufactured_pairs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Actualiza el número de pares fabricados (reserved) para un producto.
-    
-    **Parámetros:**
-    - product_id: ID del producto
-    - quantity: Cantidad de pares fabricados a establecer
-    """
+    """Actualiza el número de pares fabricados (reserved) para un producto."""
     _require_admin_or_jefe(current_user)
 
     try:
@@ -557,13 +558,7 @@ def get_inventory_by_size(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Obtiene el desglose de pares fabricados (reserved) por talla para un producto.
-    Suma los reserved de múltiples pedidos si existen para la misma talla.
-    
-    **Retorna:**
-    - inventory: Lista de objetos con {size, reserved} agrupado y sumado por talla
-    """
+    """Obtiene el desglose de pares fabricados (reserved) por talla para un producto."""
     _require_admin_or_jefe(current_user)
 
     try:

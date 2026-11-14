@@ -1,7 +1,6 @@
-/**
- * Archivo: fe/src/types/tasks.ts
- * Descripción: Tipos centralizados para tareas de producción.
- */
+// ════════════════════════════════════════
+// 📄 Tipos centralizados para tareas de producción
+// ════════════════════════════════════════
 
 export type TaskPriority = 'baja' | 'alta';
 export type TaskType = 'corte' | 'guarnicion' | 'soladura' | 'emplantillado';

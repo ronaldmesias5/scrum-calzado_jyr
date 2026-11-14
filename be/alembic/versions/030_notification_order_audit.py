@@ -1,16 +1,7 @@
-"""notification_order_audit
-
-Revision ID: 030
-Revises: 029_create_reactivation_tickets
-Create Date: 2026-06-15
-
-Agrega columnas a la tabla notifications:
-  - order_id: referencia al pedido relacionado
-  - link_url: enlace a la página de detalle
-
-NOTA: created_by/updated_by/deleted_by ya existen en la BD
-      desde la migración 001 (el modelo SQLAlchemy no los tenía).
-"""
+# ════════════════════════════════════════
+# 📄 Migración — notification_order_audit
+# ════════════════════════════════════════
+# 030 | Revises: 029_create_reactivation_tickets | Creada: 2026-06-15
 
 from typing import Sequence, Union
 

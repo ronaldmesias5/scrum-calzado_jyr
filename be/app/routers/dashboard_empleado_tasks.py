@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/routers/dashboard_empleado_tasks.py
-Descripción: Endpoints de tareas, vales y reportes del panel del empleado.
-"""
+# ════════════════════════════════════════
+# 📄 Endpoints de tareas, vales y reportes del panel del empleado
+# ════════════════════════════════════════
 
 import uuid
 from datetime import UTC, datetime

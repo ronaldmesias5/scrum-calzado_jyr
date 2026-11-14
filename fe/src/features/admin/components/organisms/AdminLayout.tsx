@@ -6,7 +6,7 @@ import { BadgeCountsProvider } from '@/store/BadgeCountsContext';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { Breadcrumbs } from '@/components/atoms/Breadcrumbs';
 import PageTransition from '@/components/atoms/PageTransition';
-import PageLoader from '@/components/atoms/PageLoader';
+import SkeletonLoader from '@/components/atoms/SkeletonLoader';
 import ChatWidget from '@/features/ai/components/organisms/ChatWidget';
 
 const LS_KEY = 'admin_sidebar_width';
@@ -89,7 +89,7 @@ export default function AdminLayout() {
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 sm:px-8 pb-6">
               <Breadcrumbs />
               <PageTransition>
-                <Suspense fallback={<PageLoader />}>
+                <Suspense fallback={<SkeletonLoader variant="page" />}>
                   <Outlet />
                 </Suspense>
               </PageTransition>

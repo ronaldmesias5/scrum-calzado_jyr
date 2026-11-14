@@ -1,18 +1,4 @@
-"""
-ScrapService — funciones síncronas para el módulo de registro de incidencias.
-Usa Session (síncrona), NO AsyncSession.
-
-Funciones:
-  - get_defect_codes(db): listar códigos de defecto activos
-  - create_defect_code(db, data, user_id): crear código de defecto
-  - get_incidents(db, filters): listar incidencias con filtros
-  - get_incident_by_id(db, incident_id): obtener incidencia por ID
-  - register_incident(db, data, user_id): registrar incidencia
-  - repair_incident(db, incident_id, user_id): marcar como reparado
-  - approve_loss(db, loss_id, user_id): aprobar pérdida (backwards compat)
-  - reject_loss(db, loss_id, user_id): rechazar pérdida (backwards compat)
-  - get_scrap_stock(db): listar stock de scrap
-"""
+"""ScrapService — funciones síncronas para el módulo de registro de incidencias."""
 
 import uuid
 from datetime import datetime, timezone
@@ -252,20 +238,7 @@ def register_incident(
     order_detail_id: uuid.UUID | None = None,
     line_group: int | None = None,
 ) -> LossRecord:
-    """
-    Registra una incidencia.
-
-    Lógica según incidence_category:
-    - "producto": valida product, defect_code, deduce inventario (perdida/en_reparacion),
-      crea ScrapStock e InventoryMovement. Si hay order, reduce OrderDetail.amount.
-    - "maquinaria": solo registra la incidencia (machinery_name obligatorio).
-    - "insumo": solo registra la incidencia (supply_id obligatorio).
-
-    Para producto, incident_type controla:
-    - "perdida": deduce inventario, crea scrap e inventory movement
-    - "en_reparacion": deduce inventario, crea scrap e inventory movement
-    - "devuelto": NO deduce del inventario (ya se dedujo en entrega)
-    """
+    """Registra una incidencia."""
     # 1. Validar incidence_category
     if incidence_category not in VALID_CATEGORIES:
         raise ValueError(

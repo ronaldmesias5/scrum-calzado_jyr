@@ -1,20 +1,7 @@
-"""Crear vistas de base de datos para reportes y alertas.
-
-Crea tres vistas SQL en PostgreSQL que agregan datos de negocio para
-cumplir el requisito del sistema: "Existen vistas, procedimientos
-almacenados y/o consultas agregadas según necesidad del sistema".
-
-Vistas creadas:
-  - v_customer_order_summary: resumen de pedidos por cliente.
-  - v_low_inventory_alert: alerta de inventario bajo / sin stock.
-  - v_employee_performance: rendimiento de empleados por tareas.
-
-Se usa CREATE OR REPLACE VIEW para idempotencia.
-
-Revision ID: 044_create_database_views
-Revises: 043_email_verification_tokens
-Create Date: 2026-08-31
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Crear vistas de base de datos para reportes y alertas
+# ════════════════════════════════════════
+# 044_create_database_views | Revises: 043_email_verification_tokens | Creada: 2026-08-31
 
 from alembic import op
 

@@ -1,24 +1,6 @@
-"""
-Archivo: be/app/middleware/csrf.py
-Descripción: Middleware de protección CSRF (Cross-Site Request Forgery).
-
-¿Qué?
-  Implementa el patrón Double-Submit Cookie para CSRF:
-  1. Genera un token CSRF y lo envía como cookie HttpOnly
-  2. El frontend lo lee y lo envía en el header X-CSRF-Token
-  3. El middleware compara ambos valores en cada mutation (POST/PUT/PATCH/DELETE)
-
-¿Para qué?
-  - Proteger contra ataques CSRF donde un sitio malicioso puede hacer
-    peticiones autenticadas en nombre del usuario
-  - Complementar la protección SameSite=Lax de las cookies JWT
-  - Cumplir con el requisito de seguridad del checklist
-
-¿Impacto?
-  BAJO — Solo valida headers en requests de mutación.
-  Las peticiones GET pasan sin validación.
-  Dependencias: secrets (stdlib), starlette (middleware base)
-"""
+# ════════════════════════════════════════
+# 📄 Middleware de protección CSRF (Cross-Site Request Forgery)
+# ════════════════════════════════════════
 
 import secrets
 from collections.abc import Awaitable, Callable
@@ -55,14 +37,7 @@ CSRF_HEADER_NAME = "x-csrf-token"
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware CSRF usando Double-Submit Cookie Pattern.
-
-    Flujo:
-    1. En cada respuesta, se genera/renueva un token CSRF en cookie
-    2. El frontend lee la cookie y la envía en X-CSRF-Token header
-    3. En requests de mutación, se verifica que coincidan
-    """
+    """Middleware CSRF usando Double-Submit Cookie Pattern."""
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[JSONResponse]]

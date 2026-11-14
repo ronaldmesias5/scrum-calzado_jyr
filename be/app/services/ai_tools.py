@@ -1,25 +1,6 @@
-"""
-Archivo: be/app/services/ai_tools.py
-Descripción: Tools con JWT para asistente IA (Fase 2, contexto por rol).
-
-¿Qué?
-  - buscar_productos(db, query, limit=5): búsqueda por texto en products + brands/styles.
-  - consultar_mis_pedidos(db, user_id, limit=5): pedidos del cliente autenticado.
-  - consultar_mis_tareas(db, user_id, limit=5): tareas asignadas al empleado.
-  - consultar_inventario(db, query, limit=5): consulta stock de productos (solo jefe).
-  - consultar_mis_incidencias(db, user_id, limit=5): incidencias del empleado/cliente.
-  - get_user_context(user): contexto de rol/ocupación para prompt.
-  - format_tool_context(user, db, query): orquesta tools según query y rol.
-
-¿Para qué?
-  - Fase 2: chat sabe quién eres (visitante/cliente/empleado/jefe) y consulta datos reales.
-  - Evita exponer datos privados sin JWT (tools solo con user_id).
-
-¿Impacto?
-  Fase 2 — sin estos tools, chat no puede responder "¿dónde va mi pedido?".
-  Modificar firmas rompe: ai_service.py, ai_chat.py.
-  Dependencias: models/product.py, models/order.py, models/tasks.py, models/user.py
-"""
+# ════════════════════════════════════════
+# 📄 Tools con JWT para asistente IA (Fase 2, contexto por rol)
+# ════════════════════════════════════════
 
 import logging
 from typing import Any
@@ -41,10 +22,12 @@ def get_user_context(user: User | None) -> str:
     if not user:
         return (
             "Usuario: visitante no autenticado (sin acceso a pedidos/tareas privadas). "
-            "Para hacer pedidos debe registrarse en la landing (RF-001). "
+            "Para hacer pedidos debe registrarse en la landing page (nombre, apellido, email, "
+            "teléfono, tipo y número de documento, nombre del negocio y contraseña). "
+            "El jefe valida la cuenta y le da acceso al catálogo mayorista. "
             "Puede ver catálogo público en /catalog sin registrarse. "
-            "INSTRUCCIÓN: Si pregunta cómo hacer un pedido, dile que se registre en la landing como mayorista. "
-            "El jefe validará su cuenta y tendrá acceso al catálogo mayorista para pedidos."
+            "INSTRUCCIÓN: Si pregunta cómo hacer un pedido o cómo ser cliente, dile que se "
+            "registre en la landing page y que el jefe validará su cuenta."
         )
 
     role_name = user.role.name_role if hasattr(user, "role") and user.role else "sin rol"
@@ -80,7 +63,11 @@ def get_user_context(user: User | None) -> str:
             f"Usuario: empleado autenticado, nombre {name}, email {user.email}, ocupación {occupation}, rol employee. "
             f"INSTRUCCIÓN: Este usuario es empleado ({occupation}), NO crea pedidos. NO le digas que inicie sesión. "
             f"Si pregunta cómo hacer un pedido, explícale que los pedidos los crean el jefe o los clientes. "
-            f"Él solo ejecuta tareas en Dashboard Empleado > Mis Tareas. "
+            f"Para TOMAR una tarea: Dashboard Empleado > Tareas Disponibles > clic en 'Reclamar' "
+            f"(solo ve tareas sin asignar de su etapa; al reclamarla pasa a en_progreso). "
+            f"Para CAMBIAR EL ESTADO de una tarea: Dashboard Empleado > Mis Tareas > seleccionar la tarea > "
+            f"añadir observación si hay novedad > 'Marcar como completada' "
+            f"(al completar una etapa se crea la siguiente: corte → guarnición → soladura → emplantillado). "
             f"Como {occupation}, solo puede ver y reclamar tareas de {
                 'corte' if occupation == 'cortador'
                 else 'guarnición (costura)' if occupation == 'guarnecedor'
@@ -88,7 +75,6 @@ def get_user_context(user: User | None) -> str:
                 else 'emplantillado (acabado)' if occupation == 'emplantillador'
                 else 'su etapa'
             }. "
-            f"Tareas disponibles en Dashboard Empleado > Tareas Disponibles. "
             f"Incidencias en Dashboard Empleado > Incidencias. "
             f"Reportes de rendimiento en Dashboard Empleado > Reportes."
         )
@@ -366,15 +352,7 @@ def consultar_mis_incidencias(
 
 
 def format_tool_context(user: User | None, db: Session, query: str) -> str:
-    """
-    Orquesta tools según query y rol. Retorna texto para añadir al prompt.
-    - Si query contiene "pedido" o "orden" y user es client/jefe → consulta pedidos.
-    - Si query contiene "tarea" y user es employee/jefe → consulta tareas.
-    - Si query contiene "inventario" o "stock" y user es jefe → consulta inventario.
-    - Si query contiene "incidencia" y user es employee/client → consulta incidencias.
-    - Si query parece búsqueda de producto → buscar_productos.
-    Siempre incluye get_user_context.
-    """
+    """Orquesta tools según query y rol. Retorna texto para añadir al prompt."""
     parts: list[str] = [get_user_context(user)]
 
     if not user:

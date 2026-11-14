@@ -1,10 +1,7 @@
-"""Add global_stage field to supply_categories.
-
-Revision ID: 011_global_stage
-Revises: 010_add_color
-Create Date: 2026-04-16 13:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add global_stage field to supply_categories
+# ════════════════════════════════════════
+# 011_global_stage | Revises: 010_add_color | Creada: 2026-04-16 13:00:00.000000
 from alembic import op
 
 # revision identifiers, used by Alembic.

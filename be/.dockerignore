@@ -1,17 +1,6 @@
-# ============================================================
-# CALZADO J&R — .dockerignore del Backend
-# ============================================================
-# ¿Qué?    Lista de archivos/directorios excluidos del contexto
-#           de build de Docker.
-# ¿Para?   Cuando Docker construye una imagen (`docker build`),
-#           envía al daemon todos los archivos del contexto.
-#           Este archivo le dice qué NO enviar.
-# ¿Impacto? Dos beneficios clave:
-#   1. VELOCIDAD: Menos megabytes transferidos al daemon → builds
-#      más rápidos (especialmente con .venv de cientos de MB).
-#   2. SEGURIDAD: El archivo .env con contraseñas y claves secretas
-#      NUNCA entra en la imagen Docker.
-# ============================================================
+# ════════════════════════════════════════
+# 📄 Lista de archivos/directorios excluidos del contexto
+# ════════════════════════════════════════
 
 # ────────────────────────────
 # Entorno virtual Python

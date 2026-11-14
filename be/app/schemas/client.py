@@ -18,6 +18,7 @@ class ClientOrderDetailItem(BaseModel):
     state: str
     observations: Optional[str] = None
     unit_price: Optional[float] = None
+    line_group: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,6 +32,7 @@ class ClientOrderResponse(BaseModel):
     delivery_date: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    has_production: bool = False
     details: list[ClientOrderDetailItem] = []
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,16 +1,7 @@
-"""Add pgvector extension and ai_embeddings table for RAG (Fase 0).
-
-¿Qué? Crea extensión `vector` y tabla `ai_embeddings` para búsqueda semántica.
-¿Para qué? RAG del asistente IA: indexar 65 productos + FAQs y recuperar top-k
-           por similitud coseno. Base para Fase 1 (ChatWidget) y Fase 2/3.
-¿Impacto? Sin esta migración no hay RAG. Tabla vacía hasta que
-          seed_ai_embeddings.py la pueble en Fase 1. Índice HNSW permite
-          búsqueda en tabla vacía (ivfflat fallaría sin datos).
-
-Revision ID: 048_add_pgvector_ai_embeddings
-Revises: 047_nullable_order_customer
-Create Date: 2026-09-05
-"""
+# ════════════════════════════════════════
+# 📄 Migración 048_add_pgvector_ai_embe — Crea extensión `vector` y tabla `ai_embeddings` pa...
+# ════════════════════════════════════════
+# 048_add_pgvector_ai_embeddings | Revises: 047_nullable_order_customer | Creada: 2026-09-05
 
 from typing import Sequence
 

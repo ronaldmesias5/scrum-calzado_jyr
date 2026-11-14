@@ -1,17 +1,11 @@
-# ============================================================
-# CALZADO J&R — Docker Compose para PRODUCCIÓN con HTTPS
-# ============================================================
-# ¿Qué?    Versión de producción con nginx HTTPS + Let's Encrypt.
-# ¿Para?   Desplegar el sistema con certificado TLS válido.
-# ¿Cómo?
+# ════════════════════════════════════════
+# 📄 Docker Compose para PRODUCCIÓN con HTTPS + Certbot (Let's Encrypt)
+# ════════════════════════════════════════
 #   1. cp .env.example .env  (configurar variables de producción)
 #   2. Editar nginx.prod.conf: cambiar tu-dominio.com por tu dominio real
 #   3. docker compose -f docker-compose.prod.yml up -d --build
 #   4. docker compose -f docker-compose.prod.yml run --rm certbot
-#   5. Verificar: https://tu-dominio.com
-#
-# NOTA: En desarrollo usa docker-compose.yml (sin HTTPS).
-# ============================================================
+# NOTA: en desarrollo usa docker-compose.yml (sin HTTPS).
 
 services:
   # ──────────────────────────────────────────────────────────
@@ -48,6 +42,11 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Producción: NO migrar/seed al arrancar (default false). El esquema se
+      # actualiza en un pipeline controlado, con revisión y backup previo.
+      # Sobrescribir con RUN_MIGRATIONS=true solo si se sabe lo que se hace.
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+      RUN_SEED: ${RUN_SEED:-false}
       # IA — Fase 4 prod (Groq por defecto, Ollama opcional con --profile ollama)
       AI_PROVIDER: ${AI_PROVIDER:-groq}
       AI_API_KEY: ${AI_API_KEY:-}
@@ -90,11 +89,9 @@ services:
     # No necesita puertos — nginx sirve los archivos compilados
 
   # ──────────────────────────────────────────────────────────
-  # 🤖 ollama — LLM local opcional (Fase 4, $0 para siempre, sin internet)
-  # ¿Qué?    Llama 3.2 3B local para IA sin depender de Groq/Gemini.
-  # ¿Para?   Fallback offline, datos no salen del servidor.
-  # ¿Cómo?   docker compose -f docker-compose.prod.yml --profile ollama up -d
-  #          Requiere 8GB RAM, 30GB SSD. En .env: AI_PROVIDER=ollama
+  # 🤖 ollama — LLM local opcional (Llama 3.2 3B, fallback
+  #     offline): requiere 8GB RAM; `--profile ollama up -d`
+  #     y AI_PROVIDER=ollama en .env.
   # ──────────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest

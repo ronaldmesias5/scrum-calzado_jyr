@@ -66,7 +66,7 @@ Usuario (web/mobile)
 
 | Rol | Qué ve Águila | Qué NO ve |
 |---|---|---|
-| **Visitante** (sin login) | Catálogo público, cómo registrarse (RF-001), FAQs, contacto | Pedidos/tareas, precios internos |
+| **Visitante** (sin login) | Catálogo público, cómo registrarse, FAQs, contacto | Pedidos/tareas, precios internos |
 | **Cliente** (`client`) | + Sus pedidos (`customer_id == id`), catálogo mayorista, incidencias | Pedidos de otros, inventario, empleados |
 | **Empleado** (`employee` + `cortador|guarnecedor|solador|emplantillador`) | + Sus tareas (`assigned_to == id`, filtradas por cargo), vales, incidencias | Tareas de otros, gestión usuarios, catálogo |
 | **Jefe** (`admin`+`jefe`) | Todo (pedidos, tareas, catálogo, inventario, reportes, reindex, generador) | Nada, pero no ejecuta acciones destructivas sin confirmación |

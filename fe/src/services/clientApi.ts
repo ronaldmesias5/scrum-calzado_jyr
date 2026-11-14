@@ -14,6 +14,7 @@ export interface ClientOrderDetailItem {
   state: string;
   observations?: string | null;
   unit_price?: number | null;
+  line_group?: number;
 }
 
 export interface ClientOrder {
@@ -25,6 +26,7 @@ export interface ClientOrder {
   delivery_date: string | null;
   created_at: string;
   updated_at: string | null;
+  has_production?: boolean;
   details: ClientOrderDetailItem[];
 }
 
@@ -50,6 +52,11 @@ export interface OrderCreateRequest {
   total_pairs: number;
   delivery_date?: string | null;
   details: OrderDetailItemCreateRequest[];
+}
+
+export interface OrderUpdateDetailsRequest {
+  details: OrderDetailItemCreateRequest[];
+  delivery_date?: string | null;
 }
 
 export interface ClientOrderSummaryResponse {
@@ -115,6 +122,18 @@ export async function createMyOrder(
 ): Promise<ClientOrder> {
   const res = await api.post('/api/v1/client/orders', orderData);
   return res.data;
+}
+
+export async function updateMyOrder(
+  orderId: string,
+  orderData: OrderUpdateDetailsRequest
+): Promise<ClientOrder> {
+  const res = await api.put(`/api/v1/client/orders/${orderId}`, orderData);
+  return res.data;
+}
+
+export async function deleteMyOrder(orderId: string): Promise<void> {
+  await api.delete(`/api/v1/client/orders/${orderId}`);
 }
 
 export async function getMyOrdersSummary(): Promise<ClientOrderSummaryResponse> {

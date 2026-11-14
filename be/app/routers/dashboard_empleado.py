@@ -1,8 +1,6 @@
-"""
-Archivo: be/app/routers/dashboard_empleado.py
-Descripción: Agregador de routers del panel del empleado.
-Cada sub-router filtra datos según el usuario autenticado (current_user).
-"""
+# ════════════════════════════════════════
+# 📄 Agregador de routers del panel del empleado
+# ════════════════════════════════════════
 
 from fastapi import APIRouter
 

@@ -1,10 +1,7 @@
-"""Add line_group column to tasks table.
-
-Revision ID: 023_add_line_group_to_tasks
-Revises: 022_fix_line_group_existing
-Create Date: 2026-05-13 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add line_group column to tasks table
+# ════════════════════════════════════════
+# 023_add_line_group_to_tasks | Revises: 022_fix_line_group_existing | Creada: 2026-05-13 00:00:00.000000
 from alembic import op
 
 revision = '023_add_line_group_to_tasks'

@@ -1,7 +1,6 @@
-/**
- * Archivo: fe/src/types/orders.ts
- * Descripción: Tipos centralizados para órdenes y pedidos.
- */
+// ════════════════════════════════════════
+// 📄 Tipos centralizados para órdenes y pedidos
+// ════════════════════════════════════════
 
 export type OrderStatus =
   | 'pendiente'

@@ -1,13 +1,6 @@
-# ============================================================
-# CALZADO J&R — Dockerfile Frontend (React + Vite + nginx)
-# ============================================================
-# ¿Qué?    Imagen Docker multi-stage para el frontend React/TS.
-# ¿Para?   Desarrollo con hot-reload y producción optimizada
-#           con nginx sirviendo archivos estáticos.
-# ¿Impacto? El stage "prod" compila el proyecto a HTML/CSS/JS
-#           puro y lo sirve con nginx (<10 MB de imagen final),
-#           sin Node.js en producción.
-# ============================================================
+# ════════════════════════════════════════
+# 📄 Imagen Docker multi-stage para el frontend React/TS
+# ════════════════════════════════════════
 
 # ────────────────────────────
 # Stage 1 — base

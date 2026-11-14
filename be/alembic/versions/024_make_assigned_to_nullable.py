@@ -1,9 +1,6 @@
-"""
-Migration 024: Make tasks.assigned_to nullable
-
-Permite que una tarea de producción se cree sin empleado asignado
-(estado pendiente). El empleado se asigna después desde el dashboard.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Migration 024: Make tasks.assigned_to nullable
+# ════════════════════════════════════════
 
 from typing import Sequence, Union
 

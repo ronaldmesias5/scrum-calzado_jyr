@@ -1,9 +1,4 @@
-"""Tests de autenticación y autorización (IDOR).
-
-Un usuario normal (empleado/cliente) debe recibir 403 al acceder a rutas de
-administración, scrap y vales de producción ajenos. Sin token → 401. El jefe
-conserva acceso (control positivo).
-"""
+"""Tests de autenticación y autorización (IDOR)."""
 
 import uuid
 from datetime import UTC, datetime

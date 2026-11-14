@@ -1,16 +1,6 @@
-"""
-Rutas REST + WebSocket para el módulo de notificaciones.
-
-Endpoints REST:
-  GET    /api/v1/notifications          — lista notificaciones del usuario
-  GET    /api/v1/notifications/unread-count — conteo de no leídas
-  PATCH  /api/v1/notifications/{id}/read    — marcar como leída
-  PATCH  /api/v1/notifications/read-all     — marcar todas como leídas
-  DELETE /api/v1/notifications/{id}         — eliminar (soft delete)
-
-WebSocket:
-  WS     /api/v1/notifications/ws?token=JWT — tiempo real
-"""
+# ════════════════════════════════════════
+# 📄 Notificaciones WebSocket en tiempo real
+# ════════════════════════════════════════
 
 import uuid
 from typing import Annotated
@@ -104,15 +94,7 @@ async def websocket_notifications(
     db: Annotated[Session, Depends(get_db)],
     token: str = Query(...),
 ) -> None:
-    """
-    WebSocket para recibir notificaciones en tiempo real.
-
-    Autenticación vía token JWT en query param (token=...).
-    Valida tipo 'access', que la cuenta esté activa y la versión de sesión
-    (mismas reglas que `get_current_user`). Conecta usando el UUID del usuario
-    como clave para casar con los `broadcast_to_user(str(user.id))`.
-    El cliente puede enviar "ping" para mantener la conexión viva.
-    """
+    """WebSocket para recibir notificaciones en tiempo real."""
     payload = decode_token(token)
     if not payload or payload.get("type") != "access":
         await ws.close(code=4001, reason="Token inválido")

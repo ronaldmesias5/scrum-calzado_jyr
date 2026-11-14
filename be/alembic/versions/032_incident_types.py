@@ -1,9 +1,7 @@
-"""Add incident_type, order linking, and repair tracking to loss_records
-
-Revision ID: 032
-Revises: 031
-Create Date: 2026-06-15
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add incident_type, order linking, and repair tracking to loss_records
+# ════════════════════════════════════════
+# 032 | Revises: 031 | Creada: 2026-06-15
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql

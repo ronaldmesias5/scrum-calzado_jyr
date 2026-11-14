@@ -1,26 +1,6 @@
-/**
- * Archivo: fe/src/services/aiApi.ts
- * Descripción: Cliente HTTP para asistente IA (Fase 1 RAG + Fase 2 contexto por rol + Fase 3 avanzado).
- *
- * ¿Qué?
- *   - postChat(message): POST /api/v1/ai/chat (público, 500 chars, rate limit 10/min, JWT opcional)
- *   - getHealth(): GET /api/v1/ai/health
- *   - reindexEmbeddings(): POST /api/v1/ai/embeddings/reindex (solo jefe)
- *   - semanticSearch(q, k): GET /api/v1/ai/search/semantic (público, Fase 3)
- *   - recommend(product_id, k): GET /api/v1/ai/recommend (público, Fase 3)
- *   - generateDescription(product_id, tone, max_length): POST /api/v1/ai/generate-description (solo jefe, Fase 3)
- *   - classifyIncidence(text): POST /api/v1/ai/classify-incidence (autenticado, Fase 3)
- *
- * ¿Para qué?
- *   - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2, con JWT auto vía axios interceptor).
- *   - Búsqueda semántica, recomendador, generador y clasificador (Fase 3).
- *
- * ¿Impacto?
- *   Fase 1/2/3 — sin este servicio no hay chat ni búsqueda. Si falla:
- *   - ChatWidget → error de red.
- *   Modificar firmas rompe: useChat.ts, ChatWidget.tsx.
- *   Dependencias: services/axios.ts (inyecta Authorization Bearer si hay token), services/config.ts
- */
+// ════════════════════════════════════════
+// 📄 Cliente HTTP para asistente IA (Fase 1 RAG + Fase 2 contexto por rol + Fase 3 avanzado)
+// ════════════════════════════════════════
 
 import api from '@/services/axios';
 

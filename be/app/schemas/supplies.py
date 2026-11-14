@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/modules/supplies/schemas.py
-Descripción: Schemas Pydantic para validación de entrada/salida del módulo de insumos.
-"""
+# ════════════════════════════════════════
+# 📄 Schemas Pydantic para validación de entrada/salida del módulo de insumos
+# ════════════════════════════════════════
 
 from __future__ import annotations
 

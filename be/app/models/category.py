@@ -1,25 +1,6 @@
-"""
-Archivo: be/app/models/category.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `categories` (categorías de productos).
-
-¿Qué?
-  Define categorías de calzado (Hombre, Mujer, Niño, Especializado, etc.).
-  Campos: name_category (único), description_category, timestamps, soft delete.
-  Relaciones: one-to-many con Product.
-
-¿Para qué?
-  - Organizar catálogo en categorías
-  - Permitir filtrado y búsqueda por categoría
-  - Mejorar experiencia de usuario (navegación por categorías)
-  - Validación de datos (solo categorías existentes)
-
-¿Impacto?
-  CRÍTICO — Sin categorías, el catálogo está desorganizado.
-  Si falla: landing page no muestra categorías, queries de búsqueda rompen.
-  Modificar name_category rompe: frontend landing/catalog, admin/catalog_router.py,
-  schemas que validan categorías existentes.
-  Dependencias: models/product.py, database.py
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `categories` (categorías de productos)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

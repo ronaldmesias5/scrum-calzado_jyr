@@ -106,6 +106,15 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // El login devuelve 401 con credenciales inválidas: no es token expirado,
+    // extraer el detail del backend ("Correo o contraseña incorrectos")
+    if (
+      typeof originalRequest.url === 'string' &&
+      originalRequest.url.includes('/auth/login')
+    ) {
+      return handleHttpError(error);
+    }
+
     // Si ya hay un refresh en curso, encolar
     if (isRefreshing) {
       return new Promise<string>((resolve, reject) => {

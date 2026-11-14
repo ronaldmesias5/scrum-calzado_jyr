@@ -1,15 +1,4 @@
-"""
-WebSocket Connection Manager para notificaciones en tiempo real.
-
-Usa WebSocket nativo de FastAPI (NO socket.io, NO dependencias extra).
-El singleton ws_manager se comparte a nivel de módulo.
-
-Arquitectura:
-  - Dict: user_id (str) → set[WebSocket]
-  - broadcast_to_user() envía JSON a todas las conexiones de un usuario
-  - broadcast_to_users() envía a múltiples usuarios
-  - Conexiones muertas se limpian automáticamente
-"""
+"""WebSocket Connection Manager para notificaciones en tiempo real."""
 
 import asyncio
 

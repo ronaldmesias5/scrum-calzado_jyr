@@ -1,25 +1,6 @@
-"""
-Archivo: be/app/models/brand.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `brands` (marcas de calzado).
-
-¿Qué?
-  Define la estructura de marcas de calzado (Nike, Adidas, Puma, etc.).
-  Campos: name_brand (único), description_brand, timestamps, soft delete.
-  Relaciones: one-to-many con Style y Product.
-
-¿Para qué?
-  - Centralizar información de marcas
-  - Permitir filtrado de productos por marca
-  - Optimizar queries con índice UNIQUE en name_brand
-  - Rastrear creación/actualización de marcas
-
-¿Impacto?
-  CRÍTICO — Sin marcas, no hay catálogo de productos.
-  Si falla: no se pueden crear productos, queries de catálogo rompen.
-  Modificar campos rompe: admin/catalog_router.py, catálogo público,
-  queries en dashboard_jefe/router.py que filtran por brand.
-  Dependencias: models/style.py, models/product.py, database.py
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `brands` (marcas de calzado)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

@@ -1,13 +1,6 @@
-"""
-Archivo: be/tests/conftest.py
-Descripción: Fixtures compartidas para todos los tests del backend.
-
-Aislamiento: los tests usan una base de datos dedicada (`<bd_dev>_test`),
-nunca la base de datos de desarrollo. El esquema se genera con las mismas
-migraciones Alembic y los mismos datos semilla, y cada test corre dentro de
-una transacción que se revierte al final (patrón savepoint, permite que los
-endpoints hagan commit sin persistir nada).
-"""
+# ════════════════════════════════════════
+# 📄 Fixtures compartidas para todos los tests del backend
+# ════════════════════════════════════════
 
 import pytest
 from fastapi.testclient import TestClient
@@ -50,12 +43,7 @@ def _ensure_test_database_exists() -> None:
 
 
 def _reset_schema() -> None:
-    """Limpia el esquema público para arrancar cada sesión de tests desde cero.
-
-    Recrea también las extensiones que en desarrollo instala `db/init/init.sql`
-    (uuid-ossp, pg_trgm, vector), porque `DROP SCHEMA public CASCADE` elimina sus objetos
-    y las migraciones Alembic asumen que `uuid_generate_v4()` existe.
-    """
+    """Limpia el esquema público para arrancar cada sesión de tests desde cero."""
     engine = create_engine(TEST_DATABASE_URL, isolation_level="AUTOCOMMIT")
     with engine.connect() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))

@@ -1,9 +1,6 @@
-/**
- * Módulo: ordersApi.ts
- * Descripción: Servicio para consumir API de órdenes del backend.
- * ¿Para qué? Centralizar llamadas API para operaciones CRUD de órdenes mayoristas.
- * ¿Impacto? Proporciona métodos reutilizables para componentes de órdenes.
- */
+// ════════════════════════════════════════
+// 📄 Servicio para consumir API de órdenes del backend (CRUD mayorista)
+// ════════════════════════════════════════
 
 import axios from '@/services/axios';
 

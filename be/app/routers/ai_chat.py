@@ -1,27 +1,6 @@
-"""
-Archivo: be/app/routers/ai_chat.py
-Descripción: Router FastAPI para asistente IA (Fase 1 RAG + Fase 2 contexto por rol + Fase 3 avanzado).
-
-¿Qué?
-  - POST /api/v1/ai/chat (público, rate limit 10/min por IP, validación 500 chars, anti injection, JWT opcional para contexto por rol)
-  - GET  /api/v1/ai/health (público, estado del servicio)
-  - POST /api/v1/ai/embeddings/reindex (solo jefe/admin, reindexa catálogo + FAQs)
-  - GET  /api/v1/ai/search/semantic (público, búsqueda semántica, Fase 3)
-  - GET  /api/v1/ai/recommend (público, recomendador, Fase 3)
-  - POST /api/v1/ai/generate-description (solo jefe, generador, Fase 3)
-  - POST /api/v1/ai/classify-incidence (autenticado, clasificador, Fase 3)
-
-¿Para qué?
-  - ChatWidget en LandingPage (Fase 1) y layouts autenticados (Fase 2, con JWT).
-  - Búsqueda semántica, recomendador, generador y clasificador (Fase 3).
-  - Health para monitoreo y CI, reindex para jefe.
-
-¿Impacto?
-  Fase 1/2/3 — sin este router no hay chatbot ni búsqueda. Si falla:
-  - ChatWidget → 404 o 500, búsqueda semántica → 404.
-  Modificar prefix rompe: aiApi.ts, useChat.ts, tests.
-  Dependencias: schemas/ai.py, services/ai_service.py, services/ai_tools.py, dependencies.py, config.py
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI para asistente IA (Fase 1 RAG + Fase 2 contexto por rol + Fase 3 avanzado)
+# ════════════════════════════════════════
 
 import time
 from collections import defaultdict
@@ -241,11 +220,13 @@ def reindex_embeddings(
     description="Público. Busca en ai_embeddings por similitud. Query 2-200 chars.",
 )
 def semantic_search(
+    request: Request,
     q: str,
     db: Annotated[Session, Depends(get_db)],
     k: int = 10,
 ) -> dict:
     """Búsqueda semántica: query → top-k fragmentos similares."""
+    _check_rate_limit(request)
     from app.schemas.ai import SemanticSearchResponse, SourceItem as AISourceItem
 
     if not q or len(q.strip()) < 2:
@@ -269,11 +250,13 @@ def semantic_search(
     description="Público. Recomienda productos similares a product_id (solo productos activos).",
 )
 def recommend(
+    request: Request,
     product_id: str,
     db: Annotated[Session, Depends(get_db)],
     k: int = 5,
 ) -> dict:
     """Recomienda productos similares a product_id."""
+    _check_rate_limit(request)
     from app.schemas.ai import RecommendResponse, SourceItem as AISourceItem
 
     if k < 1 or k > 10:

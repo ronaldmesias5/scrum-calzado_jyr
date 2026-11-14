@@ -1,32 +1,6 @@
-"""
-Archivo: be/app/services/ai_service.py
-Descripción: Servicio RAG + LLM agnóstico para asistente IA (Fase 1 + Fase 2 + Fase 3).
-
-¿Qué?
-  - get_embedding(text): genera vector 768 dims (hash determinístico, $0, sin API).
-    Reemplazable por nomic-embed-text/Ollama sin cambiar interfaz.
-  - search_similar(db, query, k=5): busca top-k en ai_embeddings por distancia coseno.
-  - build_prompt(query, contexts, user_context): arma mensajes para LLM con system_prompt + contexto RAG + contexto por rol.
-  - call_llm(messages): llama a Groq/Gemini/Ollama/OpenAI según AI_PROVIDER, con fallback mock.
-  - chat(db, message, k, user): orquesta RAG completo → ChatResponse (Fase 2: con user para tools).
-  - semantic_search(db, query, k): búsqueda semántica en ai_embeddings (Fase 3).
-  - recommend_similar(db, product_id, k): recomienda productos similares (Fase 3).
-  - generate_product_description(db, product_id, tone, max_length): genera descripción vía LLM (Fase 3, solo jefe).
-  - classify_incidence(text): clasifica incidencia en categoría + defecto (Fase 3).
-
-¿Para qué?
-  - RAG del ChatWidget en LandingPage (Fase 1, público, sin auth) y layouts autenticados (Fase 2, con JWT).
-  - Búsqueda semántica, recomendador, generador y clasificador (Fase 3).
-
-¿Impacto?
-  Fase 1/2/3 — sin este servicio no hay chatbot ni búsqueda. Si falla:
-  - POST /api/ai/chat → 500 o alucina sin contexto.
-  Modificar get_embedding dim rompe: ai_embeddings.embedding, seed script, migración 048.
-  Modificar call_llm rompe: ai_chat.py, tests con mock.
-  Dependencias: config.py (AI_*), models/ai_embedding.py, models/user.py, models/product.py,
-               services/ai_tools.py, prompts/system_prompt.txt, pgvector, openai, groq,
-               google-generativeai (opcionales)
-"""
+# ════════════════════════════════════════
+# 📄 Servicio RAG + LLM agnóstico para asistente IA (Fase 1 + Fase 2 + Fase 3)
+# ════════════════════════════════════════
 
 import hashlib
 import logging
@@ -76,12 +50,7 @@ def _load_system_prompt() -> str:
 
 
 def _hash_embedding(text_content: str, dim: int = 768) -> list[float]:
-    """
-    Genera embedding determinístico de `dim` dims a partir de hash SHA256.
-    Normalizado a norma L2 = 1 para distancia coseno.
-    Es $0, sin API, y permite que RAG funcione sin modelo local.
-    Para producción semántica real, reemplazar por nomic-embed-text vía Ollama.
-    """
+    """Genera embedding determinístico de `dim` dims a partir de hash SHA256."""
     # Tokenizar simple: palabras en minúsculas
     tokens = re.findall(r"\w+", text_content.lower())
     if not tokens:

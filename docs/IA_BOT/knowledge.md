@@ -43,7 +43,7 @@ caducan en 24 horas.
 - **Iniciar sesión** (si ya tiene cuenta), **recuperar contraseña** por email,
   **verificar su email** y **solicitar reactivación** si su cuenta fue desactivada.
 
-### Flujo exacto de registro (RF-001)
+### Flujo exacto de registro
 1. El visitante entra a la landing page (`/`).
 2. Hace clic en "Registrarse" o "Crear cuenta".
 3. Aparece un modal de registro con campos: nombre, apellido, email, teléfono, tipo de documento,
@@ -61,7 +61,14 @@ caducan en 24 horas.
 
 ## 4. JEFE / ADMINISTRADOR (`admin` + ocupación `jefe`)
 
-Acceso total. Panel `/dashboard/admin` con estas secciones:
+**Perfil y alcance:** acceso total al sistema — pedidos, tareas de producción, catálogo,
+inventario, reportes de scrap, gestión de usuarios, reindexación de IA y generador de
+descripciones. Es el único rol que valida cuentas, asigna tareas y aprueba incidencias.
+**Restricción crítica:** no ejecutar acciones destructivas (eliminar, rechazar, cancelar,
+pagar) sin confirmación explícita del usuario. La IA informa y guía; no ejecuta por sí sola.
+Ver secciones 11–17 para reglas de precios, herramientas exclusivas y flujos detallados.
+
+Panel `/dashboard/admin` con estas secciones:
 
 ### 4.1 Inicio (Dashboard)
 - Ver KPIs: total de pedidos, ventas, productos con stock bajo.
@@ -333,3 +340,402 @@ Reglas generales para la IA:
 - Mis incidencias: `/dashboard/client/incidences`
 - Reportes: `/dashboard/client/reports`
 - Configuración: `/dashboard/client/settings`
+
+## 11. JEFE — Perfil, alcance y control
+
+### Qué ve y qué controla
+El jefe/admin tiene acceso total y exclusivo a: pedidos (crear, editar, estados, entrega),
+tareas de producción (asignar, reasignar, priorizar, liquidar), catálogo completo (CRUD de
+productos, marcas, estilos, categorías, fotos), inventario de bodega (stock, ajustes,
+historial de movimientos), insumos (materiales y sus existencias), reportes de scrap/pérdidas
+y sus aprobaciones, gestión de usuarios (empleados, clientes, otros jefes, validación de
+cuentas y reactivaciones), reindexación de embeddings de la IA y generador de descripciones
+con IA.
+
+### Acciones permitidas y restricciones
+Puede realizar gestión global del negocio: crear y eliminar registros, aprobar o rechazar
+incidencias, cancelar pedidos y pagar tareas. **Restricción crítica:** la IA nunca debe
+ejecutar acciones destructivas (eliminar, rechazar, cancelar, pagar) sin confirmación
+explícita del jefe; primero resume qué hará y pide confirmación. El jefe es el único rol
+que valida cuentas nuevas y el único que puede asignar tareas a empleados.
+
+## 12. JEFE — Reglas críticas de precios
+
+### task_prices NO es precio de venta
+`task_prices` es el **pago a empleados en COP por docena trabajada** según la etapa de
+producción: corte, guarnición, soladura y emplantillado. Se define por producto en
+Dashboard Jefe > Catálogo. Sirve para liquidar y marcar tareas como pagadas
+(`por_liquidar → pagado`). **Nunca es el precio al que se vende el calzado** al cliente;
+no confundirlos al responder.
+
+### Precios de venta reales
+Los precios de venta se gestionan en `client_prices.unit_price` (precio por par
+personalizado por cliente). El CRUD está en `/api/v1/admin/client-prices` (con endpoint
+masivo `POST /api/v1/admin/client-prices/bulk`). El catálogo mayorista del cliente
+(`GET /api/v1/client/catalog/products`) muestra el precio efectivo: el personalizado si
+existe, o el general del catálogo.
+
+### Congelamiento de precios y cotizaciones
+Al crear un pedido, el precio unitario vigente se congela en `order_details.unit_price`;
+cambiar después `client_prices` **no altera pedidos ya creados**. Para negociaciones
+especiales, cotizaciones cerradas o descuentos, el asistente deriva al canal corporativo
+de WhatsApp **3137061602**.
+
+## 13. JEFE — Herramientas y endpoints exclusivos
+
+### Reindexación de embeddings del chatbot
+`POST /api/v1/ai/embeddings/reindex` (solo jefe/admin). Vuelve a trocear knowledge.md, las
+FAQs y el catálogo, y regenera los embeddings en la base de datos. Se debe ejecutar después
+de modificar el catálogo o el conocimiento para que el asistente responda con datos
+frescos. Devuelve el número de fragmentos indexados.
+
+### Generador de descripciones con IA
+`POST /api/v1/ai/generate-description` (solo jefe/admin). Recibe `product_id`, un `tone`
+(por defecto "profesional") y `max_length` (por defecto 200 caracteres); devuelve la
+descripción redactada por el modelo LLM para ese producto del catálogo.
+
+### Máquina de estados de pedidos
+Estados: `pendiente → en_progreso → completado → entregado`, más `cancelado`. El servidor
+rechaza transiciones inválidas. El pedido para stock (sin cliente) termina en `completado`
+y **nunca** pasa a `entregado`.
+
+### Bloqueos de concurrencia (FOR UPDATE)
+Inventario, insumos, pedidos y operaciones críticas de scrap usan bloqueos `FOR UPDATE`:
+dos acciones simultáneas sobre el mismo registro no provocan stock negativo ni doble
+descuento. Si aparece un error de bloqueo o concurrencia, reintentar la operación.
+
+### Scrap y aprobación de incidencias
+El jefe registra pérdidas (producto, maquinaria o insumo), las mueve a reparación y las
+marca reparadas o devueltas, y aprueba o rechaza con motivo las incidencias reportadas por
+empleados y clientes. Al aprobar una incidencia de producto se crea un registro de pérdida
+real que alimenta el acumulado de scrap de los reportes.
+
+## 14. JEFE — Flujo: crear un producto y asignarle insumos
+
+1. Ir a Dashboard Jefe > Catálogo y hacer clic en "Nuevo Producto".
+2. Completar nombre, categoría, marca, estilo, descripción, tallas y colores; subir fotos.
+3. Guardar; el producto queda activo en el catálogo (activarlo si nace inactivo).
+4. Ir a Dashboard Jefe > Insumos y crear los insumos necesarios (cuero, suela, hilo,
+   pegante) si no existen todavía.
+5. Vincular cada insumo al producto recién creado y definir las cantidades requeridas.
+6. Verificar que haya stock suficiente de insumos antes de iniciar producción; al arrancar
+   la producción el sistema descuenta insumos con bloqueo FOR UPDATE.
+7. Definir los precios por etapa (task_prices) en COP por docena para liquidación de
+   empleados, y el precio de venta por cliente en Precios por Cliente si aplica.
+8. Si el catálogo cambió y el asistente IA debe conocerlo, reindexar embeddings
+   (POST /api/v1/ai/embeddings/reindex).
+
+## 15. JEFE — Flujo: revisar tareas pendientes y pagos por docena
+
+1. Ir a Dashboard Jefe > Tareas (tablero global de todas las tareas).
+2. Filtrar por cargo, empleado o estado (pendiente, por_liquidar, en_progreso, completado,
+   pagado) para localizar lo pendiente.
+3. Asignar o reasignar tareas sin asignar a empleados según su cargo; subir la prioridad
+   si es urgente (baja/alta).
+4. Revisar el pago por docena de cada etapa desde task_prices del producto (Catálogo >
+   precios por etapa): son COP por docena trabajada, no precios de venta.
+5. En Dashboard Jefe > Reportes, revisar la producción acumulada por empleado y los
+   valores en COP por etapa.
+6. Marcar como pagadas las tareas liquidadas (estado pagado) para cerrar la liquidación.
+
+## 16. JEFE — Flujo: precios personalizados por cliente
+
+1. Ir a Dashboard Jefe > Precios por Cliente.
+2. Buscar el cliente y el producto; crear o editar la entrada con el precio unitario en COP
+   (client_prices.unit_price). Existe carga masiva vía POST /api/v1/admin/client-prices/bulk.
+3. Guardar; el catálogo mayorista de ese cliente mostrará el nuevo precio al instante
+   (GET /api/v1/client/catalog/products lo resuelve por cliente).
+4. Recordar: los pedidos ya creados conservan el precio congelado en order_details.unit_price
+   y no cambian aunque se edite la tabla de precios.
+5. Para cotizaciones cerradas o negociaciones especiales, deriva a WhatsApp 3137061602.
+
+## 17. JEFE — Flujo: reindexar el conocimiento de la IA
+
+1. Confirmar que knowledge.md, las FAQs o el catálogo ya fueron actualizados.
+2. Ejecutar POST /api/v1/ai/embeddings/reindex con sesión de jefe/admin (solo este rol
+   tiene permiso; otros roles reciben 403).
+3. Esperar la confirmación con el número de fragmentos reindexados (catálogo + FAQs +
+   conocimiento).
+4. Probar el chat con una pregunta del tema nuevo para verificar que la respuesta use los
+   datos frescos.
+5. Si no se reindexa, el asistente seguirá respondiendo con la información anterior; la
+   reindexación es obligatoria tras cambios de catálogo o de conocimiento.
+
+## 18. EMPLEADO DE PRODUCCIÓN — Perfil general y permisos
+
+Los empleados de producción tienen el rol `employee` y una de estas ocupaciones:
+`cortador`, `guarnecedor`, `solador` o `emplantillador`. Cada cargo opera una única etapa
+de la cadena productiva.
+
+### Qué ve el empleado
+Acceso restringido exclusivamente a **sus** tareas asignadas (assigned_to == su usuario),
+filtradas estrictamente por su cargo/etapa. Ve sus métricas del dashboard, el vale de
+producción de cada tarea, sus incidencias y sus reportes de rendimiento (pares, tareas y
+valores en COP calculados con los precios por etapa task_prices).
+
+### Qué NO ve
+No puede ver tareas de otros empleados, gestión de usuarios, catálogo general, precios de
+venta a clientes ni reportes financieros de la empresa (ventas globales, ingresos totales).
+NO crea ni edita pedidos: los pedidos los crean el jefe o los clientes.
+
+### Rutas del panel
+- Dashboard: `/dashboard/employee`
+- Mis tareas: `/dashboard/employee/tasks`
+- Tareas disponibles: `/dashboard/employee/available-tasks`
+- Incidencias: `/dashboard/employee/incidences`
+- Reportes: `/dashboard/employee/reports`
+- Configuración: `/dashboard/employee/settings`
+
+## 19. EMPLEADO — Desglose operativo por cargo y etapa
+
+### Cortador (etapa: corte)
+Primera etapa de producción: corte de materiales (cuero o sintético) según la orden.
+Responsabilidades: reclamar o recibir tareas de corte, revisar el vale antes de trabajar
+(n.º de vale, pedido, producto, talla/color, pres), ejecutar el corte y marcar la tarea
+como completada. Al completarla se crea automáticamente la etapa de guarnición. Reporta
+incidencias de material defectuoso o desperdicio anormal desde Incidencias. Solo ve y
+reclama tareas de **corte**.
+
+### Guarnecedor (etapa: guarnición)
+Segunda etapa: costura, unión de piezas y ensamblaje inicial del corte de calzado.
+Responsabilidades: reclamar tareas de guarnición, verificar su vale, coser y unir las
+piezas cortadas, y completar la tarea para que se cree la etapa de soladura. Reporta
+incidencias de forros, hilos o máquinas de costura. El consumo de insumos de guarnición
+no se reporta manualmente por tarea: el sistema descuenta los insumos vinculados al
+producto al iniciar la producción; los faltantes se reportan como incidencia general.
+
+### Solador (etapa: soladura)
+Tercera etapa: solado y pegado de suelas (unión suela-cuerpo con pegamento y prensa).
+Responsabilidades: reclamar tareas de soladura, verificar el vale asignado (las tareas ya
+asignadas a otro empleado no pueden reclamarse), pegar y prensar según producto y tallas,
+y completar la tarea para crear la etapa de emplantillado. Reporta incidencias de suela
+defectuosa, pegamento agotado o fallas de prensa. La cantidad de pares es fija (la define
+el pedido) y el vale controla esa partida por las 4 etapas.
+
+### Emplantillador (etapa: emplantillado)
+Última etapa: plantilla, acabado final y empaque antes de la entrega a bodega o pedido.
+Responsabilidades: reclamar tareas de emplantillado, verificar el vale, colocar plantillas,
+acabar y embalar. Al completar esta etapa el sistema **actualiza el inventario
+automáticamente**: suma a pares fabricados (reserved) si el pedido tiene cliente, o a stock
+en bodega (amount) si es pedido para stock. Reporta incidencias de acabado o empaque.
+
+## 20. EMPLEADO — Vales, tareas y precios por etapa (task_prices)
+
+### Vales de producción
+Cada tarea tiene un **vale** con número único (por ejemplo, Vale #6) que acompaña el
+producto por las 4 etapas (corte → guarnición → soladura → emplantillado). El empleado ve
+el vale en su tarea: número de vale, pedido, producto, talla/color y pares. Ruta: Mis
+Tareas > seleccionar tarea > Vale.
+
+### Estados de la tarea
+`pendiente → en_progreso → completado`. El empleado **reclama** la tarea en Tareas
+Disponibles (pendiente → en_progreso, registrada a su nombre) y la **marca como
+completada** en Mis Tareas (añadiendo observación si hay novedad). El jefe asigna,
+reasigna y gestiona la prioridad.
+
+### task_prices: pago, NO precio de venta
+Lo que el asistente informe sobre `task_prices` corresponde **estrictamente al pago en COP
+que recibe el operario por docena trabajada** en su etapa (corte, guarnición, soladura o
+emplantillado), definido por producto. **Nunca es el precio de venta del calzado al
+cliente.** El empleado puede ver sus valores acumulados en Reportes; los precios de venta
+los gestiona el jefe en Precios por Cliente.
+
+## 21. EMPLEADO — Incidencias y errores operativos
+
+### Cómo reportar
+1. Ir a Dashboard Empleado > Incidencias.
+2. **Incidencia general** (máquina o insumo): crearla directamente describiendo el
+   impedimento técnico con observaciones.
+3. **Incidencia de producto**: vincularla a una de sus tareas; indicar talla, cantidad,
+   descripción del error de material o desperdicio de scrap y adjuntar foto de evidencia.
+4. Queda **pendiente de aprobación del jefe**; el empleado no puede aprobar sus propias
+   incidencias.
+5. Si el jefe la aprueba, se crea un registro de pérdida real (scrap) y puede compartirle
+   el resultado.
+
+### Cuándo reportar
+- Material defectuoso recibido en su etapa (corte, costura, suela, acabado).
+- Desperdicio de scrap mayor a lo normal o piezas dañadas.
+- Máquina descompuesta o impedimento técnico que detenga su etapa.
+- Faltante de insumos necesarios para su trabajo.
+
+## 22. EMPLEADO — Guía de respuestas del asistente
+
+Cuando un empleado pregunte al asistente, responde así:
+
+- **"¿Cuánto me pagan por la tarea o la docena?"**: task_prices es su pago por docena en
+  COP según su etapa (corte, guarnición, soladura, emplantillado); invita a ver Reportes
+  para su rendimiento acumulado; nunca lo confundas con precio de venta.
+- **"¿Qué tareas tengo pendientes?"**: guía a Dashboard Empleado > Mis Tareas con filtros
+  por estado y tipo.
+- **"¿Cómo cambio el estado de una tarea?"**: Mis Tareas > seleccionar > observación
+  opcional > Marcar como completada; la siguiente etapa se crea sola.
+- **"¿Cómo subo evidencia de un problema?"**: Incidencias > nueva incidencia de producto >
+  vincular tarea > talla, cantidad, descripción y foto.
+- **"¿Cómo reclamo una tarea?"**: Tareas Disponibles > filtrar por cargo > Reclamar (solo
+  tareas de su etapa sin asignar).
+- Siempre con rutas exactas del panel del empleado y sin revelar datos de otros empleados
+  ni precios de venta.
+
+## 23. CLIENTE — Perfil general y permisos
+
+El cliente mayorista tiene el rol `client` (occupation NULL). Es una tienda o distribuidor
+que compra calzado urbano y casual al por mayor.
+
+### Qué ve el cliente
+Acceso exclusivo a su panel y a **sus propios** pedidos (customer_id == su usuario).
+Ve el catálogo mayorista de calzado (marcas, categorías y estilos) con precios
+personalizados, el estado y detalle de sus pedidos (líneas, fotos, estados), sus
+incidencias reportadas y las que el jefe le compartió, y reportes propios con exportación
+PDF.
+
+### Qué NO ve
+Acceso totalmente restringido a: pedidos de otros clientes, inventarios internos de
+bodega, tareas o pagos por docena (task_prices) de los empleados, producción interna,
+usuarios y herramientas administrativas de gestión.
+
+### Rutas del panel
+- Dashboard: `/dashboard/client`
+- Catálogo mayorista: `/dashboard/client/catalog`
+- Mis pedidos: `/dashboard/client/orders`
+- Mis incidencias: `/dashboard/client/incidences`
+- Reportes: `/dashboard/client/reports`
+- Configuración: `/dashboard/client/settings`
+
+## 24. CLIENTE — Catálogo mayorista y precios de venta
+
+### Catálogo de calzado
+El cliente explora los productos disponibles (marcas, categorías y estilos de calzado
+urbano/casual) desde Dashboard Cliente > Catálogo Mayorista. El catálogo se sirve vía
+GET /api/v1/client/catalog/products con filtros por categoría, marca, estilo o color y
+búsqueda por nombre. Cada ficha muestra tallas y colores disponibles.
+
+### Precios de venta personalizados
+Los precios de venta reales se asignan por cliente en `client_prices.unit_price` (los
+gestiona el jefe en Precios por Cliente). El catálogo mayorista muestra el precio efectivo
+del cliente: su precio personalizado si existe, o el general del catálogo. El sistema no
+muestra task_prices al cliente (son pagos internos a empleados).
+
+### Congelamiento de precios
+Al confirmar un pedido, el precio unitario vigente se congela automáticamente en
+`order_details.unit_price`. Cambios posteriores en la tabla de precios del cliente no
+alteran pedidos ya creados.
+
+### Negociaciones y canal de apoyo
+Para cotizaciones cerradas, pedidos al por mayor especiales, descuentos o negociaciones,
+el asistente deriva directamente al cliente al canal corporativo de WhatsApp
+**3137061602**. El pedido mínimo es **12 pares por estilo/talla**.
+
+## 25. CLIENTE — Flujo: consultar estado e historial de pedidos
+
+1. Iniciar sesión e ir a Dashboard Cliente > Mis Pedidos.
+2. Ver el historial con búsqueda y paginación: cada pedido muestra su estado
+   (pendiente, en_progreso, completado, entregado o cancelado) y fecha.
+3. Seleccionar un pedido para abrir el detalle: líneas (producto, talla, color, cantidad),
+   fotos del producto y estado actual.
+4. Seguir el avance: pendiente → en_progreso (en producción) → completado → entregado.
+5. Los pedidos son de solo lectura: el cliente no puede editar ni cancelarlos desde la
+   pantalla; para cambios contactar al jefe o WhatsApp 3137061602.
+6. Exportar el resumen a PDF desde Reportes si necesita el comprobante.
+
+## 26. CLIENTE — Flujo: catálogo mayorista y precios
+
+1. Ir a Dashboard Cliente > Catálogo Mayorista.
+2. Filtrar por categoría, marca, estilo o color, o buscar por nombre.
+3. Seleccionar un producto → ver ficha con tallas y colores disponibles y su precio
+   (personalizado si lo tiene, o general del catálogo).
+4. Añadir al carrito: talla, color y cantidad (**mínimo 12 pares por estilo/talla**).
+5. Continuar agregando productos hasta completar el pedido.
+6. Confirmar; los precios se congelan en el pedido y el jefe recibe notificación.
+7. Para negociar precios o cotizaciones cerradas: WhatsApp 3137061602.
+
+## 27. CLIENTE — Flujo: reportar incidencia y solicitar soporte
+
+1. Ir a Dashboard Cliente > Mis Incidencias y hacer clic en "Reportar incidencia".
+2. Seleccionar el pedido entregado, el producto, la talla y la cantidad afectada.
+3. Escribir la descripción del problema y adjuntar foto de evidencia.
+4. La incidencia queda **pendiente de aprobación del jefe**; el cliente no puede
+   aprobarla ni editarla después de enviarla.
+5. Si el jefe la aprueba, se crea un registro de pérdida real y se la comparte al cliente;
+   si la rechaza, recibe el motivo.
+6. Para soporte general, cotizaciones o estado de una incidencia: WhatsApp 3137061602.
+
+## 28. CLIENTE — Flujo: registro e inicio de sesión
+
+1. Entrar a la landing page (`/`) y hacer clic en "Registrarse" o "Crear cuenta".
+2. Completar el formulario: nombre, apellido, email, teléfono, tipo y número de documento,
+   nombre del negocio y contraseña.
+3. Aceptar términos y enviar; la cuenta nace inactiva y pendiente de validación.
+4. Recibir correo de validación de email y verificarlo.
+5. El jefe revisa y aprueba la cuenta; al aprobar llega email de bienvenida.
+6. Iniciar sesión con email y contraseña desde la landing.
+7. Si la cuenta fue desactivada, solicitar reactivación en `/auth/reactivation`.
+8. Si olvidó la contraseña: recuperar por email en `/auth/forgot-password`.
+
+## 29. VISITANTE — Perfil general y permisos
+
+El visitante es cualquier persona que entra a la página pública **sin cuenta ni inicio de
+sesión**. El chat funciona con JWT opcional: sin token, el asistente actúa como guía
+pública y no consulta datos privados.
+
+### Qué ve el visitante
+Acceso público a: landing page (propuesta de valor, categorías, asesoría), catálogo
+general de calzado urbano y casual (`/catalog`) con fotos y disponibilidad por talla,
+información corporativa, preguntas frecuentes y métodos de contacto (botón flotante de
+WhatsApp). También ve las rutas y modales de registro e inicio de sesión.
+
+### Qué NO ve
+Acceso totalmente bloqueado a: paneles de clientes, pedidos personalizados, precios
+mayoristas específicos, inventarios internos, módulos de producción, tareas de empleados,
+reportes y herramientas administrativas. No puede crear pedidos sin cuenta validada.
+
+## 30. VISITANTE — Flujo: registrarse como nuevo cliente
+
+1. Entrar a la landing page (`/`) y hacer clic en "Registrarse" o "Crear cuenta".
+2. Completar el formulario: nombre, apellido, email, teléfono, tipo y número de documento,
+   nombre del negocio y contraseña.
+3. Aceptar términos y enviar; la cuenta nace inactiva (`is_active=False`) y pendiente de
+   validación (`is_validated=False`).
+4. Recibir correo de validación de email y verificarlo en `/auth/verify-email`.
+5. El jefe revisa la cuenta pendiente y la aprueba o rechaza con motivo.
+6. Al aprobar, el usuario recibe email de bienvenida y ya puede iniciar sesión.
+7. Al rechazar, recibe email con el motivo del rechazo.
+8. Si su cuenta fue desactivada después, solicitar reactivación en `/auth/reactivation`.
+
+## 31. VISITANTE — Flujo: inicio de sesión
+
+1. Desde la landing page, hacer clic en "Iniciar sesión" (abre el modal de login).
+2. Ingresar email y contraseña.
+3. Si la cuenta es válida y activa, se inicia sesión y se redirige según el rol:
+   cliente a `/dashboard/client`, empleado a `/dashboard/employee`, jefe a
+   `/dashboard/admin`.
+4. Si olvidó la contraseña: usar "¿Olvidaste tu contraseña?" → `/auth/forgot-password`;
+   llega un correo con el enlace de recuperación.
+5. Si el email aún no está verificado, reenviar la verificación desde
+   `/auth/verify-email`.
+6. Si la cuenta está desactivada, solicitar reactivación en `/auth/reactivation`.
+
+## 32. VISITANTE — Catálogo público de calzado
+
+El visitante puede explorar sin registrarse en `/catalog`: productos activos con foto,
+nombre, marca, categoría (caballero, dama, infantil), estilo y rango de tallas. Filtros
+por categoría, marca, estilo y color, más búsqueda por nombre. Al abrir un producto ve el
+detalle y la disponibilidad por talla. Los precios mayoristas y el pedido solo aparecen
+tras iniciar sesión como cliente validado; para cotizar sin cuenta, WhatsApp 3137061602.
+
+## 33. VISITANTE — Contacto, consultas y pedidos al por mayor
+
+Para consultas comerciales, cotizaciones, pedidos al por mayor especiales o negociación,
+el asistente deriva al canal corporativo de WhatsApp **3137061602** (botón flotante en la
+landing y el catálogo). Quiere hacer un pedido: explicar que necesita registrarse como
+cliente mayorista, el jefe valida la cuenta y luego puede pedir desde su panel. El pedido
+mínimo es 12 pares por estilo/talla.
+
+## 34. VISITANTE — Límites de interacción y seguridad del chat
+
+El chat funciona con JWT opcional: sin iniciar sesión el asistente **no consulta pedidos,
+tareas ni datos personales**; solo informa con el catálogo público y las FAQs. No revelar
+precios internos, datos de usuarios ni información de otros roles. Si el visitante pide
+funciones restringidas (ver pedidos, tareas, precios mayoristas), motivar amablemente a
+registrarse: "Para eso necesitas una cuenta de cliente mayorista; regístrate en la landing
+y el jefe validará tu acceso". Máximo 500 caracteres por mensaje y límite de uso por IP.

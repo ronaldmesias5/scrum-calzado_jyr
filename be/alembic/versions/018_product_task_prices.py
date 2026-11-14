@@ -1,10 +1,7 @@
-"""Add task_prices column to products table.
-
-Revision ID: 018_product_task_prices
-Revises: 017_add_completed_at_to_tasks
-Create Date: 2026-05-02 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add task_prices column to products table
+# ════════════════════════════════════════
+# 018_product_task_prices | Revises: 017_add_completed_at_to_tasks | Creada: 2026-05-02 00:00:00.000000
 from alembic import op
 
 revision = '018_product_task_prices'

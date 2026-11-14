@@ -1,9 +1,6 @@
-"""
-Migration 027: Add avatar_url column to users table
-
-Agrega la columna avatar_url a la tabla users para
-permitir que los usuarios tengan una foto de perfil.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Migration 027: Add avatar_url column to users table
+# ════════════════════════════════════════
 
 from typing import Sequence, Union
 

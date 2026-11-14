@@ -20,16 +20,7 @@ def deduct_supplies_for_production(
     current_user_id: uuid.UUID,
     db: Session,
 ) -> None:
-    """
-    Deduce insumos vinculados a un producto según el breakdown de tallas a producir.
-
-    - Recorre todos los ProductSupply del producto.
-    - Calcula cantidad requerida = sum(quantity_required * breakdown[talla]) por talla.
-    - Si el insumo tiene sizes y unit="tallas": deduce de cada talla del dict sizes.
-    - Si no: deduce de stock_quantity plano.
-    - Crea SuppliesMovement (tipo salida) por cada insumo.
-    - Lanza HTTPException 400 si algún insumo no tiene stock suficiente.
-    """
+    """Deduce insumos vinculados a un producto según el breakdown de tallas a producir."""
     links = db.execute(
         select(ProductSupply).where(ProductSupply.product_id == product_id)
     ).scalars().all()

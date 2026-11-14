@@ -1,7 +1,6 @@
-"""
-Archivo: be/app/models/vale.py
-Descripción: Modelo ORM para las tablas `vale` y `detail_vale` (comprobantes de entrega).
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para las tablas `vale` y `detail_vale` (comprobantes de entrega)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

@@ -1,7 +1,6 @@
-/**
- * Archivo: fe/src/__tests__/config.test.ts
- * Descripción: Tests para la configuración de la API.
- */
+// ════════════════════════════════════════
+// 📄 Tests para la configuración de la API
+// ════════════════════════════════════════
 
 import { describe, it, expect } from 'vitest';
 

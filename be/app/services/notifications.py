@@ -1,10 +1,4 @@
-"""
-NotificationService — funciones síncronas para CRUD de notificaciones en BD.
-Usa Session (síncrona), NO AsyncSession.
-
-Todas las funciones reciben una sesión SQLAlchemy activa.
-Las operaciones son atómicas (commit dentro de cada función).
-"""
+"""NotificationService — funciones síncronas para CRUD de notificaciones en BD."""
 
 import uuid
 from datetime import datetime, timezone

@@ -1,9 +1,7 @@
-"""Add invitation_expires_at column to users table
-
-Revision ID: 038
-Revises: 037
-Create Date: 2026-06-21
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add invitation_expires_at column to users table
+# ════════════════════════════════════════
+# 038 | Revises: 037 | Creada: 2026-06-21
 from alembic import op
 import sqlalchemy as sa
 

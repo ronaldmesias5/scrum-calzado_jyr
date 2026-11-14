@@ -1,10 +1,6 @@
-"""
-Módulo: service.py (Orders)
-Descripción: Lógica de negocio reutilizada por los routers de órdenes.
-¿Para qué? Centralizar la serialización de órdenes, la resolución de estados y
-las transiciones de inventario (reservas) al cambiar estados de órdenes/detalles.
-¿Nota? La lógica vive aquí para que router.py (CRUD) y tasks.py (producción) la compartan.
-"""
+# ════════════════════════════════════════
+# 📄 Lógica de negocio reutilizada por los routers de órdenes
+# ════════════════════════════════════════
 
 import uuid
 from datetime import UTC, datetime
@@ -220,16 +216,7 @@ def apply_order_state_inventory(
     order: Order,
     new_state: OrderStatus,
 ) -> None:
-    """Ajusta el inventario (reservas) cuando cambia el estado de una orden.
-
-    FLUJO:
-    - Pedido 'completado' -> SUMAR a reserved (entrada de pares fabricados)
-    - Pedido 'entregado' -> RESTAR de reserved (salida de pares fabricados)
-    - Pedido vuelve atrás desde 'completado' -> RESTAR de reserved lo sumado
-
-    PEDIDOS PARA STOCK (order.customer_id is None): al completar se suma a
-    `amount` (bodega) en vez de `reserved`, y al revertir se resta de `amount`.
-    """
+    """Ajusta el inventario (reservas) cuando cambia el estado de una orden."""
     is_stock = order.customer_id is None
     # 1. El pedido pasa a 'completado' -> SUMAR A RESERVED (entrada de pares fabricados)
     #    ...o a AMOUNT (bodega) si es producción para stock.
@@ -661,16 +648,7 @@ def create_order(
     details: list[OrderDetailItemCreateRequest],
     created_by: uuid.UUID,
 ) -> Order:
-    """
-    Crea una orden mayorista con sus líneas de detalle.
-
-    Común al flujo del jefe (POST /admin/orders) y al del cliente
-    (POST /client/orders). El `total_pairs` se recalcula en el servidor
-    como la suma de los `amount` de los detalles para no confiar en el body.
-
-    Si `customer_id` es None, la orden es producción para stock/bodega
-    (sin cliente asignado).
-    """
+    """Crea una orden mayorista con sus líneas de detalle."""
     if customer_id is not None:
         customer_check = db.execute(select(User).where(User.id == customer_id)).scalar_one_or_none()
         if not customer_check:

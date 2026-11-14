@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
   Package2,
   Plus,
@@ -171,7 +172,7 @@ function SupplyFormModal({
           </p>
         </div>
 
-        <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors">
+        <div className="p-8 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-slate-900 transition-colors modal-scrollbar">
           {/* Row 1: Etapa Global y Tipo */}
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
@@ -927,7 +928,9 @@ export default function InsumosPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <Package2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <ADMIN_SECTIONS.insumos.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.insumos.color}`}
+            />
             Gestión de Insumos
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors">

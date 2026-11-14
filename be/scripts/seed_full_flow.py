@@ -1,15 +1,4 @@
-"""
-Script: seed_full_flow.py
-Descripción: Crea datos de prueba completos para verificar analytics:
-  - 1 jefe (ya existe)
-  - 4 empleados (cortador, guarnecedor, solador, emplantillador)
-  - 2 clientes
-  - Actualiza task_prices de productos existentes
-  - Crea 6 pedidos con detalles
-  - Crea tareas de producción
-  - Avanza estados de tareas para generar datos de analytics
-Uso: docker compose exec be python scripts/seed_full_flow.py
-"""
+"""Script: seed_full_flow.py"""
 
 import requests
 import json

@@ -1,13 +1,6 @@
-"""
-Archivo: be/app/models/pending_incidence.py
-Descripción: Modelo ORM para incidencias de producto pendientes de aprobación del jefe.
-
-Flujo:
-  1. Empleado crea una incidencia de producto vinculada a su tarea → status=pending
-  2. Jefe ve la lista de pendientes en sección separada
-  3. Jefe aprueba → elige tipo (perdida/en_reparacion/devuelto) → se crea LossRecord real
-  4. Jefe rechaza → status=rejected
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM para incidencias de producto pendientes de aprobación del jefe
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

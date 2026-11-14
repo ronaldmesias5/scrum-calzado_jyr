@@ -1,8 +1,6 @@
-/**
- * Archivo: pages/ForgotPasswordPage.tsx
- * Descripción: Página de recuperación de contraseña de CALZADO J&R.
- * ¿Para qué? Permitir al usuario solicitar un enlace de reset por email.
- */
+// ════════════════════════════════════════
+// 📄 Página de recuperación de contraseña de CALZADO J&R
+// ════════════════════════════════════════
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';

@@ -1,10 +1,7 @@
-"""Add observations to order_details.
-
-Revision ID: 012_observations
-Revises: 011_global_stage
-Create Date: 2026-04-16 13:10:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add observations to order_details
+# ════════════════════════════════════════
+# 012_observations | Revises: 011_global_stage | Creada: 2026-04-16 13:10:00.000000
 from alembic import op
 
 # revision identifiers, used by Alembic.

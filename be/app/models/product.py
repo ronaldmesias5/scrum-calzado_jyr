@@ -1,28 +1,6 @@
-"""
-Archivo: be/app/models/product.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `products` (productos del catálogo).
-
-¿Qué?
-  Define productos de calzado con: nombre, descripción, color, imagen, estado.
-  ForeignKeys: style_id, brand_id, category_id (RESTRICT para integridad referencial).
-  Campos críticos: insufficient_threshold (alerta de bajo stock), state (activo/inactivo).
-  Relaciones: many-to-one con Style, Brand, Category; one-to-many con Inventory, OrderDetail.
-
-¿Para qué?
-  - Almacenar productos disponibles en el catálogo
-  - Vincular productos con estilos, marcas, categorías
-  - Validar inventario disponible
-  - Permitir búsqueda y filtrado en landing y admin
-  - Trackear estado de producto (activo/inactivo)
-
-¿Impacto?
-  CRÍTICO — Base de negocio, sin productos no hay ventas.
-  Si falla: catálogo vacío, órdenes no se pueden crear, inventario no existe.
-  Modificar RESTRICT en ForeignKey rompe: eliminación de estilos, marcas, categorías.
-  Modificar insufficient_threshold lógica rompe: alertas de inventario bajo.
-  Dependencias: models/style.py, models/brand.py, models/category.py,
-               models/inventory.py, models/order.py, catalog/*
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `products` (productos del catálogo)
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

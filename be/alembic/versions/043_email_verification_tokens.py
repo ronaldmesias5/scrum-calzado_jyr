@@ -1,12 +1,7 @@
-"""create email_verification_tokens table
-
-Add table for email verification tokens used during registration.
-Follows the same pattern as password_reset_tokens.
-
-Revision ID: 043_email_verification_tokens
-Revises: 042_email_sender
-Create Date: 2026-08-31
-"""
+# ════════════════════════════════════════
+# 📄 Migración — create email_verification_tokens table
+# ════════════════════════════════════════
+# 043_email_verification_tokens | Revises: 042_email_sender | Creada: 2026-08-31
 
 from alembic import op
 import sqlalchemy as sa

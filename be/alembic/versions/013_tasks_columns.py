@@ -1,11 +1,8 @@
 
-"""Add vale_number and order_id to tasks.
-
-Revision ID: 013_tasks_columns
-Revises: 012_observations
-Create Date: 2026-04-18 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add vale_number and order_id to tasks
+# ════════════════════════════════════════
+# 013_tasks_columns | Revises: 012_observations | Creada: 2026-04-18 00:00:00.000000
 from alembic import op
 
 # revision identifiers, used by Alembic.

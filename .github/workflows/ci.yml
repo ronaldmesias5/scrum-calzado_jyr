@@ -7,6 +7,19 @@ on:
     branches: [main, develop]
 
 jobs:
+  secret-scan:
+    name: Escaneo de secretos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historial completo para detectar secretos filtrados en commits pasados
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   backend:
     name: Backend (ruff + pytest + coverage)
     runs-on: ubuntu-latest
@@ -17,7 +30,8 @@ jobs:
         image: mirror.gcr.io/pgvector/pgvector:pg16
         env:
           POSTGRES_USER: jyr_user
-          POSTGRES_PASSWORD: JyrPassword123!
+          # Credenciales únicas de CI (NO reutilizar la contraseña de desarrollo)
+          POSTGRES_PASSWORD: ci_test_password_only
           POSTGRES_DB: calzado_jyr_db
         ports:
           - 5432:5432
@@ -27,11 +41,13 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://jyr_user:JyrPassword123!@localhost:5432/calzado_jyr_db
-      SECRET_KEY: ci-secret-key-for-calzado-jyr-2026-change-me
+      DATABASE_URL: postgresql://jyr_user:ci_test_password_only@localhost:5432/calzado_jyr_db
+      SECRET_KEY: ci-only-secret-key-not-for-production-a1b2c3d4e5f6g7h8i9j0
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 15
-      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      # NOTA: la variable real en config.py es REFRESH_TOKEN_EXPIRE_MINUTES
+      # (los días de refresh no existen — no declarar vars muertas aquí)
+      REFRESH_TOKEN_EXPIRE_MINUTES: 60
       FRONTEND_URL: http://localhost:5173
       ENVIRONMENT: test
       # Mail settings required by Settings() in be/app/config.py (no .env in CI)
@@ -118,3 +134,50 @@ jobs:
 
       - name: Build de producción (tsc + vite build)
         run: pnpm build
+
+  security:
+    name: Escaneo de seguridad (SAST + dependencias + contenedores)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SAST — análisis estático de código (Python/TS/JS/YAML)
+      # Non-blocking al inicio: revisar hallazgos y ajustar umbral después
+      - name: Semgrep (SAST)
+        run: docker run --rm -v "${{ github.workspace }}:/src" semgrep/semgrep semgrep --config auto --error
+        continue-on-error: true
+
+      # Dependencias Python (backend): export de uv.lock → pip-audit
+      - name: Exportar dependencias backend
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "be/uv.lock"
+      - name: pip-audit (backend)
+        run: |
+          uv export --frozen --no-dev --format requirements-txt --output-file requirements.txt
+          python -m pip install --upgrade pip-audit
+          pip-audit -r requirements.txt --strict
+        continue-on-error: true
+
+      # Dependencias JS/TS (frontend): npm audit vía pnpm
+      - name: npm audit (frontend)
+        working-directory: fe
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm audit --audit-level high
+        continue-on-error: true
+
+      # Contenedores/IaC: escaneo de Dockerfiles, compose y secretos embebidos
+      # v0.36.0: las versiones viejas (v0.28.0) referencian internamente
+      # aquasecurity/setup-trivy@v0.2.1, un tag eliminado upstream → el job falla
+      # antes de ejecutar los steps.
+      - name: Trivy (filesystem + IaC)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: "."
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+          format: table

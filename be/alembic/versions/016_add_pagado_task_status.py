@@ -1,10 +1,7 @@
-"""add pagado status to task_status enum
-
-Revision ID: 016_add_pagado_task_status
-Revises: 015_add_entregado
-Create Date: 2026-04-27 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — add pagado status to task_status enum
+# ════════════════════════════════════════
+# 016_add_pagado_task_status | Revises: 015_add_entregado | Creada: 2026-04-27 00:00:00.000000
 from alembic import op
 
 

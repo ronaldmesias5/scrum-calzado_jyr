@@ -1,37 +1,6 @@
-/**
- * Archivo: src/App.tsx
- * Descripción: Componente raíz de la aplicación CALZADO J&R.
- *
- * ¿Qué?
- *   Define TODAS las rutas de la aplicación:
- *   - Rutas públicas (Landing, Login, Register)
- *   - Rutas protegidas (Dashboards)
- *   - Rutas por rol (solo admin, solo cliente, etc.)
- *
- *   Proporciona CONTEXTOS GLOBALES:
- *   - AuthProvider → Estado de autenticación para toda la app
- *   - BrowserRouter → Sistema de navegación React Router v6
- *
- * ¿Para qué?
- *   Centralizar la ESTRUCTURA de la aplicación en un único lugar.
- *   Evitar que las rutas estén esparcidas en múltiples archivos.
- *
- * ¿Impacto?
- *   Muy crítico. Cambios aquí afectan:
- *   - La navegación completa de la app
- *   - Quién puede acceder a dónde
- *   - Flujos de autenticación
- *
- *   COMPOSICIÓN (orden de capas):
- *   1. BrowserRouter (permite navegación)
- *   2. AuthProvider (proporciona usuario/tokens globales)
- *   3. Routes (define rutas específicas)
- *
- *   DEPENDENCIAS CRÍTICAS:
- *   - AuthContext.tsx (contexto de autenticación)
- *   - react-router-dom (librería de enrutamiento)
- *
- */
+// ════════════════════════════════════════
+// 📄 Componente raíz de la aplicación CALZADO J&R
+// ════════════════════════════════════════
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useState } from 'react';
@@ -44,7 +13,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { CookieBanner } from '@/components/atoms/CookieBanner';
 import { CookiePolicyModal } from '@/components/atoms/CookiePolicyModal';
 import { ToastProvider } from '@/store/ToastContext';
-import PageLoader from '@/components/atoms/PageLoader';
+import SkeletonLoader from '@/components/atoms/SkeletonLoader';
 import AdminLayout from '@/features/admin/components/organisms/AdminLayout';
 import EmployeeLayout from '@/features/employee/components/organisms/EmployeeLayout';
 import ClientLayout from '@/features/client/components/organisms/ClientLayout';
@@ -170,7 +139,7 @@ function App() {
             Saltar al contenido principal
           </a>
           <ToastProvider>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<SkeletonLoader variant="page" />}>
               <Routes>
               {/* ════════════════════════════════════════ */}
               {/* 🌐 Landing Page pública */}

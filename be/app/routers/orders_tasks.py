@@ -1,10 +1,6 @@
-"""
-Módulo: tasks.py (Orders)
-Descripción: Rutas de tareas de producción y vales asociados a órdenes.
-¿Para qué? Endpoints GET /tasks/next-number, GET /tasks/all, GET/POST /{order_id}/tasks,
-PATCH /tasks/{task_id}/assign y PATCH /tasks/{task_id}/status.
-¿Nota? Comparte prefix y tag con router.py de orders; la lógica de inventario vive en service.py.
-"""
+# ════════════════════════════════════════
+# 📄 Rutas de tareas de producción y vales asociados a órdenes
+# ════════════════════════════════════════
 
 import logging
 import uuid

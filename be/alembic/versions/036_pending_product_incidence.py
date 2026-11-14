@@ -1,9 +1,7 @@
-"""Create pending_product_incidences table for employee product incidences awaiting jefe approval
-
-Revision ID: 036
-Revises: 035
-Create Date: 2026-06-17
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Create pending_product_incidences table for employee product incidences awa...
+# ════════════════════════════════════════
+# 036 | Revises: 035 | Creada: 2026-06-17
 from alembic import op
 import sqlalchemy as sa
 

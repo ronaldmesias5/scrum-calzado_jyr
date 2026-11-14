@@ -1,27 +1,6 @@
-/**
- * Archivo: fe/src/components/layout/AuthLayout.tsx
- * Descripción: Layout para páginas de autenticación (login, register, forgot, reset).
- *
- * ¿Qué?
- *   Layout con:
- *   - Header: Logo (h-16 w-16) + botón "Iniciar sesión" (#1e40af, btn-pulse)
- *   - Main: Card centrado, max-w-md, border #1e40af, sombra suave
- *   - Props: title (h2), subtitle (opcional), children (form content)
- *   - Footer: Texto CALZADO J&R, sin navegación
- *
- * ¿Para qué?
- *   - Consistencia visual en TODAS las páginas auth (mismo header/footer)
- *   - Centrar formularios (login, register, forgot, reset)
- *   - Branding claro (logo azul prominente)
- *   - Separar layout auth de layout dashboard (diferentes estéticas)
- *
- * ¿Impacto?
- *   CRÍTICO — LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage
- *   TODAS dependen de este layout.
- *   Modificar estructura rompe: todas las páginas auth visualmente.
- *   Dependencias: react-router-dom (Link), usado en:
- *                modules/auth/pages/*.tsx (todas las páginas auth)
- */
+// ════════════════════════════════════════
+// 📄 Layout para páginas de autenticación (login, register, forgot, reset)
+// ════════════════════════════════════════
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

@@ -1,10 +1,7 @@
-"""Add color field to supply_categories.
-
-Revision ID: 010_add_color
-Revises: 009_create_supply_categories
-Create Date: 2026-04-14 01:50:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Add color field to supply_categories
+# ════════════════════════════════════════
+# 010_add_color | Revises: 009_create_supply_categories | Creada: 2026-04-14 01:50:00.000000
 from alembic import op
 
 # revision identifiers, used by Alembic.

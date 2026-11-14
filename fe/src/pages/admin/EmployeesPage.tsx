@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_SECTIONS } from '@/features/admin/constants/adminSections';
 import {
-  Users,
   Search,
   Edit2,
   Loader2,
@@ -173,7 +173,9 @@ export default function EmployeesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 stagger-reveal">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
-            <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <ADMIN_SECTIONS.employees.icon
+              className={`w-8 h-8 ${ADMIN_SECTIONS.employees.color}`}
+            />
             Gestión de Empleados
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 transition-colors">

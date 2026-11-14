@@ -1,10 +1,7 @@
-"""add entregado status to order_status enum
-
-Revision ID: 015_add_entregado
-Revises: 014_add_reserved_to_inventory
-Create Date: 2026-04-18 00:00:00.000000
-
-"""
+# ════════════════════════════════════════
+# 📄 Migración — add entregado status to order_status enum
+# ════════════════════════════════════════
+# 015_add_entregado | Revises: 014_add_reserved_to_inventory | Creada: 2026-04-18 00:00:00.000000
 from alembic import op
 
 

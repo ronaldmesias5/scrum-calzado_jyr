@@ -1,15 +1,7 @@
-"""Add performance indexes on hot filter columns.
-
-¿Qué? Índices btree en columnas de filtro frecuente (state, status, FKs, fechas)
-    e índice GIN trigram en products.name_product para búsquedas ILIKE.
-¿Para qué? Eliminar sequential scans en listados de pedidos, tareas, notificaciones,
-    incidencias, catálogo y reportes cuando crezca el volumen de datos.
-¿Impacto? Sin esta migración las consultas filtradas hacen seq scans completos.
-
-Revision ID: 050_perf_indexes
-Revises: 049_client_prices
-Create Date: 2026-10-09
-"""
+# ════════════════════════════════════════
+# 📄 Migración 050_perf_indexes — Índices btree en columnas de filtro frecuente (state, stat...
+# ════════════════════════════════════════
+# 050_perf_indexes | Revises: 049_client_prices | Creada: 2026-10-09
 
 from typing import Sequence
 

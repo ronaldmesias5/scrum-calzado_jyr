@@ -1,8 +1,6 @@
-/**
- * Archivo: pages/ResetPasswordPage.tsx
- * Descripción: Página para restablecer la contraseña con un token de recuperación.
- * ¿Para qué? Completar el flujo de forgot password.
- */
+// ════════════════════════════════════════
+// 📄 Página para restablecer la contraseña con un token de recuperación
+// ════════════════════════════════════════
 
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';

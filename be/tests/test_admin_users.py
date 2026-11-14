@@ -1,9 +1,4 @@
-"""Tests de gestión de usuarios por admin/jefe (routers/admin.py).
-
-Cubre: crear empleado/cliente, duplicados, guard de rol, validar pendiente,
-renovar invitación, listar y detalle. Los envíos de email se mockean para no
-depender de SMTP.
-"""
+"""Tests de gestión de usuarios por admin/jefe (routers/admin.py)."""
 
 import uuid
 from datetime import datetime, timezone

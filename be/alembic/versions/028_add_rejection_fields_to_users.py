@@ -1,9 +1,6 @@
-"""
-Migration 028: Add rejection fields to users table
-
-Agrega las columnas rejected_by, rejected_at y rejection_reason a la tabla
-users para permitir al admin rechazar una cuenta con motivo y auditoría.
-"""
+# ════════════════════════════════════════
+# 📄 Migración — Migration 028: Add rejection fields to users table
+# ════════════════════════════════════════
 
 from typing import Sequence, Union
 

@@ -1,20 +1,6 @@
-"""
-Archivo: be/app/models/order.py
-Descripción: Modelo ORM SQLAlchemy para la tabla `orders` y `order_details`.
-
-¿Qué?
-  Define pedidos de clientes: orden con múltiples líneas de detalle.
-  Cada pedido puede tener múltiples productos en diferentes tallas y colores.
-  
-¿Para qué?
-  - Almacenar pedidos realizados por clientes
-  - Trackear estado de producción
-  - Vincular con inventario y productos
-  - Mantener historial de pedidos
-  
-¿Impacto?
-  CRÍTICO - Base del negocio (pedidos = ingresos principales)
-"""
+# ════════════════════════════════════════
+# 📄 Modelo ORM SQLAlchemy para la tabla `orders` y `order_details`
+# ════════════════════════════════════════
 
 import uuid
 from datetime import datetime

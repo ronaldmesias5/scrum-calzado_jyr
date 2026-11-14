@@ -1,25 +1,6 @@
-"""
-Archivo: be/app/routers/users.py
-Descripción: Router FastAPI con endpoints para gestión del perfil del usuario autenticado.
-
-¿Qué?
-  Define endpoints protegidos:
-  - GET /me: Obtener perfil completo del usuario autenticado
-  - POST /me/avatar: Subir o actualizar foto de perfil
-  - DELETE /me/avatar: Eliminar foto de perfil
-  - DELETE /me: Eliminar cuenta propia (soft delete)
-  
-¿Para qué?
-  - Permitir al usuario consultar y editar sus propios datos
-  - Proveer información para header del dashboard (nombre, avatar)
-  - Subir/eliminar avatar (foto de perfil)
-  - Permitir auto-eliminación de cuenta con doble confirmación
-  
-¿Impacto?
-  MEDIO — Dashboard AdminHeader depende de /me para mostrar nombre/avatar.
-  Dependencias: dependencies.py (get_current_user),
-               auth/schemas.py (UserResponse), models/user.py
-"""
+# ════════════════════════════════════════
+# 📄 Router FastAPI con endpoints para gestión del perfil del usuario autenticado
+# ════════════════════════════════════════
 
 import time
 from datetime import datetime, timezone
@@ -192,13 +173,7 @@ def save_email_credentials(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Guarda el correo desde donde saldrán tus correos (puede ser cualquiera,
-    ej. un Gmail personal) junto a su clave de aplicación de 16 caracteres.
-
-    Antes de guardar se hace una prueba de login SMTP real con esos datos:
-    si el par correo/clave no funciona, no se guarda nada y se devuelve 422.
-    """
+    """Guarda el correo desde donde saldrán tus correos (puede ser cualquiera,"""
     from pydantic import TypeAdapter
     from pydantic import EmailStr
     from app.utils.crypto import encrypt_secret
