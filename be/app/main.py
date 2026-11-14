@@ -85,25 +85,33 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # ══════════════════════════════════════════════════════════
     from app.init_db import run_migrations
 
-    run_migrations(settings.DATABASE_URL)
-    app_logger.info("✅ Migraciones Alembic aplicadas correctamente.")
+    if settings.RUN_MIGRATIONS:
+        run_migrations(settings.DATABASE_URL)
+        app_logger.info("✅ Migraciones Alembic aplicadas correctamente.")
+    else:
+        app_logger.info(
+            "⏭️  RUN_MIGRATIONS=false — migraciones omitidas (se ejecutan por pipeline)."
+        )
 
     # ══════════════════════════════════════════════════════════
     # PASO 2: Verificar datos iniciales (fallback)
     # ══════════════════════════════════════════════════════════
     # Las migraciones ya insertan datos iniciales (roles, tipos doc, usuarios).
     # Esta verificación es un fallback por si algo falla.
-    db = SessionLocal()
-    try:
-        from app.init.seed_data import seed_all
+    if settings.RUN_SEED:
+        db = SessionLocal()
+        try:
+            from app.init.seed_data import seed_all
 
-        seed_all(db)
-    except Exception as e:
-        app_logger.error(
-            "⚠️  Error en verificación de datos iniciales: %s", e, exc_info=e
-        )
-    finally:
-        db.close()
+            seed_all(db)
+        except Exception as e:
+            app_logger.error(
+                "⚠️  Error en verificación de datos iniciales: %s", e, exc_info=e
+            )
+        finally:
+            db.close()
+    else:
+        app_logger.info("⏭️  RUN_SEED=false — seed de datos omitido.")
 
     app_logger.info("📡 CORS habilitado para: %s", settings.FRONTEND_URL)
     app_logger.info("✨ Sistema listo.")

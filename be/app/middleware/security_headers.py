@@ -63,7 +63,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         # Referrer Policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        
+
+        # Aislamiento de origen cruzado (COOP/CORP/COEP)
+        # COOP: evita que otras pestañas manipulen window.opener
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        # CORP: evita que otros sitios embeban nuestros recursos
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        # X-Permitted-Cross-Domain-Policies: deshabilita políticas cross-domain legadas
+        response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
             "geolocation=(), "

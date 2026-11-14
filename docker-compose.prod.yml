@@ -42,6 +42,11 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Producción: NO migrar/seed al arrancar (default false). El esquema se
+      # actualiza en un pipeline controlado, con revisión y backup previo.
+      # Sobrescribir con RUN_MIGRATIONS=true solo si se sabe lo que se hace.
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+      RUN_SEED: ${RUN_SEED:-false}
       # IA — Fase 4 prod (Groq por defecto, Ollama opcional con --profile ollama)
       AI_PROVIDER: ${AI_PROVIDER:-groq}
       AI_API_KEY: ${AI_API_KEY:-}

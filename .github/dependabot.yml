@@ -1,0 +1,55 @@
+# ════════════════════════════════════════
+# 📄 Dependabot — actualizaciones automáticas de dependencias
+# ════════════════════════════════════════
+# NOTA: el backend usa uv (uv.lock) y Dependabot aún NO soporta el ecosistema
+# uv; las versiones de Python se actualizan con `uv upgrade` manual.
+# Cubrimos: npm/pnpm (fe y mobile), Docker y GitHub Actions.
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/fe"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "mobile"
+
+  - package-ecosystem: "docker"
+    directory: "/be"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "backend"
+
+  - package-ecosystem: "docker"
+    directory: "/fe"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "ci"

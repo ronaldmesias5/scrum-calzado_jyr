@@ -53,6 +53,14 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"  # development o production
 
     # ────────────────────────────
+    # 🗄️ Migraciones y seed al arrancar
+    # ────────────────────────────
+    # true = ejecuta Alembic + seed en el startup (desarrollo)
+    # false = no toca la BD al arrancar (producción: migrar en pipeline controlado)
+    RUN_MIGRATIONS: bool = True
+    RUN_SEED: bool = True
+
+    # ────────────────────────────
     # 📁 Archivos subidos
     # ────────────────────────────
     UPLOAD_DIR: str = Field(

@@ -4,6 +4,9 @@ import { Platform } from 'react-native';
 const ACCESS_TOKEN_KEY = 'calzado.accessToken';
 const REFRESH_TOKEN_KEY = 'calzado.refreshToken';
 
+// ⚠️ Fallback web (expo web): localStorage es vulnerable a XSS. En web NO hay
+// SecureStore; es aceptable solo para pruebas en navegador. En producción
+// móvil (Android/iOS) siempre se usa SecureStore (Keychain/Keystore cifrado).
 const isWeb = Platform.OS === 'web';
 
 async function getItem(key: string): Promise<string | null> {
