@@ -14,9 +14,11 @@ from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.logging_config import audit_logger
-from app.models.role import Role
 from app.models.user import User
 from app.models.reactivation_ticket import ReactivationTicket
+from app.repositories.reactivation_ticket_repository import ReactivationTicketRepository
+from app.repositories.role_repository import RoleRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.auth import MessageResponse, UserResponse
 from app.services.auth import _redact_email
 from app.schemas.admin import (
@@ -107,11 +109,7 @@ def get_pending_users(
 ) -> list[UserResponse]:
     """Obtiene usuarios pendientes de validación (admin o jefe)."""
     _require_admin_or_jefe(current_user)
-    pending_users = (
-        db.query(User)
-        .filter(User.is_validated == False, User.rejection_reason == None)  # noqa: E712
-        .all()
-    )
+    pending_users = UserRepository(db).list_pending_validation()
     return [_build_user_response(u) for u in pending_users]
 
 
@@ -128,7 +126,7 @@ def validate_user(
     """Aprueba y activa la cuenta de un usuario pendiente (admin o jefe). Envía email de notificación."""
     _require_admin_or_jefe(current_user)
 
-    user_to_validate = db.query(User).filter(User.id == user_id).first()
+    user_to_validate = UserRepository(db).get_by_id(user_id)
     if not user_to_validate:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -162,7 +160,7 @@ def reject_user(
     """Rechaza una cuenta de usuario pendiente con motivo (admin o jefe)."""
     _require_admin_or_jefe(current_user)
 
-    user_to_reject = db.query(User).filter(User.id == user_id).first()
+    user_to_reject = UserRepository(db).get_by_id(user_id)
     if not user_to_reject:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -203,7 +201,7 @@ def force_password_change(
     """Fuerza el cambio de contraseña en el próximo login (admin o jefe)."""
     _require_admin_or_jefe(current_user)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = UserRepository(db).get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -228,11 +226,7 @@ def get_all_users(
 ) -> list[UserResponse]:
     """Lista todos los usuarios. Filtro opcional por rol. Solo admin y jefe."""
     _require_admin_or_jefe(current_user)
-    query = db.query(User).filter(User.deleted_at == None)
-    if role:
-        query = query.join(Role, User.role_id == Role.id).filter(Role.name_role == role)
-
-    return [_build_user_response(u) for u in query.all()]
+    return [_build_user_response(u) for u in UserRepository(db).list_active(role)]
 
 
 @router.get(
@@ -247,7 +241,7 @@ def get_user_detail(
 ) -> UserResponse:
     """Retorna los datos detallados de un usuario específico."""
     _require_admin_or_jefe(current_user)
-    user = db.query(User).filter(User.id == user_id).first()
+    user = UserRepository(db).get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return _build_user_response(user)
@@ -267,7 +261,7 @@ def update_user(
     """Actualiza parcialmente los datos de un usuario (admin o jefe)."""
     _require_admin_or_jefe(current_user)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = UserRepository(db).get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -314,7 +308,7 @@ def delete_user(
     """Elimina permanentemente un usuario de la base de datos (admin o jefe)."""
     _require_admin_or_jefe(current_user)
 
-    user_to_delete = db.query(User).filter(User.id == user_id).first()
+    user_to_delete = UserRepository(db).get_by_id(user_id)
     if not user_to_delete:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -326,7 +320,7 @@ def delete_user(
         )
 
     try:
-        db.delete(user_to_delete)
+        UserRepository(db).delete(user_to_delete)
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -356,10 +350,11 @@ def create_employee(
     """
     _require_admin_or_jefe(current_user)
 
-    if db.query(User).filter(User.email == data.email).first():
+    user_repo = UserRepository(db)
+    if user_repo.get_by_email(data.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
 
-    employee_role = db.query(Role).filter(Role.name_role == "employee").first()
+    employee_role = RoleRepository(db).get_by_name("employee")
     if not employee_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'empleado' no encontrado")
 
@@ -382,7 +377,7 @@ def create_employee(
         validated_by=current_user.id,
         validated_at=datetime.now(timezone.utc),
     )
-    db.add(new_user)
+    user_repo.add(new_user)
     db.commit()
     db.refresh(new_user)
 
@@ -414,10 +409,11 @@ def create_client(
     """
     _require_admin_or_jefe(current_user)
 
-    if db.query(User).filter(User.email == data.email).first():
+    user_repo = UserRepository(db)
+    if user_repo.get_by_email(data.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
 
-    client_role = db.query(Role).filter(Role.name_role == "client").first()
+    client_role = RoleRepository(db).get_by_name("client")
     if not client_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'cliente' no encontrado")
 
@@ -440,7 +436,7 @@ def create_client(
         validated_by=current_user.id,
         validated_at=datetime.now(timezone.utc),
     )
-    db.add(new_user)
+    user_repo.add(new_user)
     db.commit()
     db.refresh(new_user)
 
@@ -467,10 +463,11 @@ def create_jefe(
     """Crea una cuenta de jefe de fábrica (empleado con occupation='jefe') activa y validada."""
     _require_admin_or_jefe(current_user)
 
-    if db.query(User).filter(User.email == data.email).first():
+    user_repo = UserRepository(db)
+    if user_repo.get_by_email(data.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una cuenta con ese email")
 
-    employee_role = db.query(Role).filter(Role.name_role == "employee").first()
+    employee_role = RoleRepository(db).get_by_name("employee")
     if not employee_role:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rol 'empleado' no encontrado")
 
@@ -493,7 +490,7 @@ def create_jefe(
         validated_by=current_user.id,
         validated_at=datetime.now(timezone.utc),
     )
-    db.add(new_user)
+    user_repo.add(new_user)
     db.commit()
     db.refresh(new_user)
 
@@ -527,7 +524,7 @@ def renew_invitation(
     """
     _require_admin_or_jefe(current_user)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = UserRepository(db).get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -561,7 +558,7 @@ def unlock_user_account(
     """Desbloquea la cuenta de un usuario que fue bloqueada por intentos fallidos."""
     _require_admin_or_jefe(current_user)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = UserRepository(db).get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -607,11 +604,7 @@ def get_reactivation_tickets(
     """Lista todos los tickets de reactivación. Filtro opcional por status."""
     _require_admin_or_jefe(current_user)
 
-    query = db.query(ReactivationTicket)
-    if status_filter:
-        query = query.filter(ReactivationTicket.status == status_filter)
-
-    tickets = query.order_by(ReactivationTicket.created_at.desc()).all()
+    tickets = ReactivationTicketRepository(db).list_all(status_filter)
     return [_build_ticket_response(t) for t in tickets]
 
 
@@ -629,14 +622,14 @@ def approve_reactivation(
     """Aprueba un ticket de reactivación. Reactiva la cuenta y envía email."""
     _require_admin_or_jefe(current_user)
 
-    ticket = db.query(ReactivationTicket).filter(ReactivationTicket.id == ticket_id).first()
+    ticket = ReactivationTicketRepository(db).get_by_id(ticket_id)
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
 
     if ticket.status != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este ticket ya fue procesado")
 
-    user = db.query(User).filter(User.id == ticket.user_id).first()
+    user = UserRepository(db).get_by_id(ticket.user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
@@ -686,14 +679,14 @@ def reject_reactivation(
     """Rechaza un ticket de reactivación con comentario obligatorio. Envía email."""
     _require_admin_or_jefe(current_user)
 
-    ticket = db.query(ReactivationTicket).filter(ReactivationTicket.id == ticket_id).first()
+    ticket = ReactivationTicketRepository(db).get_by_id(ticket_id)
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
 
     if ticket.status != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este ticket ya fue procesado")
 
-    user = db.query(User).filter(User.id == ticket.user_id).first()
+    user = UserRepository(db).get_by_id(ticket.user_id)
 
     ticket.status = "rejected"
     ticket.admin_comment = data.comment

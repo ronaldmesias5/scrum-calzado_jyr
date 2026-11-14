@@ -7,13 +7,17 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
 from app.config import settings
 from app.models.user import User
 from app.models.reactivation_ticket import ReactivationTicket
+from app.repositories.email_verification_token_repository import (
+    EmailVerificationTokenRepository,
+)
+from app.repositories.reactivation_ticket_repository import ReactivationTicketRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
@@ -222,7 +226,10 @@ def request_reactivation(
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     """Solicita la reactivación de una cuenta inactiva/suspendida."""
-    user = db.query(User).filter(User.email == data.email).first()
+    user_repo = UserRepository(db)
+    ticket_repo = ReactivationTicketRepository(db)
+
+    user = user_repo.get_by_email(data.email)
 
     if user is None:
         audit_logger.info(
@@ -237,14 +244,7 @@ def request_reactivation(
             f"Reactivación solicitada para cuenta eliminada: {_redact_email(data.email)}"
         )
     else:
-        existing = (
-            db.query(ReactivationTicket)
-            .filter(
-                ReactivationTicket.user_id == user.id,
-                ReactivationTicket.status == "pending",
-            )
-            .first()
-        )
+        existing = ticket_repo.get_pending_by_user(user.id)
         if existing:
             audit_logger.info(
                 f"Reactivación solicitada con ticket ya pendiente: {_redact_email(data.email)}"
@@ -259,7 +259,7 @@ def request_reactivation(
                 evidence_url=data.evidence_url,
                 status="pending",
             )
-            db.add(ticket)
+            ticket_repo.add(ticket)
             db.commit()
             audit_logger.info(
                 f"Solicitud de reactivación registrada: {_redact_email(data.email)}"
@@ -307,15 +307,7 @@ def verify_email(
     Verifica el correo electrónico del usuario usando el token enviado por email.
     Endpoint público (sin auth) — el token sirve como autenticación.
     """
-    from datetime import datetime, timezone
-    from app.models.email_verification_token import EmailVerificationToken
-
-    # Buscar el token
-    token_record = (
-        db.query(EmailVerificationToken)
-        .filter(EmailVerificationToken.token == token)
-        .first()
-    )
+    token_record = EmailVerificationTokenRepository(db).get_by_token(token)
 
     if not token_record:
         raise HTTPException(
@@ -367,8 +359,10 @@ def resend_verification(
     from app.models.email_verification_token import EmailVerificationToken
     from app.utils.email import send_verification_email
 
-    stmt = select(User).where(User.email == data.email)
-    user = db.execute(stmt).scalar_one_or_none()
+    user_repo = UserRepository(db)
+    token_repo = EmailVerificationTokenRepository(db)
+
+    user = user_repo.get_by_email(data.email)
 
     if not user:
         # Por seguridad, no revelar si el email existe
@@ -377,14 +371,7 @@ def resend_verification(
         )
 
     # Invalidar tokens anteriores no usados
-    old_tokens = (
-        db.query(EmailVerificationToken)
-        .filter(
-            EmailVerificationToken.user_id == user.id,
-            EmailVerificationToken.used == False,
-        )
-        .all()
-    )
+    old_tokens = token_repo.list_unused_by_user(user.id)
     for old_token in old_tokens:
         old_token.used = True
     db.commit()
@@ -396,7 +383,7 @@ def resend_verification(
         token=verification_token,
         expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
     )
-    db.add(token_record)
+    token_repo.add(token_record)
     db.commit()
 
     # Enviar email (no bloquea)
