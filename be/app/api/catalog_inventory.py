@@ -10,13 +10,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
-from app.models.product import Product
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement, InventoryMovementType
 from app.models.user import User
+from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.product_repository import ProductRepository
 from app.schemas.catalog_admin import (
     InventoryCreateRequest,
     BulkInventoryUpdateRequest,
@@ -37,16 +37,15 @@ def list_inventory(
 ):
     """Obtiene inventario con filtros opcionales"""
     _require_admin_or_jefe(current_user)
-    
-    query = select(Inventory).where(Inventory.deleted_at == None)
-    
+
+    product_uuid = None
     if product_id:
         try:
-            query = query.where(Inventory.product_id == uuid.UUID(product_id))
+            product_uuid = uuid.UUID(product_id)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
-    
-    inventory = db.execute(query.order_by(Inventory.product_id, Inventory.size)).scalars().all()
+
+    inventory = InventoryRepository(db).list_all(product_id=product_uuid)
     
     return {
         "inventory": [
@@ -79,22 +78,13 @@ def create_or_update_inventory(
         raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
     
     # Verificar que el producto exista
-    product = db.execute(
-        select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-    ).scalar()
+    product = ProductRepository(db).get_by_id(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
-    # Buscar inventario existente
+    inv_repo = InventoryRepository(db)
     # Buscar inventario existente (tomar todos para auto-sanar duplicados)
-    existing_invs = db.execute(
-        select(Inventory).where(
-            (Inventory.product_id == product_uuid)
-            & (Inventory.size == req.size)
-            & (Inventory.colour == (req.colour or None))
-            & (Inventory.deleted_at == None)
-        )
-    ).scalars().all()
+    existing_invs = inv_repo.find_for_product_size_colour(product_uuid, req.size, req.colour)
     
     if existing_invs:
         existing_inv = existing_invs[0]
@@ -111,11 +101,11 @@ def create_or_update_inventory(
         for dup in existing_invs[1:]:
             dup.deleted_at = datetime.now(timezone.utc)
             dup.amount = 0
-            db.add(dup)
+            inv_repo.add(dup)
         
         if diff != 0:
             movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
-            db.add(InventoryMovement(
+            inv_repo.add_movement(InventoryMovement(
                 id=uuid.uuid4(),
                 product_id=product_uuid,
                 user_id=current_user.id,
@@ -146,11 +136,11 @@ def create_or_update_inventory(
             colour=req.colour or None,
             amount=req.quantity,
         )
-        db.add(inventory)
+        inv_repo.add(inventory)
         
         # Registrar movimiento de entrada inicial
         if req.quantity > 0:
-            db.add(InventoryMovement(
+            inv_repo.add_movement(InventoryMovement(
                 id=uuid.uuid4(),
                 product_id=product_uuid,
                 user_id=current_user.id,
@@ -188,9 +178,7 @@ def delete_inventory(
     except ValueError:
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
-    inventory = db.execute(
-        select(Inventory).where((Inventory.id == inventory_uuid) & (Inventory.deleted_at == None))
-    ).scalar()
+    inventory = InventoryRepository(db).get_by_id(inventory_uuid)
     if not inventory:
         raise HTTPException(status_code=404, detail="Inventario no encontrado")
     
@@ -216,23 +204,17 @@ def bulk_update_inventory(
             raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
         
         # Verificar que el producto exista
-        product = db.execute(
-            select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-        ).scalar()
+        product = ProductRepository(db).get_by_id(product_uuid)
         if not product:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
         
+        inv_repo = InventoryRepository(db)
         updated_count = 0
         created_count = 0
         results = []
         
         # PRIMERO: Obtener todas las tallas actuales del producto
-        current_inventory = db.execute(
-            select(Inventory).where(
-                (Inventory.product_id == product_uuid) &
-                (Inventory.deleted_at == None)
-            )
-        ).scalars().all()
+        current_inventory = inv_repo.list_live_for_product(product_uuid)
         
         # SEGUNDO: Actualizar o crear las tallas en el request
         for size_str, quantity in req.quantities.items():
@@ -244,14 +226,7 @@ def bulk_update_inventory(
             quantity = int(quantity) if isinstance(quantity, (int, float)) else int(str(quantity))
             
             # Buscar inventario existente (tomar todos para auto-sanar duplicados)
-            existing_invs = db.execute(
-                select(Inventory).where(
-                    (Inventory.product_id == product_uuid) &
-                    (Inventory.size == size) &
-                    (Inventory.colour.is_(None)) &
-                    (Inventory.deleted_at == None)
-                )
-            ).scalars().all()
+            existing_invs = inv_repo.find_for_product_size_no_colour(product_uuid, size)
             
             if existing_invs:
                 existing_inv = existing_invs[0]
@@ -261,17 +236,17 @@ def bulk_update_inventory(
                 # Actualizar el principal
                 existing_inv.amount = quantity
                 existing_inv.updated_at = datetime.now(timezone.utc)
-                db.add(existing_inv)
+                inv_repo.add(existing_inv)
                 
                 # Eliminar los duplicados si existen para evitar sumas fantasma
                 for dup in existing_invs[1:]:
                     dup.deleted_at = datetime.now(timezone.utc)
                     dup.amount = 0
-                    db.add(dup)
+                    inv_repo.add(dup)
                 
                 if diff != 0:
                     movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
-                    db.add(InventoryMovement(
+                    inv_repo.add_movement(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=product_uuid,
                         user_id=current_user.id,
@@ -297,9 +272,9 @@ def bulk_update_inventory(
                         size=size,
                         amount=quantity,
                     )
-                    db.add(inventory)
+                    inv_repo.add(inventory)
                     
-                    db.add(InventoryMovement(
+                    inv_repo.add_movement(InventoryMovement(
                         id=uuid.uuid4(),
                         product_id=product_uuid,
                         user_id=current_user.id,
@@ -322,10 +297,7 @@ def bulk_update_inventory(
         db.commit()
         
         # Calcular stock_total actualizado
-        stock_total = db.execute(
-            select(func.sum(Inventory.amount).label("total"))
-            .where((Inventory.product_id == product_uuid) & (Inventory.deleted_at == None))
-        ).scalar() or 0
+        stock_total = inv_repo.stock_total_for_product(product_uuid)
         
         return {
             "product_id": str(product_uuid),
@@ -361,15 +333,8 @@ def create_inventory_movement(
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
     # 1. Buscar inventario para ese producto y talla (FOR UPDATE: evita doble descuento)
-    inventory_items = db.execute(
-        select(Inventory)
-        .where(
-            (Inventory.product_id == product_uuid) &
-            (Inventory.size == request.size) &
-            (Inventory.deleted_at == None)
-        )
-        .with_for_update()
-    ).scalars().all()
+    inv_repo = InventoryRepository(db)
+    inventory_items = inv_repo.list_for_update(product_uuid, request.size)
     
     if not inventory_items:
         raise HTTPException(status_code=404, detail="Inventario no encontrado para esta talla")
@@ -389,7 +354,7 @@ def create_inventory_movement(
         inv.amount += Decimal(request.quantity)
     # Si es 'reserva' o 'ajuste', la lógica podría ser diferente, por ahora nos enfocamos en salida/entrada.
         
-    db.add(inv)
+    inv_repo.add(inv)
     
     # 3. Registrar el movimiento
     mov_type_enum = InventoryMovementType.salida if request.movement_type == 'salida' else InventoryMovementType.entrada
@@ -407,7 +372,7 @@ def create_inventory_movement(
         reason=request.notes or f"Movimiento manual de {request.movement_type} (Referencia: {request.reference_id})",
         movement_date=datetime.now(timezone.utc)
     )
-    db.add(movement)
+    inv_repo.add_movement(movement)
     
     try:
         db.commit()

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -15,12 +15,13 @@ from app.config import settings
 from app.dependencies import get_db, get_current_user
 from app.models.order import Order, OrderDetail, OrderStatus
 from app.models.user import User
-from app.models.product import Product
 from app.models.pending_incidence import PendingProductIncidence
 from app.repositories.client_price_repository import ClientPriceRepository
+from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.order_detail_repository import OrderDetailRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.pending_incidence_repository import PendingProductIncidenceRepository
+from app.repositories.product_repository import ProductRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.client import (
     ClientOrderResponse,
@@ -568,69 +569,24 @@ def get_client_catalog(
     db: Session = Depends(get_db),
 ):
     """Retorna productos del catálogo con precios personalizados si el cliente tiene asignado un precio."""
-    from app.models.client_price import ClientPrice
-    from app.models.inventory import Inventory
-    from app.models.brand import Brand
-    from app.models.style import Style
-
-    base_where = (Product.deleted_at == None) & (Product.state == True)
-    stmt = select(Product).where(*[base_where])
-    count_stmt = select(func.count(Product.id)).where(*[base_where])
-
-    if category_id:
-        stmt = stmt.where(Product.category_id == category_id)
-        count_stmt = count_stmt.where(Product.category_id == category_id)
-    if brand_id:
-        stmt = stmt.where(Product.brand_id == brand_id)
-        count_stmt = count_stmt.where(Product.brand_id == brand_id)
-    if style_id:
-        stmt = stmt.where(Product.style_id == style_id)
-        count_stmt = count_stmt.where(Product.style_id == style_id)
-    if color:
-        stmt = stmt.where(Product.color == color)
-        count_stmt = count_stmt.where(Product.color == color)
-    if search:
-        search_filter = (
-            Product.name_product.ilike(f"%{search}%") |
-            Brand.name_brand.ilike(f"%{search}%") |
-            Style.name_style.ilike(f"%{search}%")
-        )
-        stmt = stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
-        stmt = stmt.where(search_filter)
-        count_stmt = count_stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
-        count_stmt = count_stmt.where(search_filter)
-
-    total = db.execute(count_stmt).scalar() or 0
+    total, products = ProductRepository(db).list_active_paginated(
+        category_id=category_id,
+        brand_id=brand_id,
+        style_id=style_id,
+        color=color,
+        search=search,
+        offset=(page - 1) * page_size,
+        limit=page_size,
+    )
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-    offset = (page - 1) * page_size
-
-    products = db.execute(stmt.offset(offset).limit(page_size)).scalars().all()
 
     # Stock total por producto
     product_ids = [p.id for p in products]
-    available_by_product: dict = {}
-    if product_ids:
-        inventory_rows = db.execute(
-            select(Inventory.product_id, func.sum(Inventory.amount))
-            .where(
-                (Inventory.product_id.in_(product_ids)) &
-                (Inventory.deleted_at.is_(None))
-            )
-            .group_by(Inventory.product_id)
-        ).all()
-        available_by_product = {str(pid): int(qty or 0) for pid, qty in inventory_rows}
+    available_by_product = InventoryRepository(db).stock_available_by_products(product_ids)
 
     # Precios personalizados del cliente
-    prices_by_product: dict = {}
-    if product_ids:
-        price_rows = db.execute(
-            select(ClientPrice).where(
-                (ClientPrice.client_id == current_user.id) &
-                (ClientPrice.product_id.in_(product_ids)) &
-                (ClientPrice.deleted_at.is_(None))
-            )
-        ).scalars().all()
-        prices_by_product = {str(cp.product_id): float(cp.unit_price) for cp in price_rows}
+    price_rows = ClientPriceRepository(db).prices_by_products(current_user.id, set(product_ids))
+    prices_by_product = {str(pid): float(precio) for pid, precio in price_rows}
 
     return {
         "products": [

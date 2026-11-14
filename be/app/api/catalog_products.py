@@ -10,17 +10,15 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import select, func
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
-from app.models.brand import Brand
-from app.models.style import Style
-from app.models.category import Category
-from app.models.product import Product
 from app.models.inventory import Inventory
+from app.models.product import Product
 from app.models.user import User
+from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.product_repository import ProductRepository
 from app.schemas.catalog_admin import ProductCreateRequest
 
 UPLOADS_DIR = Path(settings.UPLOAD_DIR) if settings.UPLOAD_DIR else Path(__file__).resolve().parent.parent.parent / "uploads"
@@ -44,74 +42,38 @@ def list_products(
 ):
     """Obtiene productos con filtros opcionales"""
     _require_admin_or_jefe(current_user)
-    
-    query = (
-        select(Product)
-        .where(Product.deleted_at == None)
-        .options(
-            selectinload(Product.brand),
-            selectinload(Product.style),
-            selectinload(Product.category),
-        )
-    )
-    count_query = select(func.count(Product.id)).where(Product.deleted_at == None)
-    
+
+    brand_uuid = style_uuid = category_uuid = None
     if brand_id:
         try:
             brand_uuid = uuid.UUID(brand_id)
-            query = query.where(Product.brand_id == brand_uuid)
-            count_query = count_query.where(Product.brand_id == brand_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de marca es incorrecto")
-    
     if style_id:
         try:
             style_uuid = uuid.UUID(style_id)
-            query = query.where(Product.style_id == style_uuid)
-            count_query = count_query.where(Product.style_id == style_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de estilo es incorrecto")
-    
     if category_id:
         try:
             category_uuid = uuid.UUID(category_id)
-            query = query.where(Product.category_id == category_uuid)
-            count_query = count_query.where(Product.category_id == category_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="El formato del ID de categoria es incorrecto")
-    
-    if state is not None:
-        query = query.where(Product.state == state)
-        count_query = count_query.where(Product.state == state)
-    
-    total = db.execute(count_query).scalar() or 0
-    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+
     offset = (page - 1) * page_size
-    
-    products = db.execute(query.order_by(Product.name_product).offset(offset).limit(page_size)).scalars().all()
+    total, products = ProductRepository(db).list_admin_paginated(
+        brand_id=brand_uuid,
+        style_id=style_uuid,
+        category_id=category_uuid,
+        state=state,
+        offset=offset,
+        limit=page_size,
+    )
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
 
     # Stock por producto en UNA sola consulta agrupada (evita N+1)
     product_ids = [prod.id for prod in products]
-    stock_by_product: dict[uuid.UUID, tuple[int, int]] = {}
-    if product_ids:
-        rows = (
-            db.execute(
-                select(
-                    Inventory.product_id,
-                    func.sum(Inventory.amount),
-                    func.sum(Inventory.reserved),
-                )
-                .where(
-                    Inventory.product_id.in_(product_ids),
-                    Inventory.deleted_at.is_(None),
-                )
-                .group_by(Inventory.product_id)
-            )
-            .all()
-        )
-        stock_by_product = {
-            row[0]: (int(row[1] or 0), int(row[2] or 0)) for row in rows
-        }
+    stock_by_product = InventoryRepository(db).stock_totals_by_products(product_ids)
 
     # Calcular stock total para cada producto
     products_response = []
@@ -163,9 +125,7 @@ def upload_product_image(
     except ValueError:
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
 
-    product = db.execute(
-        select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-    ).scalar()
+    product = ProductRepository(db).get_by_id(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
@@ -242,15 +202,12 @@ def create_product(
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
     # Verificar que existan brand, style y category
-    brand = db.execute(
-        select(Brand).where((Brand.id == brand_uuid) & (Brand.deleted_at == None))
-    ).scalar()
+    product_repo = ProductRepository(db)
+    brand = product_repo.get_brand(brand_uuid)
     if not brand:
         raise HTTPException(status_code=404, detail="Marca no encontrada")
     
-    style = db.execute(
-        select(Style).where((Style.id == style_uuid) & (Style.deleted_at == None))
-    ).scalar()
+    style = product_repo.get_style(style_uuid)
     if not style:
         raise HTTPException(status_code=404, detail="Estilo no encontrado")
     
@@ -261,29 +218,19 @@ def create_product(
             detail="El estilo no pertenece a la marca seleccionada"
         )
     
-    category = db.execute(
-        select(Category).where((Category.id == category_uuid) & (Category.deleted_at == None))
-    ).scalar()
+    category = product_repo.get_category(category_uuid)
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
     # Verificar que no exista un producto con el mismo nombre dentro del mismo estilo, marca, categoría y color
     if req.name:
-        stmt = select(Product).where(
-            (Product.style_id == style_uuid) &
-            (Product.brand_id == brand_uuid) &
-            (Product.category_id == category_uuid) &
-            (Product.name_product == req.name) &
-            (Product.deleted_at == None)
+        existing = product_repo.find_duplicate(
+            style_id=style_uuid,
+            brand_id=brand_uuid,
+            category_id=category_uuid,
+            name=req.name,
+            color=req.color,
         )
-        
-        # Considerar el color en la búsqueda si se proporciona
-        if req.color:
-            stmt = stmt.where(Product.color == req.color)
-        else:
-            stmt = stmt.where((Product.color == None) | (Product.color == ""))
-            
-        existing = db.execute(stmt).scalar()
         
         if existing:
             detail_msg = f"Ya existe un producto con el nombre '{req.name}' para este estilo, marca y categoría"
@@ -307,7 +254,7 @@ def create_product(
         state=True,
         task_prices=req.task_prices.model_dump() if req.task_prices else {},
     )
-    db.add(product)
+    product_repo.add(product)
     db.commit()
     db.refresh(product)
     
@@ -349,22 +296,17 @@ def update_product(
     except ValueError:
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
-    product = db.execute(
-        select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-    ).scalar()
+    product_repo = ProductRepository(db)
+    product = product_repo.get_by_id(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
     # Verificar que existan las nuevas referencias
-    brand = db.execute(
-        select(Brand).where((Brand.id == brand_uuid) & (Brand.deleted_at == None))
-    ).scalar()
+    brand = product_repo.get_brand(brand_uuid)
     if not brand:
         raise HTTPException(status_code=404, detail="Marca no encontrada")
     
-    style = db.execute(
-        select(Style).where((Style.id == style_uuid) & (Style.deleted_at == None))
-    ).scalar()
+    style = product_repo.get_style(style_uuid)
     if not style:
         raise HTTPException(status_code=404, detail="Estilo no encontrado")
     
@@ -374,29 +316,20 @@ def update_product(
             detail="El estilo no pertenece a la marca seleccionada"
         )
     
-    category = db.execute(
-        select(Category).where((Category.id == category_uuid) & (Category.deleted_at == None))
-    ).scalar()
+    category = product_repo.get_category(category_uuid)
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
         
     # Verificar que no exista otro producto con el mismo nombre, estilo, marca, categoría y color
     if req.name:
-        stmt = select(Product).where(
-            (Product.id != product_uuid) &
-            (Product.style_id == style_uuid) &
-            (Product.brand_id == brand_uuid) &
-            (Product.category_id == category_uuid) &
-            (Product.name_product == req.name) &
-            (Product.deleted_at == None)
+        existing = product_repo.find_duplicate(
+            style_id=style_uuid,
+            brand_id=brand_uuid,
+            category_id=category_uuid,
+            name=req.name,
+            color=req.color,
+            exclude_id=product_uuid,
         )
-        
-        if req.color:
-            stmt = stmt.where(Product.color == req.color)
-        else:
-            stmt = stmt.where((Product.color == None) | (Product.color == ""))
-            
-        existing = db.execute(stmt).scalar()
         
         if existing:
             detail_msg = f"Ya existe otro producto con el nombre '{req.name}' para estas especificaciones"
@@ -452,9 +385,7 @@ def toggle_product_state(
     except ValueError:
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
-    product = db.execute(
-        select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-    ).scalar()
+    product = ProductRepository(db).get_by_id(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
@@ -484,9 +415,7 @@ def delete_product(
     except ValueError:
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
-    product = db.execute(
-        select(Product).where((Product.id == product_uuid) & (Product.deleted_at == None))
-    ).scalar()
+    product = ProductRepository(db).get_by_id(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
@@ -513,17 +442,14 @@ def update_manufactured_pairs(
 
     quantity = request.get('quantity', 0)
     
+    inv_repo = InventoryRepository(db)
     # Buscar el producto
-    product = db.query(Product).filter(Product.id == product_uuid).first()
+    product = ProductRepository(db).get_by_id_any(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
     # Obtener o crear inventario por color (si el producto tiene color)
-    inventory = db.query(Inventory).filter(
-        (Inventory.product_id == product_uuid) &
-        (Inventory.colour == product.color) &
-        (Inventory.deleted_at == None)
-    ).first()
+    inventory = inv_repo.find_for_product_colour(product_uuid, product.color)
     
     if inventory:
         # Actualizar reserved
@@ -540,7 +466,7 @@ def update_manufactured_pairs(
             amount=quantity,
             reserved=quantity,
         )
-        db.add(inventory)
+        inv_repo.add(inventory)
     
     db.commit()
     
@@ -567,15 +493,12 @@ def get_inventory_by_size(
         raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
     
     # Buscar el producto
-    product = db.query(Product).filter(Product.id == product_uuid).first()
+    product = ProductRepository(db).get_by_id_any(product_uuid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
     # Obtener todos los registros de inventario para este producto
-    inventory_items = db.query(Inventory).filter(
-        (Inventory.product_id == product_uuid) &
-        (Inventory.deleted_at == None)
-    ).all()
+    inventory_items = InventoryRepository(db).list_by_product(product_uuid)
     
     # Agrupar y sumar reserved por talla
     size_map: dict = {}
