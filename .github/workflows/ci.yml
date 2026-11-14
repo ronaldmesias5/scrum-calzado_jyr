@@ -113,7 +113,7 @@ jobs:
           version: 11.0.9
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           # Caché del store de pnpm claveada por el lockfile
