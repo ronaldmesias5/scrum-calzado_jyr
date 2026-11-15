@@ -253,6 +253,7 @@ def share_incidence(
     """Comparte una incidencia con el cliente:"""
     from app.models.report_share import ReportShare
     from app.models.order import Order
+    from app.repositories.report_share_repository import ReportShareRepository
     from app.utils.email import send_incidence_shared_email
 
     _ensure_admin_or_jefe(current_user)
@@ -322,7 +323,7 @@ def share_incidence(
                 "category": incident.incidence_category,
             },
         )
-        db.add(share)
+        ReportShareRepository(db).add(share)
         db.commit()
         shared_internally = True
         detail_parts.append(f"visible para {client.email}")

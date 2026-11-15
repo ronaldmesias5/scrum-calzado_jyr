@@ -51,6 +51,45 @@ class TaskRepository:
             or 0
         )
 
+    def count_pending_by_assignee(self, user_id: uuid.UUID) -> int:
+        """Tareas asignadas no completadas ni canceladas."""
+        return (
+            self.db.execute(
+                select(func.count(Task.id)).where(
+                    Task.assigned_to == user_id,
+                    Task.status.in_(["pendiente", "por_liquidar", "en_progreso"]),
+                    Task.deleted_at.is_(None),
+                )
+            ).scalar()
+            or 0
+        )
+
+    def count_completed_between(self, user_id: uuid.UUID, start, end) -> int:
+        """Tareas completadas por el usuario dentro de un rango de fechas."""
+        return (
+            self.db.execute(
+                select(func.count(Task.id)).where(
+                    Task.assigned_to == user_id,
+                    Task.status == "completado",
+                    Task.completed_at >= start,
+                    Task.completed_at <= end,
+                    Task.deleted_at.is_(None),
+                )
+            ).scalar()
+            or 0
+        )
+
+    def sum_amount_by_assignee(self, user_id: uuid.UUID) -> int:
+        """Total de pares asignados al usuario, excluyendo tareas canceladas."""
+        total = self.db.execute(
+            select(func.coalesce(func.sum(Task.amount), 0)).where(
+                Task.assigned_to == user_id,
+                Task.status != "cancelado",
+                Task.deleted_at.is_(None),
+            )
+        ).scalar()
+        return int(total or 0)
+
     def max_vale_number(self) -> int:
         return self.db.execute(select(func.max(Task.vale_number))).scalar() or 0
 

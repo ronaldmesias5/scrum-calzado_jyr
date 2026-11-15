@@ -6,13 +6,12 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
-from app.models.incidence import Incidence, IncidenceStatus
-from app.models.tasks import Task
 from app.models.user import User
+from app.repositories.incidence_repository import IncidenceRepository
+from app.repositories.task_repository import TaskRepository
 from app.schemas.dashboard_empleado import (
     EmployeeMetricSchema,
     EmployeeMetricsResponse,
@@ -39,48 +38,21 @@ def get_employee_metrics(
     )
     today_end = today_start.replace(hour=23, minute=59, second=59, microsecond=999999)
 
+    task_repo = TaskRepository(db)
+
     # Tareas pendientes (asignadas a mí, no completadas ni canceladas)
-    pending_tasks = db.execute(
-        select(func.count(Task.id))
-        .where(
-            Task.assigned_to == current_user.id,
-            Task.status.in_(["pendiente", "por_liquidar", "en_progreso"]),
-            Task.deleted_at == None,
-        )
-    ).scalar() or 0
+    pending_tasks = task_repo.count_pending_by_assignee(current_user.id)
 
     # Tareas completadas hoy
-    completed_today = db.execute(
-        select(func.count(Task.id))
-        .where(
-            Task.assigned_to == current_user.id,
-            Task.status == "completado",
-            Task.completed_at >= today_start,
-            Task.completed_at <= today_end,
-            Task.deleted_at == None,
-        )
-    ).scalar() or 0
+    completed_today = task_repo.count_completed_between(
+        current_user.id, today_start, today_end
+    )
 
     # Total pares asignados (no cancelados)
-    total_pairs = db.execute(
-        select(func.coalesce(func.sum(Task.amount), 0))
-        .where(
-            Task.assigned_to == current_user.id,
-            Task.status != "cancelado",
-            Task.deleted_at == None,
-        )
-    ).scalar() or 0
+    total_pairs = task_repo.sum_amount_by_assignee(current_user.id)
 
     # Incidencias abiertas de mis tareas
-    open_incidences = db.execute(
-        select(func.count(Incidence.id))
-        .join(Task, Incidence.task_id == Task.id)
-        .where(
-            Task.assigned_to == current_user.id,
-            Incidence.state == IncidenceStatus.abierta,
-            Incidence.deleted_at == None,
-        )
-    ).scalar() or 0
+    open_incidences = IncidenceRepository(db).count_open_by_assignee(current_user.id)
 
     return EmployeeMetricsResponse(
         metrics=[

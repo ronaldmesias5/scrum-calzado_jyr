@@ -9,15 +9,13 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.dependencies import get_current_user, get_db
-from app.models.incidence import Incidence, IncidenceStatus
-from app.models.scrap import LossRecord
-from app.models.tasks import Task
 from app.models.user import User
+from app.repositories.incidence_repository import IncidenceRepository
+from app.repositories.loss_record_repository import LossRecordRepository
 from app.schemas.dashboard_empleado import (
     EmployeeIncidenceListResponse,
     EmployeeIncidenceSchema,
@@ -60,26 +58,7 @@ def get_my_incidences(
 ) -> EmployeeIncidenceListResponse:
     """Retorna las incidencias relacionadas con las tareas del empleado."""
     try:
-        query = (
-            select(Incidence)
-            .join(Task, Incidence.task_id == Task.id)
-            .where(
-                Task.assigned_to == current_user.id,
-                Incidence.deleted_at == None,
-            )
-        )
-
-        if state:
-            query = query.where(Incidence.state == state)
-        else:
-            # Por defecto: abiertas y en progreso
-            query = query.where(
-                Incidence.state.in_([IncidenceStatus.abierta, IncidenceStatus.en_progreso])
-            )
-
-        query = query.order_by(desc(Incidence.created_at))
-        result = db.execute(query)
-        incidences = result.scalars().all()
+        incidences = IncidenceRepository(db).list_by_assignee(current_user.id, state)
 
         return EmployeeIncidenceListResponse(
             incidences=[
@@ -174,16 +153,7 @@ def get_general_incidences(
 ) -> GeneralIncidenceListResponse:
     """Lista las incidencias generales (maquinaria/insumo) registradas por el empleado."""
 
-    stmt = (
-        select(LossRecord)
-        .where(
-            LossRecord.registered_by_id == current_user.id,
-            LossRecord.incidence_category.in_(["maquinaria", "insumo"]),
-            LossRecord.deleted_at == None,
-        )
-        .order_by(desc(LossRecord.created_at))
-    )
-    records = list(db.execute(stmt).scalars().all())
+    records = LossRecordRepository(db).list_general_by_user(current_user.id)
 
     items = []
     for rec in records:

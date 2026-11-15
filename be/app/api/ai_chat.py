@@ -8,13 +8,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.dependencies import get_current_user, get_db
 from app.logging_config import ai_logger
 from app.models.user import User
+from app.repositories.user_repository import UserRepository
 from app.schemas.ai import ChatRequest, ChatResponse, HealthResponse, ReindexResponse, SourceItem
 from app.services import ai_service
 from app.utils.security import decode_token
@@ -75,8 +75,7 @@ def _get_optional_user(
         email: str | None = payload.get("sub")
         if not email:
             return None
-        stmt = select(User).where(User.email == email)
-        user = db.execute(stmt).scalar_one_or_none()
+        user = UserRepository(db).get_by_email(email)
         if not user or not user.is_active:
             return None
         token_version = payload.get("version")

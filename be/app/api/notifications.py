@@ -6,12 +6,12 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import get_db, get_current_user
 from app.models.user import User
+from app.repositories.user_repository import UserRepository
 from app.schemas.notifications import (
     NotificationResponse,
     NotificationListResponse,
@@ -106,9 +106,8 @@ async def websocket_notifications(
         return
 
     # Consulta fuera del event loop (SQL síncrono no debe bloquear el loop)
-    user = await run_in_threadpool(
-        lambda: db.execute(select(User).where(User.email == email)).scalar_one_or_none()
-    )
+    user_repo = UserRepository(db)
+    user = await run_in_threadpool(lambda: user_repo.get_by_email(email))
     if user is None or not user.is_active:
         await ws.close(code=4001, reason="Token inválido")
         return
