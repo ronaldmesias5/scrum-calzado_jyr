@@ -8,13 +8,12 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
-from app.models.brand import Brand
 from app.models.style import Style
-from app.models.product import Product
 from app.models.user import User
+from app.repositories.brand_repository import BrandRepository
+from app.repositories.style_repository import StyleRepository
 from app.schemas.catalog_admin import StyleCreateRequest
 
 router = APIRouter(
@@ -32,19 +31,17 @@ def list_styles(
     """Obtiene estilos, opcionalmente filtrados por marca"""
     _require_admin_or_jefe(current_user)
     
-    query = select(Style).where(Style.deleted_at == None)
-    
+    brand_uuid = None
     if brand_id:
         try:
             brand_uuid = uuid.UUID(brand_id)
-            query = query.where(Style.brand_id == brand_uuid)
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El formato del ID de marca es incorrecto"
             )
     
-    styles = db.execute(query.order_by(Style.name_style)).scalars().all()
+    styles = StyleRepository(db).list_all(brand_id=brand_uuid)
     
     return {
         "styles": [
@@ -78,13 +75,9 @@ def create_style(
             detail="El formato del ID de marca es incorrecto"
         )
     
+    style_repo = StyleRepository(db)
     # Verificar que la marca exista
-    brand = db.execute(
-        select(Brand).where(
-            (Brand.id == brand_uuid) &
-            (Brand.deleted_at == None)
-        )
-    ).scalar()
+    brand = BrandRepository(db).get_by_id(brand_uuid)
     
     if not brand:
         raise HTTPException(
@@ -93,13 +86,7 @@ def create_style(
         )
     
     # Verificar que no exista un estilo con el mismo nombre en la misma marca
-    existing = db.execute(
-        select(Style).where(
-            (Style.name_style.ilike(req.name)) &
-            (Style.brand_id == brand_uuid) &
-            (Style.deleted_at == None)
-        )
-    ).scalar()
+    existing = style_repo.find_by_name_in_brand(req.name, brand_uuid)
     
     if existing:
         raise HTTPException(
@@ -113,7 +100,7 @@ def create_style(
         description_style=req.description,
         brand_id=brand_uuid,
     )
-    db.add(style)
+    style_repo.add(style)
     db.commit()
     db.refresh(style)
     
@@ -146,12 +133,8 @@ def update_style(
             detail="El formato del ID es incorrecto"
         )
     
-    style = db.execute(
-        select(Style).where(
-            (Style.id == style_uuid) &
-            (Style.deleted_at == None)
-        )
-    ).scalar()
+    style_repo = StyleRepository(db)
+    style = style_repo.get_by_id(style_uuid)
     
     if not style:
         raise HTTPException(
@@ -160,12 +143,7 @@ def update_style(
         )
     
     # Verificar que la marca exista
-    brand = db.execute(
-        select(Brand).where(
-            (Brand.id == brand_uuid) &
-            (Brand.deleted_at == None)
-        )
-    ).scalar()
+    brand = BrandRepository(db).get_by_id(brand_uuid)
     
     if not brand:
         raise HTTPException(
@@ -174,14 +152,7 @@ def update_style(
         )
     
     # Si cambió la marca o el nombre, verificar duplicados
-    existing = db.execute(
-        select(Style).where(
-            (Style.name_style.ilike(req.name)) &
-            (Style.brand_id == brand_uuid) &
-            (Style.id != style_uuid) &
-            (Style.deleted_at == None)
-        )
-    ).scalar()
+    existing = style_repo.find_by_name_in_brand(req.name, brand_uuid, exclude_id=style_uuid)
     
     if existing:
         raise HTTPException(
@@ -223,12 +194,8 @@ def delete_style(
             detail="El formato del ID de estilo es incorrecto"
         )
     
-    style = db.execute(
-        select(Style).where(
-            (Style.id == style_uuid) &
-            (Style.deleted_at == None)
-        )
-    ).scalar()
+    style_repo = StyleRepository(db)
+    style = style_repo.get_by_id(style_uuid)
     
     if not style:
         raise HTTPException(
@@ -237,12 +204,7 @@ def delete_style(
         )
     
     # Verificar que no haya productos asociados activos
-    active_products = db.execute(
-        select(Product).where(
-            (Product.style_id == style_uuid) &
-            (Product.deleted_at == None)
-        )
-    ).scalars().all()
+    active_products = style_repo.list_active_products(style_uuid)
     
     if active_products:
         raise HTTPException(

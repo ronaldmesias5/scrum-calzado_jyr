@@ -8,12 +8,11 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.brand import Brand
-from app.models.style import Style
 from app.models.user import User
+from app.repositories.brand_repository import BrandRepository
 from app.schemas.catalog_admin import BrandCreateRequest
 
 router = APIRouter(
@@ -30,9 +29,7 @@ def list_brands(
     """Obtiene todas las marcas (públicas y privadas)"""
     _require_admin_or_jefe(current_user)
     
-    brands = db.execute(
-        select(Brand).where(Brand.deleted_at == None).order_by(Brand.name_brand)
-    ).scalars().all()
+    brands = BrandRepository(db).list_all()
     
     return {
         "brands": [
@@ -56,13 +53,9 @@ def create_brand(
     """Crea una nueva marca"""
     _require_admin_or_jefe(current_user)
     
+    brand_repo = BrandRepository(db)
     # Verificar que no exista una marca con el mismo nombre
-    existing = db.execute(
-        select(Brand).where(
-            (Brand.name_brand.ilike(req.name)) &
-            (Brand.deleted_at == None)
-        )
-    ).scalar()
+    existing = brand_repo.find_by_name(req.name)
     
     if existing:
         raise HTTPException(
@@ -75,7 +68,7 @@ def create_brand(
         name_brand=req.name,
         description_brand=req.description,
     )
-    db.add(brand)
+    brand_repo.add(brand)
     db.commit()
     db.refresh(brand)
     
@@ -105,12 +98,8 @@ def update_brand(
             detail="El formato del ID de marca es incorrecto"
         )
     
-    brand = db.execute(
-        select(Brand).where(
-            (Brand.id == brand_uuid) &
-            (Brand.deleted_at == None)
-        )
-    ).scalar()
+    brand_repo = BrandRepository(db)
+    brand = brand_repo.get_by_id(brand_uuid)
     
     if not brand:
         raise HTTPException(
@@ -119,13 +108,7 @@ def update_brand(
         )
     
     # Verificar que no exista otra marca con el mismo nombre
-    existing = db.execute(
-        select(Brand).where(
-            (Brand.name_brand.ilike(req.name)) &
-            (Brand.id != brand_uuid) &
-            (Brand.deleted_at == None)
-        )
-    ).scalar()
+    existing = brand_repo.find_by_name(req.name, exclude_id=brand_uuid)
     
     if existing:
         raise HTTPException(
@@ -164,12 +147,8 @@ def delete_brand(
             detail="El formato del ID de marca es incorrecto"
         )
     
-    brand = db.execute(
-        select(Brand).where(
-            (Brand.id == brand_uuid) &
-            (Brand.deleted_at == None)
-        )
-    ).scalar()
+    brand_repo = BrandRepository(db)
+    brand = brand_repo.get_by_id(brand_uuid)
     
     if not brand:
         raise HTTPException(
@@ -178,12 +157,7 @@ def delete_brand(
         )
     
     # Verificar que no haya estilos asociados activos
-    active_styles = db.execute(
-        select(Style).where(
-            (Style.brand_id == brand_uuid) &
-            (Style.deleted_at == None)
-        )
-    ).scalars().all()
+    active_styles = brand_repo.list_active_styles(brand_uuid)
     
     if active_styles:
         raise HTTPException(

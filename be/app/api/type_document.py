@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user, _require_admin
 from app.models.user import User
 from app.models.type_document import TypeDocument
+from app.repositories.document_type_repository import DocumentTypeRepository
 from app.schemas.type_document import TypeDocumentCreate, TypeDocumentResponse
 
 router = APIRouter(
@@ -27,7 +28,7 @@ def get_all_type_documents(
     db: Session = Depends(get_db),
 ) -> list[TypeDocumentResponse]:
     """Obtiene la lista de todos los tipos de documentos disponibles."""
-    type_documents = db.query(TypeDocument).all()
+    type_documents = DocumentTypeRepository(db).list_all()
     return [TypeDocumentResponse(id=td.id, name=td.name_type_document) for td in type_documents]
 
 
@@ -41,9 +42,7 @@ def get_type_document(
     db: Session = Depends(get_db),
 ) -> TypeDocumentResponse:
     """Obtiene un tipo de documento específico por su ID."""
-    type_document = (
-        db.query(TypeDocument).filter(TypeDocument.id == type_document_id).first()
-    )
+    type_document = DocumentTypeRepository(db).get_by_id(type_document_id)
 
     if not type_document:
         raise HTTPException(
@@ -68,11 +67,8 @@ def create_type_document(
     """Crea un nuevo tipo de documento."""
     _require_admin(current_user)
 
-    existing = (
-        db.query(TypeDocument)
-        .filter(TypeDocument.name_type_document == type_document_data.name)
-        .first()
-    )
+    repo = DocumentTypeRepository(db)
+    existing = repo.find_by_name(type_document_data.name)
 
     if existing:
         raise HTTPException(
@@ -81,7 +77,7 @@ def create_type_document(
         )
 
     new_type_document = TypeDocument(name_type_document=type_document_data.name)
-    db.add(new_type_document)
+    repo.add(new_type_document)
     db.commit()
     db.refresh(new_type_document)
 

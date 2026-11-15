@@ -8,12 +8,11 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.category import Category
-from app.models.product import Product
 from app.models.user import User
+from app.repositories.category_repository import CategoryRepository
 from app.schemas.catalog_admin import CategoryCreateRequest
 
 router = APIRouter(
@@ -30,17 +29,12 @@ def list_categories(
     """Obtiene todas las categorías con conteo de productos"""
     _require_admin_or_jefe(current_user)
 
-    categories = db.execute(
-        select(Category).where(Category.deleted_at == None).order_by(Category.name_category)
-    ).scalars().all()
+    cat_repo = CategoryRepository(db)
+    categories = cat_repo.list_all()
 
     result = []
     for cat in categories:
-        product_count = db.execute(
-            select(func.count(Product.id)).where(
-                (Product.category_id == cat.id) & (Product.deleted_at == None)
-            )
-        ).scalar() or 0
+        product_count = cat_repo.count_active_products(cat.id)
         result.append({
             "id": str(cat.id),
             "name": cat.name_category,
@@ -61,12 +55,8 @@ def create_category(
     """Crea una nueva categoría de productos"""
     _require_admin_or_jefe(current_user)
 
-    existing = db.execute(
-        select(Category).where(
-            (Category.name_category.ilike(req.name)) &
-            (Category.deleted_at == None)
-        )
-    ).scalar()
+    cat_repo = CategoryRepository(db)
+    existing = cat_repo.find_by_name(req.name)
 
     if existing:
         raise HTTPException(
@@ -79,7 +69,7 @@ def create_category(
         name_category=req.name.strip().lower(),
         description_category=req.description,
     )
-    db.add(category)
+    cat_repo.add(category)
     db.commit()
     db.refresh(category)
 
@@ -109,12 +99,8 @@ def update_category(
             detail="El formato del ID de categoría es incorrecto"
         )
 
-    category = db.execute(
-        select(Category).where(
-            (Category.id == cat_uuid) &
-            (Category.deleted_at == None)
-        )
-    ).scalar()
+    cat_repo = CategoryRepository(db)
+    category = cat_repo.get_by_id(cat_uuid)
 
     if not category:
         raise HTTPException(
@@ -122,13 +108,7 @@ def update_category(
             detail="Categoría no encontrada"
         )
 
-    existing = db.execute(
-        select(Category).where(
-            (Category.name_category.ilike(req.name)) &
-            (Category.id != cat_uuid) &
-            (Category.deleted_at == None)
-        )
-    ).scalar()
+    existing = cat_repo.find_by_name(req.name, exclude_id=cat_uuid)
 
     if existing:
         raise HTTPException(
@@ -167,12 +147,8 @@ def delete_category(
             detail="El formato del ID de categoría es incorrecto"
         )
 
-    category = db.execute(
-        select(Category).where(
-            (Category.id == cat_uuid) &
-            (Category.deleted_at == None)
-        )
-    ).scalar()
+    cat_repo = CategoryRepository(db)
+    category = cat_repo.get_by_id(cat_uuid)
 
     if not category:
         raise HTTPException(
@@ -180,12 +156,7 @@ def delete_category(
             detail="Categoría no encontrada"
         )
 
-    active_products = db.execute(
-        select(func.count(Product.id)).where(
-            (Product.category_id == cat_uuid) &
-            (Product.deleted_at == None)
-        )
-    ).scalar() or 0
+    active_products = cat_repo.count_active_products(cat_uuid)
 
     if active_products > 0:
         raise HTTPException(
