@@ -8,13 +8,15 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.dependencies import _require_jefe, get_current_user, get_db
 from app.models.client_price import ClientPrice
 from app.models.product import Product
 from app.models.user import User
+from app.repositories.client_price_repository import ClientPriceRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.client_prices import (
     ClientPriceBulkRequest,
     ClientPriceCreateRequest,
@@ -56,16 +58,9 @@ def list_client_prices(
     """Lista precios personalizados. Opcionalmente filtra por cliente."""
     _require_jefe(current_user)
 
-    query = (
-        select(ClientPrice)
-        .options(joinedload(ClientPrice.client), joinedload(ClientPrice.product))
-        .where(ClientPrice.deleted_at.is_(None))
+    rows = ClientPriceRepository(db).list_paginated(
+        client_id=client_id, offset=(page - 1) * page_size, limit=page_size
     )
-    if client_id:
-        query = query.where(ClientPrice.client_id == client_id)
-
-    query = query.order_by(desc(ClientPrice.created_at)).offset((page - 1) * page_size).limit(page_size)
-    rows = db.execute(query).unique().scalars().all()
 
     return [_to_response(r) for r in rows]
 
@@ -79,25 +74,18 @@ def create_or_update_client_price(
     """Crea o actualiza un precio personalizado (upsert por client_id + product_id)."""
     _require_jefe(current_user)
 
-    client = db.execute(
-        select(User).where(User.id == request.client_id).execution_options(populate_existing=True)
-    ).scalar_one_or_none()
+    client = UserRepository(db).get_by_id(request.client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     if not client.role or client.role.name_role != "client":
         raise HTTPException(status_code=400, detail="El usuario no es cliente")
 
-    product = db.execute(select(Product).where(Product.id == request.product_id)).scalar_one_or_none()
+    product = ProductRepository(db).get_by_id_any(request.product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    existing = db.execute(
-        select(ClientPrice).where(
-            ClientPrice.client_id == request.client_id,
-            ClientPrice.product_id == request.product_id,
-            ClientPrice.deleted_at.is_(None),
-        )
-    ).scalar_one_or_none()
+    price_repo = ClientPriceRepository(db)
+    existing = price_repo.get_by_client_product(request.client_id, request.product_id)
 
     if existing:
         existing.unit_price = request.unit_price
@@ -110,7 +98,7 @@ def create_or_update_client_price(
             product_id=request.product_id,
             unit_price=request.unit_price,
         )
-        db.add(cp)
+        price_repo.add(cp)
         db.commit()
         db.refresh(cp)
 
@@ -127,11 +115,7 @@ def update_client_price(
     """Actualiza el precio de un registro existente."""
     _require_jefe(current_user)
 
-    cp = db.execute(
-        select(ClientPrice)
-        .options(joinedload(ClientPrice.client), joinedload(ClientPrice.product))
-        .where(ClientPrice.id == price_id, ClientPrice.deleted_at.is_(None))
-    ).unique().scalar_one_or_none()
+    cp = ClientPriceRepository(db).get_by_id(price_id)
     if not cp:
         raise HTTPException(status_code=404, detail="Registro de precio no encontrado")
 
@@ -151,9 +135,7 @@ def delete_client_price(
     """Elimina (soft delete) un registro de precio personalizado."""
     _require_jefe(current_user)
 
-    cp = db.execute(
-        select(ClientPrice).where(ClientPrice.id == price_id, ClientPrice.deleted_at.is_(None))
-    ).scalar_one_or_none()
+    cp = ClientPriceRepository(db).get_live_by_id(price_id)
     if not cp:
         raise HTTPException(status_code=404, detail="Registro de precio no encontrado")
 
@@ -172,27 +154,21 @@ def bulk_upsert_client_prices(
     """Asigna precios en lote para un cliente."""
     _require_jefe(current_user)
 
-    client = db.execute(
-        select(User).where(User.id == request.client_id).execution_options(populate_existing=True)
-    ).scalar_one_or_none()
+    client = UserRepository(db).get_by_id(request.client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     if not client.role or client.role.name_role != "client":
         raise HTTPException(status_code=400, detail="El usuario no es cliente")
 
+    price_repo = ClientPriceRepository(db)
+    product_repo = ProductRepository(db)
     results = []
     for item in request.prices:
-        product = db.execute(select(Product).where(Product.id == item.product_id)).scalar_one_or_none()
+        product = product_repo.get_by_id_any(item.product_id)
         if not product:
             continue
 
-        existing = db.execute(
-            select(ClientPrice).where(
-                ClientPrice.client_id == request.client_id,
-                ClientPrice.product_id == item.product_id,
-                ClientPrice.deleted_at.is_(None),
-            )
-        ).scalar_one_or_none()
+        existing = price_repo.get_by_client_product(request.client_id, item.product_id)
 
         if existing:
             existing.unit_price = item.unit_price
@@ -203,7 +179,7 @@ def bulk_upsert_client_prices(
                 product_id=item.product_id,
                 unit_price=item.unit_price,
             )
-            db.add(cp)
+            price_repo.add(cp)
 
         db.flush()
         db.refresh(cp)
