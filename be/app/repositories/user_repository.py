@@ -33,6 +33,12 @@ class UserRepository:
             query = query.join(Role, User.role_id == Role.id).filter(Role.name_role == role_name)
         return query.all()
 
+    def existing_emails(self, emails: set[str]) -> set[str]:
+        """Emails ya registrados dentro del conjunto dado."""
+        if not emails:
+            return set()
+        return {row[0] for row in self.db.query(User.email).filter(User.email.in_(emails)).all()}
+
     def add(self, user: User) -> None:
         self.db.add(user)
 

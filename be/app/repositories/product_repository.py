@@ -157,5 +157,16 @@ class ProductRepository:
             stmt = stmt.where((Product.color == None) | (Product.color == ""))  # noqa: E711
         return self.db.execute(stmt).scalar()
 
+    def existing_names(self, names: set[str]) -> set[str]:
+        """Nombres de producto ya existentes dentro del conjunto dado."""
+        if not names:
+            return set()
+        return {
+            row[0]
+            for row in self.db.query(Product.name_product)
+            .filter(Product.name_product.in_(names))
+            .all()
+        }
+
     def add(self, product: Product) -> None:
         self.db.add(product)

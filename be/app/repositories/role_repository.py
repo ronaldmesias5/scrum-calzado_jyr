@@ -15,3 +15,6 @@ class RoleRepository:
 
     def get_by_name(self, name_role: str) -> Role | None:
         return self.db.query(Role).filter(Role.name_role == name_role).first()
+
+    def list_all(self) -> list[Role]:
+        return self.db.query(Role).all()

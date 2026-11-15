@@ -15,9 +15,14 @@ from app.dependencies import _require_admin_or_jefe, get_current_user, get_db
 from app.models.brand import Brand
 from app.models.category import Category
 from app.models.product import Product
-from app.models.role import Role
 from app.models.style import Style
 from app.models.user import User
+from app.repositories.brand_repository import BrandRepository
+from app.repositories.category_repository import CategoryRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.role_repository import RoleRepository
+from app.repositories.style_repository import StyleRepository
+from app.repositories.user_repository import UserRepository
 from app.utils.security import hash_password
 
 logger = logging.getLogger(__name__)
@@ -59,14 +64,10 @@ def import_users_from_csv(
 
     rows = list(reader)
     # Lotes previos al loop (evita N+1: 2 queries por fila)
-    roles_by_name = {r.name_role: r for r in db.query(Role).all()}
+    user_repo = UserRepository(db)
+    roles_by_name = {r.name_role: r for r in RoleRepository(db).list_all()}
     csv_emails = {row['email'].strip().lower() for row in rows}
-    existing_emails: set[str] = set()
-    if csv_emails:
-        existing_emails = {
-            r[0]
-            for r in db.query(User.email).filter(User.email.in_(csv_emails)).all()
-        }
+    existing_emails: set[str] = user_repo.existing_emails(csv_emails)
 
     for i, row in enumerate(rows, start=2):
         try:
@@ -105,7 +106,7 @@ def import_users_from_csv(
                 created_by=current_user.id,
             )
 
-            db.add(new_user)
+            user_repo.add(new_user)
             # Commit por fila: un IntegrityError sin rollback deja la sesión en
             # pending rollback y haría fallar todas las filas siguientes.
             db.commit()
@@ -159,18 +160,15 @@ def import_products_from_csv(
 
     rows = list(reader)
     # Catálogo y existentes en lote (evita N+1: 4 queries por fila)
+    product_repo = ProductRepository(db)
+    brand_repo = BrandRepository(db)
+    category_repo = CategoryRepository(db)
+    style_repo = StyleRepository(db)
     csv_names = {row['name_product'].strip() for row in rows}
-    existing_names: set[str] = set()
-    if csv_names:
-        existing_names = {
-            r[0]
-            for r in db.query(Product.name_product)
-            .filter(Product.name_product.in_(csv_names))
-            .all()
-        }
-    brands_by_name = {b.name_brand: b for b in db.query(Brand).all()}
-    categories_by_name = {c.name_category: c for c in db.query(Category).all()}
-    styles_by_name = {s.name_style: s for s in db.query(Style).all()}
+    existing_names: set[str] = product_repo.existing_names(csv_names)
+    brands_by_name = {b.name_brand: b for b in brand_repo.list_all()}
+    categories_by_name = {c.name_category: c for c in category_repo.list_all()}
+    styles_by_name = {s.name_style: s for s in style_repo.list_all()}
 
     for i, row in enumerate(rows, start=2):
         name = row['name_product'].strip()
@@ -186,7 +184,7 @@ def import_products_from_csv(
             brand = brands_by_name.get(brand_name)
             if not brand:
                 brand = Brand(name_brand=brand_name)
-                db.add(brand)
+                brand_repo.add(brand)
                 db.flush()
                 brands_by_name[brand_name] = brand
 
@@ -195,7 +193,7 @@ def import_products_from_csv(
             category = categories_by_name.get(category_name)
             if not category:
                 category = Category(name_category=category_name)
-                db.add(category)
+                category_repo.add(category)
                 db.flush()
                 categories_by_name[category_name] = category
 
@@ -204,7 +202,7 @@ def import_products_from_csv(
             style = styles_by_name.get(style_name)
             if not style:
                 style = Style(name_style=style_name, brand_id=brand.id)
-                db.add(style)
+                style_repo.add(style)
                 db.flush()
                 styles_by_name[style_name] = style
 
@@ -217,7 +215,7 @@ def import_products_from_csv(
                 style_id=style.id,
             )
 
-            db.add(new_product)
+            product_repo.add(new_product)
             # Commit por fila: un IntegrityError sin rollback deja la sesión en
             # pending rollback y haría fallar todas las filas siguientes.
             db.commit()
@@ -227,9 +225,9 @@ def import_products_from_csv(
         except Exception as e:
             db.rollback()
             # El rollback invalida objetos creados con flush: recargar cachés
-            brands_by_name = {b.name_brand: b for b in db.query(Brand).all()}
-            categories_by_name = {c.name_category: c for c in db.query(Category).all()}
-            styles_by_name = {s.name_style: s for s in db.query(Style).all()}
+            brands_by_name = {b.name_brand: b for b in brand_repo.list_all()}
+            categories_by_name = {c.name_category: c for c in category_repo.list_all()}
+            styles_by_name = {s.name_style: s for s in style_repo.list_all()}
             if name in existing_names:
                 existing_names.discard(name)
             results["skipped"] += 1
