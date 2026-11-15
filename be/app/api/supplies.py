@@ -9,16 +9,15 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
 from app.models.supplies import Supplies
 from app.models.supply_categories import SupplyCategory
 from app.models.product_supplies import ProductSupply
-from app.models.product import Product
 from app.models.user import User
+from app.repositories.product_repository import ProductRepository
+from app.repositories.supply_repository import ProductSupplyRepository, SupplyRepository
 from app.schemas.supplies import (
     SupplyCreate,
     SupplyUpdate,
@@ -40,7 +39,7 @@ AVAILABLE_COLORS = ['red', 'orange', 'yellow', 'lime', 'cyan', 'indigo', 'pink',
 
 def _get_next_category_color(db: Session) -> str:
     """Asigna un color automático para una nueva categoría."""
-    existing_cats = db.execute(select(SupplyCategory)).scalars().all()
+    existing_cats = SupplyRepository(db).list_all_for_colors()
     existing_colors = {cat.color for cat in existing_cats}
     
     # Usar colores disponibles que no estén usados
@@ -90,7 +89,7 @@ def list_supply_categories(
     db: Session = Depends(get_db),
     _current_user=Depends(get_current_user),
 ):
-    cats = db.execute(select(SupplyCategory).order_by(SupplyCategory.name)).scalars().all()
+    cats = SupplyRepository(db).list_categories_ordered()
     return [{"id": str(c.id), "name": c.name, "color": c.color, "global_stage": c.global_stage} for c in cats]
 
 @router.post("/supplies/categories", status_code=201, summary="Crear categoria de insumo")
@@ -108,7 +107,7 @@ def create_supply_category(
         global_stage=body.global_stage
     )
     try:
-        db.add(cat)
+        SupplyRepository(db).add_category(cat)
         db.commit()
         db.refresh(cat)
     except Exception:
@@ -127,11 +126,12 @@ def delete_supply_category(
         uid = uuid.UUID(category_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="ID inválido")
-    cat = db.execute(select(SupplyCategory).where(SupplyCategory.id == uid)).scalars().first()
+    repo = SupplyRepository(db)
+    cat = repo.get_category_by_id(uid)
     if not cat:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     try:
-        db.delete(cat)
+        repo.delete_category(cat)
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -152,19 +152,8 @@ def list_supplies(
     db: Session = Depends(get_db),
     _current_user=Depends(get_current_user),
 ) -> SuppliesListResponse:
-    stmt = select(Supplies).where(Supplies.deleted_at == None)
-    if category:
-        stmt = stmt.where(Supplies.category == category)
-
-    count_stmt = select(func.count(Supplies.id)).where(Supplies.deleted_at == None)
-    if category:
-        count_stmt = count_stmt.where(Supplies.category == category)
-    total = db.execute(count_stmt).scalar() or 0
-
-    stmt = stmt.order_by(Supplies.created_at.desc())
     offset = (page - 1) * page_size
-    stmt = stmt.offset(offset).limit(page_size)
-    supplies = db.execute(stmt).scalars().all()
+    total, supplies = SupplyRepository(db).list_supplies_paginated(category, offset, page_size)
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
 
@@ -197,7 +186,7 @@ def create_supply(
         sizes=body.sizes,
         unit=body.unit,
     )
-    db.add(supply)
+    SupplyRepository(db).add_supply(supply)
     db.commit()
     db.refresh(supply)
     return _supply_to_out(supply)
@@ -220,9 +209,7 @@ def update_supply(
     except ValueError:
         raise HTTPException(status_code=400, detail="ID inválido")
 
-    supply = db.execute(
-        select(Supplies).where((Supplies.id == uid) & (Supplies.deleted_at == None))
-    ).scalars().first()
+    supply = SupplyRepository(db).get_live_supply(uid)
     if not supply:
         raise HTTPException(status_code=404, detail="Insumo no encontrado")
 
@@ -262,9 +249,7 @@ def delete_supply(
     except ValueError:
         raise HTTPException(status_code=400, detail="ID inválido")
 
-    supply = db.execute(
-        select(Supplies).where((Supplies.id == uid) & (Supplies.deleted_at == None))
-    ).scalars().first()
+    supply = SupplyRepository(db).get_live_supply(uid)
     if not supply:
         raise HTTPException(status_code=404, detail="Insumo no encontrado")
 
@@ -290,24 +275,23 @@ def link_supply_to_product(
     except ValueError:
         raise HTTPException(status_code=400, detail="IDs inválidos")
 
-    product = db.execute(select(Product).where((Product.id == pid) & (Product.deleted_at == None))).scalars().first()
+    product = ProductRepository(db).get_by_id(pid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    supply = db.execute(select(Supplies).where((Supplies.id == sid) & (Supplies.deleted_at == None))).scalars().first()
+    supply = SupplyRepository(db).get_live_supply(sid)
     if not supply:
         raise HTTPException(status_code=404, detail="Insumo no encontrado")
 
-    existing = db.execute(
-        select(ProductSupply).where((ProductSupply.product_id == pid) & (ProductSupply.supply_id == sid))
-    ).scalars().first()
+    link_repo = ProductSupplyRepository(db)
+    existing = link_repo.get_link(pid, sid)
     if existing:
         existing.quantity_required = body.quantity_required
         db.commit()
         return {"detail": "Vínculo actualizado", "quantity_required": body.quantity_required}
 
     link = ProductSupply(product_id=pid, supply_id=sid, quantity_required=body.quantity_required)
-    db.add(link)
+    link_repo.add_link(link)
     db.commit()
     return {"detail": "Insumo vinculado exitosamente", "quantity_required": body.quantity_required}
 
@@ -331,12 +315,11 @@ def unlink_supply_from_product(
     except ValueError:
         raise HTTPException(status_code=400, detail="IDs inválidos")
 
-    link = db.execute(
-        select(ProductSupply).where((ProductSupply.product_id == pid) & (ProductSupply.supply_id == sid))
-    ).scalars().first()
+    link_repo = ProductSupplyRepository(db)
+    link = link_repo.get_link(pid, sid)
     if not link:
         raise HTTPException(status_code=404, detail="Vínculo no encontrado")
-    db.delete(link)
+    link_repo.delete_link(link)
     db.commit()
 
 
@@ -357,11 +340,12 @@ def check_product_supplies(
     except ValueError:
         raise HTTPException(status_code=400, detail="ID inválido")
 
-    product = db.execute(select(Product).where((Product.id == pid) & (Product.deleted_at == None))).scalars().first()
+    product = ProductRepository(db).get_by_id(pid)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    links = db.execute(select(ProductSupply).where(ProductSupply.product_id == pid)).scalars().all()
+    supply_repo = SupplyRepository(db)
+    links = ProductSupplyRepository(db).list_links_by_product(pid)
 
     supply_items: list[ProductSupplyOut] = []
     all_available = True
@@ -374,9 +358,7 @@ def check_product_supplies(
         if not sufficient:
             all_available = False
         raw_cat = supply.category.value if hasattr(supply.category, "value") else supply.category
-        cat_obj = db.execute(
-            select(SupplyCategory).where(SupplyCategory.name == raw_cat)
-        ).scalars().first()
+        cat_obj = supply_repo.get_category_by_name(raw_cat)
         supply_items.append(ProductSupplyOut(
             supply_id=str(supply.id),
             supply_name=supply.name_supplies,
