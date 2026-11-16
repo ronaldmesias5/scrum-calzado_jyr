@@ -33,8 +33,7 @@ dependencies = [
     
     # 🔐 Seguridad y autenticación
     "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.0",
-    "bcrypt>=4.0.0,<4.1.0",
+    "bcrypt>=4.1.0",
     
     # 📧 Email
     "aiosmtplib>=3.0.0",

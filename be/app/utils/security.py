@@ -4,22 +4,29 @@
 
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt solo considera los primeros 72 bytes de la contraseña.
+_BCRYPT_MAX_BYTES = 72
 
 
 def hash_password(password: str) -> str:
     """Hashea una contraseña en texto plano usando bcrypt."""
-    return pwd_context.hash(password)
+    secret = password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+    return bcrypt.hashpw(secret, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica si una contraseña en texto plano coincide con su hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    secret = plain_password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+    try:
+        return bcrypt.checkpw(secret, hashed_password.encode("utf-8"))
+    except ValueError:
+        # Hash corrupto o con formato inesperado: se trata como no coincidente.
+        return False
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

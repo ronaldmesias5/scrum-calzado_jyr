@@ -4,20 +4,18 @@
 # 004_seed_test_users | Revises: 003_seed_catalog_data | Creada: 2026-03-25 00:00:03.000000
 
 from typing import Sequence, Union
+import bcrypt
 from alembic import op
 from sqlalchemy import text
-from passlib.context import CryptContext
 
 revision: str = "004_seed_test_users"
 down_revision: Union[str, Sequence[str], None] = "003_seed_catalog_data"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    secret = password.encode("utf-8")[:72]
+    return bcrypt.hashpw(secret, bcrypt.gensalt()).decode("utf-8")
 
 
 def upgrade() -> None:
