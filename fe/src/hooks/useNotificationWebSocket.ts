@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BackendNotification } from '../services/notificationApi';
+import { getAccessToken } from '../services/tokenStore';
 
 interface WsMessage {
   type: string;
@@ -17,7 +18,7 @@ export function useNotificationWebSocket() {
   const connectRef = useRef<() => void>(() => undefined);
 
   const connect = useCallback(() => {
-    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    const token = getAccessToken();
     if (!token) return;
 
     // Limpiar conexión previa

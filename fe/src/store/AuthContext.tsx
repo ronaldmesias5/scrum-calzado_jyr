@@ -5,6 +5,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import * as authApi from '@/services/authService';
+import {
+  clearLegacyTokens,
+  getAccessToken,
+  setAccessToken as setStoredAccessToken
+} from '@/services/tokenStore';
 import { AuthContext } from '@/store/authContextDef';
 import type {
   AuthContextType,
@@ -30,20 +35,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = !!user && !!accessToken;
 
-  const STORAGE_KEY_ACCESS = 'access_token';
-  const STORAGE_KEY_REFRESH = 'refresh_token';
-
-  const saveTokens = useCallback(
-    (access: string, refresh: string, persist = false) => {
-      setAccessToken(access);
-      setRefreshToken(refresh);
-      // El refresh token NO se persiste en storage: vive en la cookie
-      // HttpOnly que setea el backend en /login (inaccesible para JS/XSS).
-      const storage = persist ? localStorage : sessionStorage;
-      storage.setItem(STORAGE_KEY_ACCESS, access);
-    },
-    []
-  );
+  const saveTokens = useCallback((access: string, refresh: string) => {
+    setAccessToken(access);
+    setRefreshToken(refresh);
+    // El access token vive solo en memoria y el refresh token en la cookie
+    // HttpOnly del backend: nada queda en storage accesible desde JS (XSS).
+    setStoredAccessToken(access);
+    clearLegacyTokens();
+  }, []);
 
   const clearAuth = useCallback(async () => {
     try {
@@ -51,10 +50,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Logout error', error);
     }
-    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
-    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
-    localStorage.removeItem(STORAGE_KEY_ACCESS);
-    localStorage.removeItem(STORAGE_KEY_REFRESH);
+    clearLegacyTokens();
+    setStoredAccessToken(null);
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
@@ -63,20 +60,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ─── Verificar sesión al montar ──────────────────────────────
   useEffect(() => {
     const verifySession = async () => {
-      const token =
-        sessionStorage.getItem(STORAGE_KEY_ACCESS) ||
-        localStorage.getItem(STORAGE_KEY_ACCESS);
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
+      // El access token vive en memoria, así que tras recargar la página no
+      // existe: getMe devuelve 401, el interceptor usa la cookie HttpOnly de
+      // refresh, guarda el token nuevo en memoria y reintenta la petición.
       try {
         const userData = await authApi.getMe();
         setUser(userData);
-        setAccessToken(token);
+        setAccessToken(getAccessToken());
       } catch {
-        clearAuth();
+        clearLegacyTokens();
+        setStoredAccessToken(null);
+        setAccessToken(null);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -89,9 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ─── Sincronizar con eventos del interceptor axios ──────────
   useEffect(() => {
     const handleTokenRefreshed = () => {
-      const token =
-        sessionStorage.getItem(STORAGE_KEY_ACCESS) ||
-        localStorage.getItem(STORAGE_KEY_ACCESS);
+      const token = getAccessToken();
       if (token) setAccessToken(token);
     };
 
@@ -114,8 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ...data,
         remember_me: data.remember_me ?? false
       });
-      const persist = data.remember_me ?? false;
-      saveTokens(tokens.access_token, tokens.refresh_token, persist);
+      saveTokens(tokens.access_token, tokens.refresh_token);
       const userData = await authApi.getMe();
       setUser(userData);
       return userData;
@@ -137,10 +129,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Logout all error', error);
     }
-    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
-    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
-    localStorage.removeItem(STORAGE_KEY_ACCESS);
-    localStorage.removeItem(STORAGE_KEY_REFRESH);
+    clearLegacyTokens();
+    setStoredAccessToken(null);
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
@@ -173,10 +163,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const deleteAccount = useCallback(async (password: string) => {
     await authApi.deleteMyAccount(password);
     // Limpiar tokens y estado después de eliminar la cuenta
-    sessionStorage.removeItem(STORAGE_KEY_ACCESS);
-    sessionStorage.removeItem(STORAGE_KEY_REFRESH);
-    localStorage.removeItem(STORAGE_KEY_ACCESS);
-    localStorage.removeItem(STORAGE_KEY_REFRESH);
+    clearLegacyTokens();
+    setStoredAccessToken(null);
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
