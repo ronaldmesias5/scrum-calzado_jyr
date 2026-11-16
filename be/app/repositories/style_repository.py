@@ -21,6 +21,27 @@ class StyleRepository:
             query = query.where(Style.brand_id == brand_id)
         return list(self.db.execute(query.order_by(Style.name_style)).scalars().all())
 
+    def list_public(
+        self,
+        only_with_products: bool = False,
+        brand_id=None,
+        category_id=None,
+    ) -> list[Style]:
+        """Estilos del catálogo público; opcionalmente solo con productos activos."""
+        query = select(Style).where(Style.deleted_at.is_(None))
+        if brand_id:
+            query = query.where(Style.brand_id == brand_id)
+        if only_with_products or category_id:
+            conditions = [
+                (Product.style_id == Style.id)
+                & (Product.deleted_at.is_(None))
+                & (Product.state.is_(True))
+            ]
+            if category_id:
+                conditions.append(Product.category_id == category_id)
+            query = query.where(select(Product.id).where(*conditions).exists())
+        return list(self.db.execute(query).scalars().all())
+
     def get_by_id(self, style_id) -> Style | None:
         return self.db.execute(
             select(Style).where((Style.id == style_id) & (Style.deleted_at == None))  # noqa: E711

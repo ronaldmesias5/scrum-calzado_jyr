@@ -102,6 +102,21 @@ class InventoryRepository:
             .all()
         )
 
+    def list_live_by_products(self, product_ids: list) -> list[Inventory]:
+        """Inventario vivo de varios productos en una sola consulta."""
+        if not product_ids:
+            return []
+        return list(
+            self.db.execute(
+                select(Inventory).where(
+                    Inventory.product_id.in_(product_ids),
+                    Inventory.deleted_at.is_(None),
+                )
+            )
+            .scalars()
+            .all()
+        )
+
     def stock_totals_by_products(self, product_ids: list[uuid.UUID]) -> dict[uuid.UUID, tuple[int, int]]:
         """(amount, reserved) agrupados por producto en una sola consulta."""
         if not product_ids:

@@ -106,6 +106,45 @@ class ProductRepository:
         products = self.db.execute(stmt.offset(offset).limit(limit)).scalars().all()
         return total, list(products)
 
+    def list_by_style_live(self, style_id) -> list[Product]:
+        """Productos vivos de un estilo (sin filtrar estado), para inventario por tallas."""
+        return list(
+            self.db.execute(
+                select(Product).where(
+                    (Product.style_id == style_id) & (Product.deleted_at == None)  # noqa: E711
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+    def list_distinct_colors(self) -> list[str]:
+        """Colores distintos de productos activos del catálogo."""
+        return list(
+            self.db.execute(
+                select(Product.color)
+                .where(
+                    (Product.deleted_at.is_(None))
+                    & (Product.state.is_(True))
+                    & (Product.color.is_not(None))
+                    & (Product.color != "")
+                )
+                .distinct()
+            )
+            .scalars()
+            .all()
+        )
+
+    def get_public_detail(self, product_id) -> Product | None:
+        """Producto activo y vivo para el detalle del catálogo público."""
+        return self.db.execute(
+            select(Product).where(
+                (Product.id == product_id)
+                & (Product.deleted_at.is_(None))
+                & (Product.state.is_(True))
+            )
+        ).scalar()
+
     def get_by_id(self, product_id) -> Product | None:
         """Producto vivo por id (None si borrado)."""
         return self.db.execute(

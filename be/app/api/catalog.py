@@ -4,14 +4,13 @@ Rutas públicas para el catálogo de productos
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
 from app.dependencies import get_db
-from app.models.category import Category
-from app.models.style import Style
-from app.models.brand import Brand
-from app.models.product import Product
-from app.models.inventory import Inventory
+from app.repositories.brand_repository import BrandRepository
+from app.repositories.category_repository import CategoryRepository
+from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.style_repository import StyleRepository
 from app.schemas.catalog import (
     CategoriesListResponse, StylesListResponse, StyleInventoryResponse, SizeInventoryResponse,
     BrandsListResponse, ProductsListResponse, ProductDetailResponse
@@ -39,19 +38,7 @@ def get_categories(
 
     Endpoint público sin autenticación requerida.
     """
-    stmt = select(Category).where(Category.deleted_at == None)
-    if only_with_products:
-        has_product = (
-            select(Product.id)
-            .where(
-                (Product.category_id == Category.id)
-                & (Product.deleted_at == None)
-                & (Product.state == True)
-            )
-            .exists()
-        )
-        stmt = stmt.where(has_product)
-    categories = db.execute(stmt).scalars().all()
+    categories = CategoryRepository(db).list_public(only_with_products)
 
     return CategoriesListResponse(
         categories=[
@@ -82,21 +69,7 @@ def get_styles(
     Retorna todos los estilos disponibles con sus marcas asociadas.
     Usado para seleccionar estilos en formulario de pedidos.
     """
-    stmt = select(Style).where(Style.deleted_at == None)
-    if brand_id:
-        stmt = stmt.where(Style.brand_id == brand_id)
-    if only_with_products or category_id:
-        conditions = [
-            (Product.style_id == Style.id)
-            & (Product.deleted_at == None)
-            & (Product.state == True)
-        ]
-        if category_id:
-            conditions.append(Product.category_id == category_id)
-        stmt = stmt.where(
-            select(Product.id).where(*conditions).exists()
-        )
-    styles = db.execute(stmt).scalars().all()
+    styles = StyleRepository(db).list_public(only_with_products, brand_id, category_id)
 
     return StylesListResponse(
         styles=[
@@ -128,23 +101,13 @@ def get_style_inventory(style_id: str, db: Session = Depends(get_db)) -> StyleIn
         raise HTTPException(status_code=400, detail="ID de estilo inválido")
         
     # Obtener productos del estilo
-    products = db.execute(
-        select(Product).where(
-            (Product.style_id == style_uuid) &
-            (Product.deleted_at == None)
-        )
-    ).scalars().all()
-    
+    products = ProductRepository(db).list_by_style_live(style_uuid)
+
     sizes = {}
     product_ids = [product.id for product in products]
     if product_ids:
         # Una sola consulta para todo el estilo (evita N+1 por producto)
-        inventory = db.execute(
-            select(Inventory).where(
-                (Inventory.product_id.in_(product_ids))
-                & (Inventory.deleted_at == None)
-            )
-        ).scalars().all()
+        inventory = InventoryRepository(db).list_live_by_products(product_ids)
 
         for inv in inventory:
             if inv.size not in sizes:
@@ -177,19 +140,7 @@ def get_brands(
     Retorna todas las marcas disponibles en el catálogo.
     Endpoint público sin autenticación requerida.
     """
-    stmt = select(Brand).where(Brand.deleted_at == None)
-    if only_with_products or category_id:
-        conditions = [
-            (Product.brand_id == Brand.id)
-            & (Product.deleted_at == None)
-            & (Product.state == True)
-        ]
-        if category_id:
-            conditions.append(Product.category_id == category_id)
-        stmt = stmt.where(
-            select(Product.id).where(*conditions).exists()
-        )
-    brands = db.execute(stmt).scalars().all()
+    brands = BrandRepository(db).list_public(only_with_products, category_id)
 
     return BrandsListResponse(
         brands=[
@@ -212,14 +163,7 @@ def get_colors(db: Session = Depends(get_db)) -> dict:
     """
     Retorna todos los colores distintos disponibles en productos activos en el catálogo.
     """
-    stmt = select(Product.color).where(
-        (Product.deleted_at == None) &
-        (Product.state == True) &
-        (Product.color != None) &
-        (Product.color != "")
-    ).distinct()
-    
-    colors = db.execute(stmt).scalars().all()
+    colors = ProductRepository(db).list_distinct_colors()
     # Limpiar y ordenar colores
     clean_colors = sorted(list(set(c.strip() for c in colors if c and c.strip())))
     return {"colors": clean_colors}
@@ -240,24 +184,13 @@ def get_product_detail(product_id: str, db: Session = Depends(get_db)) -> Produc
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de producto inválido")
 
-    product = db.execute(
-        select(Product).where(
-            (Product.id == product_uuid) &
-            (Product.deleted_at == None) &
-            (Product.state == True)
-        )
-    ).scalars().first()
+    product = ProductRepository(db).get_public_detail(product_uuid)
 
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
     # Obtener inventario para el producto
-    inventory_items = db.execute(
-        select(Inventory).where(
-            (Inventory.product_id == product.id) &
-            (Inventory.deleted_at == None)
-        )
-    ).scalars().all()
+    inventory_items = InventoryRepository(db).list_live_for_product(product.id)
 
     sizes_inventory = [
         SizeInventoryResponse(size=item.size, available=item.amount)
@@ -303,53 +236,20 @@ def get_products(
     Incluye información de estilo, categoría y marca.
     Endpoint público sin autenticación requerida.
     """
-    base_where = (Product.deleted_at == None) & (Product.state == True)
-    stmt = select(Product).where(*[base_where])
-    count_stmt = select(func.count(Product.id)).where(*[base_where])
-    
-    if category_id:
-        stmt = stmt.where(Product.category_id == category_id)
-        count_stmt = count_stmt.where(Product.category_id == category_id)
-    if brand_id:
-        stmt = stmt.where(Product.brand_id == brand_id)
-        count_stmt = count_stmt.where(Product.brand_id == brand_id)
-    if style_id:
-        stmt = stmt.where(Product.style_id == style_id)
-        count_stmt = count_stmt.where(Product.style_id == style_id)
-    if color:
-        stmt = stmt.where(Product.color == color)
-        count_stmt = count_stmt.where(Product.color == color)
-        
-    if search:
-        search_filter = (
-            Product.name_product.ilike(f"%{search}%") |
-            Brand.name_brand.ilike(f"%{search}%") |
-            Style.name_style.ilike(f"%{search}%")
-        )
-        stmt = stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
-        stmt = stmt.where(search_filter)
-        count_stmt = count_stmt.join(Brand, Product.brand_id == Brand.id).join(Style, Product.style_id == Style.id)
-        count_stmt = count_stmt.where(search_filter)
-
-    total = db.execute(count_stmt).scalar() or 0
+    total, products = ProductRepository(db).list_active_paginated(
+        category_id=category_id,
+        brand_id=brand_id,
+        style_id=style_id,
+        color=color,
+        search=search,
+        offset=(page - 1) * page_size,
+        limit=page_size,
+    )
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-    offset = (page - 1) * page_size
-
-    products = db.execute(stmt.offset(offset).limit(page_size)).scalars().all()
 
     # Stock total por producto (evita N+1: una sola consulta agrupada)
     product_ids = [p.id for p in products]
-    available_by_product: dict = {}
-    if product_ids:
-        inventory_rows = db.execute(
-            select(Inventory.product_id, func.sum(Inventory.amount))
-            .where(
-                (Inventory.product_id.in_(product_ids)) &
-                (Inventory.deleted_at.is_(None))
-            )
-            .group_by(Inventory.product_id)
-        ).all()
-        available_by_product = {str(pid): int(qty or 0) for pid, qty in inventory_rows}
+    available_by_product = InventoryRepository(db).stock_available_by_products(product_ids)
 
     return ProductsListResponse(
         products=[

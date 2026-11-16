@@ -24,6 +24,21 @@ class CategoryRepository:
             .all()
         )
 
+    def list_public(self, only_with_products: bool = False) -> list[Category]:
+        """Categorías del catálogo público; opcionalmente solo con productos activos."""
+        query = select(Category).where(Category.deleted_at.is_(None))
+        if only_with_products:
+            query = query.where(
+                select(Product.id)
+                .where(
+                    (Product.category_id == Category.id)
+                    & (Product.deleted_at.is_(None))
+                    & (Product.state.is_(True))
+                )
+                .exists()
+            )
+        return list(self.db.execute(query).scalars().all())
+
     def get_by_id(self, category_id) -> Category | None:
         return self.db.execute(
             select(Category).where((Category.id == category_id) & (Category.deleted_at == None))  # noqa: E711
