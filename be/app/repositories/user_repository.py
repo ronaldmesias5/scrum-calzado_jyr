@@ -2,6 +2,7 @@
 # 📄 Acceso a datos de usuarios (roles: cliente, empleado, jefe)
 # ════════════════════════════════════════
 
+from sqlalchemy import String, cast
 from sqlalchemy.orm import Session
 
 from app.models.role import Role
@@ -32,6 +33,14 @@ class UserRepository:
         if role_name:
             query = query.join(Role, User.role_id == Role.id).filter(Role.name_role == role_name)
         return query.all()
+
+    def list_by_occupation(self, role_name: str) -> list[User]:
+        """Usuarios cuyo cargo (occupation) coincide, comparando con cast a texto."""
+        return (
+            self.db.query(User)
+            .filter(cast(User.occupation, String) == role_name.lower())
+            .all()
+        )
 
     def existing_emails(self, emails: set[str]) -> set[str]:
         """Emails ya registrados dentro del conjunto dado."""

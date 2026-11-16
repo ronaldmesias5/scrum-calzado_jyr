@@ -3,7 +3,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, desc, cast, String
+from sqlalchemy import desc, func, select
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from uuid import UUID, uuid4
@@ -41,6 +41,10 @@ from app.schemas.reports import (
 )
 from app.utils.email import send_report_email
 from app.models.report_share import ReportShare
+from app.repositories.order_repository import OrderRepository
+from app.repositories.report_share_repository import ReportShareRepository
+from app.repositories.task_repository import TaskRepository
+from app.repositories.user_repository import UserRepository
 
 router = APIRouter(
     prefix="/api/v1/admin/reports",
@@ -299,7 +303,7 @@ def get_employee_report(
     """Obtiene el reporte de rendimiento de un empleado"""
     _require_admin_or_jefe(current_user)
     
-    employee = db.query(User).filter(User.id == user_id).first()
+    employee = UserRepository(db).get_by_id(user_id)
     if not employee:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
         
@@ -442,7 +446,7 @@ def get_role_report(
     _require_admin_or_jefe(current_user)
     
     # Obtener IDs de usuarios con ese cargo (usando el campo correcto 'occupation' y casting para evitar errores de Enum)
-    user_ids = [u.id for u in db.query(User).filter(cast(User.occupation, String) == role_name.lower()).all()]
+    user_ids = [u.id for u in UserRepository(db).list_by_occupation(role_name)]
     if not user_ids:
         return EmployeeReportResponse(
             user_id=uuid4(),
@@ -628,17 +632,7 @@ def get_all_customers_report(
     _require_admin_or_jefe(current_user)
 
     # Los pedidos para stock (sin cliente) no son pedidos de clientes
-    query = select(Order).where(Order.customer_id.is_not(None))
-    
-    if start_date:
-        query = query.where(Order.created_at >= start_date)
-    if end_date:
-        query = query.where(Order.created_at <= end_date)
-    if state:
-        query = query.where(cast(Order.state, String) == state)
-        
-    query = query.order_by(desc(Order.created_at))
-    orders = db.execute(query).scalars().all()
+    orders = OrderRepository(db).list_customer_orders(start_date, end_date, state)
     
     orders_list = []
     for o in orders:
@@ -676,10 +670,7 @@ def mark_tasks_as_paid(
     if not body.task_ids:
         raise HTTPException(status_code=400, detail="No se proporcionaron IDs de tareas")
     
-    tasks = db.query(Task).filter(
-        Task.id.in_(body.task_ids),
-        Task.status == 'completado'
-    ).all()
+    tasks = TaskRepository(db).list_completed_by_ids(body.task_ids)
     
     if not tasks:
         raise HTTPException(status_code=404, detail="No se encontraron tareas completadas con esos IDs")
@@ -705,19 +696,11 @@ def get_customer_report(
     """Obtiene el reporte de compras de un cliente"""
     _require_admin_or_jefe(current_user)
     
-    customer = db.query(User).filter(User.id == user_id).first()
+    customer = UserRepository(db).get_by_id(user_id)
     if not customer:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
         
-    query = select(Order).where(Order.customer_id == user_id)
-    
-    if start_date:
-        query = query.where(Order.created_at >= start_date)
-    if end_date:
-        query = query.where(Order.created_at <= end_date)
-        
-    query = query.order_by(desc(Order.created_at))
-    orders = db.execute(query).scalars().all()
+    orders = OrderRepository(db).list_by_customer_dates(user_id, start_date, end_date)
     
     orders_metric = []
     for o in orders:
@@ -749,19 +732,11 @@ def get_customer_monthly_report(
     """Obtiene el reporte de compras de un cliente agrupado por mes"""
     _require_admin_or_jefe(current_user)
 
-    customer = db.query(User).filter(User.id == user_id).first()
+    customer = UserRepository(db).get_by_id(user_id)
     if not customer:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    query = select(Order).where(Order.customer_id == user_id)
-
-    if start_date:
-        query = query.where(Order.created_at >= start_date)
-    if end_date:
-        query = query.where(Order.created_at <= end_date)
-
-    query = query.order_by(desc(Order.created_at))
-    orders = db.execute(query).scalars().all()
+    orders = OrderRepository(db).list_by_customer_dates(user_id, start_date, end_date)
 
     orders_metric = []
     monthly_map: dict[str, dict] = {}
@@ -978,12 +953,11 @@ def get_global_sales(
     if not end_date:
         end_date = datetime.now(timezone.utc)
     
-    orders = db.query(Order).filter(
-        Order.created_at >= start_date,
-        Order.created_at <= end_date,
-        Order.state.in_([OrderStatus.completado, OrderStatus.entregado]),
-        Order.customer_id.is_not(None),
-    ).all()
+    orders = OrderRepository(db).list_customer_orders(
+        start_date,
+        end_date,
+        states=[OrderStatus.completado, OrderStatus.entregado],
+    )
     
     total_orders_period = len(orders)
     total_pairs_period = sum(o.total_pairs for o in orders)
@@ -1038,7 +1012,7 @@ def share_report_internal(
     """Comparte un reporte internamente a un empleado (aparece en su dashboard)."""
     _require_admin_or_jefe(current_user)
 
-    target_user = db.query(User).filter(User.id == body.target_user_id).first()
+    target_user = UserRepository(db).get_by_id(body.target_user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="Usuario destino no encontrado")
 
@@ -1050,7 +1024,7 @@ def share_report_internal(
         parameters=body.parameters or {},
         message=body.message or None,
     )
-    db.add(share)
+    ReportShareRepository(db).add(share)
     db.commit()
     db.refresh(share)
 

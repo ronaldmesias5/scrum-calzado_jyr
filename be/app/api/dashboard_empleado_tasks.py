@@ -7,14 +7,13 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.dependencies import get_current_user, get_db
 from app.models.category import Category
 from app.models.order import Order, OrderDetail
 from app.models.product import Product
-from app.models.report_share import ReportShare
 from app.models.tasks import Task
 from app.models.user import User
 from app.schemas.dashboard_empleado import (
@@ -36,6 +35,7 @@ from app.schemas.dashboard_empleado import (
     ValeTaskInfo,
 )
 from app.services.dashboard_empleado import get_task_type_for_occupation
+from app.repositories.report_share_repository import ReportShareRepository
 from app.repositories.task_repository import TaskRepository
 
 
@@ -652,15 +652,7 @@ def get_shared_reports(
     current_user: User = Depends(get_current_user),
 ):
     """Lista los reportes compartidos con el empleado autenticado."""
-    shares = (
-        db.query(ReportShare)
-        .filter(
-            ReportShare.target_user_id == current_user.id,
-            ReportShare.deleted_at == None,
-        )
-        .order_by(desc(ReportShare.created_at))
-        .all()
-    )
+    shares = ReportShareRepository(db).list_by_target_user(current_user.id)
 
     items = []
     for s in shares:
@@ -691,15 +683,7 @@ def get_shared_report_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    share = (
-        db.query(ReportShare)
-        .filter(
-            ReportShare.id == share_id,
-            ReportShare.target_user_id == current_user.id,
-            ReportShare.deleted_at == None,
-        )
-        .first()
-    )
+    share = ReportShareRepository(db).get_for_target(share_id, current_user.id)
     if not share:
         raise HTTPException(status_code=404, detail="Reporte no encontrado")
 

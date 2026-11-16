@@ -179,6 +179,16 @@ class TaskRepository:
         )
         return self.db.execute(query).unique().all()
 
+    def list_completed_by_ids(self, task_ids) -> list[Task]:
+        """Tareas en estado 'completado' dentro de un conjunto de ids."""
+        if not task_ids:
+            return []
+        return (
+            self.db.query(Task)
+            .filter(Task.id.in_(task_ids), Task.status == 'completado')
+            .all()
+        )
+
     def list_active_by_order(self, order_id) -> list[Task]:
         return (
             self.db.execute(

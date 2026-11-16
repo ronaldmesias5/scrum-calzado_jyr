@@ -4,7 +4,7 @@
 
 import uuid
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import String, cast, desc, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.order import Order, OrderDetail
@@ -108,6 +108,26 @@ class OrderRepository:
             query = query.where(Order.created_at >= start_date)
         if end_date:
             query = query.where(Order.created_at <= end_date)
+        query = query.order_by(desc(Order.created_at))
+        return list(self.db.execute(query).scalars().all())
+
+    def list_customer_orders(
+        self,
+        start_date=None,
+        end_date=None,
+        state=None,
+        states=None,
+    ) -> list[Order]:
+        """Pedidos con cliente (excluye pedidos para stock) filtrados por fecha/estado."""
+        query = select(Order).where(Order.customer_id.is_not(None))
+        if start_date:
+            query = query.where(Order.created_at >= start_date)
+        if end_date:
+            query = query.where(Order.created_at <= end_date)
+        if state:
+            query = query.where(cast(Order.state, String) == state)
+        if states:
+            query = query.where(Order.state.in_(states))
         query = query.order_by(desc(Order.created_at))
         return list(self.db.execute(query).scalars().all())
 

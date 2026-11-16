@@ -252,8 +252,9 @@ def share_incidence(
 ) -> ShareIncidenceResponse:
     """Comparte una incidencia con el cliente:"""
     from app.models.report_share import ReportShare
-    from app.models.order import Order
+    from app.repositories.order_repository import OrderRepository
     from app.repositories.report_share_repository import ReportShareRepository
+    from app.repositories.user_repository import UserRepository
     from app.utils.email import send_incidence_shared_email
 
     _ensure_admin_or_jefe(current_user)
@@ -271,13 +272,13 @@ def share_incidence(
     # Resolver cliente destino
     client: User | None = None
     if data.target_client_id is not None:
-        client = db.get(User, data.target_client_id)
+        client = UserRepository(db).get_by_id(data.target_client_id)
         if not client or client.deleted_at is not None:
             raise HTTPException(status_code=404, detail="Cliente no encontrado")
     elif incident.order_id:
-        order = db.get(Order, incident.order_id)
+        order = OrderRepository(db).get_by_id(incident.order_id)
         if order is not None:
-            client = db.get(User, order.customer_id)
+            client = UserRepository(db).get_by_id(order.customer_id)
 
     shared_internally = False
     email_sent = False

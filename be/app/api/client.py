@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import select, desc
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -22,6 +21,7 @@ from app.repositories.order_detail_repository import OrderDetailRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.pending_incidence_repository import PendingProductIncidenceRepository
 from app.repositories.product_repository import ProductRepository
+from app.repositories.report_share_repository import ReportShareRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.client import (
     ClientOrderResponse,
@@ -508,21 +508,7 @@ def list_shared_incidences(
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientSharedIncidenceListResponse:
     """Incidencias que el jefe compartió con este cliente (report_shares type='incidence')."""
-    from app.models.report_share import ReportShare
-
-    rows = (
-        db.execute(
-            select(ReportShare)
-            .where(
-                ReportShare.target_user_id == current_user.id,
-                ReportShare.report_type == "incidence",
-                ReportShare.deleted_at.is_(None),
-            )
-            .order_by(desc(ReportShare.created_at))
-        )
-        .scalars()
-        .all()
-    )
+    rows = ReportShareRepository(db).list_by_target_user(current_user.id, "incidence")
 
     params: dict
     items: list[ClientSharedIncidenceResponse] = []
