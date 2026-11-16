@@ -8,7 +8,7 @@ import string
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -104,12 +104,14 @@ def _generate_temporary_password(length: int = 12) -> str:
     summary="Listar usuarios pendientes de validación",
 )
 def get_pending_users(
+    limit: int = Query(100, ge=1, le=500, description="Máximo de resultados"),
+    offset: int = Query(0, ge=0, description="Resultados a omitir"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
     """Obtiene usuarios pendientes de validación (admin o jefe)."""
     _require_admin_or_jefe(current_user)
-    pending_users = UserRepository(db).list_pending_validation()
+    pending_users = UserRepository(db).list_pending_validation(offset=offset, limit=limit)
     return [_build_user_response(u) for u in pending_users]
 
 
@@ -221,12 +223,17 @@ def force_password_change(
 )
 def get_all_users(
     role: str | None = None,
+    limit: int = Query(100, ge=1, le=500, description="Máximo de resultados"),
+    offset: int = Query(0, ge=0, description="Resultados a omitir"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
     """Lista todos los usuarios. Filtro opcional por rol. Solo admin y jefe."""
     _require_admin_or_jefe(current_user)
-    return [_build_user_response(u) for u in UserRepository(db).list_active(role)]
+    return [
+        _build_user_response(u)
+        for u in UserRepository(db).list_active(role, offset=offset, limit=limit)
+    ]
 
 
 @router.get(

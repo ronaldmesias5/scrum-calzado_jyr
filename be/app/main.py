@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -285,35 +285,3 @@ def health_check() -> JSONResponse:
     )
 
 
-# ────────────────────────────
-# 📍 Endpoint para servir imágenes (con CORS explícito)
-# ────────────────────────────
-
-from fastapi.responses import FileResponse
-
-
-@app.get(
-    "/api/v1/uploads/{file_path:path}",
-    tags=["uploads"],
-    summary="Servir imagen con CORS",
-    include_in_schema=False,
-)
-async def serve_image(file_path: str):
-    """Sirve una imagen desde el directorio de uploads con CORS explícito."""
-    file_location = _uploads_path / file_path
-
-    # Seguridad: prevenir path traversal
-    if not file_location.resolve().is_relative_to(_uploads_path.resolve()):
-        raise HTTPException(status_code=403, detail="Acceso denegado")
-
-    if not file_location.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-
-    return FileResponse(
-        path=file_location,
-        headers={
-            "Cache-Control": "public, max-age=86400",
-            "Content-Disposition": "inline",
-            "Access-Control-Allow-Origin": settings.FRONTEND_URL,
-        },
-    )
