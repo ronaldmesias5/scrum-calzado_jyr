@@ -89,7 +89,7 @@ src/
 │   └── utils/         # Utilidades específicas
 ├── components/atoms/  # Componentes UI reutilizables (Modal, Button, PageTransition, etc.)
 ├── api/               # Configuración Axios (interceptors, base URL)
-├── hooks/             # Custom hooks (useModalDialog, etc.)
+├── hooks/             # Custom hooks (useAuth, useChat, useNotificationWebSocket, etc.)
 ├── context/           # Contextos globales (AuthContext)
 ├── locales/           # Archivos i18n (es, en)
 ├── config/            # Configuración del frontend

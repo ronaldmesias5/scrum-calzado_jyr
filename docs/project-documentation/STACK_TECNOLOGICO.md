@@ -113,11 +113,11 @@ fe/src/
 │   └── landing/            # Landing pública + catálogo: components/{atoms,molecules,organisms}, config/
 ├── pages/                  # Páginas enrutables
 │   ├── admin/              # 14 páginas del panel admin
-│   ├── auth/               # 7 páginas (login, register, password reset…)
+│   ├── auth/               # 5 páginas (reset, verify-email, reactivación, cambio de contraseña…)
 │   ├── client/             # 3 páginas (Dashboard, Orders, WholesaleCatalog)
 │   ├── employee/           # 6 páginas (Dashboard, Tasks, Incidences, Reports, Settings…)
 │   └── public/             # 2 páginas (Landing, Reactivation)
-├── hooks/                  # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
+├── hooks/                  # Hooks reutilizables (useAuth, useChat, useHeaderAnimation, useNotificationWebSocket)
 ├── services/               # Servicios de API globales (adminApi, authService, ordersApi, employeeApi…)
 ├── store/                  # Contextos globales (Auth, Theme, Toast, BadgeCounts…)
 ├── types/                  # Tipos TypeScript compartidos
@@ -148,7 +148,7 @@ En lugar de tener todos los componentes mezclados en una sola carpeta, organizam
 | **Funcionalidades específicas** | `features/<feature>/components/` — clasificados en `atoms/`, `molecules/` y `organisms/` |
 | **Páginas** | `pages/<dominio>/` — OrdersPage, TasksPage, ReportsPage… (admin, auth, client, employee, public) |
 | **Servicios** | `services/` — llamadas HTTP globales (adminApi, authService, ordersApi, employeeApi, clientApi…) |
-| **Hooks** | `hooks/` — useAuth, useModalDialog, useNotificationWebSocket… |
+| **Hooks** | `hooks/` — useAuth, useChat, useHeaderAnimation, useNotificationWebSocket |
 | **Tipos** | `types/` — auth, orders, products, tasks… |
 | **Utilidades** | `utils/` globales + `features/<feature>/utils/` — format, routing, reportsUtils… |
 | **Store** | `store/` — AuthContext, ThemeContext, ToastContext, BadgeCountsContext… |
@@ -222,7 +222,6 @@ be/
 ├── scripts/                  # create_admin.py, heal_line_groups.py
 ├── tests/                    # Pruebas con pytest
 ├── pyproject.toml            # Dependencias (uv)
-├── entrypoint.sh             # Ejecuta migraciones y lanza uvicorn
 └── Dockerfile
 ```
 

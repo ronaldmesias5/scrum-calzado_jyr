@@ -166,10 +166,8 @@ fe/src/
 │   │   │   ├── atoms/    # StatCard, StatusBadgeComponent
 │   │   │   ├── molecules/  # SummarySizer, TaskCard, CreateUserForm, modales (DeleteConfirmModal,
 │   │   │   │              #   StatusConfirmModal, ImageViewerModal, AdjustInventoryModal,
-│   │   │   │              #   AdjustManufacturedModal, ContactClientModal, EditProductModal,
-│   │   │   │              #   LossFormModal, ProductCreateModal, ProductEditModal,
-│   │   │   │              #   ViewManufacturedModal, BrandFormModal, InventoryFormModal,
-│   │   │   │              #   ProductFormModal, StyleFormModal)
+│   │   │   │              #   ContactClientModal, LossFormModal, ProductCreateModal,
+│   │   │   │              #   ProductEditModal, ViewManufacturedModal)
 │   │   │   └── organisms/  # OrderFormModal, home/ (AlertsPanel, AvailableTasksPanel…), layout/ (AdminHeader,
 │   │   │                  #   AdminLayout, AdminSidebar, NotificationsPanel)
 │   │   └── utils/        # reportsUtils.ts, catalogPdfUtils.ts (export PDF catálogo)
@@ -186,11 +184,11 @@ fe/src/
 │       └── config/      # whatsappConfig.ts
 ├── pages/                # Páginas enrutables
 │   ├── admin/            # 16 páginas del panel admin
-│   ├── auth/             # 8 páginas (login, register, password reset…)
+│   ├── auth/             # 5 páginas (reset, verify-email, reactivación, cambio de contraseña…)
 │   ├── client/           # 6 páginas (DashboardPage, OrdersPage, WholesaleCatalogPage, ReportsPage, SettingsPage, MisIncidenciasPage)
 │   ├── employee/         # 6 páginas (Dashboard, Tasks, AvailableTasks, Incidences, Reports, Settings)
 │   └── public/           # 2 páginas (LandingPage, CatalogPage)
-├── hooks/                # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
+├── hooks/                # Hooks reutilizables (useAuth, useChat, useHeaderAnimation, useNotificationWebSocket)
 ├── services/             # Servicios de API globales (adminApi, authService, ordersApi, employeeApi, clientApi…)
 ├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts, EmployeeBadgeCounts)
 ├── types/                # Tipos TypeScript compartidos (auth, orders, products, tasks…)
@@ -254,7 +252,7 @@ fe/src/
 - Usa `createPortal`, `role="dialog"`, `aria-modal="true"`, focus trap, Escape handler
 - Variantes de tamaño: `sm`, `md`, `lg`, `xl`, `full`
 - Variantes de color: `default`, `danger`
-- **NUNCA** crear un modal manualmente — usar `<Modal>` + `useModalDialog` hook
+- **NUNCA** crear un modal manualmente — usar `<Modal>` + estado `useState`
 
 ### PageTransition (`fe/src/components/atoms/PageTransition.tsx`)
 - Envuelve `<Outlet />` en `AdminLayout.tsx`
@@ -262,10 +260,10 @@ fe/src/
 - Usa `key={location.pathname}` para re-triggerear animación
 - **TODAS** las páginas del dashboard heredan esta animación automáticamente
 
-### useModalDialog hook
+### Modal abierto con `useState`
 ```typescript
-const { isOpen, open, close } = useModalDialog();
-// Usar con <Modal isOpen={isOpen} onClose={close}>...</Modal>
+const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+// Usar con <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>...</Modal>
 ```
 
 ---

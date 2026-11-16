@@ -204,14 +204,14 @@ scrum/
 │   │   │   ├── employee/        # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
 │   │   │   └── landing/         # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
 │   │   │
-│   │   ├── pages/               # Páginas enrutables: admin(16), auth(8), client(6), employee(6), public(2)
+│   │   ├── pages/               # Páginas enrutables: admin(16), auth(5), client(6), employee(6), public(2)
 │   │   │   ├── admin/           # DashboardPage, OrdersPage, CalendarPage, CategoriesPage, ClientPricesPage, ReportsPage, …
-│   │   │   ├── auth/            # LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, …
+│   │   │   ├── auth/            # ResetPasswordPage, VerifyEmailPage, ReactivationPage, ChangePasswordPage, DashboardPage
 │   │   │   ├── client/          # DashboardPage, OrdersPage, WholesaleCatalogPage, MisIncidenciasPage, ReportsPage, SettingsPage
 │   │   │   ├── employee/        # DashboardPage, TasksPage, AvailableTasksPage, IncidencesPage, ReportsPage, SettingsPage
 │   │   │   └── public/          # LandingPage, CatalogPage
 │   │   │
-│   │   ├── hooks/               # Hooks reutilizables (useAuth, useModalDialog, useHeaderAnimation, useNotificationWebSocket…)
+│   │   ├── hooks/               # Hooks reutilizables (useAuth, useChat, useHeaderAnimation, useNotificationWebSocket)
 │   │   │
 │   │   ├── services/            # Servicios de API globales
 │   │   │   ├── axios.ts         # Cliente Axios + interceptores (JWT)
@@ -340,7 +340,7 @@ El frontend tiene **6 features**:
 - Variantes de tamaño: `sm`, `md`, `lg`, `xl`, `full`
 - Variantes de color: `default`, `danger`
 
-**Nunca crear un modal manualmente** — usar `<Modal>` + hook `useModalDialog`.
+**Nunca crear un modal manualmente** — usar `<Modal>` + estado `useState`.
 
 ### 2. PageTransition para animación automática de rutas
 
@@ -349,11 +349,11 @@ El frontend tiene **6 features**:
 - Usa `key={location.pathname}` para re-triggerear animación
 - **TODAS** las páginas del dashboard heredan esta animación automáticamente
 
-### 3. useModalDialog hook
+### 3. Apertura de modales con `useState`
 
 ```typescript
-const { isOpen, open, close } = useModalDialog();
-// Usar con <Modal isOpen={isOpen} onClose={close}>...</Modal>
+const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+// Usar con <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>...</Modal>
 ```
 
 ### 4. Patrón line_group para productos duplicados en pedidos

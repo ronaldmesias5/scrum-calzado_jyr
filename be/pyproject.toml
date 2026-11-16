@@ -43,7 +43,6 @@ dependencies = [
     "openai>=1.0.0",
     "groq>=0.11.0",
     "google-generativeai>=0.8.0",
-    "tiktoken>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -56,6 +55,11 @@ dev = [
     
     # 🔍 Linting y formateo
     "ruff>=0.8.0",
+]
+
+test-ui = [
+    # 🕸️ Usado por los scripts de test/selenium/ (no entra en pytest ni en producción)
+    "selenium>=4.20.0",
 ]
 
 [tool.ruff]
