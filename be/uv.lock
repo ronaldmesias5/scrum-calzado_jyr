@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -146,7 +146,7 @@ requires-dist = [
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3.0" },
     { name = "python-multipart", specifier = ">=0.0.18" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
-    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0,<2.1" },
     { name = "tiktoken", specifier = ">=0.7.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
 ]
