@@ -22,18 +22,18 @@ El administrador/jefe puede gestionar el catálogo completo de productos: crear,
 
 ### Implementación Backend
 
-**Archivo principal:** `be/app/routers/catalog_products.py` (~467-864 líneas)
+**Archivo principal:** `be/app/api/catalog_products.py` (~467-864 líneas)
 
 Este archivo concentra toda la lógica de catálogo en un solo lugar (actualmente ~1365 líneas totales, considerado un "god file" que mezcla CRUD de productos, brands, inventario y lógica de producción).
 
 | Archivo | Rol |
 |---------|-----|
-| `be/app/routers/catalog_products.py` | CRUD completo de productos, marcas, categorías, estilos. Endpoints de administración del catálogo. |
-| `be/app/routers/catalog.py` | Rutas públicas de catálogo (GET /catalog/products, GET /catalog/products/{reference}) |
+| `be/app/api/catalog_products.py` | CRUD completo de productos, marcas, categorías, estilos. Endpoints de administración del catálogo. |
+| `be/app/api/catalog.py` | Rutas públicas de catálogo (GET /catalog/products, GET /catalog/products/{reference}) |
 | `be/app/models/product.py` | Modelo `Product` con campos: `id`, `reference` (unique), `name`, `description`, `id_brand` (FK), `id_category` (FK), `id_style` (FK), `material`, `image_url`, `additional_images` (JSON), `is_active`, `deleted_at`, `created_at`, `updated_at` |
 | `be/app/models/inventory.py` | Modelo `Inventory`: `id`, `product_id` (FK), `size`, `colour`, `amount`, `reserved`, `created_at`, `updated_at`. **Problema conocido**: sin unique constraint en `(product_id, size, colour)`, permitiendo duplicados. |
 | `be/app/schemas/catalog_admin.py` | Schemas de producto: `ProductCreate`, `ProductUpdate`, `ProductResponse`, `InventoryItemCreate`, `InventoryItemResponse` |
-| `be/app/routers/catalog_products.py` | `catalog_service.py` — lógica de negocio para creación/actualización de productos con validaciones |
+| `be/app/api/catalog_products.py` | `catalog_service.py` — lógica de negocio para creación/actualización de productos con validaciones |
 
 ### Endpoints de Administración
 | Método | Ruta | Líneas (aprox) | Descripción |
@@ -54,9 +54,9 @@ Este archivo concentra toda la lógica de catálogo en un solo lugar (actualment
 ### Endpoints Públicos
 | Método | Ruta | Archivo | Descripción |
 |--------|------|---------|-------------|
-| GET | `/api/v1/catalog/products` | `be/app/routers/catalog.py` | Lista productos activos para clientes. Filtros por categoría, marca, estilo. |
-| GET | `/api/v1/catalog/products/{reference}` | `be/app/routers/catalog.py` | Detalle de producto por referencia (público) |
-| GET | `/api/v1/catalog/categories` | `be/app/routers/catalog.py` | Lista categorías (público) |
+| GET | `/api/v1/catalog/products` | `be/app/api/catalog.py` | Lista productos activos para clientes. Filtros por categoría, marca, estilo. |
+| GET | `/api/v1/catalog/products/{reference}` | `be/app/api/catalog.py` | Detalle de producto por referencia (público) |
+| GET | `/api/v1/catalog/categories` | `be/app/api/catalog.py` | Lista categorías (público) |
 
 ### Inventario
 El inventario se gestiona dentro del producto: cada producto tiene múltiples registros de inventario (talla + color + cantidad). Los endpoints de producto incluyen manejo de inventario anidado.
@@ -82,7 +82,7 @@ El catálogo se siembra automáticamente al iniciar el backend con **65 producto
 ### Lo que SÍ está implementado
 - **Modelo `Category`** en `be/app/models/category.py`: `id`, `name`, `description`, `is_active`, `deleted_at`
 - **Endpoint público**: `GET /api/v1/catalog/categories` — lista categorías activas (consumido por el catálogo público y filtros)
-- **CRUD Admin** en `be/app/routers/catalog_categories.py` (registrado en `main.py`):
+- **CRUD Admin** en `be/app/api/catalog_categories.py` (registrado en `main.py`):
   | Método | Ruta | Estado |
   |--------|------|--------|
   | `GET` | `/api/v1/admin/categories` | ✅ IMPLEMENTADO |
@@ -107,8 +107,8 @@ HU-007 es parcialmente dependiente de HU-006 porque las categorías son un atrib
 ## Cambios Técnicos
 
 - **Nuevos modelos**: `Product`, `Inventory`, `Category`, `Brand`, `Style` con sus migraciones Alembic
-- **Catálogo público**: Módulo `be/app/routers/catalog.py` con router público
-- **Catálogo admin**: Endpoints en `be/app/routers/catalog_products.py`
+- **Catálogo público**: Módulo `be/app/api/catalog.py` con router público
+- **Catálogo admin**: Endpoints en `be/app/api/catalog_products.py`
 - **Upload de imágenes**: Almacenamiento en `/uploads/` con serving estático
 - **Seed data**: 65 productos, 7 categorías, marcas y estilos precargados
 - **Frontend**: `CatalogPage.tsx` con tabla, filtros, búsqueda, modal de creación/edición

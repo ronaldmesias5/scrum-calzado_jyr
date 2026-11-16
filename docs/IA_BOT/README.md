@@ -39,7 +39,7 @@ Usuario (web/mobile)
 | **BD** | `pgvector/pgvector:pg17` | Extensión `vector`, tabla `ai_embeddings(id uuid, content text, embedding vector(768), metadata jsonb, created_at)`, índice HNSW `vector_cosine_ops`, migración `048` |
 | **Embeddings** | Hash SHA256 determinístico 768 dims | `$0`, sin API, normalizado L2. Reemplazable por `nomic-embed-text` vía Ollama sin cambiar interfaz |
 | **LLM** | Groq `openai/gpt-oss-20b` | Vía `openai` SDK `base_url=https://api.groq.com/openai/v1`, 14.400 req/día gratis. Fallback mock si `AI_API_KEY` vacío. Alternativas: `gemini`, `ollama`, `openai` vía `AI_PROVIDER` |
-| **Backend** | FastAPI | `be/app/schemas/ai.py` (500 chars, anti injection, 10/min), `be/app/services/ai_service.py`, `be/app/services/ai_tools.py`, `be/app/routers/ai_chat.py`, `be/app/services/prompts/system_prompt.txt` |
+| **Backend** | FastAPI | `be/app/schemas/ai.py` (500 chars, anti injection, 10/min), `be/app/services/ai_service.py`, `be/app/services/ai_tools.py`, `be/app/api/ai_chat.py`, `be/app/services/prompts/system_prompt.txt` |
 | **Frontend** | React 19 | `fe/src/features/ai/components/organisms/ChatWidget.tsx` (FAB + panel 380×500, tooltip, badge IA/1, label ayuda, position left/right), `fe/src/services/aiApi.ts`, `fe/src/hooks/useChat.ts` |
 | **Mobile** | Expo | `mobile/components/ChatWidget.tsx` + `mobile/services/aiApi.ts` (apiClient + SecureStore) |
 | **Infra** | Docker Compose | `pgvector/pgvector:pg17` en `docker-compose.yml` + `docker-compose.prod.yml`, `pgvector/pgvector:pg16` en CI, `ollama` opcional con `--profile ollama`, `docker-compose.yml` monta `./docs:/app/docs:ro` para que el seed lea `knowledge.md` |
@@ -115,7 +115,7 @@ docker compose exec be uv run pytest -q # 54 passed
 
 ### Archivos clave
 
-- **Backend:** `be/app/schemas/ai.py`, `be/app/services/ai_service.py`, `be/app/services/ai_tools.py`, `be/app/routers/ai_chat.py`, `be/app/services/prompts/system_prompt.txt`, `be/scripts/seed_ai_embeddings.py`, `be/app/models/ai_embedding.py`, `be/alembic/versions/048*`, `be/app/config.py` (`AI_*`), `be/app/middleware/csrf.py`, `be/app/logging_config.py` (`ai.log`)
+- **Backend:** `be/app/schemas/ai.py`, `be/app/services/ai_service.py`, `be/app/services/ai_tools.py`, `be/app/api/ai_chat.py`, `be/app/services/prompts/system_prompt.txt`, `be/scripts/seed_ai_embeddings.py`, `be/app/models/ai_embedding.py`, `be/alembic/versions/048*`, `be/app/config.py` (`AI_*`), `be/app/middleware/csrf.py`, `be/app/logging_config.py` (`ai.log`)
 - **Frontend:** `fe/src/features/ai/components/organisms/ChatWidget.tsx`, `fe/src/services/aiApi.ts`, `fe/src/hooks/useChat.ts`, `fe/src/pages/public/LandingPage.tsx`, `fe/src/features/admin|client|employee/components/organisms/*Layout.tsx`, `fe/src/components/layout/AppLayout.tsx`
 - **Mobile:** `mobile/components/ChatWidget.tsx`, `mobile/services/aiApi.ts`
 - **Infra:** `docker-compose.yml` + `docker-compose.prod.yml` (`pgvector/pgvector:pg17`, `ollama` profile), `.github/workflows/ci.yml` (`pgvector/pgvector:pg16`), `db/init/init.sql` (`CREATE EXTENSION vector`), `.env.example` (`AI_*`)

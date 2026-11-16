@@ -1,4 +1,4 @@
-"""Tests de gestión de usuarios por admin/jefe (routers/admin.py)."""
+"""Tests de gestión de usuarios por admin/jefe (api/admin.py)."""
 
 import uuid
 from datetime import datetime, timezone

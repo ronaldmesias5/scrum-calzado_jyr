@@ -127,7 +127,7 @@ scrum/
 │   │   │   ├── reactivation_ticket.py, report_share.py, ai_embedding.py
 │   │   │   └── ...
 │   │   │
-│   │   ├── routers/             # 25 routers FastAPI (endpoint definitions)
+│   │   ├── api/             # 25 routers FastAPI (endpoint definitions)
 │   │   │   ├── auth.py          # Autenticación JWT
 │   │   │   ├── admin.py         # Catálogo admin + reportes + usuarios
 │   │   │   ├── catalog*.py      # Catálogo público (5 routers)
@@ -145,7 +145,7 @@ scrum/
 │   │   │   ├── bulk_import.py   # Importación masiva CSV
 │   │   │   └── ai_chat.py       # Chatbot IA (Águila J&R)
 │   │   │
-│   │   ├── controllers/         # 7 controllers (business logic delegation)
+│   │   ├── repositories/        # 19 repositorios (acceso a datos)
 │   │   ├── services/            # 10 services (domain logic)
 │   │   ├── schemas/             # 15 esquemas Pydantic (request/response)
 │   │   │
@@ -273,7 +273,7 @@ scrum/
 
 ### Backend (Capas por funcionalidad)
 
-El backend tiene **25 routers** organizados por funcionalidad. La estructura usa capas (routers → controllers → services):
+El backend tiene **25 routers** organizados por funcionalidad. La estructura usa capas (api → services → repositories):
 
 | Router | Ruta base | Propósito |
 |--------|----------|-----------|
@@ -306,11 +306,12 @@ El backend tiene **25 routers** organizados por funcionalidad. La estructura usa
 **Patrón por capa:**
 ```
 be/app/{capa}/
-├── {nombre}.py       # Endpoints FastAPI (routers) o lógica de negocio (services)
-└── service.py      # Lógica de negocio (opcional, algunos inyectan directo)
+├── api/              # Endpoints FastAPI (routers)
+├── services/         # Lógica de negocio
+└── repositories/     # Acceso a datos (queries SQLAlchemy)
 ```
 
-Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `controllers/` (7), `services/` (10) y `schemas/` (15).
+Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `services/` (10) y el acceso a datos en `repositories/` (19); los contratos Pydantic en `schemas/` (15).
 
 ### Frontend (Features)
 

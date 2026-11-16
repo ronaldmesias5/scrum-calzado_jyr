@@ -58,7 +58,7 @@ scrum-calzado_jyr/
 | **PostgreSQL + pgvector** | BD relacional + embeddings para el chatbot IA |
 | **JWT (access + refresh)** | Autenticación con logout global (versionado de sesiones) |
 
-Arquitectura en capas: `routers/ → controllers/ → services/ → models/`, con middleware de rate limiting, manejo centralizado de errores, security headers y CSRF.
+Arquitectura en capas: `api/ → services/ → repositories/ → models/`, con middleware de rate limiting, manejo centralizado de errores, security headers y CSRF.
 
 ### ⚛️ Frontend — `fe/`
 

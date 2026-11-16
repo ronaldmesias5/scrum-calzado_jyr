@@ -33,7 +33,7 @@ Registro de pérdidas de calzado por defectos de fabricación con códigos de de
    - `register_incident()`: descuenta del inventario al registrar
    - `repair_incident()`, `approve_loss()`, `reject_loss()` para máquina de estados
    - `get_scrap_stock()` para consultar stock de scrap
-3. Implementar `be/app/routers/scrap.py` con 9 endpoints REST (ver cambios técnicos)
+3. Implementar `be/app/api/scrap.py` con 9 endpoints REST (ver cambios técnicos)
 4. Crear frontend `LossesPage.tsx` con tabla de pérdidas y acciones de aprobar/rechazar
 5. Integrar filtros por tipo de incidente, producto y rango de fechas
 
@@ -61,7 +61,7 @@ Máquina de estados para reparar calzado defectuoso y reincorporarlo al inventar
 
 ## Cambios Técnicos
 
-### Endpoints creados (`be/app/routers/scrap.py`, 228 líneas total)
+### Endpoints creados (`be/app/api/scrap.py`, 228 líneas total)
 
 | Endpoint | Líneas | Descripción |
 |----------|--------|-------------|
@@ -79,8 +79,8 @@ Máquina de estados para reparar calzado defectuoso y reincorporarlo al inventar
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/routers/scrap.py` | Router principal del módulo scrap |
-| `be/app/routers/scrap.py` | 9 endpoints REST |
+| `be/app/api/scrap.py` | Router principal del módulo scrap |
+| `be/app/api/scrap.py` | 9 endpoints REST |
 | `be/app/services/scrap.py` | Lógica de negocio: registro, reparación, aprobación, rechazo |
 | `be/app/schemas/scrap.py` | Schemas: DefectCode, Incident, RepairRequest, ScrapStock |
 | `be/app/models/scrap.py` | Modelos: `Scrap`, `DefectCode` |

@@ -58,7 +58,7 @@ def get_products(
 
 ### Archivos Clave Modificados
 
-- `be/app/routers/catalog.py` — Endpoint GET /products con parámetros de filtro (líneas 237-293)
+- `be/app/api/catalog.py` — Endpoint GET /products con parámetros de filtro (líneas 237-293)
 
 ## HU-016: Gestión de Inventario
 
@@ -87,7 +87,7 @@ def get_products(
 
 ### Archivos Clave Modificados
 
-- `be/app/routers/catalog_inventory.py` — Endpoints CRUD inventario (líneas 871-1347)
+- `be/app/api/catalog_inventory.py` — Endpoints CRUD inventario (líneas 871-1347)
 - `be/app/schemas/catalog_admin.py` — Schemas: `InventoryCreateRequest`, `InventoryResponse`, `BulkInventoryUpdateRequest`, `InventoryMovementCreateRequest`
 - `be/app/models/inventory.py` — Modelo `Inventory` con campos `amount`, `reserved`, `minimum_stock`, `size`, `colour`
 - `be/app/models/inventory_movement.py` — Modelo `InventoryMovement` con `type_of_movement` (entrada/salida)

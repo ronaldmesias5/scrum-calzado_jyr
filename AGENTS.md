@@ -131,8 +131,8 @@ Un solo `.env` en la raíz. Copiar de `.env.example`. No existen `.env` en `be/`
 ### Backend — capas por funcionalidad
 ```
 be/app/
-├── routers/           # 25 routers FastAPI (22 registrados en main.py)
-├── controllers/       # 7 controllers (business logic delegation)
+├── api/               # 25 routers FastAPI (22 registrados en main.py)
+├── repositories/      # 19 repositorios (acceso a datos)
 ├── services/          # 10 services (domain logic)
 ├── models/            # 26 modelos SQLAlchemy (30 tablas)
 ├── schemas/           # 15 esquemas Pydantic (request/response)
@@ -143,7 +143,7 @@ be/app/
 ```
 - Modelos centralizados en `be/app/models/` (26 modelos, 30 tablas) — no dentro de cada módulo.
 - Routers nuevos sin registrar en docs anteriores: `client_prices.py`, `catalog_categories.py`, `bulk_import.py`, `ai_chat.py`.
-- No existe directorio `be/app/modules/` — la estructura es por capa (routers/, controllers/, services/).
+- No existe `be/app/modules/` ni `be/app/controllers/` — la estructura es por capa: `api/` (endpoints) → `services/` (lógica de negocio) → `repositories/` (acceso a datos) → `models/`.
 
 ### Frontend — import alias `@`
 ```typescript
