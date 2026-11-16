@@ -108,7 +108,7 @@ pnpm lint                         # expo lint
 - Las migraciones de Alembic se ejecutan **automáticamente al iniciar el backend** (`be/app/init_db.py`), tanto en Docker como local.
 - Los datos semilla también se insertan automáticamente (roles, tipos de documento, catálogo con 65 productos, usuarios de prueba).
 - **Nunca ejecutes `alembic upgrade head` manualmente** a menos que estés depurando algo muy específico.
-- Hay 50 migraciones en `be/alembic/versions/` (001–049, con 043 duplicado intencionalmente: `email_verification_tokens` y `task_priority_remove_media`). Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
+- Hay 51 migraciones en `be/alembic/versions/` (001–050, con 043 duplicado intencionalmente: `email_verification_tokens` y `task_priority_remove_media`). Al crear una nueva, el hook `ruff check --fix` se dispara automáticamente.
 
 ### Usuario admin de prueba
 ```
@@ -135,7 +135,7 @@ be/app/
 ├── repositories/      # 19 repositorios (acceso a datos)
 ├── services/          # 10 services (domain logic)
 ├── models/            # 26 modelos SQLAlchemy (30 tablas)
-├── schemas/           # 15 esquemas Pydantic (request/response)
+├── schemas/           # 16 esquemas Pydantic (request/response)
 ├── middleware/        # Rate limiting, error handling, security headers
 ├── utils/             # Email, seguridad, crypto
 ├── init_db.py         # Auto-migraciones + seed al arrancar

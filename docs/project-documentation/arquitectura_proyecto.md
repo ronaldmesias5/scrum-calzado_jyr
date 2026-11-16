@@ -36,7 +36,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Python** | 3.12-slim | Runtime principal del servidor |
 | **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
 | **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
-| **Alembic** | 1.14.0 | Sistema de migraciones de BD (50 migraciones) |
+| **Alembic** | 1.14.0 | Sistema de migraciones de BD (51 migraciones) |
 | **Pydantic** | 2.0+ | Validación y serialización de datos |
 | **PyJWT (python-jose)** | 3.3+ | Creación y validación de JWT tokens |
 | **bcrypt / passlib** | 4.0+ | Hash criptográfico de contraseñas |
@@ -147,7 +147,7 @@ scrum/
 │   │   │
 │   │   ├── repositories/        # 19 repositorios (acceso a datos)
 │   │   ├── services/            # 10 services (domain logic)
-│   │   ├── schemas/             # 15 esquemas Pydantic (request/response)
+│   │   ├── schemas/             # 16 esquemas Pydantic (request/response)
 │   │   │
 │   │   ├── utils/              # Utilidades compartidas
 │   │   │
@@ -157,7 +157,7 @@ scrum/
 │   │   ├── init_db.py          # Auto-migraciones + seed al arrancar
 │   │   └── main.py             # Punto de entrada FastAPI
 │   │
-│   ├── alembic/versions/       # 50 migraciones progresivas (001–049, 043 duplicado)
+│   ├── alembic/versions/       # 51 migraciones progresivas (001–049, 043 duplicado)
 │   ├── scripts/                # Utilidades standalone (7)
 │   │   ├── create_admin.py     # Crear admin fuera de API
 │   │   ├── heal_line_groups.py # Reparar line_group duplicados
@@ -311,7 +311,7 @@ be/app/{capa}/
 └── repositories/     # Acceso a datos (queries SQLAlchemy)
 ```
 
-Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `services/` (10) y el acceso a datos en `repositories/` (19); los contratos Pydantic en `schemas/` (15).
+Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `services/` (10) y el acceso a datos en `repositories/` (19); los contratos Pydantic en `schemas/` (16).
 
 ### Frontend (Features)
 
@@ -390,7 +390,7 @@ Tailwind v4 se configura mediante la directiva `@theme` directamente en `index.c
 ### 7. Auto-migraciones + seed al arrancar
 
 El backend ejecuta automáticamente en `init_db.py`:
-1. Migraciones Alembic pendientes (`alembic upgrade head`) — 50 migraciones
+1. Migraciones Alembic pendientes (`alembic upgrade head`) — 51 migraciones
 2. Datos semilla (roles, tipos documento, catálogo 65 productos, usuarios de prueba)
 
 **No ejecutar `alembic upgrade head` manualmente** a menos que se esté depurando.

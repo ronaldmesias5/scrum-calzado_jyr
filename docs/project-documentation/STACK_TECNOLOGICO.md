@@ -88,7 +88,7 @@ Petición HTTP
 | **Backend** | **API REST** | La comunicación entre clientes y servidor se hace con peticiones HTTP sobre recursos, devolviendo JSON. |
 | **Backend (interna)** | **Arquitectura en capas / MVC** | Separamos Model (modelos ORM), Vista (schemas Pydantic) y Controlador (api + services + repositories). Así la lógica es reutilizable y testeable. |
 | **Frontend** | **Organización por módulo + inspiración Atomic Design** | Los componentes se agrupan por módulo de negocio, con carpetas de estructura y de átomos reutilizables. |
-| **Base de datos** | **Esquema versionado con migraciones (Alembic)** | Las tablas no se crean "a mano" sino mediante **38 migraciones versionadas** que se aplican automáticamente al arrancar el backend. |
+| **Base de datos** | **Esquema versionado con migraciones (Alembic)** | Las tablas no se crean "a mano" sino mediante **51 migraciones versionadas** que se aplican automáticamente al arrancar el backend. |
 
 ---
 
@@ -214,10 +214,10 @@ be/
 │   │   ├── dashboard_empleado_tasks.py  dashboard_empleado_metrics.py
 │   │   ├── dashboard_empleado_incidences.py
 │   │   ├── reports.py  scrap.py  supplies.py  notifications.py
-│   ├── schemas/              # (13) Schemas Pydantic — contrato de entrada/salida (JSON)
+│   ├── schemas/              # (16) Schemas Pydantic — contrato de entrada/salida (JSON)
 │   ├── services/             # (8) Lógica de negocio (auth, orders, scrap, supplies…)
 │   └── utils/                # security.py (JWT/bcrypt), email.py, ws_manager.py
-├── alembic/                  # 38 migraciones de base de datos versionadas
+├── alembic/                  # 51 migraciones de base de datos versionadas
 │   └── versions/
 ├── scripts/                  # create_admin.py, heal_line_groups.py
 ├── tests/                    # Pruebas con pytest
@@ -236,7 +236,7 @@ db/
 ```
 
 > La base de datos es una pieza deliberadamente mínima. El esquema real
-> (más de 20 tablas) no se define aquí sino en las 38 migraciones Alembic del backend,
+> (más de 20 tablas) no se define aquí sino en las 51 migraciones Alembic del backend,
 > que se aplican automáticamente al arrancar el servicio `be`.
 
 ---

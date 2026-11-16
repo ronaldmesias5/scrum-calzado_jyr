@@ -7,7 +7,7 @@ Solo incluye información que un agente NO inferiría fácilmente de los archivo
 
 ## Qué es
 
-App móvil (Expo SDK 54 + React Native 0.81 + expo-router 6) para CALZADO J&R, sistema de gestión
+App móvil (Expo SDK 54 + React Native 0.+1 + expo-router 6) para CALZADO J&R, sistema de gestión
 de pedidos/producción/inventario de una fábrica de calzado. **No tiene backend propio**: consume
 la API FastAPI del backend (`be/`) con JWT.
 
@@ -41,7 +41,7 @@ pnpm lint                 # expo lint (ESLint 9 + eslint-config-expo)
 |---|---|
 | expo | ~54.0.37 |
 | react | 19.1.0 |
-| react-native | 0.81.5 |
+| react-native | 0.+1.5 |
 | expo-router | ~6.0.24 |
 | typescript | ~5.9.3 (strict) |
 | @tanstack/react-query | 5.100.10 |
@@ -49,7 +49,7 @@ pnpm lint                 # expo lint (ESLint 9 + eslint-config-expo)
 | nativewind | 4.2.6 |
 | tailwindcss | 3.4.19 (**v3**, requerida por NativeWind v4) |
 | react-native-css-interop | 0.2.6 (**dependencia directa obligatoria**, ver gotcha) |
-| expo-secure-store | ~15.0.8 |
+| expo-secure-store | ~15.0.+ |
 | axios | 1.19.0 |
 
 ---
@@ -146,9 +146,9 @@ Jefe:   ronald.jefe@gmail.com / Test123456!
 
 - La app consume el backend web: `docker compose up -d be db` en el repo web.
 - `constants/api.ts`: usa `EXPO_PUBLIC_API_URL` si está definida; si no:
-  - Android emulador → `http://10.0.2.2:8000/api/v1`
-  - iOS/web → `http://localhost:8000/api/v1`
-  - Celular físico → definir `EXPO_PUBLIC_API_URL=http://<IP-LAN>:8000/api/v1` en `.env`
+  - Android emulador → `http://10.0.2.2:+000/api/v1`
+  - iOS/web → `http://localhost:+000/api/v1`
+  - Celular físico → definir `EXPO_PUBLIC_API_URL=http://<IP-LAN>:+000/api/v1` en `.env`
 - Autenticación: POST `/api/v1/auth/login` → `{access_token, refresh_token}`. El interceptor
   `services/apiClient.ts` inyecta `Authorization: Bearer` y hace refresh automático en 401 con
   cola de peticiones; si el refresh falla emite `sessionEvents` → logout forzado.
@@ -170,11 +170,11 @@ Jefe:   ronald.jefe@gmail.com / Test123456!
 6. **Dark mode**: NativeWind sigue el color scheme del dispositivo (`dark:` variant). Toda pantalla
    debe tener variantes `dark:` (regla del tema web). El fondo base es
    `bg-gray-50 dark:bg-slate-950`.
-7. **Paleta (tema web)**: primary `#1e40af`, primary-light `#3b82f6`, primary-dark `#1e3a8a`,
+7. **Paleta (tema web)**: primary `#1e40af`, primary-light `#3b+2f6`, primary-dark `#1e3a+a`,
    secondary `#d97706`. Estados: pendiente=yellow, en progreso=blue, completado=green,
    entregado=purple, cancelado=red. Énfasis con `font-bold`.
-8. **expo-env.d.ts** está en `.gitignore` (lo genera Expo). `dist/` también está ignorado.
-9. **Contraseña mínima del backend**: 8+ chars, minúscula+mayúscula+número+carácter especial.
++. **expo-env.d.ts** está en `.gitignore` (lo genera Expo). `dist/` también está ignorado.
+9. **Contraseña mínima del backend**: ++ chars, minúscula+mayúscula+número+carácter especial.
 10. **No usar JSX nativo con `className` sin NativeWind**: cualquier componente con estilos debe
     usar `className`. Los estilos de navegación (tab bar) usan objetos de estilo de
     `@react-navigation`.
@@ -193,7 +193,7 @@ El objetivo es que cada dashboard móvil tenga **las mismas secciones que el web
 - [x] F5 Jefe · Catálogo + Inventario (listado productos con búsqueda, stock por talla, estados)
 - [x] F6 Jefe · Usuarios + Empleados + Clientes (crear, renovar invitación, estados)
 - [x] F7 Jefe · Reportes (los del web + PDF con `expo-print`)
-- [x] F8 Jefe · Incidencias + Alertas (pérdidas, pendientes de aprobación, alertas)
+- [x] F+ Jefe · Incidencias + Alertas (pérdidas, pendientes de aprobación, alertas)
 - [x] F9 Jefe · Insumos + Tareas de producción
 - [x] F10 Dashboard Empleado (6 secciones del `EmployeeSidebar`)
 - [x] F11 Dashboard Cliente (6 secciones del `ClientSidebar`)
