@@ -14,9 +14,22 @@ dist/
 build/
 .eggs/
 
-# Environment
+# Environment (cubre .env.production, .env.development, .env.test, .env.docker…)
 .env
 *.env.local
+.env.*
+!.env.example
+
+# Secrets / credenciales (claves TLS, tokens de registry)
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.crt
+*.csr
+.npmrc
+.netrc
 
 # IDE / config local de agentes (no versionar)
 .vscode/
@@ -33,6 +46,8 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+*.lnk
 
 # Agent/Editor config (opencode)
 .agents/
@@ -41,9 +56,12 @@ Thumbs.db
 opencode.json
 skills-lock.json
 
-# Testing / linting
+# Testing / linting / coverage
 .coverage
 htmlcov/
+coverage/
+*.lcov
+coverage.xml
 .pytest_cache/
 .ruff_cache/
 
@@ -54,14 +72,19 @@ docker-compose.override.yml
 uploads/
 be/uploads/
 
-# Database dumps / backups
+# Database dumps / backups / ficheros locales
 *.dump
 *.bak
 *.orig
 *.old
+*.sqlite
+*.sqlite3
+*.db
 
-# Postman environments (credenciales locales)
+# Postman (credenciales locales)
 test/back/*.postman_environment/
+*.postman_environment.json
+*.postman_environment/
 
 # test/ se SUBE a git (scripts Selenium, SQL y guías son útiles para el equipo)
 !test/
