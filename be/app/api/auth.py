@@ -2,22 +2,25 @@
 # 📄 Router FastAPI con endpoints de autenticación y gestión de contraseñas
 # ════════════════════════════════════════
 
-import asyncio
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
 from app.config import settings
 from app.models.user import User
+from app.models.email_verification_token import EmailVerificationToken
 from app.models.reactivation_ticket import ReactivationTicket
 from app.repositories.email_verification_token_repository import (
     EmailVerificationTokenRepository,
 )
 from app.repositories.reactivation_ticket_repository import ReactivationTicketRepository
 from app.repositories.user_repository import UserRepository
+from app.schemas.validators import EmailNormalizedStr
+from app.utils.email import send_verification_email
 from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
@@ -46,7 +49,7 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo cliente",
 )
-def register(
+async def register(
     user_data: UserCreate,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -55,7 +58,7 @@ def register(
     Si el email ya está registrado no se crea nada ni se revela la existencia:
     se responde el mismo mensaje genérico 201 que en el caso exitoso.
     """
-    asyncio.run(auth_service.register_user(db=db, user_data=user_data))
+    await auth_service.register_user(db=db, user_data=user_data)
     return MessageResponse(
         message=(
             "Si el email estaba disponible, tu cuenta ha sido creada y recibirás "
@@ -190,12 +193,12 @@ def change_password(
     response_model=MessageResponse,
     summary="Solicitar recuperación de contraseña",
 )
-def forgot_password(
+async def forgot_password(
     request_data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     """Solicita un email de recuperación de contraseña."""
-    asyncio.run(auth_service.request_password_reset(db=db, email=request_data.email))
+    await auth_service.request_password_reset(db=db, email=request_data.email)
     return MessageResponse(
         message="Si el email está registrado, recibirás un enlace de recuperación"
     )
@@ -278,12 +281,12 @@ def request_reactivation(
     response_model=MessageResponse,
     summary="Solicitar nueva invitación (contraseña temporal expirada)",
 )
-def request_new_invitation(
+async def request_new_invitation(
     data: RequestNewInvitationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     """Permite a un usuario solicitar una nueva contraseña temporal cuando su"""
-    asyncio.run(auth_service.request_new_invitation(db=db, email=data.email))
+    await auth_service.request_new_invitation(db=db, email=data.email)
     return MessageResponse(
         message="Si tu invitación había expirado, recibirás un nuevo email con tus credenciales."
     )
@@ -327,8 +330,23 @@ def verify_email(
             detail="El token de verificación ha expirado. Solicita uno nuevo.",
         )
 
-    # Marcar token como usado
+    # Activar la cuenta y marcar el token como usado (una sola transacción)
+    user = UserRepository(db).get_by_id(token_record.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token de verificación inválido o no encontrado.",
+        )
+
+    user.is_validated = True
+    user.is_active = True
+    user.validated_at = datetime.now(timezone.utc)
     token_record.used = True
+
+    # Invalida cualquier otro token pendiente del mismo usuario
+    for old_token in EmailVerificationTokenRepository(db).list_unused_by_user(user.id):
+        old_token.used = True
+
     db.commit()
 
     return MessageResponse(
@@ -338,7 +356,7 @@ def verify_email(
 
 class ResendVerificationRequest(BaseModel):
     """Schema para reenviar email de verificación."""
-    email: EmailStr
+    email: EmailNormalizedStr
 
 
 @router.post(
@@ -346,7 +364,7 @@ class ResendVerificationRequest(BaseModel):
     response_model=MessageResponse,
     summary="Reenviar email de verificación",
 )
-def resend_verification(
+async def resend_verification(
     data: ResendVerificationRequest,
     db: Session = Depends(get_db),
 ) -> MessageResponse:
@@ -354,11 +372,6 @@ def resend_verification(
     Reenvía el email de verificación. Por seguridad, siempre responde con
     el mismo mensaje sin revelar si el email existe.
     """
-    import uuid
-    from datetime import timedelta
-    from app.models.email_verification_token import EmailVerificationToken
-    from app.utils.email import send_verification_email
-
     user_repo = UserRepository(db)
     token_repo = EmailVerificationTokenRepository(db)
 
@@ -371,10 +384,8 @@ def resend_verification(
         )
 
     # Invalidar tokens anteriores no usados
-    old_tokens = token_repo.list_unused_by_user(user.id)
-    for old_token in old_tokens:
+    for old_token in token_repo.list_unused_by_user(user.id):
         old_token.used = True
-    db.commit()
 
     # Generar nuevo token
     verification_token = str(uuid.uuid4())
@@ -388,11 +399,11 @@ def resend_verification(
 
     # Enviar email (no bloquea)
     try:
-        asyncio.run(send_verification_email(
+        await send_verification_email(
             email=user.email,
             name=f"{user.name_user} {user.last_name}",
             token=verification_token,
-        ))
+        )
     except Exception:
         # No revelar errores al usuario, pero dejar traza para diagnóstico
         audit_logger.exception("Fallo al enviar email de verificación a %s", user.email)

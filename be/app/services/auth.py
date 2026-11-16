@@ -3,18 +3,24 @@
 # ════════════════════════════════════════
 
 import logging
+import secrets
+import string
 import time
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.logging_config import audit_logger
+from app.models.email_verification_token import EmailVerificationToken
 from app.models.password_reset_token import PasswordResetToken
-from app.models.role import Role
 from app.models.user import User
+from app.repositories.email_verification_token_repository import EmailVerificationTokenRepository
+from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
+from app.repositories.role_repository import RoleRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
     ChangePasswordRequest,
     ResetPasswordRequest,
@@ -22,8 +28,12 @@ from app.schemas.auth import (
     UserCreate,
     UserLogin,
 )
-from app.utils.email import send_password_reset_email, send_welcome_email
-from app.logging_config import audit_logger
+from app.utils.email import (
+    send_password_reset_email,
+    send_verification_email,
+    send_welcome_email,
+)
+from app.utils.normalization import normalize_email
 from app.utils.security import (
     create_access_token,
     create_refresh_token,
@@ -41,7 +51,7 @@ _login_attempts: dict[str, dict] = defaultdict(
 )
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_DURATION_SECONDS = 900  # 15 minutes
-_LOGIN_ATTEMPTS_MAX_KEYS = 10_000
+_LOGIN_ATTEMPTS_MAX_KEYS = 1_000
 
 logger = logging.getLogger(__name__)
 
@@ -62,16 +72,13 @@ def _get_dummy_password_hash() -> str:
 
 def reset_login_attempts(email: str) -> None:
     """Elimina todos los registros de intentos fallidos de un email (en todas las IPs)."""
-    email_lower = email.lower().strip()
-    suffix = f"|{email_lower}"
+    suffix = f"|{normalize_email(email)}"
     for key in [k for k in _login_attempts if k.endswith(suffix)]:
         del _login_attempts[key]
 
 
 def _prune_login_attempts(now: float) -> None:
-    """Purga claves expiradas cuando el tracker supera el límite (fuga de memoria C4)."""
-    if len(_login_attempts) <= _LOGIN_ATTEMPTS_MAX_KEYS:
-        return
+    """Purga intentos expirados y, si aún sobra, los más antiguos (evita fuga de memoria)."""
     expired = [
         key
         for key, info in _login_attempts.items()
@@ -81,12 +88,21 @@ def _prune_login_attempts(now: float) -> None:
     for key in expired:
         del _login_attempts[key]
 
+    if len(_login_attempts) <= _LOGIN_ATTEMPTS_MAX_KEYS:
+        return
+
+    overflow = len(_login_attempts) - _LOGIN_ATTEMPTS_MAX_KEYS
+    oldest = sorted(_login_attempts, key=lambda k: _login_attempts[k]["last_fail"])[:overflow]
+    for key in oldest:
+        del _login_attempts[key]
+
 
 def _redact_email(email: str) -> str:
     """user@example.com -> us***@example.com para privacidad en logs."""
     try:
         parts = email.split("@")
-        if len(parts) != 2: return "invalid-email"
+        if len(parts) != 2:
+            return "invalid-email"
         name, domain = parts
         return f"{name[:2]}***@{domain}"
     except Exception:
@@ -99,23 +115,14 @@ async def register_user(db: Session, user_data: UserCreate) -> User | None:
     Anti-enumeración: si el email ya existe NO lanza error; devuelve `None` para que
     el endpoint responda con el mismo mensaje genérico que en el caso exitoso.
     """
-    import uuid
-    from datetime import timedelta
-    from app.models.email_verification_token import EmailVerificationToken
-    from app.utils.email import send_verification_email
+    user_repo = UserRepository(db)
+    email = normalize_email(user_data.email)
 
-    stmt = select(User).where(User.email == user_data.email)
-    existing_user = db.execute(stmt).scalar_one_or_none()
-
-    if existing_user:
-        audit_logger.info(
-            f"Registro con email ya existente (respuesta genérica): {_redact_email(user_data.email)}"
-        )
+    if user_repo.get_by_email(email):
+        audit_logger.info(f"Registro con email ya existente (respuesta genérica): {_redact_email(email)}")
         return None
 
-    stmt = select(Role).where(Role.name_role == "client")
-    client_role = db.execute(stmt).scalar_one_or_none()
-
+    client_role = RoleRepository(db).get_by_name("client")
     if not client_role:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -123,7 +130,7 @@ async def register_user(db: Session, user_data: UserCreate) -> User | None:
         )
 
     new_user = User(
-        email=user_data.email,
+        email=email,
         name_user=user_data.name,
         last_name=user_data.last_name,
         phone=user_data.phone,
@@ -133,36 +140,37 @@ async def register_user(db: Session, user_data: UserCreate) -> User | None:
         occupation=None,
         hashed_password=hash_password(user_data.password),
         role_id=client_role.id,
-        is_active=True,
-        is_validated=True,
-        validated_at=datetime.now(timezone.utc),
+        is_active=False,
+        is_validated=False,
+        validated_at=None,
         accepted_terms=user_data.accepted_terms,
         terms_accepted_at=datetime.now(timezone.utc) if user_data.accepted_terms else None,
     )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    verification_token = str(uuid.uuid4())
+    user_repo.add(new_user)
+    db.flush()
 
-    # Generar token de verificación de email (expira en 24 horas)
-    try:
-        verification_token = str(uuid.uuid4())
-        token_record = EmailVerificationToken(
+    EmailVerificationTokenRepository(db).add(
+        EmailVerificationToken(
             user_id=new_user.id,
             token=verification_token,
             expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
         )
-        db.add(token_record)
-        db.commit()
+    )
+    db.commit()
+    db.refresh(new_user)
 
-        # Enviar email de verificación (no bloquea el registro)
+    try:
         await send_verification_email(
             email=new_user.email,
             name=f"{new_user.name_user} {new_user.last_name}",
             token=verification_token,
         )
     except Exception as e:
-        audit_logger.warning(f"No se pudo enviar email de verificación a {_redact_email(new_user.email)}: {e}")
+        audit_logger.warning(
+            f"No se pudo enviar email de verificación a {_redact_email(new_user.email)}: {e}"
+        )
 
     return new_user
 
@@ -173,90 +181,98 @@ def login_user(db: Session, login_data: UserLogin, client_ip: str = "unknown") -
     `client_ip` delimita el lockout por origen: 5 fallos desde una IP solo bloquean
     ese par (IP, email), no la cuenta ante cualquier atacante.
     """
-    try:
-        email_lower = login_data.email.lower().strip()
-        attempt_key = f"{client_ip}|{email_lower}"
-        attempt_info = _login_attempts[attempt_key]
-        now = time.time()
+    email = normalize_email(login_data.email)
+    attempt_key = f"{client_ip}|{email}"
+    attempt_info = _login_attempts[attempt_key]
+    now = time.time()
 
-        if attempt_info["locked_until"] > now:
-            remaining = int(attempt_info["locked_until"] - now)
-            minutes = remaining // 60
-            seconds = remaining % 60
-            audit_logger.warning(f"Login bloqueado: {_redact_email(login_data.email)} (cuenta bloqueada, {minutes}m {seconds}s restantes)")
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en {minutes}m {seconds}s.",
-            )
-
-        # Ventana de fallos caducada: reinicia el contador para no arrastrar intentos viejos
-        if attempt_info["count"] > 0 and now - attempt_info["last_fail"] > LOCKOUT_DURATION_SECONDS:
-            attempt_info["count"] = 0
-            attempt_info["locked_until"] = 0.0
-
-        stmt = select(User).where(User.email == login_data.email)
-        user = db.execute(stmt).scalar_one_or_none()
-
-        # Ejecuta bcrypt siempre (hash ficticio si el email no existe) → timing uniforme
-        stored_hash = user.hashed_password if user is not None else _get_dummy_password_hash()
-        password_matches = verify_password(login_data.password, stored_hash)
-
-        if user is None or not password_matches:
-            _prune_login_attempts(now)
-            attempt_info["count"] += 1
-            attempt_info["last_fail"] = now
-            if attempt_info["count"] >= MAX_LOGIN_ATTEMPTS:
-                attempt_info["locked_until"] = now + LOCKOUT_DURATION_SECONDS
-                audit_logger.warning(f"Cuenta bloqueada: {_redact_email(login_data.email)} ({attempt_info['count']} intentos fallidos)")
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail=f"Cuenta bloqueada por {MAX_LOGIN_ATTEMPTS} intentos fallidos. Intenta de nuevo en 15 minutos.",
-                )
-            audit_logger.warning(f"Intento de login fallido: {_redact_email(login_data.email)} (credenciales incorrectas)")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Correo o contraseña incorrectos",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        if not user.is_active:
-            audit_logger.warning(f"Intento de login bloqueado: {_redact_email(login_data.email)} (cuenta inactiva)")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cuenta desactivada. Contacta al administrador.",
-            )
-
-        # Verificar si la invitación (contraseña temporal) ha expirado
-        if (
-            user.must_change_password
-            and user.invitation_expires_at is not None
-            and user.invitation_expires_at < datetime.now(timezone.utc)
-        ):
-            audit_logger.warning(f"Intento de login con invitación expirada: {_redact_email(login_data.email)}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Tu contraseña temporal ha expirado. Solicita una nueva invitación.",
-            )
-
-        access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
-        refresh_token = create_refresh_token(
-            data={"sub": user.email, "version": user.session_version},
+    if attempt_info["locked_until"] > now:
+        remaining = int(attempt_info["locked_until"] - now)
+        minutes = remaining // 60
+        seconds = remaining % 60
+        audit_logger.warning(
+            f"Login bloqueado: {_redact_email(email)} (cuenta bloqueada, {minutes}m {seconds}s restantes)"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta de nuevo en {minutes}m {seconds}s.",
         )
 
-        audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
-
-        # Resetear contador de intentos fallidos tras login exitoso (esta IP + email)
+    # Ventana de fallos caducada: reinicia el contador para no arrastrar intentos viejos
+    if attempt_info["count"] > 0 and now - attempt_info["last_fail"] > LOCKOUT_DURATION_SECONDS:
         attempt_info["count"] = 0
         attempt_info["locked_until"] = 0.0
-        attempt_info["last_fail"] = 0.0
 
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
+    user = UserRepository(db).get_by_email(email)
+
+    # Ejecuta bcrypt siempre (hash ficticio si el email no existe) → timing uniforme
+    stored_hash = user.hashed_password if user is not None else _get_dummy_password_hash()
+    password_matches = verify_password(login_data.password, stored_hash)
+
+    if user is None or not password_matches:
+        _prune_login_attempts(now)
+        attempt_info["count"] += 1
+        attempt_info["last_fail"] = now
+        if attempt_info["count"] >= MAX_LOGIN_ATTEMPTS:
+            attempt_info["locked_until"] = now + LOCKOUT_DURATION_SECONDS
+            audit_logger.warning(
+                f"Cuenta bloqueada: {_redact_email(email)} ({attempt_info['count']} intentos fallidos)"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Cuenta bloqueada por {MAX_LOGIN_ATTEMPTS} intentos fallidos. Intenta de nuevo en 15 minutos.",
+            )
+        audit_logger.warning(
+            f"Intento de login fallido: {_redact_email(email)} (credenciales incorrectas)"
         )
-    except Exception as e:
-        logger.exception("Error en login_user")
-        raise e
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Correo o contraseña incorrectos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_validated:
+        audit_logger.warning(f"Login bloqueado sin verificar email: {_redact_email(email)}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Debes verificar tu correo electrónico antes de iniciar sesión.",
+        )
+
+    if not user.is_active:
+        audit_logger.warning(f"Intento de login bloqueado: {_redact_email(email)} (cuenta inactiva)")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cuenta desactivada. Contacta al administrador.",
+        )
+
+    # Verificar si la invitación (contraseña temporal) ha expirado
+    if (
+        user.must_change_password
+        and user.invitation_expires_at is not None
+        and user.invitation_expires_at < datetime.now(timezone.utc)
+    ):
+        audit_logger.warning(f"Intento de login con invitación expirada: {_redact_email(email)}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu contraseña temporal ha expirado. Solicita una nueva invitación.",
+        )
+
+    access_token = create_access_token(data={"sub": user.email, "version": user.session_version})
+    refresh_token = create_refresh_token(
+        data={"sub": user.email, "version": user.session_version},
+    )
+
+    audit_logger.info(f"Login exitoso: {_redact_email(user.email)}")
+
+    # Resetear contador de intentos fallidos tras login exitoso (esta IP + email)
+    attempt_info["count"] = 0
+    attempt_info["locked_until"] = 0.0
+    attempt_info["last_fail"] = 0.0
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
 
 
 def logout_from_all_devices(db: Session, user: User) -> None:
@@ -284,8 +300,7 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
             detail="Token sin identificador de usuario",
         )
 
-    stmt = select(User).where(User.email == email)
-    user = db.execute(stmt).scalar_one_or_none()
+    user = UserRepository(db).get_by_email(email)
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -307,7 +322,7 @@ def refresh_access_token(db: Session, refresh_token: str) -> TokenResponse:
 
 
 def change_password(db: Session, user: User, password_data: ChangePasswordRequest) -> None:
-    """Cambia la contraseña de un usuario autenticado."""
+    """Cambia la contraseña de un usuario autenticado e invalida las demás sesiones."""
     if not verify_password(password_data.current_password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -317,27 +332,27 @@ def change_password(db: Session, user: User, password_data: ChangePasswordReques
     user.hashed_password = hash_password(password_data.new_password)
     user.must_change_password = False
     user.invitation_expires_at = None
+    user.session_version += 1
     db.commit()
     audit_logger.info(f"Cambio de contraseña exitoso: {_redact_email(user.email)}")
 
 
 async def request_password_reset(db: Session, email: str) -> None:
     """Solicita un email de recuperación de contraseña (previene enumeración de usuarios)."""
-    stmt = select(User).where(User.email == email)
-    user = db.execute(stmt).scalar_one_or_none()
+    user = UserRepository(db).get_by_email(email)
 
     if not user:
         return
 
     reset_token = str(uuid.uuid4())
 
-    token_record = PasswordResetToken(
-        user_id=user.id,
-        token=reset_token,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+    PasswordResetTokenRepository(db).add(
+        PasswordResetToken(
+            user_id=user.id,
+            token=reset_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
     )
-
-    db.add(token_record)
     db.commit()
 
     await send_password_reset_email(email=user.email, token=reset_token)
@@ -345,11 +360,8 @@ async def request_password_reset(db: Session, email: str) -> None:
 
 
 def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
-    """Restablece la contraseña usando un token de recuperación."""
-    stmt = select(PasswordResetToken).where(
-        PasswordResetToken.token == reset_data.token
-    )
-    token_record = db.execute(stmt).scalar_one_or_none()
+    """Restablece la contraseña usando un token de recuperación e invalida las sesiones."""
+    token_record = PasswordResetTokenRepository(db).get_by_token(reset_data.token)
 
     if not token_record:
         raise HTTPException(
@@ -369,8 +381,7 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
             detail="El token de recuperación ha expirado. Solicite uno nuevo.",
         )
 
-    stmt = select(User).where(User.id == token_record.user_id)
-    user = db.execute(stmt).scalar_one_or_none()
+    user = UserRepository(db).get_by_id(token_record.user_id)
 
     if not user:
         raise HTTPException(
@@ -379,18 +390,17 @@ def reset_password(db: Session, reset_data: ResetPasswordRequest) -> None:
         )
 
     user.hashed_password = hash_password(reset_data.new_password)
+    user.session_version += 1
     token_record.used = True
     db.commit()
-    audit_logger.info(f"Restablecimiento de contraseña exitoso (vía token): {_redact_email(user.email)}")
+    audit_logger.info(
+        f"Restablecimiento de contraseña exitoso (vía token): {_redact_email(user.email)}"
+    )
 
 
 async def request_new_invitation(db: Session, email: str) -> None:
     """Genera una nueva contraseña temporal si la invitación anterior expiró. Envía email."""
-    import secrets as _secrets
-    import string as _string
-
-    stmt = select(User).where(User.email == email)
-    user = db.execute(stmt).scalar_one_or_none()
+    user = UserRepository(db).get_by_email(email)
 
     if not user:
         return
@@ -399,18 +409,21 @@ async def request_new_invitation(db: Session, email: str) -> None:
     if not user.must_change_password:
         return
 
-    if user.invitation_expires_at is not None and user.invitation_expires_at >= datetime.now(timezone.utc):
+    if (
+        user.invitation_expires_at is not None
+        and user.invitation_expires_at >= datetime.now(timezone.utc)
+    ):
         return  # La invitación aún es válida, no hacer nada
 
     # Generar nueva contraseña temporal
-    uppercase = _secrets.choice(_string.ascii_uppercase)
-    lowercase = _secrets.choice(_string.ascii_lowercase)
-    digit = _secrets.choice(_string.digits)
+    uppercase = secrets.choice(string.ascii_uppercase)
+    lowercase = secrets.choice(string.ascii_lowercase)
+    digit = secrets.choice(string.digits)
     remaining = "".join(
-        _secrets.choice(_string.ascii_letters + _string.digits) for _ in range(9)
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(9)
     )
     chars = list(uppercase + lowercase + digit + remaining)
-    _secrets.SystemRandom().shuffle(chars)
+    secrets.SystemRandom().shuffle(chars)
     temp_password = "".join(chars)
 
     user.hashed_password = hash_password(temp_password)

@@ -6,11 +6,13 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.validators import (
     AcceptedTerms,
     BusinessNameStr,
+    EmailNormalizedStr,
+    EvidenceUrlStr,
     IdentityDocLooseStr,
     IdentityDocStr,
     LastNameStr,
@@ -40,7 +42,7 @@ class OccupationType(str, Enum):
 
 class UserCreate(BaseModel):
     """Schema para el registro de un nuevo cliente."""
-    email: EmailStr
+    email: EmailNormalizedStr
     name: NameStr
     last_name: LastNameStr
     phone: PhoneStr | None = None
@@ -54,7 +56,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     """Schema para el login de un usuario."""
-    email: EmailStr
+    email: EmailNormalizedStr
     password: str
     remember_me: bool = False
 
@@ -67,7 +69,7 @@ class ChangePasswordRequest(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     """Schema para solicitar recuperación de contraseña."""
-    email: EmailStr
+    email: EmailNormalizedStr
 
 
 class ResetPasswordRequest(BaseModel):
@@ -128,16 +130,16 @@ class TokenResponse(BaseModel):
 
 class ReactivationRequest(BaseModel):
     """Schema para solicitar reactivación de cuenta (público, sin auth)."""
-    email: EmailStr
+    email: EmailNormalizedStr
     reason: ReasonLongStr
     phone: PhoneStr
     identity_document: IdentityDocLooseStr
-    evidence_url: str | None = None
+    evidence_url: EvidenceUrlStr | None = None
 
 
 class RequestNewInvitationRequest(BaseModel):
     """Schema para solicitar una nueva invitación cuando la anterior expiró."""
-    email: EmailStr
+    email: EmailNormalizedStr
 
 
 class MessageResponse(BaseModel):
