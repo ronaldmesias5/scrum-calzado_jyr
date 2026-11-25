@@ -143,16 +143,23 @@ app = FastAPI(
 # 🔒 MIDDLEWARES DE SEGURIDAD (OWASP Top 10)
 # ────────────────────────────
 # Orden de ejecución (abajo → arriba):
-# 1. ErrorHandlerMiddleware: Captura excepciones no manejadas
+# 1. SecurityHeadersMiddleware: Agrega headers de seguridad
 # 2. RateLimitMiddleware: Limita intentos de fuerza bruta
-# 3. SecurityHeadersMiddleware: Agrega headers de seguridad
-# 4. CORSMiddleware: Valida origen CORS
+# 3. ErrorHandlerMiddleware: Captura excepciones no manejadas
+# 4. CSRFMiddleware: Valida el token CSRF en métodos de escritura
+# 5. GZipMiddleware: Comprime las respuestas JSON de más de 1 kB
+# 6. CORSMiddleware: Valida origen CORS (último registrado = el más externo)
 
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(CSRFMiddleware)
+
+# GZipMiddleware se registra ANTES de CORSMiddleware para que CORS quede como el
+# middleware más externo de la cadena. minimum_size=1000: solo respuestas ≥ 1 kB
+# (evita overhead en payloads pequeños).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORSMiddleware debe ser el último (el más externo) para manejar OPTIONS correctamente
 app.add_middleware(
@@ -174,10 +181,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
 )
-
-# GzipMiddleware va después de CORS (más externo) para comprimir las respuestas JSON
-# finales. minimum_size=1000: solo respuestas ≥ 1 kB (evita overhead en payloads pequeños).
-app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # ────────────────────────────
