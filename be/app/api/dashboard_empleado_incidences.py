@@ -120,6 +120,7 @@ def create_general_incidence(
             observations=data.observations,
             incident_type="perdida",
             quantity=Decimal(1),
+            preserve_incident_type=True,
         )
 
         supply_name = None

@@ -91,6 +91,23 @@ const CATEGORY_BADGE: Record<string, string> = {
   insumo: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
 };
 
+const displayIncidentType = (incident: IncidentRecord) => {
+  if (incident.incident_type === 'perdida' && incident.incidence_category === 'maquinaria') {
+    return 'falla';
+  }
+  if (incident.incident_type === 'perdida' && incident.incidence_category === 'insumo') {
+    return 'faltante';
+  }
+  return incident.incident_type;
+};
+
+const isUnresolvedGeneralIncident = (incident: IncidentRecord) =>
+  incident.incidence_category === 'maquinaria'
+    ? incident.incident_type === 'falla' || incident.incident_type === 'perdida'
+    : incident.incidence_category === 'insumo'
+      ? incident.incident_type === 'faltante' || incident.incident_type === 'perdida'
+      : false;
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function ValeInline({ orderId, productId }: { orderId: string; productId: string }) {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -364,7 +381,7 @@ export default function LossesPage() {
   // ── Stats ─────────────────────────────
   const totalQuantity = Math.round(incidents.reduce((sum, inc) => sum + (Number(inc.quantity) || 0), 0));
   const totalPerdida = Math.round(incidents
-    .filter(inc => inc.incident_type === 'perdida')
+    .filter(inc => inc.incidence_category === 'producto' && inc.incident_type === 'perdida')
     .reduce((sum, inc) => sum + (Number(inc.quantity) || 0), 0));
   const totalReparado = Math.round(incidents
     .filter(inc => inc.incident_type === 'reparado')
@@ -739,10 +756,10 @@ export default function LossesPage() {
                         <td className="px-4 py-3 text-center">
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              INCIDENT_TYPE_BADGE[inc.incident_type] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                              INCIDENT_TYPE_BADGE[displayIncidentType(inc)] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                             }`}
                           >
-                            {INCIDENT_TYPE_DISPLAY[inc.incident_type] ?? inc.incident_type}
+                            {INCIDENT_TYPE_DISPLAY[displayIncidentType(inc)] ?? inc.incident_type}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -780,7 +797,8 @@ export default function LossesPage() {
                           >
                             <Share2 size={14} />
                           </button>
-                          {(inc.incident_type === 'en_reparacion' || inc.incident_type === 'devuelto') && (
+                          {inc.incidence_category === 'producto' &&
+                            (inc.incident_type === 'en_reparacion' || inc.incident_type === 'devuelto') && (
                             <button
                               onClick={() => handleRepairClick(inc)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all text-xs font-bold"
@@ -790,7 +808,7 @@ export default function LossesPage() {
                               Reparar
                             </button>
                           )}
-                          {inc.incident_type === 'perdida' && (
+                          {inc.incidence_category === 'producto' && inc.incident_type === 'perdida' && (
                             <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={() => handleApprove(inc.id)}
@@ -808,7 +826,7 @@ export default function LossesPage() {
                               </button>
                             </div>
                           )}
-                          {(inc.incident_type === 'falla' || inc.incident_type === 'faltante') && (
+                          {isUnresolvedGeneralIncident(inc) && (
                             <button
                               onClick={() => handleSolve(inc.id)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 rounded-lg hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-all text-xs font-bold"
@@ -1339,7 +1357,7 @@ export default function LossesPage() {
               <div className="flex gap-4 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {shareTarget.size && <span>Talla: <strong className="text-gray-800 dark:text-gray-200">{shareTarget.size}</strong></span>}
                 <span>Cantidad: <strong className="text-gray-800 dark:text-gray-200">{Number(shareTarget.quantity)}</strong></span>
-                <span>Tipo: <strong className="text-gray-800 dark:text-gray-200">{INCIDENT_TYPE_DISPLAY[shareTarget.incident_type]}</strong></span>
+                <span>Tipo: <strong className="text-gray-800 dark:text-gray-200">{INCIDENT_TYPE_DISPLAY[displayIncidentType(shareTarget)]}</strong></span>
                 {shareTarget.order_id && (
                   <span>Pedido: <strong className="text-blue-600 dark:text-blue-400 font-mono">#{shareTarget.order_id.slice(0, 8)}</strong></span>
                 )}

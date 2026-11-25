@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user, _require_admin_or_jefe
+from app.models.scrap import LossRecord
 from app.models.user import User
 from app.schemas.scrap import (
     DefectCodeResponse,
@@ -194,7 +195,7 @@ def solve_incident_endpoint(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> IncidentResponse:
-    """Soluciona una incidencia de tipo falla o faltante (maquinaria/insumo)."""
+    """Soluciona una incidencia general de maquinaria o insumos."""
     _ensure_admin_or_jefe(current_user)
     try:
         incident = solve_incident(db, loss_id, current_user.id)
@@ -296,7 +297,7 @@ def share_incidence(
         ("Talla", incident.size or ""),
         ("Color", (incident.colour or "").title() if incident.colour else ""),
         ("Cantidad", f"{int(incident.quantity)} pares" if incident.quantity else ""),
-        ("Tipo", INCIDENT_TYPE_ES.get(incident.incident_type, incident.incident_type)),
+        ("Tipo", _incident_type_label(incident)),
         ("Defecto", defect_label),
         (
             "Pedido",
@@ -384,6 +385,20 @@ INCIDENT_TYPE_ES = {
     "faltante": "Faltante de insumo",
     "solucionado": "Solucionado",
 }
+
+
+def _incident_type_label(incident: LossRecord) -> str:
+    if incident.incidence_category == "maquinaria" and incident.incident_type in (
+        "falla",
+        "perdida",
+    ):
+        return INCIDENT_TYPE_ES["falla"]
+    if incident.incidence_category == "insumo" and incident.incident_type in (
+        "faltante",
+        "perdida",
+    ):
+        return INCIDENT_TYPE_ES["faltante"]
+    return INCIDENT_TYPE_ES.get(incident.incident_type, incident.incident_type)
 
 
 # ────────────────────────────
