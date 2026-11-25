@@ -54,7 +54,7 @@ class LinkedProductOut(BaseModel):
 class SupplyOut(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     category: str
     color: Optional[str] = None
     stock_quantity: float
