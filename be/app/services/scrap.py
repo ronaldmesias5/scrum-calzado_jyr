@@ -66,8 +66,17 @@ def get_incidents(
     count_stmt = select(func.count(LossRecord.id)).where(LossRecord.deleted_at.is_(None))
 
     if incident_type:
-        stmt = stmt.where(LossRecord.incident_type == incident_type)
-        count_stmt = count_stmt.where(LossRecord.incident_type == incident_type)
+        if incident_type in ("falla", "faltante"):
+            category = "maquinaria" if incident_type == "falla" else "insumo"
+            type_filter = (
+                LossRecord.incidence_category == category,
+                LossRecord.incident_type.in_((incident_type, "perdida")),
+            )
+            stmt = stmt.where(*type_filter)
+            count_stmt = count_stmt.where(*type_filter)
+        else:
+            stmt = stmt.where(LossRecord.incident_type == incident_type)
+            count_stmt = count_stmt.where(LossRecord.incident_type == incident_type)
     if product_id:
         stmt = stmt.where(LossRecord.product_id == product_id)
         count_stmt = count_stmt.where(LossRecord.product_id == product_id)
@@ -232,6 +241,7 @@ def register_incident(
     defect_code_id: uuid.UUID | None = None,
     description: str | None = None,
     incident_type: str = "perdida",
+    preserve_incident_type: bool = False,
     reason: str | None = None,
     observations: str | None = None,
     order_id: uuid.UUID | None = None,
@@ -252,10 +262,12 @@ def register_incident(
         if incident_type not in valid_types:
             raise ValueError(f"Tipo de incidencia inválido: {incident_type}. Válidos: {', '.join(valid_types)}")
     elif incidence_category == "maquinaria":
-        incident_type = "falla"
+        if not preserve_incident_type:
+            incident_type = "falla"
         defect_code_id = None
     elif incidence_category == "insumo":
-        incident_type = "faltante"
+        if not preserve_incident_type:
+            incident_type = "faltante"
         defect_code_id = None
 
     # 3. Category-specific validations
@@ -629,10 +641,14 @@ def solve_incident(
 
     if incident.incident_type == "solucionado":
         raise ValueError("Ya está solucionado")
-    if incident.incident_type not in ("falla", "faltante"):
+    if incident.incidence_category not in ("maquinaria", "insumo") or incident.incident_type not in (
+        "falla",
+        "faltante",
+        "perdida",
+    ):
         raise ValueError(
-            f"Tipo de incidencia '{incident.incident_type}' no soportado para solucionar. "
-            "Solo incidencias de tipo falla o faltante pueden ser solucionadas"
+            f"Incidencia de tipo '{incident.incident_type}' y categoría "
+            f"'{incident.incidence_category}' no soportada para solucionar"
         )
 
     incident.incident_type = "solucionado"

@@ -44,6 +44,14 @@ class BrandCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=500)
 
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("El nombre de la marca es obligatorio")
+        return normalized
+
 
 class BrandResponse(BaseModel):
     """Response de una marca"""
@@ -62,6 +70,14 @@ class StyleCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=500)
     brand_id: str = Field(..., description="UUID de la marca")
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("El nombre del estilo es obligatorio")
+        return normalized
 
 
 class StyleResponse(BaseModel):
@@ -94,7 +110,7 @@ class ProductResponse(BaseModel):
     """Response de un producto"""
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     color: Optional[str]
     insufficient_threshold: int
     state: bool
@@ -105,7 +121,7 @@ class ProductResponse(BaseModel):
     category_id: str
     category_name: str
     task_prices: Optional[TaskPrices] = None
-    created_at: Optional[str]
+    created_at: Optional[str] = None
 
 
 # ─────────────────────────────────────────

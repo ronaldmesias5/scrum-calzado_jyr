@@ -54,12 +54,12 @@ class LinkedProductOut(BaseModel):
 class SupplyOut(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     category: str
-    color: Optional[str]
+    color: Optional[str] = None
     stock_quantity: float
-    sizes: Optional[dict[str, float]]
-    unit: Optional[str]
+    sizes: Optional[dict[str, float]] = None
+    unit: Optional[str] = None
     created_at: datetime
     linked_products: list[LinkedProductOut] = []
 

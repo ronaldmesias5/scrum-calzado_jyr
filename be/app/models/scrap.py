@@ -164,7 +164,8 @@ class LossRecord(Base):
         nullable=True,
     )
 
-    # Incident type: perdida, en_reparacion, reparado, devuelto
+    # Product types include perdida/en_reparacion/reparado/devuelto; general
+    # incidences may use perdida, falla, faltante, or solucionado.
     incident_type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
