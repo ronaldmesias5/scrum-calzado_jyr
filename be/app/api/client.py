@@ -1,0 +1,601 @@
+import logging
+import time
+import uuid
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Annotated, Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
+
+from app.config import settings
+from app.dependencies import get_db, get_current_user
+from app.models.order import Order, OrderDetail, OrderStatus
+from app.models.user import User
+from app.models.pending_incidence import PendingProductIncidence
+from app.repositories.client_price_repository import ClientPriceRepository
+from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.order_detail_repository import OrderDetailRepository
+from app.repositories.order_repository import OrderRepository
+from app.repositories.pending_incidence_repository import PendingProductIncidenceRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.report_share_repository import ReportShareRepository
+from app.repositories.task_repository import TaskRepository
+from app.schemas.client import (
+    ClientOrderResponse,
+    ClientOrderListResponse,
+    ClientOrderDetailItem,
+    ClientOrderSummaryResponse,
+    ClientIncidenceResponse,
+    ClientIncidenceListResponse,
+    ClientSharedIncidenceResponse,
+    ClientSharedIncidenceListResponse,
+)
+from app.schemas.orders import OrderCreateRequest, OrderUpdateDetailsRequest
+from app.schemas.reports import OrderSummary, OrderItemSummary, CustomerReportResponse
+
+router = APIRouter(
+    prefix="/api/v1/client",
+    tags=["client"],
+)
+
+UPLOADS_DIR = (Path(settings.UPLOAD_DIR) / "evidence") if settings.UPLOAD_DIR else (Path(__file__).resolve().parent.parent.parent / "uploads" / "evidence")
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
+# Extensión segura derivada del MIME validado (nunca del nombre del archivo,
+# que podría traer .html/.svg y producir XSS stored al servirse desde /uploads)
+MIME_EXT = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/avif": "avif",
+}
+
+
+def _order_to_client_response(order: Order, has_production: bool = False) -> ClientOrderResponse:
+    return ClientOrderResponse(
+        id=order.id,
+        customer_id=order.customer_id,
+        total_pairs=order.total_pairs,
+        state=order.state,
+        creation_date=order.creation_date,
+        delivery_date=order.delivery_date,
+        created_at=order.created_at,
+        updated_at=order.updated_at,
+        has_production=has_production,
+        details=[
+            ClientOrderDetailItem(
+                id=d.id,
+                product_id=d.product_id,
+                product_name=d.product.name_product if d.product else None,
+                style_name=d.product.style.name_style if (d.product and d.product.style) else None,
+                category_name=d.product.category.name_category
+                if (d.product and d.product.category)
+                else None,
+                brand_name=d.product.brand.name_brand if (d.product and d.product.brand) else None,
+                image_url=d.product.image_url if d.product else None,
+                size=d.size,
+                colour=d.colour,
+                amount=d.amount,
+                state=d.state,
+                observations=d.observations,
+                unit_price=float(d.unit_price) if d.unit_price else None,
+                line_group=d.line_group or 0,
+            )
+            for d in order.details
+        ],
+    )
+
+
+@router.get("/orders", response_model=ClientOrderListResponse)
+def list_my_orders(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    page: int = Query(1, ge=1, description="Página (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
+) -> ClientOrderListResponse:
+    """Lista los pedidos del cliente autenticado con paginación."""
+    order_repo = OrderRepository(db)
+    total = order_repo.count_by_customer(current_user.id)
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    offset = (page - 1) * page_size
+
+    orders = order_repo.list_by_customer_paginated(current_user.id, offset, page_size)
+
+    prod_ids = TaskRepository(db).order_ids_with_live_tasks([o.id for o in orders])
+
+    return ClientOrderListResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        items=[_order_to_client_response(o, has_production=o.id in prod_ids) for o in orders],
+    )
+
+
+@router.get("/orders/summary", response_model=ClientOrderSummaryResponse)
+def get_my_orders_summary(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientOrderSummaryResponse:
+    """Resumen de pedidos del cliente agrupados por estado."""
+    order_repo = OrderRepository(db)
+    total = order_repo.count_by_customer(current_user.id)
+
+    rows = order_repo.count_by_state_by_customer(current_user.id)
+    by_state: dict[str, int] = {state: count for state, count in rows}
+
+    for estado in OrderStatus:
+        by_state.setdefault(estado.value, 0)
+
+    return ClientOrderSummaryResponse(total=total, by_state=by_state)
+
+
+def _build_order_items(details: list, category: str | None = None) -> list:
+    """Agrupa OrderDetails por (product_id, colour), filtrando por categoría si se especifica."""
+    items_map = {}
+    for detail in details:
+        cat_name = None
+        if detail.product and detail.product.category:
+            cat_name = getattr(detail.product.category, 'name_category', None)
+        if category and (cat_name or "").lower() != category.lower():
+            continue
+        key = (detail.product_id, detail.colour or "")
+        if key not in items_map:
+            p_name = "Producto Desconocido"
+            p_img = None
+            if detail.product:
+                p_name = getattr(detail.product, 'name_product', "Producto Desconocido")
+                p_img = getattr(detail.product, 'image_url', None)
+            items_map[key] = OrderItemSummary(
+                product_id=detail.product_id,
+                product_name=p_name,
+                image_url=p_img,
+                amount=0,
+                category_name=cat_name,
+                colour=detail.colour or None,
+                unit_price=getattr(detail, 'unit_price', None),
+            )
+        items_map[key].amount += (detail.amount or 0)
+        # Update subtotal based on accumulated amount
+        up = items_map[key].unit_price
+        if up is not None:
+            items_map[key].subtotal = up * items_map[key].amount
+    return list(items_map.values())
+
+
+@router.get("/orders/all", response_model=CustomerReportResponse)
+def get_all_my_orders(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    category: Optional[str] = Query(None),
+) -> CustomerReportResponse:
+    """Retorna todos los pedidos del cliente con detalles para generar reporte PDF."""
+    orders = OrderRepository(db).list_by_customer_dates(
+        current_user.id, start_date=start_date, end_date=end_date
+    )
+
+    orders_list = []
+    for o in orders:
+        items = _build_order_items(o.details or [], category)
+        if category and not items:
+            continue
+        orders_list.append(OrderSummary(
+            id=o.id,
+            total_pairs=sum(it.amount for it in items) if category else (o.total_pairs or 0),
+            total_price=0.0,
+            state=str(o.state.value) if hasattr(o.state, 'value') else str(o.state),
+            created_at=o.created_at,
+            items=items,
+        ))
+
+    total_orders = len(orders_list)
+    total_pairs = sum(o.total_pairs for o in orders_list)
+    total_spent = sum(getattr(o, 'total_price', 0.0) or 0.0 for o in orders_list)
+
+    customer_name = f"{current_user.name_user} {current_user.last_name}".strip()
+
+    return CustomerReportResponse(
+        user_id=current_user.id,
+        name=customer_name or current_user.email,
+        total_orders=total_orders,
+        total_pairs=int(total_pairs),
+        total_spent=float(total_spent),
+        orders=orders_list,
+    )
+
+
+@router.post("/orders", response_model=ClientOrderResponse, status_code=status.HTTP_201_CREATED)
+def create_my_order(
+    order_data: OrderCreateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientOrderResponse:
+    """
+    Crea un pedido para el cliente autenticado.
+
+    El `customer_id` siempre es el del cliente actual (no se permite elegir otro).
+    `total_pairs` se recalcula en el servidor como suma de los detalles.
+    """
+    from app.services.orders import create_order as _create_order
+    from app.api.orders import _trigger_notifications
+
+    try:
+        new_order = _create_order(
+            db=db,
+            customer_id=current_user.id,
+            total_pairs=order_data.total_pairs,
+            delivery_date=order_data.delivery_date,
+            details=order_data.details,
+            created_by=current_user.id,
+        )
+
+        # Best-effort: un fallo aquí NO debe abortar la respuesta (el pedido ya
+        # está guardado) porque el cliente podría reintentar y duplicarlo.
+        try:
+            _trigger_notifications(
+                db=db,
+                new_order=new_order,
+                customer_check=current_user,
+                settings=settings,
+            )
+        except Exception:
+            logger.exception("Notificaciones fallidas para el pedido %s", new_order.id)
+
+        return _order_to_client_response(new_order)
+
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        logger.exception("Error al crear el pedido")
+        raise HTTPException(status_code=500, detail="Error al crear el pedido")
+
+
+@router.get("/orders/{order_id}", response_model=ClientOrderResponse)
+def get_my_order(
+    order_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientOrderResponse:
+    """Obtiene detalle de un pedido específico del cliente autenticado."""
+    order = OrderRepository(db).get_owned_with_details(order_id, current_user.id)
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    has_production = TaskRepository(db).count_live_by_order(order.id) > 0
+
+    return _order_to_client_response(order, has_production=has_production)
+
+
+def _get_owned_order_or_404(db: Session, order_id: uuid.UUID, user_id: uuid.UUID) -> Order:
+    order = OrderRepository(db).get_owned_with_details(order_id, user_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    return order
+
+
+def _assert_order_editable_by_client(db: Session, order: Order) -> None:
+    """Guard compartido: el cliente solo puede tocar pedidos pendientes sin producción iniciada."""
+    if order.state != OrderStatus.pendiente:
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se pueden modificar pedidos en estado pendiente",
+        )
+    has_production = TaskRepository(db).count_live_by_order(order.id)
+    if has_production > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="La producción ya fue iniciada; el pedido ya no puede modificarse",
+        )
+
+
+@router.put("/orders/{order_id}", response_model=ClientOrderResponse)
+def update_my_order(
+    order_id: uuid.UUID,
+    order_data: OrderUpdateDetailsRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientOrderResponse:
+    """Reemplaza las líneas de un pedido propio del cliente."""
+    order = _get_owned_order_or_404(db, order_id, current_user.id)
+    _assert_order_editable_by_client(db, order)
+
+    if not order_data.details:
+        raise HTTPException(
+            status_code=400,
+            detail="El pedido debe tener al menos una línea de detalle",
+        )
+
+    try:
+        detail_repo = OrderDetailRepository(db)
+        old_details = detail_repo.list_by_order(order.id)
+        # Precio congelado por producto: se conserva el que ya tenía el pedido
+        frozen_prices: dict[uuid.UUID, float] = {
+            d.product_id: float(d.unit_price) for d in old_details if d.unit_price is not None
+        }
+        # Productos nuevos: precio personalizado del cliente si existe
+        new_product_ids = {d.product_id for d in order_data.details} - set(frozen_prices)
+        price_rows = ClientPriceRepository(db).prices_by_products(
+            current_user.id, new_product_ids
+        )
+        frozen_prices.update({row[0]: float(row[1]) for row in price_rows})
+
+        detail_repo.delete_by_order(order.id)
+
+        total_pairs = 0
+        for detail_data in order_data.details:
+            detail_repo.add(
+                OrderDetail(
+                    order_id=order.id,
+                    product_id=detail_data.product_id,
+                    size=detail_data.size,
+                    colour=detail_data.colour,
+                    amount=detail_data.amount,
+                    state=OrderStatus.pendiente,
+                    observations=detail_data.observations,
+                    line_group=detail_data.line_group,
+                    order_date=datetime.now(UTC),
+                    created_by=current_user.id,
+                    unit_price=frozen_prices.get(detail_data.product_id),
+                )
+            )
+            total_pairs += detail_data.amount
+
+        order.total_pairs = total_pairs
+        if order_data.delivery_date is not None:
+            order.delivery_date = order_data.delivery_date
+        order.updated_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(order)
+        return _order_to_client_response(order)
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        logger.exception("Error al actualizar el pedido del cliente")
+        raise HTTPException(status_code=500, detail="Error al actualizar el pedido")
+
+
+@router.delete("/orders/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_order(
+    order_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    """
+    Elimina un pedido propio del cliente.
+
+    Solo permitido si el pedido está pendiente, la producción no ha iniciado
+    y no tiene incidencias asociadas (FK RESTRICT).
+    """
+    order = _get_owned_order_or_404(db, order_id, current_user.id)
+    _assert_order_editable_by_client(db, order)
+
+    has_incidence = PendingProductIncidenceRepository(db).count_live_by_order(order.id)
+    if has_incidence > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="El pedido tiene incidencias asociadas y no puede eliminarse",
+        )
+
+    try:
+        OrderDetailRepository(db).delete_by_order(order.id)
+        OrderRepository(db).delete(order)
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Error al eliminar el pedido del cliente")
+        raise HTTPException(status_code=500, detail="Error al eliminar el pedido")
+
+
+def _incidence_to_client_response(p: PendingProductIncidence) -> ClientIncidenceResponse:
+    """Serializa un reclamo de cliente para el dashboard del cliente."""
+    reviewed_by_name = None
+    if p.reviewed_by:
+        reviewed_by_name = f"{p.reviewed_by.name_user} {p.reviewed_by.last_name}".strip()
+
+    return ClientIncidenceResponse(
+        id=str(p.id),
+        order_id=str(p.order_id) if p.order_id else None,
+        order_number=str(p.order_id)[:8] if p.order_id else None,
+        product_id=str(p.product_id),
+        product_name=p.product.name_product if p.product else None,
+        size=p.size,
+        colour=p.colour,
+        defect_code=p.defect_code.code if p.defect_code else None,
+        defect_name=p.defect_code.name if p.defect_code else None,
+        description=p.description,
+        quantity=int(p.quantity),
+        observations=p.observations,
+        status=p.status,
+        approved_type=p.approved_type,
+        rejection_reason=p.rejection_reason,
+        evidence_image_url=p.evidence_image_url,
+        reviewed_by_name=reviewed_by_name,
+        reviewed_at=p.reviewed_at.isoformat() if p.reviewed_at else None,
+        created_at=p.created_at.isoformat() if p.created_at else None,
+    )
+
+
+@router.post(
+    "/incidences", response_model=ClientIncidenceResponse, status_code=status.HTTP_201_CREATED
+)
+def create_my_incidence(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    order_id: str = Form(...),
+    order_detail_id: str = Form(...),
+    size: str = Form(...),
+    colour: str | None = Form(None),
+    defect_code_id: str | None = Form(None),
+    description: str | None = Form(None),
+    quantity: int = Form(1),
+    observations: str | None = Form(None),
+    evidence: UploadFile | None = File(None),
+) -> ClientIncidenceResponse:
+    """
+    Reporta un reclamo sobre un producto de un pedido entregado.
+    Queda en estado pendiente hasta que el jefe lo apruebe o rechace.
+    """
+    from app.services.dashboard_empleado_pending import create_customer_pending_incidence
+
+    # Handle evidence image upload
+    evidence_image_url = None
+    if evidence and evidence.filename:
+        ext = MIME_EXT.get((evidence.content_type or "").lower())
+        if not ext:
+            raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+        content = evidence.file.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="La imagen no debe superar 5 MB")
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"evidence_{uuid.uuid4().hex}_{int(time.time())}.{ext}"
+        (UPLOADS_DIR / filename).write_bytes(content)
+        evidence_image_url = f"uploads/evidence/{filename}"
+
+    try:
+        pending = create_customer_pending_incidence(
+            db=db,
+            customer_id=current_user.id,
+            order_id=uuid.UUID(order_id),
+            order_detail_id=uuid.UUID(order_detail_id),
+            size=size,
+            colour=colour,
+            defect_code_id=uuid.UUID(defect_code_id) if defect_code_id else None,
+            description=description,
+            quantity=quantity,
+            observations=observations,
+            evidence_image_url=evidence_image_url,
+        )
+        return _incidence_to_client_response(pending)
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        db.rollback()
+        logger.exception("Error al reportar la incidencia")
+        raise HTTPException(status_code=500, detail="Error al reportar la incidencia")
+
+
+@router.get("/incidences", response_model=ClientIncidenceListResponse)
+def list_my_incidences(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientIncidenceListResponse:
+    """Lista los reclamos reportados por el cliente autenticado."""
+    from app.services.dashboard_empleado_pending import get_customer_pending_incidences
+
+    items = get_customer_pending_incidences(db, current_user.id)
+    return ClientIncidenceListResponse(
+        incidences=[_incidence_to_client_response(p) for p in items],
+        total=len(items),
+    )
+
+
+@router.get("/incidences/shared", response_model=ClientSharedIncidenceListResponse)
+def list_shared_incidences(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ClientSharedIncidenceListResponse:
+    """Incidencias que el jefe compartió con este cliente (report_shares type='incidence')."""
+    rows = ReportShareRepository(db).list_by_target_user(current_user.id, "incidence")
+
+    params: dict
+    items: list[ClientSharedIncidenceResponse] = []
+    for r in rows:
+        params = r.parameters or {}
+        shared_by_name = None
+        if r.shared_by is not None:
+            shared_by_name = f"{r.shared_by.name_user} {r.shared_by.last_name}".strip()
+        items.append(
+            ClientSharedIncidenceResponse(
+                id=str(r.id),
+                title=r.report_title,
+                message=r.message,
+                product_name=params.get("product_name"),
+                size=params.get("size"),
+                colour=params.get("colour"),
+                quantity=params.get("quantity"),
+                incident_type=params.get("incident_type"),
+                defect=params.get("defect"),
+                order_id=params.get("order_id"),
+                shared_by_name=shared_by_name,
+                is_read=r.is_read,
+                created_at=r.created_at.isoformat() if r.created_at else None,
+            )
+        )
+
+    return ClientSharedIncidenceListResponse(items=items, total=len(items))
+
+
+# ────────────────────────────────────────────────
+# Catálogo con precios personalizados
+# ────────────────────────────────────────────────
+
+@router.get("/catalog/products", summary="Productos del catálogo con precios personalizados del cliente")
+def get_client_catalog(
+    category_id: str | None = None,
+    brand_id: str | None = None,
+    style_id: str | None = None,
+    color: str | None = None,
+    search: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retorna productos del catálogo con precios personalizados si el cliente tiene asignado un precio."""
+    total, products = ProductRepository(db).list_active_paginated(
+        category_id=category_id,
+        brand_id=brand_id,
+        style_id=style_id,
+        color=color,
+        search=search,
+        offset=(page - 1) * page_size,
+        limit=page_size,
+    )
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+
+    # Stock total por producto
+    product_ids = [p.id for p in products]
+    available_by_product = InventoryRepository(db).stock_available_by_products(product_ids)
+
+    # Precios personalizados del cliente
+    price_rows = ClientPriceRepository(db).prices_by_products(current_user.id, set(product_ids))
+    prices_by_product = {str(pid): float(precio) for pid, precio in price_rows}
+
+    return {
+        "products": [
+            {
+                "id": str(product.id),
+                "name": product.name_product,
+                "style_id": str(product.style_id),
+                "style_name": product.style.name_style if product.style else "Unknown",
+                "category_id": str(product.category_id),
+                "category_name": product.category.name_category if product.category else "Unknown",
+                "brand_id": str(product.brand_id),
+                "brand_name": product.brand.name_brand if product.brand else "Unknown",
+                "image_url": product.image_url,
+                "color": product.color,
+                "available": available_by_product.get(str(product.id), 0),
+                "unit_price": prices_by_product.get(str(product.id)),
+            }
+            for product in products
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
+
+

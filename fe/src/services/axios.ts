@@ -1,5 +1,10 @@
 import axios from 'axios';
 import { API_CONFIG } from './config';
+import {
+  clearLegacyTokens,
+  getAccessToken,
+  setAccessToken
+} from './tokenStore';
 
 // ─── CSRF Token Helper ────────────────────────────────────────
 function getCsrfToken(): string | null {
@@ -33,14 +38,10 @@ function processQueue(error: unknown, token: string | null = null) {
 }
 
 function forceLogout() {
-  const hasToken =
-    sessionStorage.getItem('access_token') ||
-    localStorage.getItem('access_token');
-  if (!hasToken) return;
-  sessionStorage.removeItem('access_token');
-  sessionStorage.removeItem('refresh_token');
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+  const hadSession = !!getAccessToken();
+  setAccessToken(null);
+  clearLegacyTokens();
+  if (!hadSession) return;
   window.dispatchEvent(new CustomEvent('auth:logout'));
 }
 
@@ -66,9 +67,7 @@ function handleHttpError(error: unknown) {
 // ─── Request: inyecta token + CSRF ─────────────────────────────
 api.interceptors.request.use(
   (config) => {
-    const token =
-      sessionStorage.getItem('access_token') ||
-      localStorage.getItem('access_token');
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -129,27 +128,16 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    // El refresh token vive en una cookie HttpOnly del backend (inaccesible
-    // para JS). Solo se manda en el body si queda un token legacy en storage
-    // (sesiones antiguas); tras renovar, la cookie se actualiza y se limpia
-    // cualquier resto para no persistir el secreto en localStorage/sessionStorage.
-    const legacyRefreshToken =
-      sessionStorage.getItem('refresh_token') ||
-      localStorage.getItem('refresh_token');
-    const isPersisted = !!localStorage.getItem('access_token');
-
     try {
       const response = await axios.post(
         `${API_CONFIG.baseURL}/api/v1/auth/refresh`,
-        legacyRefreshToken ? { refresh_token: legacyRefreshToken } : {},
+        {},
         { withCredentials: true }
       );
 
       const { access_token } = response.data;
-      const storage = isPersisted ? localStorage : sessionStorage;
-      storage.setItem('access_token', access_token);
-      sessionStorage.removeItem('refresh_token');
-      localStorage.removeItem('refresh_token');
+      setAccessToken(access_token);
+      clearLegacyTokens();
       window.dispatchEvent(new CustomEvent('auth:token-refreshed'));
 
       processQueue(null, access_token);

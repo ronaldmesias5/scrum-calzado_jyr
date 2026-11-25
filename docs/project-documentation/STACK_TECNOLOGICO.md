@@ -69,16 +69,15 @@ En CALZADO J&R aplicamos este patrón dentro del backend, adaptado a las herrami
 |---|---|---|
 | **Model** | Modelos ORM SQLAlchemy (entidades de la BD) | `be/app/models/` |
 | **Vista** | Schemas Pydantic (contrato de entrada/salida en JSON) | `be/app/schemas/` |
-| **Controlador** | Rutas HTTP (`routers/`) + lógica de negocio (`services/`), con `controllers/` como adaptadores intermedios | `be/app/routers/` · `be/app/controllers/` · `be/app/services/` |
+| **Controlador** | Rutas HTTP (`api/`) + lógica de negocio (`services/`) + acceso a datos (`repositories/`) | `be/app/api/` · `be/app/services/` · `be/app/repositories/` |
 
 ```
 Petición HTTP
       │
       ▼
-  Router  ──▶  Controller  ──▶  Service  ──▶  Model (ORM)  ──▶  PostgreSQL
-  (Vista:   (adaptador)        (lógica de     (Model)
-   schemas                    negocio)
-   Pydantic)
+  Router  ──▶  Service  ──▶  Repository  ──▶  Model (ORM)  ──▶  PostgreSQL
+  (api/)       (lógica de     (consultas       (Model)
+               negocio)       SQLAlchemy)
 ```
 
 ### Tipos de estructura y por qué los usamos
@@ -87,9 +86,9 @@ Petición HTTP
 |---|---|---|
 | **Global** | **Modelo Cliente-Servidor** | Existen varios clientes (Web y Postman) que consumen un único servidor (FastAPI) que a su vez consulta la base de datos. Es el modelo estándar para aplicaciones web. |
 | **Backend** | **API REST** | La comunicación entre clientes y servidor se hace con peticiones HTTP sobre recursos, devolviendo JSON. |
-| **Backend (interna)** | **Arquitectura en capas / MVC** | Separamos Model (modelos ORM), Vista (schemas Pydantic) y Controlador (routers + services). Así la lógica es reutilizable y testeable. |
+| **Backend (interna)** | **Arquitectura en capas / MVC** | Separamos Model (modelos ORM), Vista (schemas Pydantic) y Controlador (api + services + repositories). Así la lógica es reutilizable y testeable. |
 | **Frontend** | **Organización por módulo + inspiración Atomic Design** | Los componentes se agrupan por módulo de negocio, con carpetas de estructura y de átomos reutilizables. |
-| **Base de datos** | **Esquema versionado con migraciones (Alembic)** | Las tablas no se crean "a mano" sino mediante **38 migraciones versionadas** que se aplican automáticamente al arrancar el backend. |
+| **Base de datos** | **Esquema versionado con migraciones (Alembic)** | Las tablas no se crean "a mano" sino mediante **51 migraciones versionadas** que se aplican automáticamente al arrancar el backend. |
 
 ---
 
@@ -114,11 +113,11 @@ fe/src/
 │   └── landing/            # Landing pública + catálogo: components/{atoms,molecules,organisms}, config/
 ├── pages/                  # Páginas enrutables
 │   ├── admin/              # 14 páginas del panel admin
-│   ├── auth/               # 7 páginas (login, register, password reset…)
+│   ├── auth/               # 5 páginas (reset, verify-email, reactivación, cambio de contraseña…)
 │   ├── client/             # 3 páginas (Dashboard, Orders, WholesaleCatalog)
 │   ├── employee/           # 6 páginas (Dashboard, Tasks, Incidences, Reports, Settings…)
 │   └── public/             # 2 páginas (Landing, Reactivation)
-├── hooks/                  # Hooks reutilizables (useAuth, useModalDialog, useNotificationWebSocket…)
+├── hooks/                  # Hooks reutilizables (useAuth, useChat, useHeaderAnimation, useNotificationWebSocket)
 ├── services/               # Servicios de API globales (adminApi, authService, ordersApi, employeeApi…)
 ├── store/                  # Contextos globales (Auth, Theme, Toast, BadgeCounts…)
 ├── types/                  # Tipos TypeScript compartidos
@@ -149,7 +148,7 @@ En lugar de tener todos los componentes mezclados en una sola carpeta, organizam
 | **Funcionalidades específicas** | `features/<feature>/components/` — clasificados en `atoms/`, `molecules/` y `organisms/` |
 | **Páginas** | `pages/<dominio>/` — OrdersPage, TasksPage, ReportsPage… (admin, auth, client, employee, public) |
 | **Servicios** | `services/` — llamadas HTTP globales (adminApi, authService, ordersApi, employeeApi, clientApi…) |
-| **Hooks** | `hooks/` — useAuth, useModalDialog, useNotificationWebSocket… |
+| **Hooks** | `hooks/` — useAuth, useChat, useHeaderAnimation, useNotificationWebSocket |
 | **Tipos** | `types/` — auth, orders, products, tasks… |
 | **Utilidades** | `utils/` globales + `features/<feature>/utils/` — format, routing, reportsUtils… |
 | **Store** | `store/` — AuthContext, ThemeContext, ToastContext, BadgeCountsContext… |
@@ -197,7 +196,7 @@ be/
 │   ├── dependencies.py       # get_db(), get_current_user(), _require_admin_or_jefe()
 │   ├── init_db.py            # Aplica migraciones Alembic y datos semilla al arrancar
 │   ├── logging_config.py     # Configuración de logs (error_logger)
-│   ├── controllers/          # (14) Adaptadores entre routers y services (thin controllers)
+│   ├── repositories/         # (19) Acceso a datos: consultas SQLAlchemy por entidad
 │   ├── init/                 # Datos semilla (roles, tipos de documento, catálogo, usuarios demo)
 │   ├── middleware/           # error_handler, rate_limit, security_headers
 │   ├── models/               # (26 archivos, 30 tablas) Modelos ORM SQLAlchemy 2.0
@@ -206,7 +205,7 @@ be/
 │   │   ├── inventory.py  inventory_movement.py  supplies.py  supply_categories.py
 │   │   ├── tasks.py  vale.py  incidence.py  scrap.py  pending_incidence.py
 │   │   ├── reactivation_ticket.py  notifications.py  report_share.py …
-│   ├── routers/              # (21 archivos) Endpoints HTTP por módulo (ver sección 6.3)
+│   ├── api/                  # (21 archivos) Endpoints HTTP por módulo (ver sección 6.3)
 │   │   ├── auth.py  users.py  admin.py  type_document.py
 │   │   ├── catalog.py  catalog_brands.py  catalog_styles.py
 │   │   ├── catalog_products.py  catalog_inventory.py
@@ -215,15 +214,14 @@ be/
 │   │   ├── dashboard_empleado_tasks.py  dashboard_empleado_metrics.py
 │   │   ├── dashboard_empleado_incidences.py
 │   │   ├── reports.py  scrap.py  supplies.py  notifications.py
-│   ├── schemas/              # (13) Schemas Pydantic — contrato de entrada/salida (JSON)
+│   ├── schemas/              # (16) Schemas Pydantic — contrato de entrada/salida (JSON)
 │   ├── services/             # (8) Lógica de negocio (auth, orders, scrap, supplies…)
 │   └── utils/                # security.py (JWT/bcrypt), email.py, ws_manager.py
-├── alembic/                  # 38 migraciones de base de datos versionadas
+├── alembic/                  # 51 migraciones de base de datos versionadas
 │   └── versions/
 ├── scripts/                  # create_admin.py, heal_line_groups.py
 ├── tests/                    # Pruebas con pytest
 ├── pyproject.toml            # Dependencias (uv)
-├── entrypoint.sh             # Ejecuta migraciones y lanza uvicorn
 └── Dockerfile
 ```
 
@@ -237,7 +235,7 @@ db/
 ```
 
 > La base de datos es una pieza deliberadamente mínima. El esquema real
-> (más de 20 tablas) no se define aquí sino en las 38 migraciones Alembic del backend,
+> (más de 20 tablas) no se define aquí sino en las 51 migraciones Alembic del backend,
 > que se aplican automáticamente al arrancar el servicio `be`.
 
 ---

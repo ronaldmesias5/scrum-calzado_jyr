@@ -36,7 +36,7 @@ El sistema implementa una **arquitectura 3-tier (Presentación - Lógica - Datos
 | **Python** | 3.12-slim | Runtime principal del servidor |
 | **FastAPI** | 0.115.0+ | Framework HTTP asincrónico con validación automática |
 | **SQLAlchemy** | 2.0+ | ORM para mapeo objeto-relacional |
-| **Alembic** | 1.14.0 | Sistema de migraciones de BD (50 migraciones) |
+| **Alembic** | 1.14.0 | Sistema de migraciones de BD (51 migraciones) |
 | **Pydantic** | 2.0+ | Validación y serialización de datos |
 | **PyJWT (python-jose)** | 3.3+ | Creación y validación de JWT tokens |
 | **bcrypt / passlib** | 4.0+ | Hash criptográfico de contraseñas |
@@ -127,7 +127,7 @@ scrum/
 │   │   │   ├── reactivation_ticket.py, report_share.py, ai_embedding.py
 │   │   │   └── ...
 │   │   │
-│   │   ├── routers/             # 25 routers FastAPI (endpoint definitions)
+│   │   ├── api/             # 25 routers FastAPI (endpoint definitions)
 │   │   │   ├── auth.py          # Autenticación JWT
 │   │   │   ├── admin.py         # Catálogo admin + reportes + usuarios
 │   │   │   ├── catalog*.py      # Catálogo público (5 routers)
@@ -145,9 +145,9 @@ scrum/
 │   │   │   ├── bulk_import.py   # Importación masiva CSV
 │   │   │   └── ai_chat.py       # Chatbot IA (Águila J&R)
 │   │   │
-│   │   ├── controllers/         # 7 controllers (business logic delegation)
+│   │   ├── repositories/        # 19 repositorios (acceso a datos)
 │   │   ├── services/            # 10 services (domain logic)
-│   │   ├── schemas/             # 15 esquemas Pydantic (request/response)
+│   │   ├── schemas/             # 16 esquemas Pydantic (request/response)
 │   │   │
 │   │   ├── utils/              # Utilidades compartidas
 │   │   │
@@ -157,7 +157,7 @@ scrum/
 │   │   ├── init_db.py          # Auto-migraciones + seed al arrancar
 │   │   └── main.py             # Punto de entrada FastAPI
 │   │
-│   ├── alembic/versions/       # 50 migraciones progresivas (001–049, 043 duplicado)
+│   ├── alembic/versions/       # 51 migraciones progresivas (001–049, 043 duplicado)
 │   ├── scripts/                # Utilidades standalone (7)
 │   │   ├── create_admin.py     # Crear admin fuera de API
 │   │   ├── heal_line_groups.py # Reparar line_group duplicados
@@ -204,14 +204,14 @@ scrum/
 │   │   │   ├── employee/        # Panel empleado (6 páginas) — components/{molecules,organisms}, utils/reportsUtils.ts
 │   │   │   └── landing/         # Landing pública + catálogo — components/{atoms,molecules,organisms}, config/whatsappConfig.ts
 │   │   │
-│   │   ├── pages/               # Páginas enrutables: admin(16), auth(8), client(6), employee(6), public(2)
+│   │   ├── pages/               # Páginas enrutables: admin(16), auth(5), client(6), employee(6), public(2)
 │   │   │   ├── admin/           # DashboardPage, OrdersPage, CalendarPage, CategoriesPage, ClientPricesPage, ReportsPage, …
-│   │   │   ├── auth/            # LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, …
+│   │   │   ├── auth/            # ResetPasswordPage, VerifyEmailPage, ReactivationPage, ChangePasswordPage, DashboardPage
 │   │   │   ├── client/          # DashboardPage, OrdersPage, WholesaleCatalogPage, MisIncidenciasPage, ReportsPage, SettingsPage
 │   │   │   ├── employee/        # DashboardPage, TasksPage, AvailableTasksPage, IncidencesPage, ReportsPage, SettingsPage
 │   │   │   └── public/          # LandingPage, CatalogPage
 │   │   │
-│   │   ├── hooks/               # Hooks reutilizables (useAuth, useModalDialog, useHeaderAnimation, useNotificationWebSocket…)
+│   │   ├── hooks/               # Hooks reutilizables (useAuth, useChat, useHeaderAnimation, useNotificationWebSocket)
 │   │   │
 │   │   ├── services/            # Servicios de API globales
 │   │   │   ├── axios.ts         # Cliente Axios + interceptores (JWT)
@@ -273,7 +273,7 @@ scrum/
 
 ### Backend (Capas por funcionalidad)
 
-El backend tiene **25 routers** organizados por funcionalidad. La estructura usa capas (routers → controllers → services):
+El backend tiene **25 routers** organizados por funcionalidad. La estructura usa capas (api → services → repositories):
 
 | Router | Ruta base | Propósito |
 |--------|----------|-----------|
@@ -306,11 +306,12 @@ El backend tiene **25 routers** organizados por funcionalidad. La estructura usa
 **Patrón por capa:**
 ```
 be/app/{capa}/
-├── {nombre}.py       # Endpoints FastAPI (routers) o lógica de negocio (services)
-└── service.py      # Lógica de negocio (opcional, algunos inyectan directo)
+├── api/              # Endpoints FastAPI (routers)
+├── services/         # Lógica de negocio
+└── repositories/     # Acceso a datos (queries SQLAlchemy)
 ```
 
-Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `controllers/` (7), `services/` (10) y `schemas/` (15).
+Los modelos están centralizados en `be/app/models/` (no hay `models/` por módulo); la lógica de negocio vive en `services/` (10) y el acceso a datos en `repositories/` (19); los contratos Pydantic en `schemas/` (16).
 
 ### Frontend (Features)
 
@@ -339,7 +340,7 @@ El frontend tiene **6 features**:
 - Variantes de tamaño: `sm`, `md`, `lg`, `xl`, `full`
 - Variantes de color: `default`, `danger`
 
-**Nunca crear un modal manualmente** — usar `<Modal>` + hook `useModalDialog`.
+**Nunca crear un modal manualmente** — usar `<Modal>` + estado `useState`.
 
 ### 2. PageTransition para animación automática de rutas
 
@@ -348,11 +349,11 @@ El frontend tiene **6 features**:
 - Usa `key={location.pathname}` para re-triggerear animación
 - **TODAS** las páginas del dashboard heredan esta animación automáticamente
 
-### 3. useModalDialog hook
+### 3. Apertura de modales con `useState`
 
 ```typescript
-const { isOpen, open, close } = useModalDialog();
-// Usar con <Modal isOpen={isOpen} onClose={close}>...</Modal>
+const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+// Usar con <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>...</Modal>
 ```
 
 ### 4. Patrón line_group para productos duplicados en pedidos
@@ -389,7 +390,7 @@ Tailwind v4 se configura mediante la directiva `@theme` directamente en `index.c
 ### 7. Auto-migraciones + seed al arrancar
 
 El backend ejecuta automáticamente en `init_db.py`:
-1. Migraciones Alembic pendientes (`alembic upgrade head`) — 50 migraciones
+1. Migraciones Alembic pendientes (`alembic upgrade head`) — 51 migraciones
 2. Datos semilla (roles, tipos documento, catálogo 65 productos, usuarios de prueba)
 
 **No ejecutar `alembic upgrade head` manualmente** a menos que se esté depurando.

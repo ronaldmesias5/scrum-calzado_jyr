@@ -1,0 +1,1922 @@
+{
+  "info": {
+    "name": "CALZADO J&R - QA Automatizado (Suite Completa)",
+    "_postman_id": "c90f6a5e-2c8a-4b1d-9f3e-qa-suite-0000",
+    "description": "Colección automatizada de pruebas API (QA) del proyecto CALZADO J&R.\n\nProyecto formativo: Análisis y Desarrollo de Software (ADSO) - AP06.\nEvidencia: Colección Automatizada de las APIs de proyecto de grado (Postman Collection v2.1).\n\nCarpetas:\n  A. CRUD Usuarios (Taller 3.3)     - login -> crear -> editar -> eliminar\n  B. Perfil del Usuario             - GET /users/me\n  C. Catálogo Público               - categorías, marcas, colores, estilos, productos\n  D. Catálogo Admin                 - marca -> estilo -> producto -> inventario\n  E. Insumos                        - crear insumo -> vincular -> verificar\n  F. Pedidos y Producción           - cliente -> orden -> detalle -> tareas -> estado\n  G. Dashboard Empleado             - cortador -> login -> métricas -> reclamar -> completar\n  H. Notificaciones                 - listar -> conteo -> marcar leídas\n\nRequisito previo: cargar el environment 'CALZADO J&R Local' con {{baseUrl}}.\nEjecutar la suite completa con el Collection Runner; deben pasar todas las peticiones (0 failures).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "item": [
+    {
+      "name": "A. CRUD Usuarios (Taller 3.3)",
+      "item": [
+        {
+          "name": "1. Login - Obtener Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye access_token (string no vacío)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token type es bearer', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token_type').and.to.eql('bearer');",
+                  "});",
+                  "",
+                  "pm.test('Autenticación exitosa y extracción de Token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('authToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('authToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Autentica al usuario admin y devuelve access_token + refresh_token.\nLos scripts guardan automáticamente el token en {{authToken}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ronald.jefe@gmail.com\",\n  \"password\": \"Test123456!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Crear cliente (admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('testEmail', 'qa.' + Date.now() + '@gmail.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Creación de cliente exitosa - 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Estructura JSON válida: id presente (UUID)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.id).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('El nombre y el email son strings válidos', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.name).to.be.a('string').and.not.empty;",
+                  "    pm.expect(jsonData.email).to.eql(pm.environment.get('testEmail'));",
+                  "});",
+                  "",
+                  "pm.test('El cliente queda validado y con cambio de contraseña pendiente', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.is_validated).to.eql(true);",
+                  "    pm.expect(jsonData.must_change_password).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de currentUserId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('currentUserId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('currentUserId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/create-client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "create-client"
+              ]
+            },
+            "description": "El admin/jefe crea una cuenta de cliente. El pre-request genera un email único (qa.<timestamp>@gmail.com).\nLos scripts guardan automáticamente el id en {{currentUserId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"name\": \"Cliente QA\",\n  \"last_name\": \"Automatizado\",\n  \"phone\": \"3001234567\",\n  \"business_name\": \"Tienda QA\",\n  \"password\": \"QaClient123!\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Editar cliente (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Actualización correcta de datos - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('updated_at presente tras la actualización', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('updated_at');",
+                  "});",
+                  "",
+                  "pm.test('Los datos editados quedaron registrados', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.name).to.eql('CLIENTE QA EDITADO');",
+                  "    pm.expect(jsonData.business_name).to.eql('Tienda QA Editada');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{currentUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{currentUserId}}"
+              ]
+            },
+            "description": "Actualiza los datos del cliente usando {{currentUserId}}. Nota: el backend guarda el nombre en mayúsculas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cliente QA Editado\",\n  \"business_name\": \"Tienda QA Editada\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Eliminar cliente (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Eliminación exitosa - 200 OK o 204 No Content', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});",
+                  "",
+                  "pm.test('El mensaje de confirmación no está vacío', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(jsonData).to.have.property('message').that.is.a('string').and.not.empty;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{currentUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{currentUserId}}"
+              ]
+            },
+            "description": "Elimina permanentemente el cliente creado en el paso 2 usando {{currentUserId}}."
+          },
+          "response": []
+        }
+      ],
+      "description": "Actividad 3.3: CRUD de usuarios con encadenamiento de variables (login -> crear -> editar -> eliminar)."
+    },
+    {
+      "name": "B. Perfil del Usuario",
+      "item": [
+        {
+          "name": "5. Login admin (refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye access_token (string no vacío)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token type es bearer', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token_type').and.to.eql('bearer');",
+                  "});",
+                  "",
+                  "pm.test('Autenticación exitosa y extracción de Token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('authToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('authToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Refresca el token admin para las siguientes carpetas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ronald.jefe@gmail.com\",\n  \"password\": \"Test123456!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. GET /users/me (perfil)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Perfil obtenido - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Estructura del perfil válida', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('email').that.is.a('string').and.not.empty;",
+                  "    pm.expect(jsonData).to.have.property('name').that.is.a('string').and.not.empty;",
+                  "    pm.expect(jsonData).to.have.property('last_name').that.is.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('El perfil corresponde al usuario admin', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.eql('ronald.jefe@gmail.com');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Obtiene el perfil del usuario autenticado (admin). Verifica identidad y estructura."
+          },
+          "response": []
+        }
+      ],
+      "description": "Perfil del usuario autenticado (GET /users/me)."
+    },
+    {
+      "name": "C. Catálogo Público",
+      "item": [
+        {
+          "name": "7. GET /catalog/categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Categorías obtenidas - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('categories es un arreglo', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('categories').that.is.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de categoryId (primer elemento)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.categories.length).to.be.greaterThan(0);",
+                  "    pm.environment.set('categoryId', jsonData.categories[0].id);",
+                  "    pm.expect(pm.environment.get('categoryId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "categories"
+              ]
+            },
+            "description": "Endpoint público del catálogo. Se captura el primer categoryId para crear un producto en carpeta D."
+          },
+          "response": []
+        },
+        {
+          "name": "8. GET /catalog/brands",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Marcas obtenidas - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('brands es un arreglo', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('brands').that.is.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog/brands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "brands"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9. GET /catalog/colors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Colores obtenidos - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('colors es un arreglo', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('colors').that.is.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog/colors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "colors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10. GET /catalog/styles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estilos obtenidos - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('styles es un arreglo con id y nombre', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('styles').that.is.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog/styles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "styles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11. GET /catalog/products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Productos obtenidos - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('products es un arreglo con total', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('products').that.is.an('array');",
+                  "    pm.expect(jsonData).to.have.property('total').that.is.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints públicos del catálogo (sin autenticación). Se captura categoryId para la carpeta D."
+    },
+    {
+      "name": "D. Catálogo Admin",
+      "item": [
+        {
+          "name": "12. Login admin (refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye access_token (string no vacío)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token type es bearer', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token_type').and.to.eql('bearer');",
+                  "});",
+                  "",
+                  "pm.test('Autenticación exitosa y extracción de Token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('authToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('authToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Refresca el token admin antes de operaciones de catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ronald.jefe@gmail.com\",\n  \"password\": \"Test123456!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "13. Crear marca (brand)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('brandName', 'QA Marca ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Marca creada - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Estructura de la marca: id presente', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id').that.is.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de brandId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('brandId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('brandId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/catalog/brands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "catalog",
+                "brands"
+              ]
+            },
+            "description": "Crea una marca única (nombre con timestamp). Captura brandId para estilo y producto.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{brandName}}\",\n  \"description\": \"Marca QA automatizada\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "14. Crear estilo (style)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('styleName', 'QA Estilo ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estilo creado - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('El estilo pertenece a la marca creada', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.brand_id).to.eql(pm.environment.get('brandId'));",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de styleId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('styleId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('styleId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/catalog/styles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "catalog",
+                "styles"
+              ]
+            },
+            "description": "Crea un estilo asociado a la marca recién creada (brandId).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{styleName}}\",\n  \"description\": \"Estilo QA automatizado\",\n  \"brand_id\": \"{{brandId}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "15. Crear producto (product)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('productName', 'QA Producto ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Producto creado - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('El producto hereda marca, estilo y categoría', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.brand_id).to.eql(pm.environment.get('brandId'));",
+                  "    pm.expect(jsonData.style_id).to.eql(pm.environment.get('styleId'));",
+                  "    pm.expect(jsonData.category_id).to.eql(pm.environment.get('categoryId'));",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de productId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('productId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('productId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/catalog/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "catalog",
+                "products"
+              ]
+            },
+            "description": "Crea un producto usando brandId, styleId y categoryId capturados previamente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{productName}}\",\n  \"description\": \"Producto QA automatizado\",\n  \"color\": \"Negro\",\n  \"brand_id\": \"{{brandId}}\",\n  \"style_id\": \"{{styleId}}\",\n  \"category_id\": \"{{categoryId}}\",\n  \"task_prices\": {\n    \"corte\": 30000,\n    \"guarnicion\": 25000,\n    \"soladura\": 28000,\n    \"emplantillado\": 22000\n  }\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "16. Crear inventario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Inventario creado - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('El inventario corresponde al producto', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.product_id).to.eql(pm.environment.get('productId'));",
+                  "    pm.expect(jsonData.size).to.eql('38');",
+                  "    pm.expect(jsonData.quantity).to.eql(24);",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de inventoryId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('inventoryId', jsonData.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/catalog/inventory",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "catalog",
+                "inventory"
+              ]
+            },
+            "description": "Registra inventario (talla 38, 24 pares) para el producto creado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{productId}}\",\n  \"size\": \"38\",\n  \"quantity\": 24\n}"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Creación en cascada: marca -> estilo -> producto -> inventario. Encadenamiento de variables."
+    },
+    {
+      "name": "E. Insumos",
+      "item": [
+        {
+          "name": "17. Crear insumo (supply)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('supplyName', 'QA Insumo ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Insumo creado - 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Estructura del insumo: id presente', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id').that.is.a('string').and.not.empty;",
+                  "    pm.expect(jsonData).to.have.property('stock_quantity').that.is.a('number');",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de supplyId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('supplyId', jsonData.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/supplies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "supplies"
+              ]
+            },
+            "description": "Crea un insumo con stock alto (500) para no romper disponibilidad.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{supplyName}}\",\n  \"description\": \"Insumo QA automatizado\",\n  \"category\": \"corte\",\n  \"color\": \"Negro\",\n  \"stock_quantity\": 500,\n  \"unit\": \"metros\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "18. Vincular insumo al producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Vinculación exitosa - 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('El detalle confirma la vinculación', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('detail').that.is.a('string').and.not.empty;",
+                  "    pm.expect(jsonData.quantity_required).to.eql(0.5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/supplies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "supplies"
+              ]
+            },
+            "description": "Vincula el insumo al producto con 0.5 unidades por par.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supply_id\": \"{{supplyId}}\",\n  \"quantity_required\": 0.5\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "19. Verificar disponibilidad de insumos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Verificación exitosa - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('El insumo vinculado aparece en el check', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('product_id');",
+                  "    pm.expect(jsonData).to.have.property('all_supplies_available').that.is.a('boolean');",
+                  "    pm.expect(jsonData).to.have.property('supplies').that.is.an('array');",
+                  "});",
+                  "",
+                  "pm.test('La disponibilidad coincide con el stock alto', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var linked = jsonData.supplies.filter(function (s) {",
+                  "        return s.supply_id === pm.environment.get('supplyId');",
+                  "    });",
+                  "    pm.expect(linked.length).to.eql(1);",
+                  "    pm.expect(linked[0].stock_sufficient).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/supplies/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "supplies",
+                "check"
+              ]
+            },
+            "description": "Verifica que el producto tenga insumos suficientes (stock 500 >= 0.5 * pedidos activos)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestión de insumos: crear, vincular a producto y verificar disponibilidad."
+    },
+    {
+      "name": "F. Pedidos y Producción",
+      "item": [
+        {
+          "name": "20. Login admin (refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye access_token (string no vacío)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token type es bearer', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token_type').and.to.eql('bearer');",
+                  "});",
+                  "",
+                  "pm.test('Autenticación exitosa y extracción de Token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('authToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('authToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Refresca el token admin (jefe) antes de crear la orden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ronald.jefe@gmail.com\",\n  \"password\": \"Test123456!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "21. Crear cliente de la suite (vivo)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('suiteEmail', 'qa.suite.' + Date.now() + '@gmail.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cliente suite creado - 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de suiteClientId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('suiteClientId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('suiteClientId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/create-client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "create-client"
+              ]
+            },
+            "description": "Cliente de la suite que permanece vivo (a diferencia del de la carpeta A) para asociar la orden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{suiteEmail}}\",\n  \"name\": \"Cliente Suite\",\n  \"last_name\": \"QA\",\n  \"phone\": \"3001234568\",\n  \"business_name\": \"Tienda Suite\",\n  \"password\": \"Suite123!\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "22. Crear orden (order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Orden creada - 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('La orden queda en estado pendiente', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('state').that.eql('pendiente');",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de orderId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('orderId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('orderId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders"
+              ]
+            },
+            "description": "Crea una orden mayorista de 12 pares (talla 38) para el producto y cliente de la suite.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"{{suiteClientId}}\",\n  \"total_pairs\": 12,\n  \"details\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"size\": \"38\",\n      \"colour\": \"Negro\",\n      \"amount\": 12,\n      \"line_group\": 1\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "23. Ver detalle de la orden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Detalle obtenido - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La orden contiene la línea de pedido', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('details').that.is.an('array');",
+                  "    pm.expect(jsonData.details.length).to.be.greaterThan(0);",
+                  "    pm.expect(jsonData.details[0].product_id).to.eql(pm.environment.get('productId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "description": "Consulta el detalle de la orden para verificar la línea de pedido."
+          },
+          "response": []
+        },
+        {
+          "name": "24. Crear tarea de producción (corte)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tarea creada - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta es un arreglo de tareas', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    pm.expect(jsonData.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de taskCorteId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var corte = null;",
+                  "    for (var i = 0; i < jsonData.length; i++) {",
+                  "        if (jsonData[i].type === 'corte') { corte = jsonData[i]; break; }",
+                  "    }",
+                  "    pm.expect(corte).to.not.eql(null);",
+                  "    pm.environment.set('taskCorteId', corte.id);",
+                  "    pm.expect(pm.environment.get('taskCorteId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/{{orderId}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders",
+                "{{orderId}}",
+                "tasks"
+              ]
+            },
+            "description": "Crea la tarea de corte (sin desglose) para que la reclamé el empleado cortador de la carpeta G.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tasks\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"type\": \"corte\",\n      \"amount\": 12,\n      \"priority\": \"media\",\n      \"line_group\": 1\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "25. Cambiar estado de la orden a en_progreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado actualizado - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La orden pasa a en_progreso', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('state').that.eql('en_progreso');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
+            },
+            "description": "Pone la orden en producción. Este estado no descuenta inventario (evita romper stock).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"en_progreso\"\n}"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Flujo completo: cliente suite -> orden -> detalle -> tarea de corte -> estado en_progreso."
+    },
+    {
+      "name": "G. Dashboard Empleado",
+      "item": [
+        {
+          "name": "26. Login admin (refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye access_token (string no vacío)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token type es bearer', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token_type').and.to.eql('bearer');",
+                  "});",
+                  "",
+                  "pm.test('Autenticación exitosa y extracción de Token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('authToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('authToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Refresca el token admin (jefe) antes de crear el empleado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ronald.jefe@gmail.com\",\n  \"password\": \"Test123456!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "27. Crear empleado cortador",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('employeeEmail', 'qa.emp.' + Date.now() + '@gmail.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Empleado creado - 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('El empleado tiene ocupación cortador', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('occupation').that.eql('cortador');",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de employeeId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('employeeId', jsonData.id);",
+                  "    pm.expect(pm.environment.get('employeeId')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/create-employee",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "create-employee"
+              ]
+            },
+            "description": "Crea un empleado cortador con contraseña conocida para autenticarlo después.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employeeEmail}}\",\n  \"name\": \"Cortador QA\",\n  \"last_name\": \"Automatizado\",\n  \"phone\": \"3001234569\",\n  \"occupation\": \"cortador\",\n  \"password\": \"Cortador123!\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "28. Login del empleado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login del empleado - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Persistencia de employeeToken', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('employeeToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('employeeToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Autentica al empleado cortador recién creado y guarda su token en {{employeeToken}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employeeEmail}}\",\n  \"password\": \"Cortador123!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "29. Métricas del empleado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Métricas obtenidas - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye métricas', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('metrics').that.is.an('array');",
+                  "    pm.expect(jsonData.metrics.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/employee/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "employee",
+                "metrics"
+              ]
+            },
+            "description": "Obtiene métricas del dashboard del empleado con su propio token."
+          },
+          "response": []
+        },
+        {
+          "name": "30. Reclamar tarea de corte",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tarea reclamada - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La tarea fue asignada al empleado', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success').that.eql(true);",
+                  "    pm.expect(jsonData.task_id).to.eql(pm.environment.get('taskCorteId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/employee/tasks/{{taskCorteId}}/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "employee",
+                "tasks",
+                "{{taskCorteId}}",
+                "claim"
+              ]
+            },
+            "description": "El cortador reclama la tarea de corte creada en la carpeta F (encadenamiento de variables)."
+          },
+          "response": []
+        },
+        {
+          "name": "31. Completar tarea de corte",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tarea completada - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta confirma la actualización', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success').that.eql(true);",
+                  "    pm.expect(jsonData).to.have.property('message').that.is.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/employee/tasks/{{taskCorteId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "employee",
+                "tasks",
+                "{{taskCorteId}}",
+                "status"
+              ]
+            },
+            "description": "Completa la tarea de corte. El backend auto-genera la siguiente etapa (guarnición).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completado\",\n  \"observation\": \"Tarea completada por QA automatizado\"\n}"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Flujo del empleado: crear cortador -> login -> métricas -> reclamar -> completar tarea."
+    },
+    {
+      "name": "H. Notificaciones",
+      "item": [
+        {
+          "name": "32. Login admin (refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye access_token (string no vacío)', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token type es bearer', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token_type').and.to.eql('bearer');",
+                  "});",
+                  "",
+                  "pm.test('Autenticación exitosa y extracción de Token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('authToken', jsonData.access_token);",
+                  "    pm.expect(pm.environment.get('authToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Refresca el token admin para consultar notificaciones.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ronald.jefe@gmail.com\",\n  \"password\": \"Test123456!\",\n  \"remember_me\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "33. Listar notificaciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Notificaciones listadas - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye items, total y unread_count', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('items').that.is.an('array');",
+                  "    pm.expect(jsonData).to.have.property('total').that.is.a('number');",
+                  "    pm.expect(jsonData).to.have.property('unread_count').that.is.a('number');",
+                  "});",
+                  "",
+                  "pm.test('Hay al menos una notificación del pedido creado', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.total).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "description": "Lista las notificaciones del admin (deben existir por la orden creada en carpeta F)."
+          },
+          "response": []
+        },
+        {
+          "name": "34. Contar no leídas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Conteo obtenido - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('unread_count es un número', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('unread_count').that.is.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unread-count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "35. Marcar todas como leídas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Marcadas como leídas - 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta confirma la operación', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('detail').that.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Consulta y gestión de notificaciones del usuario autenticado."
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""Tests de notificaciones de tareas (routers/orders_tasks.py)."""
+"""Tests de notificaciones de tareas (api/orders_tasks.py)."""
 
 import uuid
 

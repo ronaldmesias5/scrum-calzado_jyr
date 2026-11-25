@@ -36,7 +36,7 @@
 
 ### Implementación
 
-**Backend — `be/app/routers/reports.py`:**
+**Backend — `be/app/api/reports.py`:**
 
 - `GET /global/production` (líneas 705-814):
   - Si no se especifica `start_date`, calcula `now - days` (default 30)
@@ -93,7 +93,7 @@
 
 ### Implementación Actual (Parcial)
 
-**Backend — `be/app/routers/reports.py`:**
+**Backend — `be/app/api/reports.py`:**
 
 - `GET /customer/{user_id}` (líneas 656-703):
   - Consulta `Order` por `customer_id`
@@ -127,7 +127,7 @@
 ## Cambios Técnicos
 
 **Archivos modificados en el backend:**
-- `be/app/routers/reports.py` — Endpoints `GET /global/production` (705-814), `GET /global/sales` (816-859), `GET /customer/{user_id}` (656-703)
+- `be/app/api/reports.py` — Endpoints `GET /global/production` (705-814), `GET /global/sales` (816-859), `GET /customer/{user_id}` (656-703)
 - `be/app/schemas/reports.py` — Schemas: `ProductionGlobalReport`, `ProductionWeeklyMetric`, `SalesGlobalReport`, `SalesWeeklyMetric`, `CustomerReportResponse`, `OrderSummary`, `OrderItemSummary`
 
 **Archivos modificados en el frontend:**

@@ -79,8 +79,8 @@ El jefe puede asignar tareas a empleados específicos, y los empleados pueden au
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/routers/orders_tasks.py` | +3 endpoints de tareas (creación batch, asignación, listado) |
-| `be/app/routers/dashboard_empleado_tasks.py` | +2 endpoints (tareas disponibles, reclamar) |
+| `be/app/api/orders_tasks.py` | +3 endpoints de tareas (creación batch, asignación, listado) |
+| `be/app/api/dashboard_empleado_tasks.py` | +2 endpoints (tareas disponibles, reclamar) |
 | `be/app/models/task.py` | Modelo `Task` con campos para producción |
 | `be/app/schemas/orders.py` | Schemas: `ProductionTaskResponse`, `TaskCreateRequest` |
 | `be/alembic/versions/XXX_task_tables.py` | Migración para tablas de tareas |

@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,28 +40,28 @@ from app.models import (  # noqa: F401
     type_document,
     user,
 )
-from app.routers.auth import router as auth_router
-from app.routers.bulk_import import router as bulk_import_router
-from app.routers.catalog_brands import router as catalog_brands_router
-from app.routers.catalog_categories import router as catalog_categories_router
-from app.routers.catalog_inventory import router as catalog_inventory_router
-from app.routers.catalog_products import router as catalog_products_router
-from app.routers.catalog import router as catalog_router
-from app.routers.catalog_styles import router as catalog_styles_router
-from app.routers.client import router as client_router
-from app.routers.dashboard_empleado import router as dashboard_empleado_router
-from app.routers.dashboard_jefe import router as dashboard_jefe_router
-from app.routers.notifications import router as notifications_router
-from app.routers.orders import router as orders_router
-from app.routers.orders_tasks import router as orders_tasks_router
-from app.routers.reports import router as reports_router
-from app.routers.scrap import router as scrap_router
-from app.routers.supplies import router as supplies_router
-from app.routers.type_document import router as type_document_router
-from app.routers.admin import router as admin_router
-from app.routers.client_prices import router as client_prices_router
-from app.routers.users import router as users_router
-from app.routers.ai_chat import router as ai_chat_router
+from app.api.auth import router as auth_router
+from app.api.bulk_import import router as bulk_import_router
+from app.api.catalog_brands import router as catalog_brands_router
+from app.api.catalog_categories import router as catalog_categories_router
+from app.api.catalog_inventory import router as catalog_inventory_router
+from app.api.catalog_products import router as catalog_products_router
+from app.api.catalog import router as catalog_router
+from app.api.catalog_styles import router as catalog_styles_router
+from app.api.client import router as client_router
+from app.api.dashboard_empleado import router as dashboard_empleado_router
+from app.api.dashboard_jefe import router as dashboard_jefe_router
+from app.api.notifications import router as notifications_router
+from app.api.orders import router as orders_router
+from app.api.orders_tasks import router as orders_tasks_router
+from app.api.reports import router as reports_router
+from app.api.scrap import router as scrap_router
+from app.api.supplies import router as supplies_router
+from app.api.type_document import router as type_document_router
+from app.api.admin import router as admin_router
+from app.api.client_prices import router as client_prices_router
+from app.api.users import router as users_router
+from app.api.ai_chat import router as ai_chat_router
 
 
 @asynccontextmanager
@@ -143,16 +143,23 @@ app = FastAPI(
 # 🔒 MIDDLEWARES DE SEGURIDAD (OWASP Top 10)
 # ────────────────────────────
 # Orden de ejecución (abajo → arriba):
-# 1. ErrorHandlerMiddleware: Captura excepciones no manejadas
+# 1. SecurityHeadersMiddleware: Agrega headers de seguridad
 # 2. RateLimitMiddleware: Limita intentos de fuerza bruta
-# 3. SecurityHeadersMiddleware: Agrega headers de seguridad
-# 4. CORSMiddleware: Valida origen CORS
+# 3. ErrorHandlerMiddleware: Captura excepciones no manejadas
+# 4. CSRFMiddleware: Valida el token CSRF en métodos de escritura
+# 5. GZipMiddleware: Comprime las respuestas JSON de más de 1 kB
+# 6. CORSMiddleware: Valida origen CORS (último registrado = el más externo)
 
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(CSRFMiddleware)
+
+# GZipMiddleware se registra ANTES de CORSMiddleware para que CORS quede como el
+# middleware más externo de la cadena. minimum_size=1000: solo respuestas ≥ 1 kB
+# (evita overhead en payloads pequeños).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORSMiddleware debe ser el último (el más externo) para manejar OPTIONS correctamente
 app.add_middleware(
@@ -174,10 +181,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
 )
-
-# GzipMiddleware va después de CORS (más externo) para comprimir las respuestas JSON
-# finales. minimum_size=1000: solo respuestas ≥ 1 kB (evita overhead en payloads pequeños).
-app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # ────────────────────────────
@@ -285,35 +288,3 @@ def health_check() -> JSONResponse:
     )
 
 
-# ────────────────────────────
-# 📍 Endpoint para servir imágenes (con CORS explícito)
-# ────────────────────────────
-
-from fastapi.responses import FileResponse
-
-
-@app.get(
-    "/api/v1/uploads/{file_path:path}",
-    tags=["uploads"],
-    summary="Servir imagen con CORS",
-    include_in_schema=False,
-)
-async def serve_image(file_path: str):
-    """Sirve una imagen desde el directorio de uploads con CORS explícito."""
-    file_location = _uploads_path / file_path
-
-    # Seguridad: prevenir path traversal
-    if not file_location.resolve().is_relative_to(_uploads_path.resolve()):
-        raise HTTPException(status_code=403, detail="Acceso denegado")
-
-    if not file_location.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-
-    return FileResponse(
-        path=file_location,
-        headers={
-            "Cache-Control": "public, max-age=86400",
-            "Content-Disposition": "inline",
-            "Access-Control-Allow-Origin": settings.FRONTEND_URL,
-        },
-    )

@@ -160,7 +160,7 @@ El requerimiento se considera correctamente implementado cuando el jefe puede re
 
 **Descripción:**
 
-Este requerimiento permite organizar los productos del catálogo digital en categorías definidas, facilitando la navegación y la búsqueda por parte de los usuarios. El catálogo público expone el listado de categorías para filtrar productos. Verificado en código: existe CRUD administrativo completo en `be/app/routers/catalog_categories.py` (GET/POST/PUT/DELETE `/admin/categories`) con validación de nombres únicos, registrado en `main.py`.
+Este requerimiento permite organizar los productos del catálogo digital en categorías definidas, facilitando la navegación y la búsqueda por parte de los usuarios. El catálogo público expone el listado de categorías para filtrar productos. Verificado en código: existe CRUD administrativo completo en `be/app/api/catalog_categories.py` (GET/POST/PUT/DELETE `/admin/categories`) con validación de nombres únicos, registrado en `main.py`.
 
 **Controles y Restricciones:**
 
@@ -304,7 +304,7 @@ El requerimiento se considera correctamente implementado cuando el cliente mayor
 
 **Descripción:**
 
-Este requerimiento permite al sistema generar notificaciones automáticas dirigidas a los jefes cada vez que un cliente mayorista registra un nuevo pedido (`_trigger_notifications` en `routers/orders.py`, broadcast WS en `ws_manager`, emails fire-and-forget). La funcionalidad asegura que el equipo operativo quede informado sobre las solicitudes entrantes. La notificación incluye datos esenciales del pedido y queda registrada para trazabilidad operativa; sin garantía de latencia menor a 5 segundos.
+Este requerimiento permite al sistema generar notificaciones automáticas dirigidas a los jefes cada vez que un cliente mayorista registra un nuevo pedido (`_trigger_notifications` en `api/orders.py`, broadcast WS en `ws_manager`, emails fire-and-forget). La funcionalidad asegura que el equipo operativo quede informado sobre las solicitudes entrantes. La notificación incluye datos esenciales del pedido y queda registrada para trazabilidad operativa; sin garantía de latencia menor a 5 segundos.
 
 **Controles y Restricciones:**
 
@@ -422,7 +422,7 @@ El requerimiento se considera correctamente implementado cuando al completar el 
 | **Prioridad** | Alta |
 | **Estado** | Pendiente de implementar |
 
-**Nota de estado:** no existe modelo ni endpoint de ventas (sin `Sale` en `be/app/models` ni `be/app/routers`; `GET /reports/global/sales` es solo agregación de pedidos, no registro de ventas). Lo descrito abajo es la especificación a implementar, igual que HU-018.
+**Nota de estado:** no existe modelo ni endpoint de ventas (sin `Sale` en `be/app/models` ni `be/app/api`; `GET /reports/global/sales` es solo agregación de pedidos, no registro de ventas). Lo descrito abajo es la especificación a implementar, igual que HU-018.
 
 **Descripción:**
 
@@ -570,7 +570,7 @@ El requerimiento se considera correctamente implementado cuando el empleado pued
 
 **Descripción:**
 
-Este requerimiento permite al empleado asignado a una tarea registrar observaciones técnicas durante su ejecución y cambiar el estado de su tarea (por ejemplo a `en_progreso` o `completado`) mediante `PATCH /tasks/{id}/status` con `{status, observation}` (`be/app/schemas/dashboard_empleado.py:102-115`). El registro de incidencias existe pero en un flujo separado (`be/app/routers/dashboard_empleado_incidences.py:222-252`): la incidencia de producto queda en estado pendiente con foto de evidencia para revisión del jefe. No existe check-in/entrada ni salida con hora del servidor, no hay pausa ni cálculo de tiempo real invertido, no se genera ticket automático, no hay latencia garantizada inferior a 60 segundos y no existe el estado `bloqueada` en el modelo `Task` (`be/app/models/tasks.py:35-42`).
+Este requerimiento permite al empleado asignado a una tarea registrar observaciones técnicas durante su ejecución y cambiar el estado de su tarea (por ejemplo a `en_progreso` o `completado`) mediante `PATCH /tasks/{id}/status` con `{status, observation}` (`be/app/schemas/dashboard_empleado.py:102-115`). El registro de incidencias existe pero en un flujo separado (`be/app/api/dashboard_empleado_incidences.py:222-252`): la incidencia de producto queda en estado pendiente con foto de evidencia para revisión del jefe. No existe check-in/entrada ni salida con hora del servidor, no hay pausa ni cálculo de tiempo real invertido, no se genera ticket automático, no hay latencia garantizada inferior a 60 segundos y no existe el estado `bloqueada` en el modelo `Task` (`be/app/models/tasks.py:35-42`).
 
 **Controles y Restricciones:**
 
@@ -642,7 +642,7 @@ El requerimiento se considera parcialmente implementado: al completar una tarea 
 
 **Descripción:**
 
-Este requerimiento permite editar tareas registradas. Verificado en código: existe `PUT /orders/tasks/{task_id}` en `be/app/routers/orders_tasks.py` que permite editar fase, prioridad, notas, fechas y asignación. Además existen los PATCH de asignación, estado y prioridad. **No existe DELETE**: las tareas no se eliminan porque tienen relaciones FK con pedidos, vales e incidencias; la decisión de diseño es que solo se editan, no se borran. No hay cancelación con motivo, ni auditoría de cambios. Una tarea completada sí puede editarse porque el estado es reversible a en_progreso.
+Este requerimiento permite editar tareas registradas. Verificado en código: existe `PUT /orders/tasks/{task_id}` en `be/app/api/orders_tasks.py` que permite editar fase, prioridad, notas, fechas y asignación. Además existen los PATCH de asignación, estado y prioridad. **No existe DELETE**: las tareas no se eliminan porque tienen relaciones FK con pedidos, vales e incidencias; la decisión de diseño es que solo se editan, no se borran. No hay cancelación con motivo, ni auditoría de cambios. Una tarea completada sí puede editarse porque el estado es reversible a en_progreso.
 
 **Controles y Restricciones:**
 

@@ -37,7 +37,7 @@
 
 ### Implementación
 
-**Backend — `be/app/routers/client.py`:**
+**Backend — `be/app/api/client.py`:**
 
 - `GET /orders` (líneas 53-76):
   - Consulta `Order` con `selectinload(Order.details).selectinload(OrderDetail.product).selectinload(Product.inventory)` para eager loading completo
@@ -109,7 +109,7 @@
 
 ### Implementación Actual (Parcial)
 
-**Backend — `be/app/routers/dashboard_empleado_incidences.py`:**
+**Backend — `be/app/api/dashboard_empleado_incidences.py`:**
 
 - `GET /incidences` (líneas 208-258):
   - Join de `Incidence` con `Task` para filtrar por `task.assigned_to == current_user.id`
@@ -160,9 +160,9 @@
 ## Cambios Técnicos
 
 **Archivos creados/modificados en el backend:**
-- `be/app/routers/client.py` — Nuevo router con 2 endpoints (99 líneas)
+- `be/app/api/client.py` — Nuevo router con 2 endpoints (99 líneas)
 - `be/app/schemas/client.py` — Schemas de cliente: `ClientOrderListResponse`, `ClientOrderResponse`, `ClientOrderDetailItem`
-- `be/app/routers/dashboard_empleado_incidences.py` — Endpoint `GET /incidences` (líneas 208-258)
+- `be/app/api/dashboard_empleado_incidences.py` — Endpoint `GET /incidences` (líneas 208-258)
 
 **Archivos creados/modificados en el frontend:**
 - `fe/src/pages/client/OrdersPage.tsx` — Nueva página (232 líneas)

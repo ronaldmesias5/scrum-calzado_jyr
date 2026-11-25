@@ -1,0 +1,382 @@
+"""
+Rutas administrativas para gestión de inventario
+Admin y Jefe pueden gestionar stock, movimientos y pares fabricados
+"""
+
+import uuid
+from datetime import datetime, timezone
+from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.dependencies import get_current_user, get_db, _require_admin_or_jefe
+from app.models.inventory import Inventory
+from app.models.inventory_movement import InventoryMovement, InventoryMovementType
+from app.models.user import User
+from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.product_repository import ProductRepository
+from app.schemas.catalog_admin import (
+    InventoryCreateRequest,
+    BulkInventoryUpdateRequest,
+    InventoryMovementCreateRequest,
+)
+
+router = APIRouter(
+    prefix="/api/v1/admin/catalog",
+    tags=["admin-catalog"],
+)
+
+
+@router.get("/inventory", summary="Listar inventario (con filtros opcionales)")
+def list_inventory(
+    product_id: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Obtiene inventario con filtros opcionales"""
+    _require_admin_or_jefe(current_user)
+
+    product_uuid = None
+    if product_id:
+        try:
+            product_uuid = uuid.UUID(product_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
+
+    inventory = InventoryRepository(db).list_all(product_id=product_uuid)
+    
+    return {
+        "inventory": [
+            {
+                "id": str(inv.id),
+                "product_id": str(inv.product_id),
+                "product_name": inv.product.name_product if inv.product else "Unknown",
+                "size": inv.size,
+                "colour": inv.colour,
+                "quantity": inv.amount,
+                "created_at": inv.created_at.isoformat() if inv.created_at else None,
+            }
+            for inv in inventory
+        ]
+    }
+
+
+@router.post("/inventory", summary="Crear o actualizar inventario")
+def create_or_update_inventory(
+    req: InventoryCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Crea o actualiza el inventario de un producto con una talla"""
+    _require_admin_or_jefe(current_user)
+    
+    try:
+        product_uuid = uuid.UUID(req.product_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
+    
+    # Verificar que el producto exista
+    product = ProductRepository(db).get_by_id(product_uuid)
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    inv_repo = InventoryRepository(db)
+    # Buscar inventario existente (tomar todos para auto-sanar duplicados)
+    existing_invs = inv_repo.find_for_product_size_colour(product_uuid, req.size, req.colour)
+    
+    if existing_invs:
+        existing_inv = existing_invs[0]
+        old_amount = sum(float(inv.amount or 0) for inv in existing_invs)
+        
+        # Calcular diferencia para el movimiento
+        diff = req.quantity - old_amount
+        
+        # Actualizar
+        existing_inv.amount = req.quantity
+        existing_inv.updated_at = datetime.now(timezone.utc)
+        
+        # Eliminar los duplicados si existen para evitar sumas fantasma
+        for dup in existing_invs[1:]:
+            dup.deleted_at = datetime.now(timezone.utc)
+            dup.amount = 0
+            inv_repo.add(dup)
+        
+        if diff != 0:
+            movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
+            inv_repo.add_movement(InventoryMovement(
+                id=uuid.uuid4(),
+                product_id=product_uuid,
+                user_id=current_user.id,
+                type_of_movement=movement_type,
+                size=req.size,
+                amount=abs(diff),
+                reason="Ajuste manual (Panel Admin)",
+                movement_date=datetime.now(timezone.utc)
+            ))
+            
+        db.commit()
+        db.refresh(existing_inv)
+        return {
+            "id": str(existing_inv.id),
+            "product_id": str(existing_inv.product_id),
+            "product_name": product.name_product,
+            "size": existing_inv.size,
+            "colour": existing_inv.colour,
+            "quantity": existing_inv.amount,
+            "message": "Inventario actualizado exitosamente"
+        }
+    else:
+        # Crear nuevo
+        inventory = Inventory(
+            id=uuid.uuid4(),
+            product_id=product_uuid,
+            size=req.size,
+            colour=req.colour or None,
+            amount=req.quantity,
+        )
+        inv_repo.add(inventory)
+        
+        # Registrar movimiento de entrada inicial
+        if req.quantity > 0:
+            inv_repo.add_movement(InventoryMovement(
+                id=uuid.uuid4(),
+                product_id=product_uuid,
+                user_id=current_user.id,
+                type_of_movement=InventoryMovementType.entrada,
+                size=req.size,
+                amount=req.quantity,
+                reason="Stock inicial (Panel Admin)",
+                movement_date=datetime.now(timezone.utc)
+            ))
+            
+        db.commit()
+        db.refresh(inventory)
+        return {
+            "id": str(inventory.id),
+            "product_id": str(inventory.product_id),
+            "product_name": product.name_product,
+            "size": inventory.size,
+            "colour": inventory.colour,
+            "quantity": inventory.amount,
+            "message": "Inventario creado exitosamente"
+        }
+
+
+@router.delete("/inventory/{inventory_id}", summary="Eliminar inventario")
+def delete_inventory(
+    inventory_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Elimina lógicamente un registro de inventario"""
+    _require_admin_or_jefe(current_user)
+    
+    try:
+        inventory_uuid = uuid.UUID(inventory_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
+    
+    inventory = InventoryRepository(db).get_by_id(inventory_uuid)
+    if not inventory:
+        raise HTTPException(status_code=404, detail="Inventario no encontrado")
+    
+    inventory.deleted_at = datetime.now(timezone.utc)
+    db.commit()
+    
+    return {"message": "Inventario eliminado exitosamente"}
+
+
+@router.post("/inventory/bulk", summary="Actualizar inventario de múltiples tallas")
+def bulk_update_inventory(
+    req: BulkInventoryUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Crea o actualiza el inventario de un producto para múltiples tallas a la vez"""
+    _require_admin_or_jefe(current_user)
+    
+    try:
+        try:
+            product_uuid = uuid.UUID(req.product_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="El formato del ID de producto es incorrecto")
+        
+        # Verificar que el producto exista
+        product = ProductRepository(db).get_by_id(product_uuid)
+        if not product:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+        inv_repo = InventoryRepository(db)
+        updated_count = 0
+        created_count = 0
+        results = []
+        
+        # PRIMERO: Obtener todas las tallas actuales del producto
+        current_inventory = inv_repo.list_live_for_product(product_uuid)
+        
+        # SEGUNDO: Actualizar o crear las tallas en el request
+        for size_str, quantity in req.quantities.items():
+            size = str(size_str).strip()
+            if not size:
+                continue
+            
+            # Convertir cantidad a entero
+            quantity = int(quantity) if isinstance(quantity, (int, float)) else int(str(quantity))
+            
+            # Buscar inventario existente (tomar todos para auto-sanar duplicados)
+            existing_invs = inv_repo.find_for_product_size_no_colour(product_uuid, size)
+            
+            if existing_invs:
+                existing_inv = existing_invs[0]
+                old_amount = sum(float(inv.amount or 0) for inv in existing_invs)
+                diff = quantity - old_amount
+                
+                # Actualizar el principal
+                existing_inv.amount = quantity
+                existing_inv.updated_at = datetime.now(timezone.utc)
+                inv_repo.add(existing_inv)
+                
+                # Eliminar los duplicados si existen para evitar sumas fantasma
+                for dup in existing_invs[1:]:
+                    dup.deleted_at = datetime.now(timezone.utc)
+                    dup.amount = 0
+                    inv_repo.add(dup)
+                
+                if diff != 0:
+                    movement_type = InventoryMovementType.entrada if diff > 0 else InventoryMovementType.salida
+                    inv_repo.add_movement(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=product_uuid,
+                        user_id=current_user.id,
+                        type_of_movement=movement_type,
+                        size=size,
+                        amount=abs(diff),
+                        reason="Ajuste masivo (Panel Admin)",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+                
+                updated_count += 1
+                results.append({
+                    "size": size,
+                    "quantity": quantity,
+                    "action": "updated"
+                })
+            else:
+                # Solo crear si quantity > 0
+                if quantity > 0:
+                    inventory = Inventory(
+                        id=uuid.uuid4(),
+                        product_id=product_uuid,
+                        size=size,
+                        amount=quantity,
+                    )
+                    inv_repo.add(inventory)
+                    
+                    inv_repo.add_movement(InventoryMovement(
+                        id=uuid.uuid4(),
+                        product_id=product_uuid,
+                        user_id=current_user.id,
+                        type_of_movement=InventoryMovementType.entrada,
+                        size=size,
+                        amount=quantity,
+                        reason="Stock masivo inicial (Panel Admin)",
+                        movement_date=datetime.now(timezone.utc)
+                    ))
+                    
+                    created_count += 1
+                    results.append({
+                        "size": size,
+                        "quantity": quantity,
+                        "action": "created"
+                    })
+                else:
+                    pass
+        
+        db.commit()
+        
+        # Calcular stock_total actualizado
+        stock_total = inv_repo.stock_total_for_product(product_uuid)
+        
+        return {
+            "product_id": str(product_uuid),
+            "product_name": product.name_product,
+            "stock_total": int(stock_total),
+            "updated_count": updated_count,
+            "created_count": created_count,
+            "results": results,
+            "message": f"Inventario actualizado: {created_count} creados, {updated_count} actualizados"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al actualizar inventario: {str(e)}")
+
+
+@router.post("/inventory/movements", summary="Registrar un movimiento de inventario")
+def create_inventory_movement(
+    request: InventoryMovementCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Registra un movimiento (salida/entrada) y actualiza el inventario (amount) disponible en bodega.
+    Usado principalmente para descontar stock al iniciar producción de faltantes.
+    """
+    _require_admin_or_jefe(current_user)
+    
+    try:
+        product_uuid = UUID(request.product_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El formato del ID es incorrecto")
+    
+    # 1. Buscar inventario para ese producto y talla (FOR UPDATE: evita doble descuento)
+    inv_repo = InventoryRepository(db)
+    inventory_items = inv_repo.list_for_update(product_uuid, request.size)
+    
+    if not inventory_items:
+        raise HTTPException(status_code=404, detail="Inventario no encontrado para esta talla")
+        
+    # Usar el registro principal (el primero)
+    inv = inventory_items[0]
+    
+    # 2. Actualizar amount dependiendo del tipo de movimiento
+    if request.movement_type == 'salida':
+        if inv.amount < Decimal(request.quantity):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Stock insuficiente: hay {inv.amount} y se solicitan {request.quantity}",
+            )
+        inv.amount -= Decimal(request.quantity)
+    elif request.movement_type == 'entrada':
+        inv.amount += Decimal(request.quantity)
+    # Si es 'reserva' o 'ajuste', la lógica podría ser diferente, por ahora nos enfocamos en salida/entrada.
+        
+    inv_repo.add(inv)
+    
+    # 3. Registrar el movimiento
+    mov_type_enum = InventoryMovementType.salida if request.movement_type == 'salida' else InventoryMovementType.entrada
+    if request.movement_type == 'ajuste':
+        mov_type_enum = InventoryMovementType.ajuste
+    
+    movement = InventoryMovement(
+        id=uuid.uuid4(),
+        product_id=product_uuid,
+        user_id=current_user.id,
+        type_of_movement=mov_type_enum,
+        size=request.size,
+        colour=inv.colour, # Usar el color del inventario
+        amount=Decimal(request.quantity),
+        reason=request.notes or f"Movimiento manual de {request.movement_type} (Referencia: {request.reference_id})",
+        movement_date=datetime.now(timezone.utc)
+    )
+    inv_repo.add_movement(movement)
+    
+    try:
+        db.commit()
+        return {"status": "success", "message": "Inventario actualizado correctamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al registrar movimiento: {str(e)}")

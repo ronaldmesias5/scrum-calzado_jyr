@@ -22,7 +22,7 @@ dependencies = [
     "python-multipart>=0.0.18",
     
     # 🗄️ Base de datos y ORM
-    "sqlalchemy>=2.0.0",
+    "sqlalchemy>=2.0.0,<2.1",
     "alembic>=1.14.0",
     "psycopg2-binary>=2.9.0",
     
@@ -33,8 +33,7 @@ dependencies = [
     
     # 🔐 Seguridad y autenticación
     "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.0",
-    "bcrypt>=4.0.0,<4.1.0",
+    "bcrypt>=4.1.0",
     
     # 📧 Email
     "aiosmtplib>=3.0.0",
@@ -44,7 +43,6 @@ dependencies = [
     "openai>=1.0.0",
     "groq>=0.11.0",
     "google-generativeai>=0.8.0",
-    "tiktoken>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -57,6 +55,11 @@ dev = [
     
     # 🔍 Linting y formateo
     "ruff>=0.8.0",
+]
+
+test-ui = [
+    # 🕸️ Usado por los scripts de test/selenium/ (no entra en pytest ni en producción)
+    "selenium>=4.20.0",
 ]
 
 [tool.ruff]

@@ -78,8 +78,8 @@ El jefe/admin puede modificar el estado, la asignación y los detalles de las ta
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/routers/dashboard_empleado.py` | +2 endpoints (observación, incidencias) |
-| `be/app/routers/orders_tasks.py` | Endpoints PATCH status y PATCH assign existentes |
+| `be/app/api/dashboard_empleado.py` | +2 endpoints (observación, incidencias) |
+| `be/app/api/orders_tasks.py` | Endpoints PATCH status y PATCH assign existentes |
 | `be/app/schemas/dashboard_empleado.py` | Schemas: `TaskObservationUpdate`, `EmployeeIncidenceSchema` |
 | `be/app/models/incidence.py` | Modelo `Incidence` con campos de incidencia |
 | `fe/src/pages/employee/IncidencesPage.tsx` | Lista de incidencias con filtro de estado |

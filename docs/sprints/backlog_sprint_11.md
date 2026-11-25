@@ -77,8 +77,8 @@ El empleado o jefe puede marcar una tarea como completada, lo que dispara la cre
 
 | Archivo | Cambio |
 |---------|--------|
-| `be/app/routers/dashboard_empleado.py` | 5 endpoints para dashboard, tareas, vales |
-| `be/app/routers/orders_tasks.py` | Endpoint PATCH status con auto-creación de etapa siguiente |
+| `be/app/api/dashboard_empleado.py` | 5 endpoints para dashboard, tareas, vales |
+| `be/app/api/orders_tasks.py` | Endpoint PATCH status con auto-creación de etapa siguiente |
 | `be/app/models/task.py` | Modelo `Task` con relaciones a producto y usuario |
 | `be/app/models/inventory.py` | Modelo `InventoryMovement` para registrar producción |
 | `be/app/schemas/orders.py` | Schemas de tareas, vale, dashboard |

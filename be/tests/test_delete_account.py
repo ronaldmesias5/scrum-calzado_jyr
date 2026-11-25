@@ -46,7 +46,7 @@ def _login_headers(client, email, password) -> dict:
 
 def test_delete_account_request_schema_validation():
     """El schema DeleteAccountRequest valida correctamente."""
-    from app.routers.users import DeleteAccountRequest
+    from app.api.users import DeleteAccountRequest
 
     req = DeleteAccountRequest(password="Test1234!")
     assert req.password == "Test1234!"
@@ -131,4 +131,23 @@ def test_csrf_cookie_is_set(client):
     response = client.get("/api/v1/document-types/")
     cookies = dict(response.cookies)
     assert "csrf_token" in cookies, "El cookie csrf_token debería estar presente"
-    assert len(cookies["csrf_token"]) == 64, "El token CSRF debería tener 64 caracteres hex"
+    nonce, signature = cookies["csrf_token"].split(".")
+    assert len(nonce) == 64, "El nonce CSRF debería tener 64 caracteres hex"
+    assert len(signature) == 64, "La firma CSRF debería tener 64 caracteres hex"
+    assert all(c in "0123456789abcdef" for c in nonce + signature)
+
+
+def test_csrf_middleware_skips_bearer_requests(client):
+    """Las peticiones con Authorization Bearer no exigen token CSRF (app móvil)."""
+    response = client.post(
+        "/api/v1/auth/logout",
+        headers={"Authorization": "Bearer token-de-prueba"},
+    )
+    assert response.status_code == 200, response.text
+
+
+def test_csrf_middleware_blocks_cookie_mutations_without_token(client):
+    """Sin Bearer y sin token CSRF, una mutación es rechazada."""
+    client.cookies.pop("csrf_token", None)
+    response = client.post("/api/v1/auth/logout")
+    assert response.status_code == 403, response.text

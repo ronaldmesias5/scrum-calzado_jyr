@@ -15,8 +15,8 @@ Backend FastAPI para el sistema de gestión de calzado.
 
 ```
 be/app/
-├── routers/         # 25 routers FastAPI (22 registrados en main.py)
-├── controllers/     # 7 controllers (business logic delegation)
+├── api/             # 25 routers FastAPI (22 registrados en main.py)
+├── repositories/    # 19 repositorios (acceso a datos)
 ├── services/        # 10 services (domain logic)
 ├── models/          # 26 modelos SQLAlchemy (30 tablas)
 ├── schemas/         # 15 esquemas Pydantic (request/response)

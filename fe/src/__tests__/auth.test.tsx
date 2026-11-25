@@ -3,6 +3,11 @@
 // ════════════════════════════════════════
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  clearLegacyTokens,
+  getAccessToken,
+  setAccessToken
+} from '@/services/tokenStore';
 
 // Mock del API de auth
 vi.mock('@/services/authService', () => ({
@@ -19,6 +24,8 @@ describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
+    setAccessToken(null);
   });
 
   it('debe iniciar con usuario null y loading true', () => {
@@ -27,32 +34,29 @@ describe('AuthContext', () => {
     expect(true).toBe(true);
   });
 
-  it('debe guardar tokens en sessionStorage al hacer login', async () => {
-    // Test de integración del flujo de login
-    const testAccessToken = 'test-access-token';
-    const testRefreshToken = 'test-refresh-token';
+  it('debe guardar el token de acceso solo en memoria', () => {
+    setAccessToken('test-access-token');
 
-    sessionStorage.setItem('access_token', testAccessToken);
-    sessionStorage.setItem('refresh_token', testRefreshToken);
-
-    expect(sessionStorage.getItem('access_token')).toBe(testAccessToken);
-    expect(sessionStorage.getItem('refresh_token')).toBe(testRefreshToken);
+    expect(getAccessToken()).toBe('test-access-token');
+    expect(sessionStorage.getItem('access_token')).toBeNull();
+    expect(localStorage.getItem('access_token')).toBeNull();
   });
 
-  it('debe limpiar sessionStorage al hacer logout', () => {
+  it('debe limpiar el token en memoria y los restos legacy al hacer logout', () => {
     sessionStorage.setItem('access_token', 'some-token');
-    sessionStorage.setItem('refresh_token', 'some-refresh');
+    localStorage.setItem('refresh_token', 'some-refresh');
+    setAccessToken('some-token');
 
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
+    clearLegacyTokens();
+    setAccessToken(null);
 
+    expect(getAccessToken()).toBeNull();
     expect(sessionStorage.getItem('access_token')).toBeNull();
-    expect(sessionStorage.getItem('refresh_token')).toBeNull();
+    expect(localStorage.getItem('refresh_token')).toBeNull();
   });
 
   it('debe considerar no autenticado si no hay token', () => {
-    const token = sessionStorage.getItem('access_token');
-    const isAuthenticated = !!token;
-    expect(isAuthenticated).toBe(false);
+    setAccessToken(null);
+    expect(!!getAccessToken()).toBe(false);
   });
 });

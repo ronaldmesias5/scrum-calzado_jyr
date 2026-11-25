@@ -1,5 +1,5 @@
-"""Tests del catálogo admin e inventario (routers/catalog_products.py,
-routers/catalog_inventory.py): CRUD de productos, bulk de inventario,
+"""Tests del catálogo admin e inventario (api/catalog_products.py,
+api/catalog_inventory.py): CRUD de productos, bulk de inventario,
 pares fabricados e inventario por talla.
 """
 

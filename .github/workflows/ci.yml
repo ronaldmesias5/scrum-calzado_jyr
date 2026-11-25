@@ -11,14 +11,17 @@ jobs:
     name: Escaneo de secretos (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # Historial completo para detectar secretos filtrados en commits pasados
           fetch-depth: 0
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Ruta explícita: gitleaks la resolvería igual por autodiscovery,
+          # pero así falla ruidosamente si el archivo se renombra o se borra.
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   backend:
     name: Backend (ruff + pytest + coverage)
@@ -66,17 +69,17 @@ jobs:
       run:
         working-directory: be
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           # Caché de descargas de uv claveada por uv.lock
           enable-cache: true
           cache-dependency-glob: "be/uv.lock"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -91,7 +94,7 @@ jobs:
 
       - name: Subir reporte de cobertura
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backend-coverage
           path: be/coverage.xml
@@ -105,15 +108,15 @@ jobs:
       run:
         working-directory: fe
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 11.0.9
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           # Caché del store de pnpm claveada por el lockfile
@@ -139,7 +142,7 @@ jobs:
     name: Escaneo de seguridad (SAST + dependencias + contenedores)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # SAST — análisis estático de código (Python/TS/JS/YAML)
       # Non-blocking al inicio: revisar hallazgos y ajustar umbral después
@@ -149,7 +152,7 @@ jobs:
 
       # Dependencias Python (backend): export de uv.lock → pip-audit
       - name: Exportar dependencias backend
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           enable-cache: true
           cache-dependency-glob: "be/uv.lock"
@@ -173,7 +176,7 @@ jobs:
       # aquasecurity/setup-trivy@v0.2.1, un tag eliminado upstream → el job falla
       # antes de ejecutar los steps.
       - name: Trivy (filesystem + IaC)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: "."

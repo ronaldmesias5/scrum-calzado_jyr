@@ -4,8 +4,9 @@
 
 import re
 from typing import Annotated
+from urllib.parse import urlparse
 
-from pydantic import AfterValidator
+from pydantic import AfterValidator, EmailStr
 
 
 def _bounded_text(label: str, min_len: int, max_len: int, upper: bool = False):
@@ -70,9 +71,27 @@ def _must_accept_terms(v: bool) -> bool:
     return v
 
 
+def _normalize_email(v: str) -> str:
+    """Normaliza el correo a minúsculas y sin espacios (evita duplicados por casing)."""
+    return v.strip().lower()
+
+
+def _check_evidence_url(v: str) -> str:
+    """Valida que la evidencia adjunta sea una URL http(s) bien formada."""
+    v = v.strip()
+    parsed = urlparse(v)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("La URL de evidencia debe ser una dirección http(s) válida")
+    if len(v) > 500:
+        raise ValueError("La URL de evidencia no puede exceder 500 caracteres")
+    return v
+
+
 # ── Tipos Annotated reutilizables ──
 # Nota: `X | None = None` corta la validación para None (None no pasa por AfterValidator).
 PasswordStr = Annotated[str, AfterValidator(_check_password)]
+EmailNormalizedStr = Annotated[EmailStr, AfterValidator(_normalize_email)]
+EvidenceUrlStr = Annotated[str, AfterValidator(_check_evidence_url)]
 PhoneStr = Annotated[str, AfterValidator(_check_phone)]
 IdentityDocStr = Annotated[str, AfterValidator(_check_identity_document)]
 IdentityDocLooseStr = Annotated[str, AfterValidator(_check_identity_document_loose)]

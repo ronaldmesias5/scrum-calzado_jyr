@@ -1,0 +1,570 @@
+# ════════════════════════════════════════
+# 📄 Rutas de tareas de producción y vales asociados a órdenes
+# ════════════════════════════════════════
+
+import logging
+import uuid
+from datetime import UTC, datetime
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from app.dependencies import _require_jefe, get_current_user, get_db
+from app.config import settings
+from app.models.notifications import NotificationType
+from app.services.notifications import create_notification, get_jefes
+from app.models.tasks import Task
+from app.models.user import User
+from app.repositories.order_repository import OrderRepository
+from app.repositories.task_repository import TaskRepository
+from app.repositories.user_repository import UserRepository
+from app.schemas.orders import (
+    AssignTaskEmployeeRequest,
+    ProductionBatchTasksRequest,
+    ProductionTaskResponse,
+    TaskDetailUpdateRequest,
+    TaskPriorityUpdateRequest,
+    TaskStatusUpdateRequest,
+)
+from app.services.orders import complete_emplantillado
+from app.services.supplies import deduct_supplies_for_production
+from app.utils.task_priority import calculate_task_priority
+
+router = APIRouter(
+    prefix="/api/v1/admin/orders",
+    tags=["orders"],
+)
+
+logger = logging.getLogger(__name__)
+
+
+@router.get("/tasks/next-number", summary="Obtener el siguiente número de vale")
+def get_next_vale_number(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    _require_jefe(current_user)
+    try:
+        max_vale = TaskRepository(db).max_vale_number()
+        return {"next_number": int(max_vale) + 1}
+    except Exception:
+        logger.exception("Error al calcular número de vale")
+        raise HTTPException(status_code=500, detail="Error al calcular número de vale")
+
+
+@router.get("/tasks/all", response_model=list[ProductionTaskResponse])
+def list_all_production_tasks(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    status: str | None = Query(None, description="Filtrar por estado"),
+    type: str | None = Query(None, description="Filtrar por tipo/cargo"),
+    assigned_to: uuid.UUID | None = Query(None, description="Filtrar por empleado"),
+) -> list[ProductionTaskResponse]:
+    """
+    Lista TODAS las tareas de producción del sistema con filtros.
+    """
+    _require_jefe(current_user)
+    try:
+        tasks_data = TaskRepository(db).list_all_with_totals(
+            status=status, type_=type, assigned_to=assigned_to
+        )  # Retorna tuplas (Task, total)
+
+        tasks_list = []
+        for t, total in tasks_data:
+            try:
+                tasks_list.append(ProductionTaskResponse(
+                    id=t.id,
+                    order_id=t.order_id,
+                    product_id=t.product_id,
+                    assigned_to=t.assigned_to,
+                    assigned_user_name=t.assigned_user.name_user + " " + t.assigned_user.last_name if t.assigned_user else "Sin asignar",
+                    assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+                    type=t.type,
+                    status=t.status,
+                    priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
+                    vale_number=t.vale_number,
+                    observation=t.observation,
+                    created_at=t.created_at,
+                    deadline=t.deadline,
+                    task_prices=t.product.task_prices if t.product else {},
+                    total_pairs=t.amount if t.amount > 0 else int(total or 0),
+                    amount=t.amount if t.amount > 0 else int(total or 0),
+                    description_task=t.description_task,
+                    product_name=t.product.name_product if t.product else None,
+                    product_category=t.product.category.name_category if t.product and t.product.category else None,
+                    product_image=t.product.image_url if t.product else None,
+                ))
+            except Exception:
+                logger.exception("Error al serializar tarea de producción")
+                continue
+
+        return tasks_list
+
+    except Exception:
+        logger.exception("Error al listar tareas")
+        raise HTTPException(status_code=500, detail="Error al listar tareas")
+
+
+@router.post("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
+def create_production_tasks(
+    order_id: uuid.UUID,
+    request: ProductionBatchTasksRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[ProductionTaskResponse]:
+    """
+    Crea un conjunto de tareas de producción para una orden.
+    Los pares se reservarán en inventario cuando se completa la etapa final (emplantillado).
+    """
+    try:
+        if current_user.occupation != "jefe":
+            raise HTTPException(status_code=403, detail="Solo el jefe puede asignar tareas")
+
+        task_repo = TaskRepository(db)
+
+        # Verificar orden
+        order = OrderRepository(db).get_by_id(order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Orden no encontrada")
+
+        # NO reservar pares aquí - se reservarán cuando se complete emplantillado
+        # Así evitamos contar los pares múltiples veces
+
+        # Calcular siguiente vale_number global (solo si no existe ya para este order+product)
+        max_vale = task_repo.max_vale_number()
+        next_vale = int(max_vale) + 1
+
+        new_tasks = []
+        now = datetime.now(UTC)
+
+        # Precargar en lote lo que el loop consulta por tarea (evita N+1)
+        active_rows = task_repo.list_active_by_order(order_id)
+        active_by_key = {(t.product_id, t.line_group, t.type): t for t in active_rows}
+        vale_rows = task_repo.min_vale_map_by_order(order_id)
+        vale_map = {(row[0], row[1]): row[2] for row in vale_rows}
+
+        for t_data in request.tasks:
+            # 1. Verificar si ya existe una tarea ACTIVA de este tipo para este order+product+line_group
+            # (Evitar duplicados si el usuario hace clic varias veces)
+            # Solo consideramos activas las que NO están canceladas
+            existing_task = active_by_key.get(
+                (t_data.product_id, t_data.line_group, t_data.type)
+            )
+
+            if existing_task:
+                # Ya existe una tarea activa: actualizamos el assigned_to si cambió,
+                # pero NO creamos un duplicado (solo si ambos tienen valor)
+                if t_data.assigned_to is not None and str(existing_task.assigned_to or '') != str(t_data.assigned_to):
+                    existing_task.assigned_to = t_data.assigned_to
+                    task_repo.add(existing_task)
+                new_tasks.append(existing_task)
+                continue
+
+            # 2. Reutilizar el vale_number si ya existe una tarea para el mismo order+product
+            existing_vale = vale_map.get((t_data.product_id, t_data.line_group))
+            task_vale = int(existing_vale) if existing_vale is not None else next_vale
+
+            task = Task(
+                id=uuid.uuid4(),
+                assigned_to=t_data.assigned_to,
+                order_id=order_id,
+                product_id=t_data.product_id,
+                line_group=t_data.line_group,
+                vale_number=task_vale,
+                amount=t_data.amount,
+                type=t_data.type,
+                description_task=t_data.description or f"Tarea de {t_data.type} para la orden {order_id}",
+                priority=t_data.priority or calculate_task_priority(order.delivery_date),
+                deadline=order.delivery_date,
+                assignment_date=now,
+                created_by=current_user.id,
+            )
+            task_repo.add(task)
+            # Si se asignó empleado, la tarea arranca en progreso
+            if t_data.assigned_to is not None:
+                task.status = 'en_progreso'
+            new_tasks.append(task)
+
+        # Deducir insumos para tareas de corte (todos los insumos se descuentan al iniciar corte)
+        for t_data in request.tasks:
+            if t_data.type == "corte" and t_data.breakdown:
+                deduct_supplies_for_production(
+                    product_id=t_data.product_id,
+                    breakdown=t_data.breakdown,
+                    current_user_id=current_user.id,
+                    db=db,
+                )
+
+        db.commit()
+
+        # Recargar tareas con producto para devolver task_prices y total_pairs
+        task_ids = [t.id for t in new_tasks]
+
+        reloaded_data = task_repo.list_with_totals_by_ids(task_ids)
+
+        results = []
+        for t, total in reloaded_data:
+            results.append(ProductionTaskResponse(
+                id=t.id,
+                order_id=t.order_id,
+                product_id=t.product_id,
+                line_group=t.line_group,
+                assigned_to=t.assigned_to,
+                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Sin asignar",
+                assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+                type=t.type,
+                status=t.status,
+                priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
+                vale_number=t.vale_number,
+                created_at=t.created_at,
+                deadline=t.deadline,
+                observation=t.observation,
+                task_prices=t.product.task_prices if t.product else {},
+                total_pairs=t.amount if t.amount > 0 else int(total or 0),
+                amount=t.amount if t.amount > 0 else int(total or 0),
+                description_task=t.description_task,
+                product_name=t.product.name_product if t.product else None,
+                product_category=t.product.category.name_category if t.product and t.product.category else None,
+                product_image=t.product.image_url if t.product else None,
+            ))
+
+        return results
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        logger.exception("Error al crear tareas")
+        raise HTTPException(status_code=500, detail="Error al crear tareas")
+
+
+@router.patch("/tasks/{task_id}/assign", response_model=ProductionTaskResponse)
+def assign_task_employee(
+    task_id: uuid.UUID,
+    request: AssignTaskEmployeeRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Asigna un empleado a una tarea pendiente (sin empleado asignado aún)."""
+    if current_user.occupation != "jefe":
+        raise HTTPException(status_code=403, detail="Solo el jefe puede asignar empleados a tareas")
+
+    # Obtener tarea
+    task = TaskRepository(db).get_by_id_with_product(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    # Verificar que el empleado existe
+    employee = UserRepository(db).get_by_id(request.assigned_to)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+
+    # Asignar empleado
+    task.assigned_to = request.assigned_to
+    # Si estaba pendiente sin empleado, pasar a en_progreso automáticamente
+    if task.status == 'pendiente':
+        task.status = 'en_progreso'
+
+    db.commit()
+
+    # Notificar al empleado asignado (no bloquea la asignación si falla)
+    try:
+        product_name = task.product.name_product if task.product else "producto"
+        create_notification(
+            db=db,
+            user_id=request.assigned_to,
+            title="Nueva tarea asignada",
+            message=(
+                f"Se te asignó la tarea de {task.type} del producto {product_name} "
+                f"(vale #{task.vale_number})"
+            ),
+            type_=NotificationType.info,
+            order_id=task.order_id,
+            link_url=f"{settings.FRONTEND_URL}/dashboard/employee/tasks",
+            created_by=current_user.id,
+        )
+    except Exception:
+        logger.exception("No se pudo crear la notificación de asignación")
+
+    user_name = f"{employee.name_user} {employee.last_name}"
+
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=employee.occupation,
+        type=task.type,
+        status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
+        description_task=task.description_task,
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        deadline=task.deadline,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {},
+    )
+
+
+@router.get("/{order_id}/tasks", response_model=list[ProductionTaskResponse])
+def get_order_tasks(
+    order_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    product_id: uuid.UUID | None = None,
+) -> list[ProductionTaskResponse]:
+    """
+    Lista las tareas de producción de una orden.
+    Si se pasa product_id, filtra al nivel del servidor (más preciso que filtrar en frontend).
+    """
+    _require_jefe(current_user)
+    try:
+        tasks_data = TaskRepository(db).list_by_order_with_totals(order_id, product_id)
+
+        return [
+            ProductionTaskResponse(
+                id=t.id,
+                order_id=t.order_id,
+                product_id=t.product_id,
+                line_group=t.line_group,
+                assigned_to=t.assigned_to,
+                assigned_user_name=(t.assigned_user.name_user + " " + t.assigned_user.last_name) if t.assigned_user else "Sin asignar",
+                assigned_user_occupation=t.assigned_user.occupation if t.assigned_user else None,
+                type=t.type,
+                status=t.status,
+                priority=str(t.priority.value) if hasattr(t.priority, 'value') else str(t.priority),
+                vale_number=t.vale_number,
+                created_at=t.created_at,
+                deadline=t.deadline,
+                observation=t.observation,
+                task_prices=t.product.task_prices if t.product else {},
+                total_pairs=t.amount if t.amount > 0 else int(total or 0),
+                amount=t.amount if t.amount > 0 else int(total or 0),
+                description_task=t.description_task,
+                product_name=t.product.name_product if t.product else None,
+                product_category=t.product.category.name_category if t.product and t.product.category else None,
+                product_image=t.product.image_url if t.product else None,
+            ) for t, total in tasks_data
+        ]
+    except Exception:
+        logger.exception("Error al listar tareas de la orden")
+        raise HTTPException(status_code=500, detail="Error al listar tareas")
+
+
+@router.patch("/tasks/{task_id}/status", response_model=ProductionTaskResponse)
+def update_task_status(
+    task_id: uuid.UUID,
+    request: TaskStatusUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Actualiza el estado de una tarea de producción.
+    Permite: jefe (cualquier tarea) o el empleado asignado (su propia tarea)."""
+    task_repo = TaskRepository(db)
+    # Obtener tarea con producto cargado
+    task = task_repo.get_by_id_with_product(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    # Verificar permiso: jefe o el empleado asignado
+    if current_user.occupation != "jefe" and current_user.id != task.assigned_to:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar esta tarea")
+
+    # Actualizar el status
+    task.status = request.status
+
+    # Asignar fecha de completado si se marca como completado por primera vez o si se marca como pagado
+    if request.status in ["completado", "pagado"] and not task.completed_at:
+        task.completed_at = datetime.now(UTC)
+    elif request.status in ["por_liquidar", "en_progreso"]:
+        task.completed_at = None
+
+    # ─── AUTO-CREAR SIGUIENTE ETAPA ───
+    # Cuando una tarea se completa, crear automáticamente la siguiente etapa como pendiente
+    STAGE_ORDER = ['corte', 'guarnicion', 'soladura', 'emplantillado']
+    if request.status == 'completado':
+        current_index = STAGE_ORDER.index(task.type) if task.type in STAGE_ORDER else -1
+        if current_index >= 0 and current_index < len(STAGE_ORDER) - 1:
+            next_type = STAGE_ORDER[current_index + 1]
+            # Verificar si ya existe una tarea para la siguiente etapa
+            existing_next = task_repo.find_active_next(
+                task.order_id, task.product_id, task.line_group, next_type
+            )
+
+            if existing_next is None:
+                # Reutilizar el vale_number de la tarea actual
+                now2 = datetime.now(UTC)
+                next_task = Task(
+                    id=uuid.uuid4(),
+                    assigned_to=None,  # pendiente, sin empleado
+                    order_id=task.order_id,
+                    product_id=task.product_id,
+                    line_group=task.line_group,
+                    vale_number=task.vale_number,
+                    amount=task.amount,
+                    type=next_type,
+                    description_task=f"Tarea de {next_type} para la orden {task.order_id} (auto-generada)",
+                    priority=task.priority,
+                    deadline=task.deadline,
+                    assignment_date=now2,
+                    created_by=current_user.id,
+                    status='pendiente',
+                )
+                task_repo.add(next_task)
+
+    # Si es emplantillado + completado, actualizar OrderDetails y crear ENTRADA a inventario
+    if task.type == "emplantillado" and request.status == "completado":
+        complete_emplantillado(db=db, current_user_id=current_user.id, task=task)
+
+    # Commit una sola vez
+    db.commit()
+
+    # Notificar a los jefes cuando una tarea se completa (no bloquea si falla)
+    if request.status == "completado":
+        try:
+            product_name = task.product.name_product if task.product else "producto"
+            assignee = f"{current_user.name_user} {current_user.last_name}".strip() or current_user.email
+            for jefe in get_jefes(db):
+                create_notification(
+                    db=db,
+                    user_id=jefe.id,
+                    title="Tarea completada",
+                    message=(
+                        f"{assignee} completó la tarea de {task.type} del producto "
+                        f"{product_name} (vale #{task.vale_number})"
+                    ),
+                    type_=NotificationType.exito,
+                    order_id=task.order_id,
+                    link_url=f"{settings.FRONTEND_URL}/dashboard/admin/tasks",
+                    created_by=current_user.id,
+                )
+        except Exception:
+            logger.exception("No se pudo crear la notificación de tarea completada")
+
+    # Obtener usuario (puede ser None si assigned_to es None)
+    user = None
+    user_name = "Sin asignar"
+    user_occupation = None
+    if task.assigned_to:
+        user = UserRepository(db).get_by_id(task.assigned_to)
+        if user:
+            user_name = f"{user.name_user} {user.last_name}"
+            user_occupation = user.occupation
+
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=user_occupation,
+        type=task.type,
+        status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
+        description_task=task.description_task,
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        deadline=task.deadline,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {},
+    )
+
+
+@router.patch("/tasks/{task_id}/priority", response_model=ProductionTaskResponse)
+def update_task_priority(
+    task_id: uuid.UUID,
+    request: TaskPriorityUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Actualiza la prioridad de una tarea de producción. Solo el jefe puede cambiarla."""
+    _require_jefe(current_user)
+
+    task = TaskRepository(db).get_by_id_with_product_and_user(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    task.priority = request.priority
+    db.commit()
+
+    user_name = "Sin asignar"
+    user_occupation = None
+    if task.assigned_user:
+        user_name = f"{task.assigned_user.name_user} {task.assigned_user.last_name}"
+        user_occupation = task.assigned_user.occupation
+
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        line_group=task.line_group,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=user_occupation,
+        type=task.type,
+        status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        deadline=task.deadline,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {},
+    )
+
+
+@router.put("/tasks/{task_id}", response_model=ProductionTaskResponse)
+def update_task_detail(
+    task_id: uuid.UUID,
+    request: TaskDetailUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ProductionTaskResponse:
+    """Edita detalles de una tarea (cantidad, descripción, fecha límite, observación).
+    Solo el jefe puede editar."""
+    _require_jefe(current_user)
+
+    task = TaskRepository(db).get_by_id_with_product_and_user(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    if task.status in ("completado", "pagado", "cancelado"):
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede editar una tarea completada, pagada o cancelada",
+        )
+
+    if request.amount is not None:
+        task.amount = request.amount
+    if request.description_task is not None:
+        task.description_task = request.description_task
+    if request.deadline is not None:
+        task.deadline = request.deadline
+    if request.observation is not None:
+        task.observation = request.observation
+
+    db.commit()
+
+    user_name = "Sin asignar"
+    user_occupation = None
+    if task.assigned_user:
+        user_name = f"{task.assigned_user.name_user} {task.assigned_user.last_name}"
+        user_occupation = task.assigned_user.occupation
+
+    return ProductionTaskResponse(
+        id=task.id,
+        order_id=task.order_id,
+        product_id=task.product_id,
+        line_group=task.line_group,
+        assigned_to=task.assigned_to,
+        assigned_user_name=user_name,
+        assigned_user_occupation=user_occupation,
+        type=task.type,
+        status=task.status,
+        priority=str(task.priority.value) if hasattr(task.priority, 'value') else str(task.priority),
+        vale_number=task.vale_number,
+        created_at=task.created_at,
+        deadline=task.deadline,
+        observation=task.observation,
+        task_prices=task.product.task_prices if task.product else {},
+    )

@@ -57,7 +57,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
                 "img-src 'self' data: https:; "
                 "font-src 'self' https://cdn.jsdelivr.net; "
-                "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; "
+                "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 "
+                "ws://localhost:8000 ws://127.0.0.1:8000 "
+                "http://localhost:8081 http://127.0.0.1:8081 "
+                "ws://localhost:8081 ws://127.0.0.1:8081; "
                 "frame-ancestors 'none';"
             )
         

@@ -128,7 +128,7 @@ Para facilitar la navegación y búsqueda de clientes.
 - El frontend filtra nombres de etapas de producción con `isRealCategory()` para excluir categorías falsas
 - Los filtros por categoría responden en menos de 2 segundos
 
-**Nota:** el CRUD completo existe en `be/app/routers/catalog_categories.py`, registrado en `main.py`.
+**Nota:** el CRUD completo existe en `be/app/api/catalog_categories.py`, registrado en `main.py`.
 
 ---
 

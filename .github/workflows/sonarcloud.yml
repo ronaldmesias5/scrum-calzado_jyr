@@ -1,0 +1,101 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # mirror.gcr.io es un mirror público de Docker Hub (sin rate limit anónimo)
+        image: mirror.gcr.io/pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: jyr_user
+          POSTGRES_PASSWORD: ci_test_password_only
+          POSTGRES_DB: calzado_jyr_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jyr_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Mismas variables que el job `backend` de ci.yml (Settings() sin .env en CI)
+      DATABASE_URL: postgresql://jyr_user:ci_test_password_only@localhost:5432/calzado_jyr_db
+      SECRET_KEY: ci-only-secret-key-not-for-production-a1b2c3d4e5f6g7h8i9j0
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      REFRESH_TOKEN_EXPIRE_MINUTES: 60
+      FRONTEND_URL: http://localhost:5173
+      ENVIRONMENT: test
+      MAIL_SERVER: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ci@example.com
+      MAIL_PASSWORD: ci-password
+      AI_PROVIDER: groq
+      AI_API_KEY: ""
+      AI_MODEL: openai/gpt-oss-20b
+      AI_EMBEDDING_MODEL: nomic-embed-text
+      AI_MAX_TOKENS: 512
+      AI_EMBEDDING_DIM: 768
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      # ── Backend: cobertura Python → be/coverage.xml ──
+      - name: Install uv (backend)
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "be/uv.lock"
+
+      - name: Set up Python (backend)
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias del backend
+        working-directory: be
+        run: uv sync --frozen --extra dev
+
+      # continue-on-error: un fallo de tests no debe impedir el análisis de SonarCloud
+      - name: Tests backend con cobertura
+        working-directory: be
+        continue-on-error: true
+        run: uv run pytest --cov=app --cov-report=xml -q
+
+      # ── Frontend: cobertura JS/TS → fe/coverage/lcov.info ──
+      - name: Install pnpm (frontend)
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.0.9
+
+      - name: Set up Node (frontend)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: fe/pnpm-lock.yaml
+
+      - name: Instalar dependencias del frontend
+        working-directory: fe
+        run: pnpm install --frozen-lockfile
+
+      - name: Tests frontend con cobertura
+        working-directory: fe
+        continue-on-error: true
+        run: pnpm test:coverage
+
+      - name: SonarCloud Scan Action
+        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e # master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

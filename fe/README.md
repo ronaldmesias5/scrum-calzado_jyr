@@ -27,7 +27,7 @@ fe/src/
 │   ├── employee/         # Panel empleado (6 páginas)
 │   └── landing/          # Landing pública + catálogo
 ├── pages/                # Páginas enrutables (admin, auth, client, employee, public)
-├── hooks/                # Hooks reutilizables (useAuth, useModalDialog, useChat…)
+├── hooks/                # Hooks reutilizables (useAuth, useChat, useHeaderAnimation, useNotificationWebSocket)
 ├── services/             # Servicios API (authService, aiApi, ordersApi, catalogService…)
 ├── store/                # Contextos globales (Auth, Theme, Toast, BadgeCounts…)
 ├── types/                # Tipos TypeScript compartidos
@@ -76,7 +76,7 @@ VITE_USE_PROXY=true   # axios usa URLs relativas, Vite proxea /api → be:8000
 
 ## Patrones
 
-- **Modal base** (`components/atoms/Modal.tsx`): `createPortal`, `role="dialog"`, focus trap, Escape. Usar con `useModalDialog`.
+- **Modal base** (`components/atoms/Modal.tsx`): `createPortal`, `role="dialog"`, focus trap, Escape. Abrir con estado `useState` (`isOpen` / `onClose`).
 - **PageTransition** (`components/atoms/PageTransition.tsx`): envuelve `<Outlet />` en layouts, `fade-in` + `slide-in-from-top-4`.
 - **ChatWidget** (`features/ai/components/organisms/ChatWidget.tsx`): Águila J&R 🦅, FAB con tooltip, `position` left (landing) / right (dashboards).
 - **Tailwind v4**: `@theme` en `styles/index.css`, sin `tailwind.config.js`.
