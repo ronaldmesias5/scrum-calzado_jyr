@@ -1,31 +1,27 @@
 # Configuración de Gitleaks para CALZADO J&R
 # Extiende las reglas por defecto y documenta las excepciones.
-# Cada allowlist debe justificar por qué NO es una credencial real.
+#
+# IMPORTANTE: se usa el formato legacy `[allowlist]` (singular) porque
+# gitleaks-action fija la versión 8.24.3, que aún no soporta `[[allowlists]]`
+# (la ignora en silencio). El formato legacy sigue funcionando en versiones
+# nuevas, así que es compatible en ambos sentidos.
 
 [extend]
 useDefault = true
 
+[allowlist]
+description = "Falsos positivos verificados del proyecto"
 # 1) SonarCloud: projectKey y organization son identificadores públicos,
 #    no credenciales. El token real vive en secrets.SONAR_TOKEN.
-[[allowlists]]
-description = "Metadatos públicos de SonarCloud"
+# 2) .venv-qa fue versionado por error en el pasado: contiene fixtures
+#    de test de la librería websocket, no secretos del proyecto.
 paths = [
   '''sonar-project\.properties$''',
+  '''\.venv-qa/''',
 ]
-
-# 2) Placeholders en documentación histórica (valores de ejemplo).
-[[allowlists]]
-description = "Valores de ejemplo en docs: no son credenciales reales"
+# 3) Placeholders en documentación histórica (valores de ejemplo).
 regexTarget = "match"
 regexes = [
   '''MAIL_PASSWORD=abcd1234efgh5678''',
   '''SECRET_KEY=AQUI_VA_UNA_CLAVE_SEGURA_DE_48_CARACTERES''',
-]
-
-# 3) .venv-qa fue versionado por error en el pasado: contiene fixtures
-#    de test de la librería websocket, no secretos del proyecto.
-[[allowlists]]
-description = "Virtualenv versionado por error en commits antiguos"
-paths = [
-  '''\.venv-qa/''',
 ]
