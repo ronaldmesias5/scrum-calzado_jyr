@@ -56,7 +56,7 @@ class SupplyOut(BaseModel):
     name: str
     description: Optional[str]
     category: str
-    color: Optional[str]
+    color: Optional[str] = None
     stock_quantity: float
     sizes: Optional[dict[str, float]]
     unit: Optional[str]

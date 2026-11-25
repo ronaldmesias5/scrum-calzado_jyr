@@ -110,7 +110,7 @@ class ProductResponse(BaseModel):
     """Response de un producto"""
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     color: Optional[str]
     insufficient_threshold: int
     state: bool
@@ -121,7 +121,7 @@ class ProductResponse(BaseModel):
     category_id: str
     category_name: str
     task_prices: Optional[TaskPrices] = None
-    created_at: Optional[str]
+    created_at: Optional[str] = None
 
 
 # ─────────────────────────────────────────
